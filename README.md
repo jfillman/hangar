@@ -1,12 +1,16 @@
-# idp — Dream IDP
+# Hangar
+
+(Formerly developed under the working name "Dream IDP" — renamed 2026-09-07. The
+`## Status` log below predates the rename and is left as written; it refers to
+components by the names they had at the time.)
 
 An API-centric, event-driven Internal Developer Platform: Crossplane as the custom
 control plane, ArgoCD/GitOps for delivery, Backstage as the single pane of glass,
-`platform-cicd` (`../platform-cicd`) as the CI/CD component underneath it. AI-assisted at
+Glidepath (`../glidepath`) as the CI/CD component underneath it. AI-assisted at
 two levels — API clients driving self-service provisioning, and workflows embedded at
 the control-plane layer for things like automated triage of a degraded deployment.
 
-Core goals, in full: [[project_dream_idp]] in `platform-cicd`'s memory has the running
+Core goals, in full: [[project_dream_idp]] in Glidepath's memory has the running
 history; this repo is where the design and implementation actually live.
 
 ## Status
@@ -102,18 +106,25 @@ Backstage integration (goal 7) not started.
 ## Repos
 
 ```
-idp                        this repo — docs + running status
+hangar                      this repo — docs + running status (was "idp")
+glidepath                   the CI/CD engine (was "platform-cicd")
+airframe                    Crossplane XRDs/Compositions + the airframe-application chart, tagged v0.1.0, pinned+synced via ArgoCD (was "idp-service-catalog")
+apron                       gold-standard template for provisioning a new cluster repo - docs/cluster-provisioning.md (was "gitops-cluster-template")
 gitops-cluster-dev          kind-dev's cluster config (Phase 1 done, live-verified)
 gitops-cluster-dev-tenants  kind-dev's app-onboarding requests - real xr-requests/ commits, live-verified 2026-08-15
-gitops-cluster-template     gold-standard template for provisioning a new cluster repo - docs/cluster-provisioning.md, built 2026-08-19
 idp-cluster-baseline        shared cluster-config chart(s) (not started)
-idp-service-catalog         Crossplane XRDs/Compositions + the idp-application chart, tagged v0.1.0, pinned+synced via ArgoCD
 ```
+
+Renamed 2026-09-07 as part of the Hangar rebrand: `idp`→`hangar`, `platform-cicd`→`glidepath`,
+`idp-service-catalog`→`airframe`, `gitops-cluster-template`→`apron`. The Tower Backstage
+plugin is built as a new module inside the existing `backstage` repo, not a separate repo.
+Originals are untouched (kept as an archive candidate), each new repo was created via a
+full-history clone so `git log`/`git blame` still work.
 
 ## Repo layout (so far)
 
 ```
-docs/   design docs, written as decisions land — same convention as platform-cicd/docs/
+docs/   design docs, written as decisions land — same convention as glidepath/docs/
 ```
 
 Local cluster tooling/ops (kiac, not podman+kind — see `docs/local-clusters.md`),
@@ -121,7 +132,16 @@ built 2026-09-03.
 
 ## Design language
 
-Shares `platform-cicd`'s conventions rather than inventing new ones: `platform.io/*`
-label namespace, `<type>-<app-name>-<env>` namespace pattern, kebab-case docs, the
-"never a live cross-cluster API call, only a git commit" credential posture. Deviations
-get called out explicitly where they happen, not silently.
+Shares Glidepath's conventions rather than inventing new ones: `hangar.io/*`
+label namespace (consolidated 2026-09-07 from the previous `platform.io/*` — see
+[[idp_naming_convention_consolidation]]), `<type>-<app-name>-<env>` namespace pattern,
+kebab-case docs, the "never a live cross-cluster API call, only a git commit" credential
+posture. Deviations get called out explicitly where they happen, not silently.
+
+The deeper design docs below (`gitops-strategy.md`, `service-catalog-design.md`,
+`backstage-design.md`, `cluster-provisioning.md`, `local-clusters.md`) are dated design
+narrative and still refer to components by their pre-rebrand names (`platform-cicd`,
+`idp-service-catalog`, `gitops-cluster-template`) throughout — that's intentional, not
+stale: they're a historical record of decisions as they were made, and a global rename
+would misdate them. Renaming those references is in scope for the later docs
+reorg/rebrand pass, not this one.
