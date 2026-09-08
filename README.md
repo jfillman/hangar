@@ -1,4 +1,8 @@
-# Hangar
+<div align="center">
+  <img src="docs/brand/hangar-tile.svg" width="88" height="88" alt="Hangar mark" />
+  <h1>Hangar</h1>
+  <p><i>Home base for building, releasing, and watching every service you run.</i></p>
+</div>
 
 (Formerly developed under the working name "Dream IDP" — renamed 2026-09-07. The
 `## Status` log below predates the rename and is left as written; it refers to
