@@ -1,0 +1,426 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Hangar Brand System</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#F1F3F5;
+    --bg-raised:#FFFFFF;
+    --panel:#FFFFFF;
+    --panel-alt:#E8ECEF;
+    --line:#D5DBE0;
+    --line-soft:#E3E7EA;
+    --text-hi:#171B1F;
+    --text-lo:#5B6570;
+    --text-faint:#88919A;
+    --amber:#B9791F;
+    --amber-ink:#7A5115;
+    --amber-soft:#F4E6C9;
+    --amber-line:#E0BE84;
+    --sky:#2E7BA6;
+    --sky-soft:#DCEDF6;
+    --sky-line:#B7D7E6;
+    --good:#2E8B57;
+    --good-soft:#DCF0E4;
+    --bad:#B23B2E;
+    --bad-soft:#F6DEDA;
+    --focus:#B9791F;
+    --shadow: 0 1px 2px rgba(23,27,31,0.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0B0D10;
+      --bg-raised:#12161B;
+      --panel:#12161B;
+      --panel-alt:#1A1F26;
+      --line:#262C33;
+      --line-soft:#1D232A;
+      --text-hi:#E9ECEF;
+      --text-lo:#96A2AC;
+      --text-faint:#66717B;
+      --amber:#E8A33D;
+      --amber-ink:#F4C67D;
+      --amber-soft:#3A2C15;
+      --amber-line:#5C4520;
+      --sky:#6FB2D9;
+      --sky-soft:#152530;
+      --sky-line:#2C4756;
+      --good:#5FAE84;
+      --good-soft:#16281F;
+      --bad:#D9776A;
+      --bad-soft:#301A17;
+      --focus:#E8A33D;
+      --shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0B0D10;
+    --bg-raised:#12161B;
+    --panel:#12161B;
+    --panel-alt:#1A1F26;
+    --line:#262C33;
+    --line-soft:#1D232A;
+    --text-hi:#E9ECEF;
+    --text-lo:#96A2AC;
+    --text-faint:#66717B;
+    --amber:#E8A33D;
+    --amber-ink:#F4C67D;
+    --amber-soft:#3A2C15;
+    --amber-line:#5C4520;
+    --sky:#6FB2D9;
+    --sky-soft:#152530;
+    --sky-line:#2C4756;
+    --good:#5FAE84;
+    --good-soft:#16281F;
+    --bad:#D9776A;
+    --bad-soft:#301A17;
+    --focus:#E8A33D;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  :root[data-theme="light"]{
+    --bg:#F1F3F5; --bg-raised:#FFFFFF; --panel:#FFFFFF; --panel-alt:#E8ECEF;
+    --line:#D5DBE0; --line-soft:#E3E7EA; --text-hi:#171B1F; --text-lo:#5B6570; --text-faint:#88919A;
+    --amber:#B9791F; --amber-ink:#7A5115; --amber-soft:#F4E6C9; --amber-line:#E0BE84;
+    --sky:#2E7BA6; --sky-soft:#DCEDF6; --sky-line:#B7D7E6;
+    --good:#2E8B57; --good-soft:#DCF0E4; --bad:#B23B2E; --bad-soft:#F6DEDA; --focus:#B9791F;
+    --shadow: 0 1px 2px rgba(23,27,31,0.06);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--text-hi);
+    font-family:"IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 24px 96px;}
+
+  .display{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",sans-serif;font-weight:700;letter-spacing:0.01em;text-wrap:balance;}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--text-faint);
+  }
+
+  /* ---- top bar ---- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 24px;border-bottom:1px solid var(--line);
+    background:var(--bg-raised);
+  }
+  .topbar-mark{display:flex;align-items:center;gap:10px;}
+  .topbar-mark .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px var(--amber-soft);}
+  .topbar-mark span{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:0.12em;color:var(--text-lo);text-transform:uppercase;}
+  .theme-toggle{
+    display:flex;align-items:center;gap:8px;
+    border:1px solid var(--line);background:var(--panel-alt);color:var(--text-lo);
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:0.06em;
+    padding:7px 12px;border-radius:3px;cursor:pointer;text-transform:uppercase;
+  }
+  .theme-toggle:hover{border-color:var(--amber-line);color:var(--text-hi);}
+  .theme-toggle:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+  .theme-toggle .sw{width:9px;height:9px;border-radius:50%;background:var(--sky);}
+
+  /* ---- hero ---- */
+  .hero{padding:64px 0 48px;border-bottom:1px solid var(--line);}
+  .hero .eyebrow{margin-bottom:14px;}
+  .hero h1{font-size:56px;margin:0 0 6px;line-height:1.02;}
+  .hero h1 .accent{color:var(--amber);}
+  .hero .tagline{font-size:19px;color:var(--text-lo);max-width:640px;margin:14px 0 0;}
+  .hero .sub{margin-top:22px;display:flex;gap:28px;flex-wrap:wrap;}
+  .hero .sub div{font-size:13px;color:var(--text-faint);}
+  .hero .sub b{color:var(--text-hi);font-weight:600;}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line);}
+  section:last-of-type{border-bottom:none;}
+  section > .eyebrow{margin-bottom:8px;}
+  section h2{font-size:26px;margin:0 0 8px;}
+  section > .lede{color:var(--text-lo);max-width:600px;margin:0 0 32px;font-size:15px;}
+
+  /* ---- naming architecture ---- */
+  .name-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  @media (max-width:760px){.name-flow{grid-template-columns:1fr;}}
+  .name-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:4px;
+    padding:20px 20px 22px;position:relative;box-shadow:var(--shadow);
+  }
+  .name-card .role{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--sky);margin-bottom:10px;}
+  .name-card h3{font-size:24px;margin:0 0 10px;}
+  .name-card p{font-size:13.5px;color:var(--text-lo);margin:0 0 14px;}
+  .name-card .quote{
+    font-size:12.5px;font-style:italic;color:var(--text-faint);border-left:2px solid var(--amber-line);
+    padding-left:10px;margin:0;
+  }
+  .flow-arrow{
+    display:flex;align-items:center;justify-content:center;color:var(--text-faint);
+    font-family:"IBM Plex Mono",monospace;font-size:13px;padding:6px 0 18px;
+  }
+  .flow-note{font-size:12.5px;color:var(--text-faint);margin-top:14px;}
+
+  /* ---- checklist / philosophy ---- */
+  .checklist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel);}
+  .check-item{display:flex;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line-soft);}
+  .check-item:last-child{border-bottom:none;}
+  .check-item .num{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--amber);
+    background:var(--amber-soft);border:1px solid var(--amber-line);
+    width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .check-item h4{margin:0 0 3px;font-size:15px;}
+  .check-item p{margin:0;font-size:13.5px;color:var(--text-lo);}
+
+  /* ---- palette ---- */
+  .swatch-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+  @media (max-width:760px){.swatch-row{grid-template-columns:repeat(3,1fr);}}
+  .swatch{border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel);}
+  .swatch .fill{height:56px;}
+  .swatch .label{padding:8px 10px;}
+  .swatch .label .name{font-size:11.5px;font-weight:600;}
+  .swatch .label .hex{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--text-faint);}
+
+  .type-specimen{display:flex;flex-direction:column;gap:18px;margin-top:28px;}
+  .type-row{display:flex;align-items:baseline;gap:18px;border-bottom:1px solid var(--line-soft);padding-bottom:16px;}
+  .type-row .tag{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--text-faint);width:150px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.08em;}
+  .type-row .sample.display{font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:26px;}
+  .type-row .sample.body{font-size:16px;}
+  .type-row .sample.mono{font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--sky);}
+
+  /* ---- tower mockup ---- */
+  .tabbar{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap;}
+  .tab{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:0.05em;text-transform:uppercase;
+    padding:10px 16px;color:var(--text-faint);border-bottom:2px solid transparent;}
+  .tab.active{color:var(--text-hi);border-bottom-color:var(--amber);}
+
+  .rc-card{background:var(--panel);border:1px solid var(--line);border-radius:5px;box-shadow:var(--shadow);overflow:hidden;}
+  .rc-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap;gap:10px;}
+  .rc-head .svc{display:flex;align-items:center;gap:10px;}
+  .rc-head .svc-name{font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:19px;}
+  .badge{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;
+    padding:3px 8px;border-radius:3px;border:1px solid var(--line);color:var(--text-lo);}
+  .badge.env{background:var(--sky-soft);border-color:var(--sky-line);color:var(--sky);}
+  .status-chip{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-lo);}
+  .status-chip .pulse{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px var(--amber-soft);}
+
+  .rc-gates{display:flex;align-items:center;gap:6px;padding:16px 20px;border-bottom:1px solid var(--line-soft);}
+  .gate{flex:1;height:6px;border-radius:3px;background:var(--panel-alt);position:relative;}
+  .gate.done{background:var(--good);}
+  .gate.current{background:var(--amber);}
+  .gate-labels{display:flex;justify-content:space-between;padding:0 20px 16px;margin-top:-4px;}
+  .gate-labels span{font-family:"IBM Plex Mono",monospace;font-size:9.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;}
+
+  .rc-actions{display:flex;gap:8px;padding:14px 20px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap;}
+  .pr-btn{
+    display:flex;align-items:center;gap:7px;font-family:"IBM Plex Mono",monospace;font-size:12px;
+    padding:7px 12px;border-radius:4px;border:1px solid var(--line);background:var(--panel-alt);color:var(--text-hi);
+  }
+  .pr-btn .n{color:var(--sky);}
+  .pr-btn.merged{color:var(--text-faint);}
+  .pr-btn.merged .n{color:var(--good);}
+
+  .accordion{border-top:none;}
+  .acc-head{
+    display:flex;align-items:center;justify-content:space-between;padding:12px 20px;cursor:pointer;user-select:none;
+    background:var(--panel-alt);
+  }
+  .acc-head .t{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-lo);}
+  .acc-head .chev{font-family:"IBM Plex Mono",monospace;color:var(--text-faint);transition:transform .15s ease;}
+  .acc-head[aria-expanded="true"] .chev{transform:rotate(90deg);}
+  .acc-body{padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;font-size:13px;}
+  @media (max-width:600px){.acc-body{grid-template-columns:1fr;}}
+  .acc-body[hidden]{display:none;}
+  .kv{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed var(--line-soft);padding-bottom:6px;}
+  .kv .k{color:var(--text-faint);}
+  .kv .v{font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right;}
+  .verified{color:var(--good);}
+
+  .rc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px 20px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--text-faint);border-top:1px solid var(--line-soft);}
+
+  footer{padding:36px 0 8px;color:var(--text-faint);font-size:12.5px;}
+  footer .eyebrow{margin-bottom:8px;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+
+<div class="topbar">
+  <div class="topbar-mark"><span class="dot"></span><span>Hangar / Brand System / Draft</span></div>
+  <button class="theme-toggle" id="themeToggle" type="button"><span class="sw" id="themeDot"></span><span id="themeLabel">System</span></button>
+</div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">Platform naming, philosophy &amp; visual system — proposal v1</div>
+    <h1 class="display">HANGAR<span class="accent">.</span></h1>
+    <p class="tagline">A home base for building, releasing, and watching every service you run — one platform, one look, no snowflakes.</p>
+    <div class="sub">
+      <div><b>Platform</b> — Hangar</div>
+      <div><b>CI/CD engine</b> — Glidepath (standalone-installable)</div>
+      <div><b>Release command center</b> — Tower (Backstage plugin)</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="eyebrow">01 — Naming architecture</div>
+    <h2>Three names, one hangar door</h2>
+    <p class="lede">Everything stays inside a single aviation vocabulary, so the names teach the product instead of decorating it. Each piece is real and separately installable — but they were clearly poured from the same mold.</p>
+
+    <div class="name-flow">
+      <div class="name-card">
+        <div class="role">The Platform</div>
+        <h3>Hangar</h3>
+        <p>Home base. Where a service is scaffolded, given a golden-path template, and provisioned onto whichever cluster it belongs on — no cluster is a snowflake.</p>
+        <p class="quote">"Every aircraft needs a hangar before it needs a runway."</p>
+      </div>
+      <div class="name-card">
+        <div class="role">The CI/CD Engine</div>
+        <h3>Glidepath</h3>
+        <p>The guarded descent from a merged commit to a verified release — build, scan, sign, attest, promote. Installs on its own if a team just wants the pipeline.</p>
+        <p class="quote">"The angle of descent is fixed. Every release flies it the same way."</p>
+      </div>
+      <div class="name-card">
+        <div class="role">The Command Center</div>
+        <h3>Tower</h3>
+        <p>One Backstage plugin, not a shelf of them. Topology, pull requests, image provenance, releases, and SLOs in a single console.</p>
+        <p class="quote">"Pilots don't check five instruments for one answer. They look at the tower."</p>
+      </div>
+    </div>
+    <p class="flow-note">Hangar provisions the airframe → Glidepath flies every release down the same path → Tower is the window into all of it, live, from the ground. Tower isn't the last stop in a pipeline — it's the view that never closes.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow">02 — Platform philosophy</div>
+    <h2>Preflight checklist</h2>
+    <p class="lede">Five things Hangar is opinionated about. Not marketing copy — the actual rules the product is built to enforce.</p>
+    <div class="checklist">
+      <div class="check-item"><div class="num">1</div><div><h4>Golden paths, not gatekeeping</h4><p>Scaffolding gets a compliant service running in minutes. Guardrails validate — they don't block by default.</p></div></div>
+      <div class="check-item"><div class="num">2</div><div><h4>One tower, full visibility</h4><p>Releases, PRs, images, and topology live in a single console, not a dozen disconnected tabs bolted onto a catalog.</p></div></div>
+      <div class="check-item"><div class="num">3</div><div><h4>Provenance you can prove</h4><p>Every artifact is signed, attested, and independently verifiable. Security is structural, not a checkbox at the end.</p></div></div>
+      <div class="check-item"><div class="num">4</div><div><h4>No cluster is a snowflake</h4><p>The same platform installs the same way everywhere — dev, staging, prod, someone else's laptop.</p></div></div>
+      <div class="check-item"><div class="num">5</div><div><h4>Calm cockpit, not a light show</h4><p>Amber means attention. Blue means information. Gray means at rest. Nothing blinks that doesn't need to.</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">03 — Visual system</div>
+    <h2>Amber for attention, sky for information</h2>
+    <p class="lede">Dark is the primary surface — instrument-panel dark, not gamer-RGB dark. Light is a full first-class second theme, not an inverted afterthought. Toggle the switch above to compare both.</p>
+
+    <div class="swatch-row">
+      <div class="swatch"><div class="fill" style="background:var(--bg)"></div><div class="label"><div class="name">Ground</div><div class="hex">--bg</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--panel)"></div><div class="label"><div class="name">Panel</div><div class="hex">--panel</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--amber)"></div><div class="label"><div class="name">Amber / primary</div><div class="hex">--amber</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--sky)"></div><div class="label"><div class="name">Sky / secondary</div><div class="hex">--sky</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--good)"></div><div class="label"><div class="name">Good</div><div class="hex">--good</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--bad)"></div><div class="label"><div class="name">Critical</div><div class="hex">--bad</div></div></div>
+    </div>
+
+    <div class="type-specimen">
+      <div class="type-row"><div class="tag">Display</div><div class="sample display">Plex Sans Condensed</div></div>
+      <div class="type-row"><div class="tag">Body</div><div class="sample body">IBM Plex Sans — running text, labels, descriptions.</div></div>
+      <div class="type-row"><div class="tag">Data / mono</div><div class="sample mono">IBM Plex Mono — SHAs, tags, digests, status codes.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">04 — Tower, in the flesh</div>
+    <h2>One card, everything you'd otherwise open five tabs for</h2>
+    <p class="lede">A release card from Tower's Releases tab. Linked PRs are buttons, not links buried in a description. Image provenance lives in a panel you open when you need it, not a wall of text you scroll past when you don't.</p>
+
+    <div class="tabbar">
+      <div class="tab">Overview</div>
+      <div class="tab active">Releases</div>
+      <div class="tab">Topology</div>
+      <div class="tab">Pull Requests</div>
+      <div class="tab">Images</div>
+      <div class="tab">SLOs</div>
+    </div>
+
+    <div class="rc-card">
+      <div class="rc-head">
+        <div class="svc">
+          <span class="svc-name">checkout-api</span>
+          <span class="badge env">production</span>
+        </div>
+        <div class="status-chip"><span class="pulse"></span>Approaching — 4 of 5 gates clear</div>
+      </div>
+
+      <div class="rc-gates">
+        <div class="gate done"></div>
+        <div class="gate done"></div>
+        <div class="gate done"></div>
+        <div class="gate done"></div>
+        <div class="gate current"></div>
+      </div>
+      <div class="gate-labels">
+        <span>Build</span><span>SAST/SBOM</span><span>Sign+Attest</span><span>Staging</span><span>Production</span>
+      </div>
+
+      <div class="rc-actions">
+        <div class="pr-btn"><span class="n">PR #482</span> outcome-relay hostAliases fix → main</div>
+        <div class="pr-btn merged"><span class="n">✓</span> PR #479 merged</div>
+      </div>
+
+      <div class="accordion">
+        <div class="acc-head" id="accHead" role="button" tabindex="0" aria-expanded="true">
+          <span class="t">▸ Image &amp; provenance</span>
+          <span class="chev">›</span>
+        </div>
+        <div class="acc-body" id="accBody">
+          <div class="kv"><span class="k">Image</span><span class="v">ghcr.io/hangar/checkout-api</span></div>
+          <div class="kv"><span class="k">Digest</span><span class="v">sha256:7f3a…c19e</span></div>
+          <div class="kv"><span class="k">Cosign</span><span class="v verified">verified ✓</span></div>
+          <div class="kv"><span class="k">Rekor entry</span><span class="v">24601998</span></div>
+          <div class="kv"><span class="k">SBOM</span><span class="v verified">available ✓</span></div>
+          <div class="kv"><span class="k">Base image</span><span class="v">distroless/nodejs20</span></div>
+        </div>
+      </div>
+
+      <div class="rc-foot">
+        <span>cluster: kind-prod</span>
+        <span>deployed 12m ago</span>
+        <span>commit a1c4e9f</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="eyebrow">Status</div>
+    Draft for review — no repos touched yet. Names, palette, and Tower's card shape are proposals, not commitments.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var label = document.getElementById('themeLabel');
+  var order = ['system','dark','light'];
+  var current = 'system';
+  try { current = localStorage.getItem('hangar-theme-pref') || 'system'; } catch(e){}
+  function apply(mode){
+    if(mode === 'system'){ root.removeAttribute('data-theme'); }
+    else { root.setAttribute('data-theme', mode); }
+    label.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+    try { localStorage.setItem('hangar-theme-pref', mode); } catch(e){}
+  }
+  apply(current);
+  btn.addEventListener('click', function(){
+    var idx = (order.indexOf(current) + 1) % order.length;
+    current = order[idx];
+    apply(current);
+  });
+
+  var accHead = document.getElementById('accHead');
+  var accBody = document.getElementById('accBody');
+  accHead.addEventListener('click', function(){
+    var expanded = accHead.getAttribute('aria-expanded') === 'true';
+    accHead.setAttribute('aria-expanded', String(!expanded));
+    if(expanded){ accBody.setAttribute('hidden',''); } else { accBody.removeAttribute('hidden'); }
+  });
+  accHead.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); accHead.click(); }
+  });
+})();
+</script>
+
+</body></html>

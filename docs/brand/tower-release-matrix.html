@@ -1,0 +1,738 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Tower Release Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F1F3F5;
+    --panel: #FFFFFF;
+    --panel-alt: #E8ECEF;
+    --line: #D5DBE0;
+    --line-soft: #E3E7EA;
+    --text-hi: #171B1F;
+    --text-lo: #5B6570;
+    --text-faint: #88919A;
+    --amber: #B9791F;
+    --amber-ink: #7A5115;
+    --amber-soft: #F4E6C9;
+    --amber-line: #E0BE84;
+    --sky: #2E7BA6;
+    --sky-soft: #DCEDF6;
+    --sky-line: #B7D7E6;
+    --good: #2E8B57;
+    --good-soft: #DCF0E4;
+    --bad: #B23B2E;
+    --bad-soft: #F6DEDA;
+    --shadow: 0 1px 2px rgba(23,27,31,0.04), 0 6px 16px -8px rgba(23,27,31,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0B0D10;
+      --panel: #12161B;
+      --panel-alt: #1A1F26;
+      --line: #262C33;
+      --line-soft: #1D232A;
+      --text-hi: #E9ECEF;
+      --text-lo: #96A2AC;
+      --text-faint: #66717B;
+      --amber: #E8A33D;
+      --amber-ink: #F4C67D;
+      --amber-soft: #3A2C15;
+      --amber-line: #5C4520;
+      --sky: #6FB2D9;
+      --sky-soft: #152530;
+      --sky-line: #2C4756;
+      --good: #5FAE84;
+      --good-soft: #16281F;
+      --bad: #D9776A;
+      --bad-soft: #301A17;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px -10px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B0D10;
+    --panel: #12161B;
+    --panel-alt: #1A1F26;
+    --line: #262C33;
+    --line-soft: #1D232A;
+    --text-hi: #E9ECEF;
+    --text-lo: #96A2AC;
+    --text-faint: #66717B;
+    --amber: #E8A33D;
+    --amber-ink: #F4C67D;
+    --amber-soft: #3A2C15;
+    --amber-line: #5C4520;
+    --sky: #6FB2D9;
+    --sky-soft: #152530;
+    --sky-line: #2C4756;
+    --good: #5FAE84;
+    --good-soft: #16281F;
+    --bad: #D9776A;
+    --bad-soft: #301A17;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px -10px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-hi);
+    font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .display {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .mono { font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace; }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px 28px 100px;
+  }
+
+  /* ---- Masthead ---- */
+  .masthead { margin-bottom: 44px; }
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sky);
+    margin-bottom: 14px;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sky); }
+  h1 {
+    font-size: 34px;
+    line-height: 1.12;
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+  .dek {
+    max-width: 640px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-lo);
+    margin: 0;
+  }
+  .dek b { color: var(--text-hi); font-weight: 600; }
+
+  section { margin-bottom: 52px; }
+  h2 {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 700;
+    font-size: 21px;
+    margin: 0 0 6px;
+  }
+  .section-note {
+    font-size: 14px;
+    color: var(--text-lo);
+    line-height: 1.55;
+    max-width: 680px;
+    margin: 0 0 22px;
+  }
+
+  /* ---- Option label chip ---- */
+  .optnum {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--panel-alt);
+    border: 1px solid var(--line);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--text-lo);
+    margin-right: 9px;
+    flex: none;
+  }
+  .opt-head { display: flex; align-items: center; margin-bottom: 4px; }
+  .opt-head h2 { margin: 0; }
+  .verdict {
+    margin-left: auto;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+  .verdict.weak { color: var(--text-faint); background: var(--panel-alt); border: 1px solid var(--line); }
+  .verdict.strong { color: var(--good); background: var(--good-soft); border: 1px solid transparent; }
+  .verdict.pick { color: var(--amber-ink); background: var(--amber-soft); border: 1px solid var(--amber-line); }
+
+  /* ---- Mock console frame ---- */
+  .console {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .console-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--panel-alt);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.03em;
+  }
+  .console-body { padding: 18px; }
+
+  /* ---- Env cards (Option 1) ---- */
+  .env-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .env-card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .env-name {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 100px;
+    width: fit-content;
+  }
+  .pill.good { color: var(--good); background: var(--good-soft); }
+  .pill.pending { color: var(--amber-ink); background: var(--amber-soft); }
+  .pill.muted { color: var(--text-faint); background: var(--panel-alt); }
+  .pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .imgtag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    color: var(--text-hi);
+    overflow-wrap: anywhere;
+  }
+  .meta-line { font-size: 11px; color: var(--text-faint); }
+  .flow-mini { display: flex; align-items: center; gap: 3px; margin-top: 2px; }
+  .flow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); }
+  .flow-dot.pending { background: var(--line); }
+  .flow-seg { flex: 1; height: 2px; background: var(--good); }
+  .flow-seg.pending { background: var(--line); }
+  .env-btn {
+    margin-top: auto;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+    border: 1px solid var(--amber-line);
+    color: var(--amber-ink);
+    background: var(--amber-soft);
+  }
+  .callout {
+    margin-top: 16px;
+    display: flex;
+    gap: 9px;
+    font-size: 12.5px;
+    color: var(--text-lo);
+    line-height: 1.5;
+    padding: 10px 12px;
+    background: var(--panel-alt);
+    border-radius: 8px;
+    border: 1px solid var(--line-soft);
+  }
+  .callout b { color: var(--text-hi); }
+  .callout .mark { color: var(--bad); flex: none; font-weight: 700; }
+
+  /* ---- Release rows (Option 2) ---- */
+  .rel-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .rel-row:last-child { border-bottom: none; }
+  .rel-tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    width: 168px;
+    flex: none;
+  }
+  .rel-meta { width: 128px; flex: none; font-size: 11px; color: var(--text-faint); }
+  .rel-trail { display: flex; align-items: center; gap: 6px; flex: 1; flex-wrap: wrap; }
+  .trail-chip {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 100px;
+  }
+  .trail-chip.reached { color: var(--good); background: var(--good-soft); }
+  .trail-chip.pending { color: var(--amber-ink); background: var(--amber-soft); }
+  .trail-chip.no { color: var(--text-faint); background: var(--panel-alt); }
+  .trail-arrow { color: var(--line); font-size: 11px; }
+
+  /* ---- Matrix (Option 3) ---- */
+  .matrix-scroll { overflow-x: auto; }
+  table.matrix { border-collapse: collapse; width: 100%; min-width: 640px; }
+  table.matrix th, table.matrix td { padding: 0; }
+  table.matrix thead th {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-lo);
+    text-align: center;
+    padding: 0 6px 10px;
+  }
+  table.matrix thead th:first-child { text-align: left; }
+  table.matrix tbody th {
+    text-align: left;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 10px 10px 0;
+    white-space: nowrap;
+    color: var(--text-hi);
+  }
+  table.matrix tbody tr { border-top: 1px solid var(--line-soft); }
+  table.matrix tbody tr.current { background: var(--sky-soft); }
+  table.matrix tbody tr.current th { color: var(--sky); }
+  .cell-wrap { display: flex; justify-content: center; padding: 8px 4px; }
+  .cell {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    cursor: default;
+    border: 1px solid transparent;
+  }
+  .cell.deployed { background: var(--good-soft); color: var(--good); }
+  .cell.pending { background: var(--amber-soft); color: var(--amber-ink); border-color: var(--amber-line); cursor: pointer; }
+  .cell.none { background: var(--panel-alt); color: var(--text-faint); }
+  .cell.clickable { cursor: pointer; }
+  .cell.clickable:hover { outline: 2px solid var(--sky-line); outline-offset: 1px; }
+
+  .expand-panel {
+    margin-top: 16px;
+    border-top: 1px dashed var(--line);
+    padding-top: 16px;
+    display: none;
+    animation: fadein .15s ease-out;
+  }
+  .expand-panel.open { display: block; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+  .expand-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .expand-head .rel-tag { width: auto; font-size: 14px; }
+  .expand-close { margin-left: auto; font-size: 11px; color: var(--text-faint); cursor: pointer; font-family: "IBM Plex Mono", monospace; }
+  .stagebar { display: flex; align-items: center; gap: 0; margin-bottom: 12px; }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+  .stage-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--good-soft); color: var(--good); display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1.5px solid var(--good); }
+  .stage-dot.wait { background: var(--panel-alt); color: var(--text-faint); border-color: var(--line); }
+  .stage-label { font-size: 10px; color: var(--text-faint); text-align: center; }
+  .stage-line { flex: 1; height: 1.5px; background: var(--good); margin-bottom: 24px; }
+  .stage-line.wait { background: var(--line); }
+  .hint {
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-top: 4px;
+  }
+  .hint .k { font-family: "IBM Plex Mono", monospace; background: var(--panel-alt); border-radius: 4px; padding: 1px 5px; }
+
+  /* ---- Comparison table ---- */
+  .cmp-scroll { overflow-x: auto; }
+  table.cmp { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 13px; }
+  table.cmp th, table.cmp td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line-soft); }
+  table.cmp thead th {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-lo);
+    border-bottom: 1px solid var(--line);
+  }
+  table.cmp tbody th { font-weight: 600; color: var(--text-hi); width: 26%; }
+  table.cmp td.win { color: var(--good); font-weight: 600; }
+  table.cmp td.lose { color: var(--text-faint); }
+  table.cmp col.pick-col { }
+  table.cmp thead th.pick { color: var(--amber-ink); }
+  table.cmp tbody td.pick-cell { background: var(--amber-soft); border-radius: 6px; }
+
+  /* ---- Recommendation ---- */
+  .reco {
+    border: 1px solid var(--amber-line);
+    background: var(--amber-soft);
+    border-radius: 12px;
+    padding: 22px 24px;
+  }
+  .reco-tag {
+    display: inline-block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber-ink);
+    margin-bottom: 10px;
+  }
+  .reco h3 { margin: 0 0 10px; font-size: 18px; font-family: "IBM Plex Sans Condensed", sans-serif; color: var(--text-hi); }
+  .reco p { margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--text-hi); max-width: 720px; }
+  .reco ol { margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.7; color: var(--text-hi); }
+  .reco ol li { margin-bottom: 4px; }
+  code.snip {
+    display: block;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-hi);
+    margin: 14px 0;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .footnote {
+    font-size: 12px;
+    color: var(--text-faint);
+    line-height: 1.6;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--amber-line);
+  }
+
+  @media (max-width: 720px) {
+    .env-row { grid-template-columns: repeat(2, 1fr); }
+    .rel-row { flex-wrap: wrap; }
+    .rel-meta { width: auto; }
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="eyebrow"><span class="dot"></span>Tower &middot; Releases tab &middot; open design question</div>
+    <h1 class="display">What's the central actor of Releases &mdash; the environment, or the release?</h1>
+    <p class="dek">Raised mid-session on 2026-09-08 after live feedback against checkout-api: today's Releases tab renders <b>one card per environment</b>. That's great for "is prod healthy right now" and bad for "did v2.3.9 actually reach prod, and when." Worked through below using checkout-api's real <span class="mono">cicd.yaml</span> pipeline &mdash; <span class="mono">dev &rarr; test &rarr; staging &rarr; pre&#8209;prod &rarr; prod</span> &mdash; and its real image-tag convention, <span class="mono">&lt;version&gt;-&lt;7-char-sha&gt;</span>.</p>
+  </div>
+
+  <section>
+    <div class="opt-head">
+      <span class="optnum">1</span><h2>Environment-centric &mdash; today's tab</h2>
+      <span class="verdict weak">Fleet view only</span>
+    </div>
+    <p class="section-note">One card per real (cluster, namespace) environment, ordered by <span class="mono">promotionOrder</span>. Each card is self-contained: current image, health, a supply-chain strip, a Promote button when there's somewhere to go.</p>
+
+    <div class="console">
+      <div class="console-bar">RELEASES &middot; checkout-api</div>
+      <div class="console-body">
+        <div class="env-row">
+          <div class="env-card">
+            <div class="env-name">Dev</div>
+            <span class="pill good">healthy</span>
+            <div class="imgtag">v2.4.0-a91f3c2</div>
+            <div class="meta-line">deployed 14m ago</div>
+            <div class="flow-mini">
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div>
+            </div>
+          </div>
+          <div class="env-card">
+            <div class="env-name">Test</div>
+            <span class="pill good">healthy</span>
+            <div class="imgtag">v2.3.9-77bd110</div>
+            <div class="meta-line">deployed 2h ago</div>
+            <div class="flow-mini">
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div>
+            </div>
+            <div class="env-btn">Promote &rarr; Staging</div>
+          </div>
+          <div class="env-card">
+            <div class="env-name">Staging</div>
+            <span class="pill good">healthy</span>
+            <div class="imgtag">v2.3.9-77bd110</div>
+            <div class="meta-line">deployed 2h ago</div>
+            <div class="flow-mini">
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div>
+            </div>
+          </div>
+          <div class="env-card">
+            <div class="env-name">Pre&#8209;prod</div>
+            <span class="pill good">healthy</span>
+            <div class="imgtag">v2.3.8-114ffa2</div>
+            <div class="meta-line">deployed 1d ago</div>
+            <div class="flow-mini">
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div>
+            </div>
+          </div>
+          <div class="env-card">
+            <div class="env-name">Prod</div>
+            <span class="pill good">healthy</span>
+            <div class="imgtag">v2.3.8-114ffa2</div>
+            <div class="meta-line">deployed 1d ago</div>
+            <div class="flow-mini">
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div><div class="flow-seg"></div>
+              <div class="flow-dot"></div>
+            </div>
+          </div>
+        </div>
+        <div class="callout"><span class="mark">&times;</span><span>Nothing here says <b>v2.3.9</b> is the same build in Test and Staging, or that it's one hop from Prod. Each card only knows about itself &mdash; the "is this release done rolling out" question has to be reconstructed by eye, card to card.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="opt-head">
+      <span class="optnum">2</span><h2>Release-centric &mdash; the alternative raised live</h2>
+      <span class="verdict weak">Audit trail only</span>
+    </div>
+    <p class="section-note">An image is built once (one row) and tracked as it moves. Good for "when did this build reach prod" &mdash; a real question, e.g. after an incident. Bad for "what's live right now," which now means scanning every row for whichever one currently touches each environment.</p>
+
+    <div class="console">
+      <div class="console-bar">RELEASES &middot; checkout-api &middot; by build</div>
+      <div class="console-body">
+        <div class="rel-row">
+          <div class="rel-tag">v2.4.0-a91f3c2</div>
+          <div class="rel-meta">built 14m ago</div>
+          <div class="rel-trail">
+            <span class="trail-chip reached">Dev &middot; 14m</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip no">Test</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip no">Staging</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip no">Pre&#8209;prod</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip no">Prod</span>
+          </div>
+        </div>
+        <div class="rel-row">
+          <div class="rel-tag">v2.3.9-77bd110</div>
+          <div class="rel-meta">built 2h ago</div>
+          <div class="rel-trail">
+            <span class="trail-chip reached">Dev &middot; 2h</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip reached">Test &middot; 2h</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip reached">Staging &middot; 2h</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip pending">PR open &rarr; Pre&#8209;prod</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip no">Prod</span>
+          </div>
+        </div>
+        <div class="rel-row">
+          <div class="rel-tag">v2.3.8-114ffa2</div>
+          <div class="rel-meta">built 1d ago</div>
+          <div class="rel-trail">
+            <span class="trail-chip reached">Dev &middot; 1d</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip reached">Test &middot; 1d</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip reached">Staging &middot; 1d</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip reached">Pre&#8209;prod &middot; 1d</span>
+            <span class="trail-arrow">&rarr;</span>
+            <span class="trail-chip reached">Prod &middot; 1d</span>
+          </div>
+        </div>
+        <div class="rel-row">
+          <div class="rel-tag" style="color:var(--text-faint)">v2.3.7-c02d9e1</div>
+          <div class="rel-meta">built 6d ago</div>
+          <div class="rel-trail">
+            <span class="trail-chip no">superseded everywhere</span>
+          </div>
+        </div>
+      </div>
+      <div class="console-body" style="padding-top:0;">
+        <div class="callout"><span class="mark">&times;</span><span>To answer "what's in Prod right now," scan down until a row's trail reaches the Prod chip. Fine with 4 rows; not fine once a busy app has 30 releases in its history.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="opt-head">
+      <span class="optnum">3</span><h2>The release matrix &mdash; both axes at once</h2>
+      <span class="verdict pick">Recommended</span>
+    </div>
+    <p class="section-note">Rows are releases (newest first), columns are environments in <span class="mono">promotionOrder</span>. Read a <b>column</b> down for current fleet state; read a <b>row</b> across for one build's full journey. This is the same shape Octopus Deploy and Spinnaker converged on for exactly this ambiguity &mdash; it isn't a compromise between the two views above, it's both of them at once. Click the pending cell below.</p>
+
+    <div class="console">
+      <div class="console-bar">RELEASES &middot; checkout-api &middot; matrix</div>
+      <div class="console-body">
+        <div class="matrix-scroll">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Dev</th><th>Test</th><th>Staging</th><th>Pre&#8209;prod</th><th>Prod</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="current">
+                <th>v2.4.0-a91f3c2</th>
+                <td><div class="cell-wrap"><div class="cell deployed">&#10003;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+              </tr>
+              <tr>
+                <th>v2.3.9-77bd110</th>
+                <td><div class="cell-wrap"><div class="cell deployed">&#10003;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell deployed">&#10003;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell deployed">&#10003;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell pending clickable" id="demo-cell" onclick="toggleExpand()">&#8635;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+              </tr>
+              <tr>
+                <th>v2.3.8-114ffa2</th>
+                <td><div class="cell-wrap"><div class="cell deployed">&#10003;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell deployed">&#10003;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell deployed">&#10003;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell deployed">&#10003;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell deployed">&#10003;</div></div></td>
+              </tr>
+              <tr>
+                <th style="color:var(--text-faint)">v2.3.7-c02d9e1</th>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+                <td><div class="cell-wrap"><div class="cell none">&middot;</div></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="expand-panel" id="expand-panel">
+          <div class="expand-head">
+            <span class="rel-tag display">v2.3.9-77bd110 &rarr; Pre&#8209;prod</span>
+            <span class="pill pending" style="margin:0;">PR #482 open</span>
+            <span class="expand-close" onclick="toggleExpand()">close &times;</span>
+          </div>
+          <div class="stagebar">
+            <div class="stage"><div class="stage-dot">&#10003;</div><div class="stage-label">Build</div></div>
+            <div class="stage-line"></div>
+            <div class="stage"><div class="stage-dot">&#10003;</div><div class="stage-label">SAST /<br>SBOM</div></div>
+            <div class="stage-line"></div>
+            <div class="stage"><div class="stage-dot">&#10003;</div><div class="stage-label">Sign +<br>Attest</div></div>
+            <div class="stage-line"></div>
+            <div class="stage"><div class="stage-dot">&#10003;</div><div class="stage-label">Rekor</div></div>
+            <div class="stage-line wait"></div>
+            <div class="stage"><div class="stage-dot wait">5</div><div class="stage-label">Pre&#8209;prod<br>deploy</div></div>
+          </div>
+          <p class="hint">This is <span class="k">ReleaseCard.tsx</span> + <span class="k">PipelineFlow.tsx</span> unchanged &mdash; today's per-env card becomes the cell's expand target instead of a permanent top-level card. Nothing about the supply-chain drawer, cosign badges, or the Promote dialog needs to be rebuilt.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Side by side</h2>
+    <p class="section-note">Same three questions the team keeps actually asking, checked against each shape.</p>
+    <div class="cmp-scroll">
+      <table class="cmp">
+        <thead>
+          <tr><th></th><th>1&nbsp;&middot; Env cards</th><th>2&nbsp;&middot; Release rows</th><th class="pick">3&nbsp;&middot; Matrix</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>What's live in Prod right now?</th>
+            <td class="win">Direct &mdash; read the Prod card</td>
+            <td class="lose">Scan every row for the one reaching Prod</td>
+            <td class="win pick-cell">Direct &mdash; read the Prod column</td>
+          </tr>
+          <tr>
+            <th>Did v2.3.9 ever reach Prod, and when?</th>
+            <td class="lose">Not answerable without opening deploy history per env</td>
+            <td class="win">Direct &mdash; read that row</td>
+            <td class="win pick-cell">Direct &mdash; read that row</td>
+          </tr>
+          <tr>
+            <th>Promote click target</th>
+            <td>Button on the env card (image is implicit)</td>
+            <td>Button on the row (target env is implicit)</td>
+            <td class="pick-cell">The exact empty cell &mdash; image <i>and</i> target env both explicit</td>
+          </tr>
+          <tr>
+            <th>New backend calls required</th>
+            <td>&mdash; (shipped)</td>
+            <td>None &mdash; same <span class="mono" style="font-size:12px;">deployHistory</span>, grouped by image</td>
+            <td class="pick-cell">None &mdash; same <span class="mono" style="font-size:12px;">deployHistory</span> + <span class="mono" style="font-size:12px;">gitopsPrs</span>, regrouped</td>
+          </tr>
+          <tr>
+            <th>Cost to build from today's tab</th>
+            <td>&mdash;</td>
+            <td>High &mdash; the whole tab's structure changes</td>
+            <td class="pick-cell">Additive &mdash; cards move from top-level to cell-expand</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section style="margin-bottom: 12px;">
+    <div class="reco">
+      <span class="reco-tag">Recommendation</span>
+      <h3>Build the matrix as Releases' primary view. Nothing built so far gets thrown away.</h3>
+      <p>Every card component that exists today &mdash; <span class="mono">ReleaseCard</span>, <span class="mono">PipelineFlow</span>, the cosign/SLSA badges, <span class="mono">PromoteDialog</span> &mdash; keeps working unmodified as the thing a matrix cell expands into. The only new work is reshaping data that's already being fetched:</p>
+      <code class="snip">releases = groupBy(imageTag,
+  environments.flatMap(env => env.deployHistory.map(h => ({...h, env: env.env}))))
+// newest-introduced-in-dev first; a row is "current" if its image
+// matches environments[0].image (today's dev card, unchanged)</code>
+      <p>One real tightening this forces, worth doing regardless of which view ships: <span class="mono">gitopsPrForEnv()</span> today matches a PR by target env alone. A matrix cell needs to know <i>which release</i> a pending PR is for, not just which env &mdash; parse the image tag back out of the PR title's already-present <span class="mono">"... @ &lt;imageTag&gt;"</span> suffix and match on both, so a cell only lights up amber when it's <i>this row's</i> release that's pending.</p>
+      <ol>
+        <li>Add the grouping above to <span class="mono">useReleaseContext.ts</span> as a derived <span class="mono">releases[]</span> alongside the existing <span class="mono">environments[]</span> &mdash; additive, nothing existing changes shape.</li>
+        <li>Render the matrix in <span class="mono">ReleasesTab.tsx</span>; wire each filled/pending cell's click to the existing <span class="mono">ReleaseCard</span> expand, keyed by <span class="mono">(imageTag, env)</span> instead of just <span class="mono">env</span>.</li>
+        <li>Tighten <span class="mono">gitopsPrForEnv</span> to also match the parsed image tag, per above.</li>
+        <li>Live-verify against checkout-api's real history before calling today's env-card layout retired.</li>
+      </ol>
+      <div class="footnote">This is a real, separate decision &mdash; same standing as the app-wide theme repaint was before this session. Flagging it as settled here only in the sense that the matrix subsumes the environment view rather than replacing it with something worse; the actual build is still a "next," not a "done."</div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  function toggleExpand() {
+    document.getElementById('expand-panel').classList.toggle('open');
+  }
+</script>
+
+</body></html>
