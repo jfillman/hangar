@@ -1205,6 +1205,22 @@ in, an app's own or a dedicated infra one.
 
 ## Item 8: `SecretStore` — Infisical-backed, self-hosted (resolved this round)
 
+> **Status (2026-09-18): fully built and live.** The "mechanism not yet confirmed"
+> question two paragraphs down is resolved — `github.com/jfillman/provider-infisical`
+> (upjet-generated from the official `Infisical/infisical` Terraform provider) is real
+> and live. Every app-tier `SecretStore` on kiac-dev (the kubernetes-auth branch: the
+> cluster that hosts Infisical itself) and `platform-cicd-control-plane`'s own project
+> are cut over to it; the hand-rolled `infisical-secretstore-operator` this section's
+> "Mechanism not yet confirmed" paragraph anticipated as a possible fallback was
+> decommissioned entirely on kiac-dev the same day (CRDs, RBAC, Deployment all
+> removed — zero `InfisicalProject`/`InfisicalEnvironment` CRs remain). Universal-auth
+> clusters (kind-prod, kind-man — every cluster that ISN'T the Infisical host)
+> deliberately still run their own separate copy of the old operator: a real,
+> unfixed-upstream bug in `terraform-provider-infisical`'s Go SDK
+> (`IdentityUniversalAuthClientSecret`'s response unmarshal) blocks that auth path on
+> the new provider. See the Round 2026-09-18 section below for the full build/cutover
+> record and what it means for Item 7's own provider-per-backend plan.
+
 **Same platform-infra-vs-per-app-capability split the Vault discussion in the first
 pass already reasoned through — Infisical just answers which concrete backend.**
 Infisical itself (the community edition, self-hosted on-prem) is shared **platform
@@ -1593,3 +1609,374 @@ four `Repository` resources across both apps (`checkout-api`, `nodejs-demo-app`)
    `networkPolicy.allowIngressFromIngressController`) — no ingress controller has been
    installed or named anywhere in idp's docs yet. The chart defaults to the
    `ingress-nginx` project's conventional namespace label as a placeholder.
+
+---
+
+## Round 2026-09-17: Item 7 goes from design to build plan — Postgres/Redis/OAuth/RabbitMQ/MongoDB/nginx, and a correction to how Attached-tier stateful services get provisioned
+
+Prompted by a real ask: add six new Component types (`postgresql`, `redis`,
+`oauth-server`, `rabbitmq`, `mongodb`, `http-proxy`/nginx), each installable either as
+`components:` entry inside an existing app's own env (its own namespace, alongside that
+app) or as a standalone shared service (its own dedicated namespace, managed the same
+way in Tower). Both modes are already named in Item 7 (`appType: infra` reusing the same
+XRD/chart/flow) — this round is mostly "build the thing already designed," but two real
+gaps surfaced doing it for real, one structural (stateful multi-tenant sharing) and one
+almost-repeated mistake (reaching for a custom controller out of habit rather than
+re-checking the provider landscape for each new backend).
+
+### Status check: how much of Item 7 actually exists
+
+Re-verified against the live repos rather than assumed from the doc:
+
+- **Zero Component XRDs exist.** `airframe/xrds/` has `applicationenvironment`,
+  `goapplication`, `nodejsapplication`, `pythonapplication`, `rolloutwatch`,
+  `secretstore`, `slo`, `springbootapplication`, `tektoncicd` — no `redis`, `database`,
+  `oauth-server`, or `queue`. The chart's generic renderer
+  (`airframe-application/templates/attached/components.yaml`) and its `componentKinds`
+  lookup table (`redis`/`oauth-server`/`database`/`queue`) are real and already built —
+  they've just never had a real XRD to point at.
+- **`provider-helm` is not installed anywhere.** `apron`'s Crossplane install
+  (`10-crds-operators/crossplane/`) has `provider-kubernetes` and `provider-github`
+  (each with its own `DeploymentRuntimeConfig` — `provider-github-runtime.yaml` — a
+  pattern worth repeating, see below) but no `provider-helm`. Item 7's "wrap an upstream
+  chart via `provider-helm`'s `Release`" plan is unbuilt infrastructure, not just
+  missing XRDs.
+- **`appType: infra` has never been used for real.** It's fixture-tested in the chart's
+  own test suite (an `infra`-type release with only a `components:` block renders
+  cleanly, no Rollout/Service/HPA/PDB) but no `gitops-infra-*` repo has ever been
+  created through the real onboarding flow — "standalone shared" is a proven chart
+  capability, not a proven operational path.
+- **Tower has no UI for any of this.** `ConfigTab.tsx`/`useConfigData.ts` cover
+  ConfigMaps, Secrets, Rollout, Scaling, Resources, Service ports, health checks, cron
+  jobs — no `components:` section exists on either the frontend or (unconfirmed, needs
+  checking before scoping) the backend `config/schema` route.
+
+### What the outstanding `provider-github` bug actually teaches for this build
+
+The stuck-`Ready`/403-misread bug (`project_kiac_dev_provider_github_bugs`) is
+`provider-upjet-github`-specific and only touches Bootstrap-tier git-commit resources —
+it doesn't block Component XRDs directly. But the live-ops lessons from surviving it
+generalize directly, at higher stakes, because these six services carry real persistent
+data where a `RepositoryFile` mostly didn't matter beyond its own content:
+
+1. **A provider's "does this resource still exist" logic can be wrong, and you don't
+   get to assume it isn't** — that misclassification is the entire root cause of the
+   github bug's data loss. Before trusting any new provider with a stateful resource,
+   check how it distinguishes a transient API error from "really gone," don't assume
+   correctness by lineage.
+2. **Shared `DeploymentRuntimeConfig` blast radius is real** (a `--max-reconcile-rate`
+   flag on the fleet's `default` config once crash-looped every Composition Function
+   cluster-wide for ~20 minutes). `provider-github` already gets its own dedicated
+   runtime config — every new provider this round (`provider-sql`, `provider-rabbitmq`,
+   `provider-keycloak`, `provider-helm`) needs the same treatment from day one, never
+   inheriting `default`.
+3. **A provider restart forces every resource it manages through a simultaneous
+   cold-start re-Observe** — for `RepositoryFile` that turned a 10-resource problem into
+   46 and is what actually exposed the data-loss bug. A `provider-helm`/`provider-sql`
+   restart doing the same to every tenant's Postgres/Mongo/RabbitMQ Release
+   simultaneously is a materially scarier event if any of them ever resolves drift via
+   delete+recreate instead of upgrade-in-place.
+4. **Delete+recreate as a live "fix" is not durable and must never be reached for on a
+   stateful component** — already proven not to hold even for a stateless resource.
+   **Concrete guardrail**: every PVC-backed component (Postgres, Mongo, RabbitMQ; Redis
+   too if persistence is enabled) renders with `managementPolicies` excluding `Delete`,
+   the same fix already applied to `values-yaml.yaml` (`7769ad9`) for the identical
+   reason — and an explicit `Retain`-equivalent reclaim policy, since no StorageClass in
+   `apron` sets one explicitly today.
+5. **A published git tag is not an installable package** — verify against the actual
+   registry (`xpkg.upbound.io` or wherever a given provider is distributed) before
+   pinning any of the four new providers below, same as the `provider-upjet-github
+   v0.20.0` trap.
+
+### Correction: not every Attached-tier stateful service should be "one Helm Release per XR"
+
+Item 7's original design treats every Component the same way — one `provider-helm`
+`Release` per XR. That's right for Redis-as-a-cache and for a solo, per-app
+Postgres/Mongo/RabbitMQ. It's wrong for the "standalone shared" case this round
+explicitly asks for: five apps sharing one Postgres shouldn't mean five Helm releases
+pretending to be one shared thing — it means **one physical instance, N logical
+tenants** (database/vhost/realm + credentials per consuming app). This project has
+already built and live-verified exactly that shape once, for `SecretStore`/Infisical —
+worth generalizing rather than re-deriving per service:
+
+- **Dedicated mode** (its own instance, in an app's own namespace or a solo infra
+  namespace): `provider-helm` `Release`, one per XR. Fine for Redis, fine for a
+  standalone Postgres/Mongo/RabbitMQ one app doesn't want to share.
+- **Shared-tenant mode** (attach to an already-running shared instance): provisions a
+  logical database/vhost/realm + credentials inside it, `writeConnectionSecretToRef`
+  handing the consuming app a Secret — no new instance rendered. A `components:` entry
+  needs a `mode: create | attach` (or a distinct `type`, e.g. `postgres-tenant` vs.
+  `postgres-standalone`) referencing the shared instance by name.
+
+### Correction 2: the reflex to write a custom controller for shared-tenant mode was almost repeated without re-checking — don't do that
+
+The first draft of this round's recommendation proposed a small kopf/Python operator
+for shared-tenant Postgres/Mongo/RabbitMQ/OAuth, pattern-matching directly off the
+`SecretStore`/Infisical build. That was the wrong move, caught before building
+anything: **the Infisical operator exists because no mature native Crossplane provider
+covered Infisical at all — that was the justified exception, not a template to
+reapply to every new backend without checking again.** The Infisical operator's own bug
+history is direct, first-party evidence of what a hand-rolled controller costs relative
+to a native provider: it never reported a real `Ready` condition Crossplane could see
+(it only wrote its own `status.phase: Ready` convention, which `function-auto-ready`'s
+standard `status.conditions[type=Ready]` check couldn't read), and it needed RBAC
+hand-wired for its own CRD that Crossplane's core controller didn't know about by
+default. Both are exactly the class of thing `crossplane-runtime`'s generated
+reconciler — the machinery every native provider is built on — gets right for free:
+standard `Ready`/`Synced` conditions, retry/backoff, scheduled drift detection, and
+native `writeConnectionSecretToRef` for exactly the "hand the consumer app a Secret"
+job Shared-tenant mode needs.
+
+**The corrected principle**: check per-backend whether a native Crossplane provider
+already covers "manage a logical resource inside an already-running shared instance"
+before writing anything custom; when nothing exists, prefer composing an existing,
+actively-maintained upstream operator (the same "wrap a real tool, don't reinvent it"
+instinct already applied to Sloth for `SLO`) over writing new reconciliation logic from
+scratch. A hand-rolled controller is the last resort, justified explicitly per service,
+not a default reached for because it worked once before.
+
+Checked against the real current landscape (not assumed) for each of the six services:
+
+| Service | Native provider for shared-tenant mode? | Recommendation |
+|---|---|---|
+| **PostgreSQL** | Yes — `crossplane-contrib/provider-sql` (`PostgresqlDatabase`/`PostgresqlRole`/`PostgresqlGrant`; connects to an *existing* server via a connection secret, doesn't provision the server itself — exactly this shape) | Use it, no controller. **Caveat, not hypothetical**: pre-1.0 (`v0.9.0`), 39 open issues, with live open issues specifically about `managementPolicies` not being supported and grant-existence detection being unreliable (`#206`, `#240`) — verify both against the actual version pinned before trusting it with real tenant data, same discipline the `provider-github` incident demands generally. |
+| **RabbitMQ** | Yes — `pnowy/provider-rabbitmq` (`VHost`/`User`/`Permissions`/`Exchange`/`Queue`, v2.0+, namespaced-resource support, listed on Upbound Marketplace) | Use it, no controller. Single-maintainer community project, not a `crossplane-contrib`-org provider — lower trust bar than the others here, a deliberate call to make explicitly rather than a default. |
+| **OAuth (Keycloak)** | Yes — `crossplane-contrib/provider-keycloak` (`Realm`/`Client`, actively maintained, `v2.24` recent) | Use it, no controller. Assumes Keycloak as the backend — if a different IdP is chosen, re-check this row, don't assume it carries over. |
+| **MongoDB (self-hosted)** | **No.** `crossplane-contrib/provider-mongodbatlas` only covers MongoDB Atlas (the managed cloud service) — nothing native covers a self-hosted `mongod`. Real exception, same shape as Infisical was. | Still not a from-scratch controller: **compose the upstream MongoDB Community Kubernetes Operator's own CRDs via the already-installed `provider-kubernetes`**, the same "wrap a real tool" pattern already used for Sloth/SLO. That operator manages users/databases natively against a self-hosted replica set; Crossplane's job is orchestrating an existing, actively-maintained upstream operator, not reimplementing Mongo admin commands. |
+| **Redis** | N/A — dedicated-cache use case, not a multi-tenant-within-one-instance sharing question the way the other four are | Unchanged from Item 7: `provider-helm` `Release`, one per XR. |
+| **nginx / http-proxy** | N/A — same reasoning as Redis | `provider-helm` `Release` wrapping a thin platform chart. **Scope question, not yet resolved**: Item 7 already scopes the *cluster* ingress controller out of this chart entirely ("platform-shared infra... those live in cluster config, referenced by name, never templated here"). Confirm this Component is meant as a per-app/per-team reverse proxy in front of a couple of backend Services, not a second ingress layer or API gateway — if the latter, it's a cluster-scoped concern and doesn't belong in this catalog as a namespaced Component at all. |
+
+Net new providers to install, each with its own `DeploymentRuntimeConfig` per the
+lesson above, each version-pin verified against its actual registry before use:
+`provider-helm`, `provider-sql`, `provider-rabbitmq`, `provider-keycloak`. MongoDB adds
+no new *provider* — it adds a Composition that renders the MongoDB Community Operator's
+CRDs through the `provider-kubernetes` already installed.
+
+### A missing Bootstrap XRD: standalone shared infra has no source code to scaffold
+
+Every Bootstrap-tier XRD today (`NodeJSApplication`, `SpringBootApplication`,
+`GoApplication`, `PythonApplication`) exists to scaffold a src repo + boilerplate —
+that's their whole job. A standalone shared service (a shared Postgres, a shared
+Keycloak) has no application code. Onboarding one today would mean creating a pointless
+src repo just to get the `gitops-infra-<name>` repo and an `ApplicationEnvironment` to
+hang a `components:` block off of. Proposing a fifth Bootstrap XRD, `InfraService`,
+doing only what `NodeJSApplication` does minus the src-repo/boilerplate step: creates
+the empty `gitops-infra-<name>` repo and the `tenants/<name>/app.yaml` commit.
+Everything downstream — `ApplicationEnvironment`, the `components:` block, Tower — is
+unchanged.
+
+### Consumer access: mostly already solved, just not wired up automatically
+
+Connecting an app to a shared component needs two things: credentials (solved by
+Shared-tenant mode's `writeConnectionSecretToRef` above) and network access. The
+NetworkPolicy mechanism for the latter already exists and is already live —
+`networkPolicy.allowIngressFrom` (a `{namespace, podLabels?, ports?}` peer, §3) — so no
+new field is needed, just automation: when a Shared-tenant component XR is created for
+a consuming app, its Composition should also commit the reciprocal
+`allowIngressFrom` entry into the *shared instance's own* env's `values.yaml`, rather
+than leaving that as a manual two-sided edit two different teams have to remember to
+keep in sync.
+
+### Tower/Backstage gaps to close alongside the XRDs
+
+"Configurable from Tower" is a real, current gap on both new axes this round
+introduces:
+
+1. A `components:` section in `ConfigTab.tsx`/`useConfigData.ts` — a curated form per
+   component type (size/persistence/version fields, matching the curated-golden-path
+   principle already used for `rollout:`/`autoscaling:`/etc.), for both Dedicated and
+   Shared-tenant (`attach`) modes.
+2. For Shared-tenant instances specifically: a page showing which apps currently
+   consume a given shared component — the `environmentRef`/`sharedInstanceRef` →
+   catalog-relation translation flagged as "still not built" since the very first draft
+   of this doc, now with a real consumer this round to build it for.
+3. Confirm (not yet checked) whether the backend `config/schema` route already
+   round-trips a `components:` field at all before scoping the frontend work.
+
+### Sequencing
+
+1. Install `provider-helm` with its own `DeploymentRuntimeConfig`, version verified
+   against its actual registry.
+2. Build `InfraService` — unblocks standalone shared infra for real.
+3. Ship `redis` first (Dedicated only, `provider-helm`) — lowest risk, proves the
+   wrapped-chart pattern end to end and gives Tower's `components:` UI a real target to
+   build against.
+4. Install `provider-sql` (own `DeploymentRuntimeConfig`) and ship `postgresql` in
+   Shared-tenant mode second — highest-value, highest-risk item (real data, real
+   multi-tenant credential isolation), reusing the `SecretStore` operator's pattern of
+   proof (live-verified against real already-onboarded apps, not just fixtures) before
+   it's trusted beyond a throwaway app. Explicitly test the `managementPolicies` and
+   grant-existence-detection gaps flagged above before relying on either.
+5. `mongodb` (via the Community Operator composition) and `rabbitmq` (via
+   `provider-rabbitmq`) follow the same Shared-tenant shape once Postgres proves it.
+6. `oauth-server` (via `provider-keycloak`) and `nginx` last — both need an explicit
+   scope decision first (how often does a single app legitimately need its own IdP
+   instance vs. always being Shared-tenant against one Keycloak; whether `nginx` risks
+   duplicating the ingress controller's job) rather than being built on an assumption.
+
+### Open questions for this round
+
+1. Confirm the Dedicated-vs-Shared-tenant split above, especially for
+   Postgres/Mongo/RabbitMQ — a real deviation from Item 7's "every Component is a Helm
+   Release" assumption.
+2. What `nginx`/`http-proxy` is actually for — per-app reverse proxy (fits this
+   catalog) vs. something closer to a gateway (doesn't, per Item 7's own
+   cluster-shared-infra exclusion).
+3. Is Keycloak the confirmed OAuth backend, or still open? `provider-keycloak`'s
+   applicability depends on it.
+4. `provider-rabbitmq`'s single-maintainer status - acceptable for this project's risk
+   tolerance, or worth the extra scrutiny (fork-and-vendor, or fall back to a
+   `provider-helm` Release without shared-tenant support) before depending on it for
+   anything beyond a lab?
+
+## Round 2026-09-18: `SecretStore`/Infisical fully built, live-cut-over, and the old operator decommissioned - the real-world proof for Item 7's whole provider-first argument, and a live-ops playbook worth reusing verbatim
+
+Everything the "Correction 2" section above argued for in the abstract (native
+provider over custom controller, checked per-backend rather than assumed) is now a
+completed, live-verified build, not a design position. Recorded here because Item 7's
+next phase (`provider-sql`/`provider-rabbitmq`/`provider-keycloak`, all real upjet
+providers of exactly the same shape) will hit the same category of live-ops problems
+this build already hit and solved - worth reusing the playbook, not rediscovering it.
+
+### What actually got built and shipped
+
+- **`github.com/jfillman/provider-infisical`** - upjet-generated from the official
+  `Infisical/infisical` Terraform provider, 7 namespaced resources (`Project`,
+  `ProjectEnvironment`, `Identity`, `IdentityKubernetesAuth`, `IdentityUniversalAuth` +
+  `IdentityUniversalAuthClientSecret`, `ProjectIdentity`). Built, live-verified
+  standalone, packaged, published to `ghcr.io/jfillman/provider-infisical`.
+- **All 7 real app-tier `SecretStore` XRs on kiac-dev** (the kubernetes-auth branch -
+  the cluster that hosts Infisical itself) cut over from the hand-rolled
+  `infisical-secretstore-operator`'s `InfisicalProject` CR to this provider's native
+  resource chain, one app at a time, each verified `Ready: True` before moving to the
+  next.
+- **`platform-cicd-control-plane`'s own Infisical project** (a Helm-rendered resource,
+  not one of the catalog's own XRs) also migrated - by rendering a `SecretStore` XR
+  from *inside* the Helm chart rather than reinventing the resource chain in plain
+  Helm templates (see "The plain-Helm-chart problem" below for why).
+- **Every secret in every migrated project restored from a pre-migration backup**
+  (both a local file export and live `-backup` sibling Infisical projects, both
+  verified secret-count-for-secret-count beforehand) and verified key-for-key,
+  path-for-path against that backup after cutover - zero data loss across all 8
+  projects (7 apps + platform-cicd), despite the cutover being a real
+  destroy-and-recreate of each Infisical project along the way (see "Crossplane does
+  NOT auto-garbage-collect" below for why that was unavoidable).
+- **The old operator fully decommissioned on kiac-dev**: Deployment, RBAC, both CRDs
+  (`InfisicalProject`/`InfisicalEnvironment`) deleted. Zero CRs of either kind remain
+  anywhere on the cluster. The two genuinely shared objects it used to also carry (the
+  Kubernetes token-reviewer ServiceAccount/Secret every `IdentityKubernetesAuth`
+  resource reads from, and the cross-cluster Infisical NodePort kind-prod's own
+  separate operator instance still needs) were split into their own
+  directory/Application first and adopted there via `ServerSideApply` - zero
+  disruption, confirmed via unchanged object creation timestamps.
+- kind-prod and kind-man each keep running their **own separate copy** of the old
+  operator, unaffected and out of scope - their universal-auth branch deliberately
+  still uses the old CR kind, blocked on a real, unfixed upstream bug (see below).
+
+### Live-ops problems hit and fixed - reusable playbook for the next provider
+
+1. **A parse error in a Composition's own explanatory comment took down every
+   already-migrated `SecretStore` XR the moment it synced** (`comment ends before
+   closing delimiter`) - a space between `*/` and the closing `>>` broke Go's
+   `text/template` lexer, which requires the right delimiter to immediately follow a
+   comment's close with zero characters between. Root-caused fast by extracting the
+   rendered template and parsing it with a **tiny standalone Go program using the
+   real `text/template` package** (custom delimiters, stub `FuncMap`) - reproduced the
+   exact error at the exact line offline, in seconds, instead of iterating against the
+   live cluster. **Reusable for any future Composition bug in this family**: this
+   catalog's `function-go-templating` Compositions are ordinary Go templates outside
+   Crossplane's own machinery; Go's own parser is a free, accurate offline
+   reproduction tool for anything shaped like "invalid function input: cannot parse
+   the provided templates."
+2. **`stringData` doesn't work for a `provider-kubernetes` `Object` managing a
+   `Secret`.** The API server converts `stringData` to `data` server-side and never
+   persists `stringData` as a real field, so `provider-kubernetes`' managedFields-based
+   Observe (which extracts only the fields it owns by walking the desired manifest's
+   own field paths) finds nothing at the `stringData` path and errors converting a nil
+   result into a map. Fix: always use `data` with an explicit `b64enc`, never
+   `stringData`, for any `provider-kubernetes`-managed `Secret` going forward -
+   applies identically to any future service composing a synthetic credentials
+   Secret this way.
+3. **Crossplane does NOT auto-garbage-collect a composed resource just because it
+   fell out of a Composition's new render set**, contrary to this project's own
+   working assumption going into the cutover. Confirmed live: a composed resource's
+   reference disappeared from the XR's own `spec.resourceRefs` immediately on the new
+   Composition's first render, but the actual object sat untouched for 8+ minutes
+   across 20+ reconciles - the new resource kept failing on an "already exists" slug
+   collision precisely *because* the old one hadn't been removed. **The real mechanism
+   for this class of cutover is manual, one resource at a time**: delete the old CR
+   yourself (verified backup first), which frees whatever uniqueness constraint the
+   new resource is colliding on, then let the new chain create cleanly on retry.
+   Budget for this explicitly in any future provider-family cutover with a global
+   uniqueness constraint (a slug, a name, a vhost) - it will not resolve itself.
+4. **A `Provider`'s reconcile backoff can genuinely stretch past 10 minutes** after
+   repeated errors on one resource - waiting is not always the fastest path.
+   Annotating the stuck resource with any new value (`kubectl annotate ... touch=...
+   --overwrite`) forces an immediate requeue, bypassing the backoff timer entirely -
+   a fast, safe, reusable trick for unsticking any single Crossplane managed resource
+   without restarting the whole provider pod (which would force every *other* resource
+   it manages through a simultaneous cold-start re-Observe, the exact fleet-wide-outage
+   shape already documented in the `provider-github` incident above).
+5. **A default upjet-generated provider publishes an EMPTY `writeConnectionSecretToRef`
+   Secret** unless a resource's `config.go` explicitly sets
+   `r.Sensitive.AdditionalConnectionDetailsFn` - confirmed live (an `Identity`
+   resource's connection Secret had zero keys). Needed once a consumer had no
+   Crossplane Composition (a plain Helm chart, see below) and so no
+   `.observed.resources` access to read a provider-assigned id back out any other way.
+   Fixed with a ~10-line `config.go` change (`attr["id"]` → a named key), rebuilt,
+   republished, live-verified before use. **Worth checking proactively for
+   `provider-sql`/`provider-rabbitmq`/`provider-keycloak`**: any resource whose
+   provider-assigned id or credential a plain (non-Composition) consumer will need
+   should get this wired in from the start, not discovered as a blocker mid-migration
+   the way it was here.
+
+### The plain-Helm-chart problem, and why it matters for `InfraService` (Item 7's missing Bootstrap XRD)
+
+`platform-cicd-control-plane`'s own Infisical project is rendered by a **plain Helm
+chart**, not a Crossplane Composition - and that turned out to matter structurally,
+not just cosmetically. A Composition Function gets live `.observed.resources` access
+on every reconcile, so `SecretStore`'s own Composition can read a just-created
+`Identity`'s provider-assigned id back out and stitch it into a synthetic Secret. A
+plain Helm chart has no equivalent: `helm template` (what ArgoCD actually runs to
+render a Helm source) has no live cluster access, so neither a `lookup` call nor any
+hand-rolled equivalent can read a resource's post-creation state at render time - and
+baking a real credential into `values.yaml`/git was rejected outright, matching this
+platform's standing "never persist credentials" posture.
+
+The fix here was two-pronged and worth generalizing: (a) the `AdditionalConnectionDetailsFn`
+change above, so Crossplane's own native connection-secret mechanism (evaluated by the
+managed resource's own controller at runtime, not by Helm at template time) carries
+the value instead; and (b) for the one piece that mechanism still couldn't reach
+(`IdentityKubernetesAuth`'s literal JWT/CA-cert fields, with no `SecretRef`
+alternative on that CRD), **reusing the existing `SecretStore` XRD/Composition
+wholesale from inside the Helm chart** (rendering a `SecretStore` XR instead of
+hand-rendering the resource chain) rather than inventing new plain-Helm machinery to
+solve a problem Crossplane's own Composition layer already solves.
+
+This is the exact shape Item 7's proposed `InfraService` Bootstrap XRD exists to
+avoid needing per-service: **any standalone shared infra component that isn't a real
+onboarded "app" still needs the full Composition-based machinery, not a
+hand-rendered plain-Helm shortcut** - `platform-cicd-control-plane` hit this problem
+because it predates `InfraService` and is deliberately not modeled as an app (see
+Item 8's own header comment on why). Once `InfraService` exists, this exact class of
+problem shouldn't recur for `postgresql`/`redis`/`oauth-server`/`rabbitmq`/`mongodb`/
+`nginx`'s own standalone-shared instances - they go through the real XRD/Composition
+path from day one instead of a bespoke Helm-chart special case.
+
+### Handoff: Item 7's build is now unblocked, next phase is unstarted
+
+**Nothing in Item 7's own Sequencing (above) has been built yet** - this round's work
+was entirely `SecretStore`/Infisical (Item 8, already scoped as "resolved" before this
+round; this round just finished actually building and cutting it over live). Item 7's
+own six services (`postgresql`/`redis`/`oauth-server`/`rabbitmq`/`mongodb`/`nginx`)
+remain exactly where the Round 2026-09-17 section left them: zero Component XRDs
+exist, `provider-helm` is not installed, `InfraService` doesn't exist, Tower has no UI
+for any of it. The next session picking this up should start at Sequencing step 1
+(`provider-helm` + its own `DeploymentRuntimeConfig`) and step 2 (`InfraService`),
+then step 3 (`redis`, Dedicated-only, lowest risk) - **applying the five live-ops
+lessons and the plain-Helm-chart lesson above from day one**, not rediscovering them
+partway through the way this round's own build did. The "Open questions for this
+round" list above (Postgres/Mongo/RabbitMQ Dedicated-vs-Shared-tenant split,
+`nginx`'s real scope, Keycloak-as-confirmed-backend, `provider-rabbitmq`'s
+single-maintainer risk) are all still genuinely open and should be resolved before,
+not during, their respective build steps.
