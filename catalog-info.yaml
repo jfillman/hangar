@@ -1,0 +1,13 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: hangar
+  description: >-
+    Home base for building, releasing, and watching every service you run —
+    the umbrella system grouping Airframe, Glidepath, Tower, and Apron.
+    docs/README.md is the table of contents across the whole platform.
+  annotations:
+    github.com/project-slug: jfillman/hangar
+    backstage.io/techdocs-ref: dir:.
+spec:
+  owner: crossfader@gmail.com

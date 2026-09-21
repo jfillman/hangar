@@ -1,0 +1,15 @@
+site_name: 'Hangar'
+site_description: 'Home base for building, releasing, and watching every service you run'
+
+nav:
+  - Home: index.md
+  - Table of contents: README.md
+  - Design & strategy:
+      - Service catalog design: service-catalog-design.md
+      - GitOps strategy: gitops-strategy.md
+      - Cluster provisioning: cluster-provisioning.md
+      - Local clusters: local-clusters.md
+      - Backstage (Tower) design: backstage-design.md
+
+plugins:
+  - techdocs-core
