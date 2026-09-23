@@ -1,6 +1,6 @@
 # kind-prod: migrate to the new airframe pin and retire the Infisical operator
 
-Status: **Phases 1-3 done** (2026-09-23); Phases 4-5 not started. Written from live
+Status: **Phases 1-3 done; Phase 4: boarding-api migrated** (2026-09-23), 5 apps to go; Phase 5 not started. Written from live
 inspection of kind-prod, the airframe tags, and the upstream Terraform provider.
 
 ## The short version
@@ -208,27 +208,73 @@ deletes cleanly — the Phase 1 test, this time on amd64 against the real path.
 
 ## Phase 4 — Cut over, one app at a time
 
-Order: `boarding-api` (newest, one staging env, fewest secrets) → `search-api` →
-`process-api` → `order-api` → `checkout-api` → `platform-cicd-kind-prod`.
+Order: `boarding-api` (done) → `search-api` → `process-api` → `order-api` →
+`checkout-api` → `platform-cicd-kind-prod`.
 
-Per app: re-verify the backup → flip that XR to `provider` → let the chain go
-`Ready` → repoint stores → verify ExternalSecrets refresh and pods are healthy →
-verify secrets key-for-key against the backup → only then remove the old CR.
+### boarding-api — DONE, adopted in place (2026-09-23)
 
-**Decision needed — how the project survives:**
+**Result.** The Infisical project and both environments (`shared`, `staging`) kept their
+original ids; nothing was destroyed or recreated. Verified:
 
-| | Destroy and restore | Adopt in place |
-|---|---|---|
-| How | Delete the old CR (the operator's `on_delete` deletes the Infisical project), new chain recreates the slug, restore from backup | Scale the operator to zero, strip the CR finalizer so the project is left alone, give the new `Project` the existing project id as its external-name |
-| Proven | Yes — kiac-dev, 8 projects, zero loss | **No** — untried; Terraform import of a project is supported but not exercised here |
-| Risk | Secrets are briefly gone; relies entirely on the backup | Identity name collisions; a mistake in the finalizer step can still delete the project |
-| Recommendation | Fallback | Try on `boarding-api` first; keep destroy-and-restore if it misbehaves |
+- A canary secret written into the `shared` environment before the flip was still there
+  after adoption. (boarding-api's project held 0 real secrets, so this was the only data
+  test available.)
+- ESO read that canary through the store's new credentials — a real ExternalSecret,
+  `SecretSynced`, value matched. That closes the "ESO reading through the new store"
+  item Phase 2 could not test on kiac-dev.
+- After the old operator identity was **deleted**, both ClusterSecretStores stayed
+  `Valid` and a second canary read still worked, so the stores can only be on the new
+  credentials.
+- Both SecretStore XRs `Ready`; the other 13 SecretStores, all 15 ClusterSecretStores
+  and the ExternalSecrets are identical to the pre-change baseline.
 
-Whichever you pick: the old operator's identities/credentials are replaced either way,
-so a new client secret is issued per app. Crossplane will **not** garbage-collect the
-old object for you — delete it by hand, one resource at a time (kiac-dev lesson 3).
-If a managed resource sticks, annotate it with a new value to force a requeue instead
-of restarting the provider (which re-Observes everything at once).
+**The runbook, as it actually had to be done** (each step was needed):
+
+1. **Baseline** — record SecretStore / ClusterSecretStore / ExternalSecret state for the
+   whole cluster, and secret counts per environment for the app (read-only, using the
+   operator's admin token from `infisical-bootstrap-secret`, read inside the command and
+   never printed). Get the project id and environment ids from the operator CRs'
+   `status`; the `shared` environment id is *not* in the CR and comes from
+   `GET /api/v1/projects/<id>`.
+2. **Pause the operator** (`scale --replicas=0`) so it cannot act while CRs are edited.
+3. **Detach the credentials Secret from its owner.** The operator sets an
+   `ownerReference` to the CR on `<slug>-infisical-creds`; deleting the CR would garbage-
+   collect it. Remove it with a JSON patch first.
+4. **Strip the CRs' kopf finalizers** (`InfisicalProject` and each `InfisicalEnvironment`
+   for the app). Deleting a CR with the finalizer would run the operator's `on_delete`,
+   which **deletes the Infisical project and identity**.
+5. **Commit the ConfigMap entry** (`secretstore-provisioner.yaml`, in
+   `gitops-cluster-kind-prod/10-crds-operators/crossplane/`) with `projectId`,
+   `sharedEnvId` and `envIds`. crossplane-packages syncs it.
+6. **Grant the provider identity `admin` on the existing project** — *the step the design
+   missed.* Adoption fails with 403 on every read until this is done: the provider's
+   identity has org-level rights but is not a member of a project it did not create
+   (a project it creates makes it a member automatically). API:
+   `POST /api/v1/projects/<id>/memberships/identities/<providerIdentityId>` with
+   `{"role":"admin"}`. The provider's identity id is the `identityId` claim in its own
+   access token. Then annotate the stuck managed resources to retry immediately.
+7. **Verify** (secrets preserved, project unchanged, ESO read).
+8. **Delete the old CRs** (finalizers already stripped, so nothing reaches Infisical), and
+   confirm the project is untouched.
+9. **Delete the old operator identity** (`secretstore-<slug>`) through the Infisical API —
+   it still holds a valid client secret and viewer access, so it must not be left behind.
+   Check its name (nested under `identity.identity.name`) and that delete protection is
+   off first.
+10. **Prove it after step 9**, then **scale the operator back to 1** and diff the fleet
+    against the baseline.
+
+**For apps that hold real secrets** (all the rest): take the per-environment secret count
+in step 1 and compare after step 7 — the canary only proves the mechanism, the counts
+prove the data. checkout-api has four environments including `prod`; treat it as its own
+window.
+
+**Open design point.** An adopted project has `Delete` in its management policies, so
+deleting the SecretStore XR would delete the Infisical project **and its secrets**. That
+matches kiac-dev, but for a production project consider excluding `Delete`. Not changed
+yet.
+
+**Decision made:** adopt in place is now proven for a project with a shared and one
+per-env environment. Destroy-and-restore remains the fallback and was not needed.
 
 ## Phase 5 — Retire the operator on kind-prod
 
