@@ -1,6 +1,6 @@
 # kind-prod: migrate to the new airframe pin and retire the Infisical operator
 
-Status: **Phase 1 done** (2026-09-23); Phases 2-5 not started. Written from live
+Status: **Phases 1-2 done** (2026-09-23); Phases 3-5 not started. Written from live
 inspection of kind-prod, the airframe tags, and the upstream Terraform provider.
 
 ## The short version
@@ -84,32 +84,68 @@ contains both, and Phase 3 is where amd64 actually runs.
 change anyway (Read treating an empty id as not found), say so and I'll draft it; I
 won't post it without your say.
 
-## Phase 2 — Composition (airframe)
+## Phase 2 — Composition (airframe) — DONE
 
-The universal branch of `compositions/secretstore/` needs writing on the new provider:
-`Project`, `ProjectEnvironment` (shared plus one per env), `Identity`,
-`IdentityUniversalAuth`, `IdentityUniversalAuthClientSecret`, `ProjectIdentity`, then a
-credentials Secret from the connection details and a `ClusterSecretStore` using
-`universalAuthCredentials` (client id and secret both referenced, unlike the
-kubernetes branch which references only an identity id).
+Shipped as airframe **v0.3.79** (`70a3385`, on main); kiac-dev's catalog pin is bumped
+to it.
 
-Two design points:
+**What it does.** On a universal-auth cluster the SecretStore Composition renders the
+provider chain — `Project`, `ProjectEnvironment`, `Identity`, `IdentityUniversalAuth`,
+`IdentityUniversalAuthClientSecret`, `ProjectIdentity` — plus the same
+`<slug>-infisical-creds` Secret (`clientId`, `clientSecret`) the operator writes, so the
+ClusterSecretStores are unchanged. The client id is read from the client-secret
+resource's `status.atProvider.clientId`; the secret from its connection Secret
+(`<slug>-ua-conn`, key `attribute.client_secret`).
 
-- **No blanket flip.** The kiac-dev playbook is explicit that merging a Composition
-  which re-renders every existing XR is how you destroy real projects. Add an opt-in
-  (for example `spec.provisioner: operator | provider`, default `operator`) so merging
-  changes nothing, and each XR is flipped deliberately.
-- **Reuse the fixes already found**: `data` + `b64enc`, never `stringData`, on any
-  `provider-kubernetes`-managed Secret; keep comments free of the template delimiter
-  pair; offline-parse the template with a tiny Go program before it ships.
+**How the opt-in works** (a change from the design sketched earlier): not an XRD field.
+kind-prod's SecretStore XRs are files the ApplicationEnvironment Composition re-commits
+with `Update` in its policies, so a hand-added field would be reverted. Instead the
+Composition reads an optional ConfigMap, `crossplane-system/secretstore-provisioner`,
+one key per project slug:
 
-Also decide `platform-cicd-kind-prod`. On kiac-dev its project is rendered from inside
-the chart as a `SecretStore` XR. On kind-prod it is a raw `InfisicalProject` CR in
-`gitops-cluster-kind-prod/10-crds-operators/external-secrets/`; it should become a
-`SecretStore` XR the same way.
+```yaml
+data:
+  boarding-api-kind-prod: |
+    provisioner: provider
+    projectId: <existing project uuid>        # optional: adopt in place
+    sharedEnvId: <existing shared env uuid>   # optional
+    envIds: {staging: <existing env uuid>}    # optional
+```
 
-Exit gate: a tagged airframe release; the Composition renders the universal chain for
-a throwaway XR on kiac-dev *and* still renders the operator CR for everything else.
+No ConfigMap, or no key for a slug, keeps the operator. The three id fields set
+`crossplane.io/external-name` so the provider observes the existing object rather
+than creating a colliding one. Adoption is **untried against a real project** — Phase 4
+proves it on boarding-api. The Infisical host cluster (kiac-dev) always uses the
+provider, no entry needed.
+
+**Verified**
+- Offline render with Go's real `text/template`, six scenarios: kiac-dev renders the
+  same resource set as before; a universal cluster with no entry renders only the
+  operator CR; an opted-in one renders the full chain; the credentials Secret appears
+  only once *both* the client id and secret exist; adoption ids appear as external
+  names; the per-env XR follows the same switch.
+- Live on kiac-dev, throwaway XR for a non-host cluster, opted in: every resource
+  `Ready`, the XR `Ready`, the credentials Secret has both keys, and **logging in with
+  the Composition-assembled credentials returns HTTP 200 and a token**.
+- Teardown: XR, all six managed resources, the ClusterSecretStore and the credentials
+  Secret all removed.
+- Regression: the 10 real SecretStores on kiac-dev unchanged and `Ready` after the bump.
+
+**Not verified**
+- ESO actually reading a secret through the new store. The throwaway's
+  ClusterSecretStore could not be exercised: ESO on kiac-dev cannot resolve
+  `dev.kiac.local` (the known pod-DNS gap; kind-prod's existing stores resolve it and
+  are `Valid`). ESO did read the assembled Secret and attempted the universal-auth login
+  against the right path. The real end-to-end read happens on kind-prod in Phase 4.
+- Crossplane logged `WatchCircuitOpen` ("too many watch events") on the throwaway during
+  its first build, then went `Ready`. Watch whether it recurs on a real XR.
+
+Exit gate met: tagged release; renders the universal chain for a throwaway XR on
+kiac-dev; still renders the operator CR for everything else.
+
+**Still to do in this area** (Phase 5): `platform-cicd-kind-prod`. It is a raw
+`InfisicalProject` CR in `gitops-cluster-kind-prod/10-crds-operators/external-secrets/`,
+not a SecretStore XR, so it needs converting to one before the operator can go.
 
 ## Phase 3 — Install on kind-prod
 
@@ -122,7 +158,8 @@ a throwaway XR on kiac-dev *and* still renders the operator CR for everything el
    same, not larger. Seed it by hand; **never paste it into a repo or chat.**
 3. **Reachability.** The provider pod must reach `dev.kiac.local:31800`, exactly as the
    operator does today. Confirm from inside the pod.
-4. **Pins.** Move `idp-service-catalog` to the new tag, fold the temporary
+4. **Pins.** Move `idp-service-catalog` to v0.3.79 (its SecretStore composition is now
+   safe to take: default behaviour is unchanged), fold the temporary
    `idp-service-catalog-redis` Application back into it, and align the two tenant
    ApplicationSets (`tenant-onboarding`, `tenant-identity`, currently v0.3.76).
 
