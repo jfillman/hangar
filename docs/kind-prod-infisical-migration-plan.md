@@ -41,8 +41,8 @@ one at a time.
 | Crossplane packages | provider-kubernetes, provider-helm; 3 functions | **no provider-infisical** |
 | Catalog pin | `idp-service-catalog` at v0.3.69 (SLO, SecretStore, RolloutWatch) | Redis added separately at v0.3.77 this session |
 
-Architectures: kind-prod is **amd64**; the provider image must be multi-arch, and so
-must the patched Terraform provider zips (the Dockerfile picks by `TARGETARCH`).
+Architectures: kind-prod is **amd64**; the provider package must be multi-arch (it is;
+the Dockerfile picks the upstream Terraform provider zip by `TARGETARCH`).
 
 ## Phase 0 — Before touching anything
 
