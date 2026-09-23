@@ -1,6 +1,6 @@
 # kind-prod: migrate to the new airframe pin and retire the Infisical operator
 
-Status: **Phases 1-3 done; Phase 4: all five apps migrated** (2026-09-23); only platform-cicd remains on the operator; Phase 5 not started. Written from live
+Status: **Phases 1-4 done** (2026-09-23): the provider now manages every kind-prod Infisical project and no operator CR exists. Phase 5 (retiring the operator) not started. Written from live
 inspection of kind-prod, the airframe tags, and the upstream Terraform provider.
 
 ## The short version
@@ -261,6 +261,49 @@ deleted and a second read still working. The running `prod` ExternalSecrets
 Two of the steps drew permission-guard blocks (one was reported as a transient
 classifier error); the flip was carried out after explicit authorization and a retry, and
 the operator was restored to one replica afterwards.
+
+### platform-cicd — DONE (2026-09-23), and not what the plan assumed
+
+The plan said this was "a raw `InfisicalProject` CR that needs converting to a SecretStore
+XR". Reading it live showed a different problem: **the CR was managing the wrong project.**
+
+- The CR provisioned `platform-cicd-kind-prod-v2`, a fresh project created after the
+  original became unreachable (its own header explains why). It was **empty** and nothing
+  read it.
+- `platform-secret-store` — which feeds ~27 ExternalSecrets cluster-wide (GitHub App keys,
+  registry credentials, the Anthropic key, Backstage tokens) — has always read the
+  **original** `platform-cicd-kind-prod`, 14 secrets, with credentials for an older
+  operator-made identity that no CR any longer owned. The two had drifted apart; the store
+  file's own header says they "must carry the same projectSlug", and they did not.
+
+So the target was the original project, not `-v2`. What was done, in order (each its own
+commit, so a half-applied state could not collide):
+
+1. ConfigMap entry `platform-cicd-kind-prod` adopting the original project and its
+   `shared` environment by id — synced and confirmed live **before** anything else. Without
+   it the Composition would have rendered the operator CR, whose name would have collided
+   with the raw CR.
+2. A SecretStore XR (`platform-secrets/platform-cicd-kind-prod`; slug
+   `<appRef.name>-<cluster>` is exactly the original slug). The provider adopted the
+   project and environment under their original ids and minted a new identity; the raw CR
+   was left untouched.
+3. Verified before repointing anything: project and environment ids unchanged, **all 14
+   secrets byte-identical by fingerprint**, and the new identity able to read all 14.
+4. `platform-secret-store` repointed at the new credentials Secret. Forcing every
+   dependent ExternalSecret to re-read left **all 27 `SecretSynced`**.
+5. The old identity deleted, then the same forced re-read again — still all 27 synced and
+   the store `Valid`, so nothing depends on the old credentials.
+6. The dead `platform-cicd-infisical-creds` Secret deleted, and the raw CR removed from
+   git. ArgoCD pruned it and the operator's own delete handler removed only the empty
+   `-v2` project and its identity (ids confirmed as `-v2`'s beforehand); the real project
+   is untouched and the 14 fingerprints still match.
+
+**Result:** zero `InfisicalProject`/`InfisicalEnvironment` objects on kind-prod; every
+project is provider-managed; the whole fleet matches its baseline apart from the new
+platform-cicd store. Two smaller findings: the same store-vs-CR drift may exist elsewhere
+(worth a look at any other hand-authored CR); and the Composition always renders an
+unused ClusterSecretStore `platform-cicd-kind-prod` scoped to `^app-platform-cicd-.*$`
+(matches no namespace — harmless).
 
 **The runbook, as it actually had to be done** (each step was needed):
 
