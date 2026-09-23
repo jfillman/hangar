@@ -1,9 +1,32 @@
 # Local clusters: kiac, not podman+kind
 
-**Status: policy set 2026-09-03.** All three of this project's local clusters
-(`kiac-dev`, `kiac-man`, `kiac-prod`) run on **kiac** (`saiyam1814/tap/kiac`, brew,
-currently v0.5.1) — "kind, but each node is its own Apple `container` VM" — on top of
-Apple's native `container` runtime (`apple/container`), not Docker or Podman.
+**Status: policy set 2026-09-03; `kiac-prod` decommissioned 2026-09-22.** Two of this
+project's three local clusters (`kiac-dev`, `kiac-man`) still run on **kiac**
+(`saiyam1814/tap/kiac`, brew, currently v0.5.1) — "kind, but each node is its own Apple
+`container` VM" — on top of Apple's native `container` runtime (`apple/container`), not
+Docker or Podman. The third, `kiac-prod`, was shut down entirely on 2026-09-22 (not
+merely relocated again - see its own history below) and replaced by **`kind-prod`**, a
+separate cluster reachable at `kubectl --context kind-prod` (API server
+`https://127.0.0.1:16433` as of this writing). Confirmed live the same day: real
+namespaces (`app-checkout-api-prod`, `argocd`, `argocd-apps`, `backstage`, etc.), the
+same `gitops-cluster-kind-prod` gitops repo and two-ArgoCD-instances-per-cluster
+topology as before (same live HTTPRoutes: `argocd.prod.kiac.local`,
+`argocd-apps.prod.kiac.local`, `backstage.prod.kiac.local` - see the hostname table
+below), Backstage's own Deployment now runs on it directly. `kiac-dev` reaches
+`kind-prod`'s Gateway (port 80) through an SSH tunnel bound locally at
+`127.0.0.1:1880` - this is the real, working, already-in-use path
+(`backstageBaseUrl`/`backstageHostAliasIP` in glidepath-app's and
+platform-cicd-catalog's own values, confirmed still correct as of this writing - don't
+"fix" those by clearing or re-guessing them). One piece genuinely NOT confirmed:
+Grafana/MinIO are not deployed on `kind-prod` at all (verified live - no such Service
+exists in its `observability` namespace), so the dev-only rows for those in the
+hostname table below have no prod equivalent right now, decommission or not. Also
+unconfirmed: exactly what provisions/manages `kind-prod`'s own node-level lifecycle
+(despite the name, a `kind get clusters` attempt in the same session that found this
+failed on an unrelated local podman-connection issue, so this doc does NOT assert it's
+a `kind`+podman cluster) - the `kiac resume`/`container list`/VM-IP-churn guidance
+below is Apple-`container`-specific and should not be assumed to apply to `kind-prod`
+without verifying that separately.
 
 **Going forward, any new local cluster — including throwaway ones for mockups, demos,
 or one-off experiments — should be a kiac cluster, not a temporary podman-backed kind
@@ -14,23 +37,30 @@ deprecated. kiac clusters boot in seconds, get real per-node VM isolation, and
 `metrics-server` works out of the box — there's no remaining reason to reach for
 podman+kind here.
 
-## The three clusters
+## The clusters
 
 | Cluster | Context | Role | Bootstrap script | `--cpus` / `--cp-memory` |
 |---|---|---|---|---|
 | `kiac-dev` | `kiac-dev` | Fleet's one `dev` cluster: Infisical, `platform-cicd` control plane (Tekton/PaC), Bootstrap-tier XRDs, every app's `-dev`/`-cicd` namespace pair | `gitops-cluster-dev/hack/start-kiac-dev.sh` | 5 / 20G |
 | `kiac-man` | `kiac-man` | Backstage's hand-managed deploy target (`gitops-cluster-template`'s `60-backstage/` tier) | `gitops-cluster-kind-man/hack/start-kiac-man.yaml` (a bash script despite the extension) | 2 / 10G |
-| `kiac-prod` | `kiac-prod` | Fleet's `upper`-type cluster | `gitops-cluster-kind-prod/hack/start-kiac-prod.yaml` (ditto) | 2 / 10G |
+| ~~`kiac-prod`~~ | ~~`kiac-prod`~~ | **DECOMMISSIONED 2026-09-22** — was fleet's `upper`-type cluster | `gitops-cluster-kind-prod/hack/start-kiac-prod.yaml` (historical only — targets a cluster that no longer exists) | 2 / 10G |
+| `kind-prod` | `kind-prod` | Replaces `kiac-prod` as fleet's `upper`-type cluster (2026-09-22) — same role, same `gitops-cluster-kind-prod` gitops repo, same two-ArgoCD-instance/Backstage-hosting topology confirmed live | **not yet documented** — provisioning/recreate mechanism unconfirmed, do not assume it's kiac or plain `kind` | unconfirmed |
 
-All three are **single-node** (`--workers 0`, so the control-plane VM carries etcd,
-kube-apiserver, kubelet, containerd, the Cilium agent, and every workload — nothing is
-offloaded to a separate worker), `--cni cilium --kernel full --gateway` (Gateway API +
-Traefik). Recreate via the exact script/flags above, never by hand-typing
-`kiac create cluster` — see [[feedback_kiac_cp_memory_flag]] in memory for the
-incident a hand-typed `--memory` (worker-only, silently ignored with `--workers 0`)
-instead of `--cp-memory` caused.
+`kiac-dev`/`kiac-man` are **single-node** (`--workers 0`, so the control-plane VM
+carries etcd, kube-apiserver, kubelet, containerd, the Cilium agent, and every
+workload — nothing is offloaded to a separate worker), `--cni cilium --kernel full
+--gateway` (Gateway API + Traefik). Recreate via the exact script/flags above, never
+by hand-typing `kiac create cluster` — see [[feedback_kiac_cp_memory_flag]] in memory
+for the incident a hand-typed `--memory` (worker-only, silently ignored with
+`--workers 0`) instead of `--cp-memory` caused. **`kind-prod`'s own equivalent
+recreate story is unconfirmed** — do not assume kiac's flags/behavior apply to it.
 
 ## The recurring failure mode: node VM reboot leaves CoreDNS/Cilium wedged
+
+**Applies to `kiac-dev`/`kiac-man` only** — this entire section is about Apple
+`container` VM behavior specific to kiac. Nothing here has been verified against
+`kind-prod`, and given its very different-looking endpoint (a localhost port, not a
+VM's own LAN IP), it may not even apply at all.
 
 **Symptom:** `kubectl --context kiac-dev ...` starts returning `dial tcp <ip>:6443:
 connect: host is down` (not a timeout — the VM's IP has changed or the VM restarted).
@@ -129,10 +159,11 @@ path.
 | `minio-console.dev.kiac.local` | dev | `minio-console` | `observability` | ditto |
 | `infisical.dev.kiac.local` | dev | `infisical-infisical-standalone-infisical` | `infisical` | ditto |
 | `tekton.dev.kiac.local` | dev | `tekton-dashboard` | `tekton-pipelines` | ditto |
-| `argocd.prod.kiac.local` | prod | `argocd-server` | `argocd` | `gitops-cluster-kind-prod/50-gateway-routes` |
-| `argocd-apps.prod.kiac.local` | prod | `argocd-apps-server` | `argocd-apps` | ditto |
-| `grafana.prod.kiac.local` | prod | `kube-prometheus-stack-grafana` | `observability` | ditto |
-| `minio-console.prod.kiac.local` | prod | `minio-console` | `observability` | ditto |
+| `argocd.prod.kiac.local` | prod | `argocd-server` | `argocd` | `gitops-cluster-kind-prod/50-gateway-routes` — **now on `kind-prod`, not `kiac-prod`** (kiac-prod decommissioned 2026-09-22; verified live 2026-09-22 this HTTPRoute exists on kind-prod, same hostname) |
+| `argocd-apps.prod.kiac.local` | prod | `argocd-apps-server` | `argocd-apps` | now on `kind-prod` — verified live, same as above |
+| `backstage.prod.kiac.local` | prod | `backstage` | `backstage` | now on `kind-prod` — verified live 2026-09-22; not in this table before (Backstage's own pod now runs on this cluster directly, see `hack/start-*` note below) |
+| ~~`grafana.prod.kiac.local`~~ | ~~prod~~ | `kube-prometheus-stack-grafana` | `observability` | **not deployed on kind-prod** — verified live 2026-09-22: `observability` namespace exists but has no Grafana Service at all, only the kube-prometheus-stack Prometheus/Alertmanager pieces |
+| ~~`minio-console.prod.kiac.local`~~ | ~~prod~~ | `minio-console` | `observability` | **not deployed on kind-prod** — same verification, no MinIO Service exists there either |
 | `backstage.man.kiac.local` | man | `backstage` | `backstage` | `gitops-cluster-kind-man/60-backstage/backstage/httproute.yaml` |
 
 ### The `/etc/hosts` staleness gap — and why it exists
@@ -190,10 +221,11 @@ far (2026-09-04), all via a literal IP in a Kubernetes `hostAliases` entry rathe
 than trying to make the hostname resolve in-cluster:
 
 - Backstage's Deployment (`kiac-man`) reaching ArgoCD/kube-apiserver on dev/prod.
-- external-secrets' controller (`kiac-man`, `kiac-prod`) reaching Infisical on
-  `kiac-dev`.
+- external-secrets' controller (`kiac-man`, prod - `kiac-prod` at the time this was
+  fixed, `kind-prod` now) reaching Infisical on `kiac-dev`.
 - checkout-api's `platform-outcome-postsync`/`platform-outcome-syncfail` hook Jobs
-  (`kiac-prod`) reaching `argocd-outcome-relay` on `kiac-dev` —
+  (prod - `kiac-prod` at the time, `kind-prod` now) reaching `argocd-outcome-relay`
+  on `kiac-dev` —
   `releaseTracking.relayHostAliasIP` in `idp-application`'s chart, resolved fresh
   per release by `open-release-pr.yaml`'s own downward-API `status.hostIP` (that
   Task's pod runs on the dev cluster itself, so it always knows dev's current IP
