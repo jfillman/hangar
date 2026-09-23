@@ -1,6 +1,6 @@
 # kind-prod: migrate to the new airframe pin and retire the Infisical operator
 
-Status: **plan, nothing executed** (2026-09-23). Written from live read-only
+Status: **Phase 1 done** (2026-09-23); Phases 2-5 not started. Written from live
 inspection of kind-prod, the airframe tags, and the upstream Terraform provider.
 
 ## The short version
@@ -10,19 +10,23 @@ on kind-prod uses **universal auth** (it isn't the cluster that hosts Infisical)
 v0.3.77 that branch still renders the *old* `InfisicalProject` CR on purpose. The new
 provider-infisical chain only exists for the kubernetes-auth branch (kiac-dev).
 
-The reason is a bug in `terraform-provider-infisical`: `GetIdentityUniversalAuthClientSecretResponse`
-declares `ClientSecretData` as a single struct, but the API returns an array, so the
-resource's Observe path fails before Create runs. **Still present in v0.19.33
-(2026-09-21)** — checked in the upstream source, not just the release notes.
+The reason was a failure in `IdentityUniversalAuthClientSecret`'s Observe. **The
+first diagnosis in this plan was wrong**, corrected after reproducing it live:
+it is not an upstream SDK bug. Infisical's GET-by-id endpoint returns a single object
+(checked in the server source); only the LIST endpoint returns an array. Before Create,
+this resource's external name is empty, and upjet seeds the Terraform state with
+`id = <external name>` and refreshes anyway. The Terraform provider's Read then calls
+`.../client-secrets/` with an empty id, which *is* the LIST endpoint, and fails
+unmarshalling the array. Reproduced on kiac-dev with a throwaway chain (error text in
+the commit message).
 
-We own `provider-infisical`, so this is fixable — but the bug is one layer *below* our
-code. `provider-infisical` is upjet-generated and its Dockerfile downloads the upstream
-Terraform provider as a prebuilt release zip
-(`TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX`). The fix is a patched fork of the Terraform
-provider, built for both architectures, and a URL/version change in our Makefile. No
-change to our generated Go code.
+**Fixed in our own provider, no fork.** `GetIDFn` seeds a well-formed id that cannot
+exist (the nil UUID) whenever the external name is empty, so Read hits the by-id
+endpoint, gets a 404 and reports "not found". Only the pre-Create state is affected;
+the real id replaces it on Create. `provider-infisical` commit `b220ec2`, published as
+`v0.0.0-7.gb220ec2` (multi-arch index: amd64 + arm64), running on kiac-dev.
 
-So the work is four things in order: fix the provider, write the universal-auth branch
+So the work is four things in order: ~~fix the provider~~ (done), write the universal-auth branch
 of the SecretStore Composition, install the provider on kind-prod, then cut apps over
 one at a time.
 
@@ -53,28 +57,32 @@ must the patched Terraform provider zips (the Dockerfile picks by `TARGETARCH`).
 3. **Pick a window.** checkout-api runs `prod`, `pre-prod`, `proofing` and `staging`
    here. It goes last.
 
-## Phase 1 — Fix the provider (no kind-prod impact)
+## Phase 1 — Fix the provider — DONE
 
-1. Reproduce against our live Infisical: call the client-secret GET endpoint with a
-   throwaway identity and look at the actual response shape. Don't assume the array —
-   confirm it, and confirm what the LIST endpoint returns too.
-2. Fork `Infisical/terraform-provider-infisical` at v0.19.33. Patch the response type
-   (a small `UnmarshalJSON` accepting object *or* array, or select by
-   `clientSecretId`). Add a test with both shapes.
-3. Build `linux_arm64` and `linux_amd64` zips named the way the Dockerfile expects
-   (`terraform-provider-infisical_<ver>_<os>_<arch>.zip`, binary
-   `terraform-provider-infisical_v<ver>`), publish them as a release on the fork.
-4. In `provider-infisical`: point `TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX`, `_VERSION`
-   and `_NATIVE_PROVIDER_BINARY` at the fork; rebuild the multi-arch image and xpkg,
-   publish, tag.
-5. Prove it on **kiac-dev with a throwaway app**: `Identity` → `IdentityUniversalAuth`
-   → `IdentityUniversalAuthClientSecret` reaches `Ready`, its connection Secret carries
-   `clientId`/`clientSecret`, and an `ExternalSecret` reads a real value through it.
-   Also prove delete cleans up.
-6. **Upstream PR: only if you say so.** Standing instruction on this project is to ask
-   before pushing anything to someone else's repo.
+Verified live on kiac-dev, 2026-09-23:
 
-Exit gate: the throwaway universal-auth chain is green on both architectures.
+- Reproduced the Observe failure with a throwaway `Identity` → `IdentityUniversalAuth`
+  → `IdentityUniversalAuthClientSecret` chain.
+- Shipped the `GetIDFn` fix (with a unit test that the override survives provider
+  setup), published, bumped the pin in `gitops-cluster-dev`.
+- Same chain after the upgrade: all three `Synced` and `Ready`.
+- The credential authenticates: a universal-auth login with the produced client id and
+  secret returns HTTP 200 and an access token.
+- The chain deletes cleanly (namespace and all three resources gone).
+- The provider restart left all 10 existing Infisical `Project`s Ready and Synced.
+
+**What the Composition must know** (from the live result): the client secret is in the
+managed resource's connection secret under the key **`attribute.client_secret`**; the
+**client id is not** — it is in `IdentityUniversalAuthClientSecret`'s
+`status.atProvider.clientId`. The credentials Secret has to be assembled from both.
+
+**Not yet proven:** the amd64 build (kiac-dev is arm64). The published package index
+contains both, and Phase 3 is where amd64 actually runs.
+
+**Upstream:** the fix turned out to be ours, so there is nothing to send to
+`terraform-provider-infisical` for *this* problem. If you want a defensive upstream
+change anyway (Read treating an empty id as not found), say so and I'll draft it; I
+won't post it without your say.
 
 ## Phase 2 — Composition (airframe)
 
@@ -173,11 +181,10 @@ no equivalent.
 
 ## Open questions
 
-1. **Fork and patch the Terraform provider ourselves?** It's the only route that
-   retires the operator. Say whether to also offer the fix upstream.
-2. **Adopt in place, or destroy and restore?** (Above.)
-3. **Who diffs the backups?** I can, given a credential to read them; I won't be
-   handed one in chat.
+1. ~~Fork and patch~~ — not needed; fixed in our provider config.
+2. **Adopt in place, or destroy and restore?** Decided: try adopt in place on
+   `boarding-api`, fall back to destroy and restore.
+3. ~~Backups~~ — verified by you.
 4. **`kiac-man` and kind-man's separate operator copy** — both are gone per the current
    cluster list, so their repos need no migration; confirm.
 5. **Timing.** checkout-api runs a real `prod` environment on this cluster.
