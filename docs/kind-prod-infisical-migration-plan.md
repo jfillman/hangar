@@ -1,6 +1,6 @@
 # kind-prod: migrate to the new airframe pin and retire the Infisical operator
 
-Status: **Phases 1-2 done** (2026-09-23); Phases 3-5 not started. Written from live
+Status: **Phases 1-2 done; Phase 3 done except the credential** (2026-09-23); Phases 4-5 not started. Written from live
 inspection of kind-prod, the airframe tags, and the upstream Terraform provider.
 
 ## The short version
@@ -147,25 +147,56 @@ kiac-dev; still renders the operator CR for everything else.
 `InfisicalProject` CR in `gitops-cluster-kind-prod/10-crds-operators/external-secrets/`,
 not a SecretStore XR, so it needs converting to one before the operator can go.
 
-## Phase 3 — Install on kind-prod
+## Phase 3 — Install on kind-prod — DONE, except the credential
 
-1. **Provider.** `provider-infisical` (amd64 confirmed by it going Healthy), its own
-   `DeploymentRuntimeConfig` (never the shared default — that broke every Function
-   once), `ClusterProviderConfig`, and RBAC. Use the sync-wave and
-   `SkipDryRunOnMissingResource` pattern this session needed for provider-helm.
-2. **Credential.** The provider needs an Infisical admin credential on kind-prod. The
-   operator already holds one (`infisical-bootstrap-secret`), so the exposure is the
-   same, not larger. Seed it by hand; **never paste it into a repo or chat.**
-3. **Reachability.** The provider pod must reach `dev.kiac.local:31800`, exactly as the
-   operator does today. Confirm from inside the pod.
-4. **Pins.** Move `idp-service-catalog` to v0.3.79 (its SecretStore composition is now
-   safe to take: default behaviour is unchanged), fold the temporary
-   `idp-service-catalog-redis` Application back into it, and align the two tenant
-   ApplicationSets (`tenant-onboarding`, `tenant-identity`, currently v0.3.76).
+**Installed and verified (2026-09-23)**
 
-Exit gate: everything Healthy and **every existing SecretStore, ClusterSecretStore and
-ExternalSecret unchanged** (compare before and after). Provider present, zero XRs
-flipped.
+- `provider-infisical` v0.0.0-7.gb220ec2 is **Healthy on kind-prod's amd64 node** — the
+  first time this package has run on amd64. Own `DeploymentRuntimeConfig`, with the same
+  `dev.kiac.local` → `192.168.1.78` `hostAliases` the operator and ESO already carry
+  (bump all three together if that LAN address changes). `ClusterProviderConfig` present,
+  applied through a sync-wave after the Provider installs (as provider-helm's was).
+- **Reachability:** a kind-prod pod with that alias gets HTTP 200 from
+  `http://dev.kiac.local:31800/api/status` in ~70 ms.
+- **RBAC:** checked with `auth can-i`, nothing to add. provider-kubernetes can manage
+  Secrets in app namespaces; Crossplane can read them (needed for the two ExtraResources
+  lookups).
+- **Catalog pin** moved v0.3.69 → v0.3.79, with Redis folded into the same Application
+  (the temporary `idp-service-catalog-redis` Application is gone; its XRD and Composition
+  survived and are now tracked by the main one). The tenant ApplicationSet pins were
+  **not** moved: the `airframe-application` chart is byte-identical from v0.3.76 to
+  v0.3.79, so there is nothing to take.
+- **Default behaviour proven unchanged**, two ways. Offline: v0.3.69's and v0.3.79's
+  SecretStore templates rendered against kind-prod-shaped XRs (shared and per-env) give
+  identical resources once comments and the new lookups are set aside. Live, after the
+  sync: all 14 SecretStores, 15 ClusterSecretStores and 28 ExternalSecrets show
+  identical state; all 15 operator CRs are the same objects (none recreated); no
+  provider-infisical resource exists yet.
+
+**The one open item — the credential.** The provider is idle until this exists. It is
+created by hand, on purpose: kiac-dev delivers its copy through an ExternalSecret out of
+an Infisical project, but on kind-prod the only candidate project is
+`platform-cicd-kind-prod-v2` — one this provider will itself recreate or adopt. A
+credential stored inside a project its own consumer is about to change is a lockout.
+
+The operator's `infisical-bootstrap-secret` will **not** work: it holds a raw admin
+`token`, and the provider needs a universal-auth machine identity. So:
+
+1. In Infisical, create a machine identity for kind-prod (suggested name
+   `provider-infisical-kind-prod`, so it can be revoked independently of kiac-dev's),
+   with universal auth, the same organization role as kiac-dev's provider identity (it
+   must be able to create projects, identities and memberships), and a client secret.
+2. Create the Secret yourself. Do not paste it in chat or commit it:
+
+   `kubectl --context kind-prod -n crossplane-system create secret generic provider-infisical-creds --from-file=credentials=<file>`
+
+   where the file holds `{"host": "http://dev.kiac.local:31800", "client_id": "...",
+   "client_secret": "..."}`. (`host` differs from kiac-dev's, which uses the in-cluster
+   Service.) Delete the file afterwards.
+
+Exit test once it exists: a throwaway `Identity` → `IdentityUniversalAuth` →
+`IdentityUniversalAuthClientSecret` chain on kind-prod reaches `Ready` and logs in, then
+deletes cleanly — the Phase 1 test, this time on amd64 against the real path.
 
 ## Phase 4 — Cut over, one app at a time
 
