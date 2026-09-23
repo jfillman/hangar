@@ -24,6 +24,7 @@ created — not batched up later.
 | [service-catalog-design.md](service-catalog-design.md) | You want the full design history and open decisions behind Airframe — the running log, not the as-built summary. |
 | [gitops-strategy.md](gitops-strategy.md) | You want the repo topology, ArgoCD instance split, and the lower/upper env security boundary. |
 | [cluster-provisioning.md](cluster-provisioning.md) | You're standing up a new cluster. |
+| [kind-prod-infisical-migration-plan.md](kind-prod-infisical-migration-plan.md) | You're moving kind-prod onto the new airframe pin and retiring the Infisical operator (plan, not yet executed). |
 | [local-clusters.md](local-clusters.md) | You're running clusters locally and need the real operational notes. |
 | [backstage-design.md](backstage-design.md) | You want Tower's own design rationale — self-service flows, the terasky ingestor, catalog structure. |
 
