@@ -385,13 +385,31 @@ CRD behind it. So:
 - Main had moved between tags: v0.3.80 was already cut at the merge of your scaffold PR, so
   the provider-only change is v0.3.81, built on top of it.
 
+**`Delete` protection (airframe v0.3.82) — DONE.** Adopted projects had `Delete` in their
+management policies, so deleting a SecretStore XR — or ArgoCD pruning its file, which for
+platform-cicd sits in an auto-prune Application — would have deleted the Infisical project
+and every secret in it. The Composition now renders `Project` and `ProjectEnvironment` with
+`managementPolicies: [Create, Observe, Update, LateInitialize]`. The Kubernetes objects go;
+the Infisical project and its secrets stay. Identities, their auth config and client
+secrets keep `Delete`, so credentials are still revoked.
+
+- **Proven twice before it mattered.** First with raw managed resources on kiac-dev
+  (deleted them: the Infisical project, its environment and a canary secret remained), then
+  through the real Composition on kind-prod with a throwaway XR: deleting the XR removed
+  every Kubernetes object, the project and canary survived, and the identity returned 404.
+  Throwaway projects were removed through the API afterwards.
+- **Rolled out** to kiac-dev (20 Project/Environment resources protected, 10 identities
+  unchanged) then kind-prod (all 21 protected, none can still delete; 6 identities
+  unchanged). Fleet identical to baseline both times, and the platform-cicd (14) and
+  checkout-api (2) fingerprints still match.
+- **The cost, by design:** decommissioning an app leaves its project behind, holding its
+  slug. Reusing that slug means adopting the leftover through the
+  `secretstore-provisioner` ConfigMap, or deleting the project in Infisical by hand.
+
 **Follow-ups, not done**
 - **Revoke the old admin token in Infisical.** Deleting the cluster Secret removes the copy
   on kind-prod; it does not revoke the token itself.
-- **`Delete` protection.** Adopted projects still have `Delete` in their management
-  policies, so deleting a SecretStore XR (or pruning its file, for platform-cicd, whose XR
-  file sits in an auto-prune Application) would delete the project and its secrets. Should
-  be excluded before this is relied on.
+- ~~**`Delete` protection.**~~ **Done, same day (airframe v0.3.82).** See below.
 - **Operator source** (`airframe/operators/infisical-secretstore-operator/`), its CRD
   files, and the `gitops-cluster-kind-man` copy are untouched. Nothing on a live cluster
   uses them; delete when convenient.
