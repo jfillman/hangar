@@ -1,4 +1,10 @@
-# Hangar documentation
+<div align="center">
+  <img src="brand/hangar-tile.svg" width="88" height="88" alt="Hangar mark" />
+  <h1>Hangar</h1>
+  <p><i>Home base for building, releasing, and watching every service you run.</i></p>
+</div>
+
+# Documentation
 
 The table of contents for the whole Hangar platform — Hangar itself, Airframe
 (the service catalog), Glidepath (CI/CD), Tower (the Backstage UI), and Apron
