@@ -1,6 +1,6 @@
 # kind-prod: migrate to the new airframe pin and retire the Infisical operator
 
-Status: **Phases 1-3 done; Phase 4: boarding-api, search-api, process-api and order-api migrated** (2026-09-23); checkout-api and platform-cicd remain; Phase 5 not started. Written from live
+Status: **Phases 1-3 done; Phase 4: all five apps migrated** (2026-09-23); only platform-cicd remains on the operator; Phase 5 not started. Written from live
 inspection of kind-prod, the airframe tags, and the upstream Terraform provider.
 
 ## The short version
@@ -247,14 +247,20 @@ The provider identity had to be `admin` on each project first (granted by hand f
 confirmed by reading its membership); the fleet — SecretStores, ClusterSecretStores,
 ExternalSecrets — matched its baseline after each batch.
 
-### checkout-api — NOT DONE
+### checkout-api — DONE, adopted in place (2026-09-23)
 
-Held at the `prod` environment. Its project has five environments (`shared`, `staging`,
-`proofing`, `pre-prod`, `prod`) and real secrets in `prod` and `proofing` (fingerprints
-recorded). The first step of its flip was blocked by the session's permission guard and
-was not worked around; **nothing was changed for checkout-api** — its CRs still carry
-their finalizers and its credentials Secret still has its owner reference. The operator
-was paused for the batch and has been **restored to one replica**.
+The `prod` app, done last and on its own. Five environments (`shared`, `staging`,
+`proofing`, `pre-prod`, `prod`); real secrets in `prod` and `proofing`. Every check passed
+— chain and all five SecretStore XRs `Ready`, ids unchanged, **both secrets
+byte-identical by fingerprint** before, after the flip and after the old CRs were
+deleted, an ESO canary read through the new credentials, the old operator identity
+deleted and a second read still working. The running `prod` ExternalSecrets
+(`app-secrets`, `platform-outcome-relay-token`, `registry-credentials`) stayed
+`SecretSynced` throughout, and the whole fleet matched its pre-change baseline.
+
+Two of the steps drew permission-guard blocks (one was reported as a transient
+classifier error); the flip was carried out after explicit authorization and a retry, and
+the operator was restored to one replica afterwards.
 
 **The runbook, as it actually had to be done** (each step was needed):
 
