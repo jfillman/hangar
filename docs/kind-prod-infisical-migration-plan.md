@@ -1,6 +1,6 @@
 # kind-prod: migrate to the new airframe pin and retire the Infisical operator
 
-Status: **Phases 1-4 done** (2026-09-23): the provider now manages every kind-prod Infisical project and no operator CR exists. Phase 5 (retiring the operator) not started. Written from live
+Status: **All five phases done** (2026-09-23). Every kind-prod Infisical project is provider-managed and the infisical-secretstore-operator is retired on kind-prod. Remaining follow-ups are listed under Phase 5. Written from live
 inspection of kind-prod, the airframe tags, and the upstream Terraform provider.
 
 ## The short version
@@ -353,21 +353,52 @@ yet.
 **Decision made:** adopt in place is now proven for a project with a shared and one
 per-env environment. Destroy-and-restore remains the fallback and was not needed.
 
-## Phase 5 — Retire the operator on kind-prod
+## Phase 5 — Retire the operator on kind-prod — DONE (2026-09-23)
 
-Only when `kubectl get infisicalprojects,infisicalenvironments -A` is empty and every
-store is `Ready` via the new chain:
+**The ordering that mattered.** Deleting the operator's CRDs first would have broken the
+next newly-onboarded app: the SecretStore Composition still defaulted to the operator for
+any app without a ConfigMap entry, so it would have rendered an `InfisicalProject` with no
+CRD behind it. So:
 
-1. Remove the `infisical-secretstore-operator` Application from
-   `gitops-cluster-kind-prod` (its CRDs, RBAC, Deployment).
-2. Retire `infisical-bootstrap-secret` in favour of the provider's credential.
-3. Delete the two CRDs; confirm nothing else referenced them.
-4. Later, in airframe, delete the operator-CR branch of the Composition and the
-   `operators/infisical-secretstore-operator/` source.
+1. **Composition made provider-only** (airframe **v0.3.81**): both operator branches
+   removed; the ConfigMap is now only for *adopting* an existing project (a slug with no
+   entry gets a fresh one; the old `provisioner:` key is ignored). Offline render: all
+   four already-opted-in scenarios identical to v0.3.80; the two no-entry scenarios now
+   render the provider chain instead of an operator CR.
+2. **Rolled out** to kiac-dev and kind-prod. Fleet regression after each sync:
+   kiac-dev's 10 SecretStores unchanged; kind-prod's 15 SecretStores, 16
+   ClusterSecretStores, 28 ExternalSecrets and 12 managed resources identical.
+3. **Operator removed**: the Application, Deployment, ServiceAccount, ClusterRole and
+   binding, both CRDs (`infisicalprojects` / `infisicalenvironments.secrets.idp.io`, with
+   zero objects) and Crossplane's stale RBAC for that API group. The `infisical` namespace
+   stays — ESO places `registry-credentials` in it.
+4. **`infisical-bootstrap-secret` deleted** from the cluster (nothing else referenced it).
+5. **Final verification** after removal: fleet identical to the pre-Phase-5 baseline, all 28
+   ExternalSecrets synced, platform-cicd's 14 and checkout-api's 2 recorded secret
+   fingerprints still identical.
 
-The shared items the kiac-dev migration had to split out first (token reviewer,
-NodePort) belong to kiac-dev's Infisical, not kind-prod's operator, so this phase has
-no equivalent.
+**Things that behaved unexpectedly**
+- The root Application does not prune, so removing files from git left the operator's
+  Application (and resources) in place; they were deleted by hand. Root then briefly
+  **re-created the Application from a revision cached before the commit**; it had no
+  source and created nothing, and was deleted again once root reached the new commit.
+- Main had moved between tags: v0.3.80 was already cut at the merge of your scaffold PR, so
+  the provider-only change is v0.3.81, built on top of it.
+
+**Follow-ups, not done**
+- **Revoke the old admin token in Infisical.** Deleting the cluster Secret removes the copy
+  on kind-prod; it does not revoke the token itself.
+- **`Delete` protection.** Adopted projects still have `Delete` in their management
+  policies, so deleting a SecretStore XR (or pruning its file, for platform-cicd, whose XR
+  file sits in an auto-prune Application) would delete the project and its secrets. Should
+  be excluded before this is relied on.
+- **Operator source** (`airframe/operators/infisical-secretstore-operator/`), its CRD
+  files, and the `gitops-cluster-kind-man` copy are untouched. Nothing on a live cluster
+  uses them; delete when convenient.
+- **Store shape.** Nothing in the catalog produces a cluster-wide platform store;
+  `platform-secret-store` is still hand-authored, and the XR's composed
+  `platform-cicd-kind-prod` store matches no namespace.
+- The `WatchCircuitOpen` warning seen on first build of new XRs was not investigated.
 
 ## Rollback
 
