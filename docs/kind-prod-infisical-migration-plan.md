@@ -1,6 +1,6 @@
 # kind-prod: migrate to the new airframe pin and retire the Infisical operator
 
-Status: **Phases 1-2 done; Phase 3 done except the credential** (2026-09-23); Phases 4-5 not started. Written from live
+Status: **Phases 1-3 done** (2026-09-23); Phases 4-5 not started. Written from live
 inspection of kind-prod, the airframe tags, and the upstream Terraform provider.
 
 ## The short version
@@ -147,7 +147,7 @@ kiac-dev; still renders the operator CR for everything else.
 `InfisicalProject` CR in `gitops-cluster-kind-prod/10-crds-operators/external-secrets/`,
 not a SecretStore XR, so it needs converting to one before the operator can go.
 
-## Phase 3 — Install on kind-prod — DONE, except the credential
+## Phase 3 — Install on kind-prod — DONE
 
 **Installed and verified (2026-09-23)**
 
@@ -173,7 +173,15 @@ not a SecretStore XR, so it needs converting to one before the operator can go.
   identical state; all 15 operator CRs are the same objects (none recreated); no
   provider-infisical resource exists yet.
 
-**The one open item — the credential.** The provider is idle until this exists. It is
+**The credential — done.** (Kept below as the record of how it was set up.) The Secret
+was created with `--from-file=<path>/provider-infisical.creds` and so its key is
+`provider-infisical.creds`, not `credentials`; the `ClusterProviderConfig` reads that key.
+
+**Exit test passed on kind-prod (amd64):** a throwaway `Identity` → `IdentityUniversalAuth`
+→ `IdentityUniversalAuthClientSecret` chain went `Ready`, logging in with its credentials
+returned HTTP 200 and a token, and it deleted cleanly (no managed resources left).
+
+**Original note on the credential.** The provider is idle until this exists. It is
 created by hand, on purpose: kiac-dev delivers its copy through an ExternalSecret out of
 an Infisical project, but on kind-prod the only candidate project is
 `platform-cicd-kind-prod-v2` — one this provider will itself recreate or adopt. A
