@@ -1,6 +1,6 @@
 # kind-prod: migrate to the new airframe pin and retire the Infisical operator
 
-Status: **Phases 1-3 done; Phase 4: boarding-api migrated** (2026-09-23), 5 apps to go; Phase 5 not started. Written from live
+Status: **Phases 1-3 done; Phase 4: boarding-api, search-api, process-api and order-api migrated** (2026-09-23); checkout-api and platform-cicd remain; Phase 5 not started. Written from live
 inspection of kind-prod, the airframe tags, and the upstream Terraform provider.
 
 ## The short version
@@ -227,6 +227,34 @@ original ids; nothing was destroyed or recreated. Verified:
   credentials.
 - Both SecretStore XRs `Ready`; the other 13 SecretStores, all 15 ClusterSecretStores
   and the ExternalSecrets are identical to the pre-change baseline.
+
+### search-api, process-api, order-api — DONE, adopted in place (2026-09-23)
+
+Same runbook, run once per app with an identical automated verification. Every check
+passed for all three:
+
+- the chain and every SecretStore XR for the app `Ready`;
+- project and environment ids unchanged;
+- **secret fingerprints identical** — a SHA-256 of every secret value, taken before and
+  compared after, so the data is proven byte-identical without displaying any of it
+  (search-api 0 secrets, process-api 0, order-api 1 — its `prod` secret);
+- an ESO read of a canary through the new store credentials;
+- the old operator CRs deleted with the project and fingerprints untouched;
+- the old operator identity deleted, then a **second** canary read still working, so the
+  stores can only be on the new credentials.
+
+The provider identity had to be `admin` on each project first (granted by hand for these,
+confirmed by reading its membership); the fleet — SecretStores, ClusterSecretStores,
+ExternalSecrets — matched its baseline after each batch.
+
+### checkout-api — NOT DONE
+
+Held at the `prod` environment. Its project has five environments (`shared`, `staging`,
+`proofing`, `pre-prod`, `prod`) and real secrets in `prod` and `proofing` (fingerprints
+recorded). The first step of its flip was blocked by the session's permission guard and
+was not worked around; **nothing was changed for checkout-api** — its CRs still carry
+their finalizers and its credentials Secret still has its owner reference. The operator
+was paused for the batch and has been **restored to one replica**.
 
 **The runbook, as it actually had to be done** (each step was needed):
 
