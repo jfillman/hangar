@@ -34,7 +34,8 @@ Developer- and admin-facing docs live in the `airframe` repo itself.
 | Doc | Read this when... |
 |---|---|
 | [airframe/docs/user/README.md](https://github.com/jfillman/airframe/blob/main/docs/user/README.md) | You're creating a service, adding ground/flight environments, or attaching a component. |
-| [airframe/docs/user/quickstart.md](https://github.com/jfillman/airframe/blob/main/docs/user/quickstart.md) | You want the full worked example — `boarding-api`, a Redis cache, both env tiers. |
+| [airframe/docs/user/quickstart.md](https://github.com/jfillman/airframe/blob/main/docs/user/quickstart.md) | You want the full worked example — `boarding-api` (NodeJS): pull in the code, both env tiers, a Redis cache, a canary. |
+| [airframe/docs/user/skyport-demo.md](https://github.com/jfillman/airframe/blob/main/docs/user/skyport-demo.md) | You want the plan for the five-service Skyport demo system that exercises every stack and component, and where its code lives. |
 | [airframe/docs/admin/architecture.md](https://github.com/jfillman/airframe/blob/main/docs/admin/architecture.md) | You want the as-built reference — every XRD's inputs/outputs, the composition graph, the plumbing. |
 
 *(Local checkout note: since this repo and `airframe` are cloned as siblings on
@@ -48,7 +49,7 @@ repo boundary.)*
 | Doc | Status | Read this when... |
 |---|---|---|
 | [Airframe Service Catalog](https://claude.ai/artifact/TBhiiN1TPjAbiwTTcctnK2) | current | You want the architecture reference with real diagrams — same content as `admin/architecture.md`. |
-| [Airframe Quickstart](https://claude.ai/artifact/WDPmWSD9BMBGurFzqATDWG) | current | You want the illustrated version of the developer walkthrough. |
+| [Airframe Quickstart](https://claude.ai/artifact/WDPmWSD9BMBGurFzqATDWG) | **stale, 2026-09-23** | The illustrated walkthrough still follows the earlier Go version of `boarding-api`; `quickstart.md` now uses NodeJS and adds code pull-in and a canary. Trust the markdown until this is republished. |
 | [Hangar Service Catalog](https://claude.ai/artifact/8tS9SWXGVVNL4hZCemzAMp) | vision, 2026-09-17 | You want the original ELI10 pitch and roadmap for components not yet built (Postgres, RabbitMQ, MongoDB, OAuth, nginx). **Its "dedicated vs. shared" diagram describes a `mode: create\|attach` field that was never built for Redis** — see `admin/architecture.md` for what actually shipped. |
 
 ## Glidepath — CI/CD
