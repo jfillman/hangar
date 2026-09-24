@@ -37,6 +37,7 @@ Developer- and admin-facing docs live in the `airframe` repo itself.
 | [airframe/docs/user/README.md](https://github.com/jfillman/airframe/blob/main/docs/user/README.md) | You're creating a service, adding ground/flight environments, or attaching a component. |
 | [airframe/docs/user/quickstart.md](https://github.com/jfillman/airframe/blob/main/docs/user/quickstart.md) | You want the full worked example — `boarding-api` (NodeJS): pull in the code, both env tiers, a Redis cache, a canary. |
 | [airframe/docs/user/skyport-demo.md](https://github.com/jfillman/airframe/blob/main/docs/user/skyport-demo.md) | You want the plan for the five-service Skyport demo system that exercises every stack and component, and where its code lives. |
+| [airframe/docs/user/decommission-app.md](https://github.com/jfillman/airframe/blob/main/docs/user/decommission-app.md) | You need to delete/decommission an app: what gets destroyed (both GitHub repos), the git-driven order of operations, and the ArgoCD ordering bug. Proven once on boarding-api. |
 | [airframe/docs/admin/architecture.md](https://github.com/jfillman/airframe/blob/main/docs/admin/architecture.md) | You want the as-built reference — every XRD's inputs/outputs, the composition graph, the plumbing. |
 
 *(Local checkout note: since this repo and `airframe` are cloned as siblings on

@@ -320,7 +320,8 @@ best orphan everything on the old cluster while partially standing up a new one,
 actually move anything. Moving an app to a different dev cluster is a deliberate
 decommission-and-re-onboard (delete `NodeJSApplication`, which per the fix below already
 can't happen until every `ApplicationEnvironment` child is gone — then create a new one),
-not a field edit.
+not a field edit. **As-built procedure, proven live on `boarding-api` 2026-09-24:**
+`airframe/docs/user/decommission-app.md` (deleting the XR also deletes both GitHub repos).
 
 **`ApplicationEnvironment`'s `cluster` field stops being a hardcoded Composition
 constant and becomes a real, required spec field**, gated the same way: extra-resources
