@@ -461,9 +461,13 @@ the result.**
   every time - and by confirming nothing live uses `releaseTracking`; it needs no `tenant-identity`
   (dev tenants carry only app-level identity files). After rollout, every kiac-dev Application
   matched its pre-change sync/health, and kind-prod's fleet (SecretStores, ClusterSecretStores,
-  ExternalSecrets, managed resources, Applications) matched its baseline. Not touched:
-  `glidepath-app`'s own default chart pin (`v0.3.63`), which still sources the PR ephemeral
-  environments (`checkout-api-pr-26/28/30`).
+  ExternalSecrets, managed resources, Applications) matched its baseline. The last holdout,
+  `glidepath-app`'s own default chart pin (`idpServiceCatalog.chartVersion`, which sources the PR
+  preview environments), was also bumped from `v0.3.63` to `v0.3.83` afterwards: all six
+  onboarded apps' previews render byte-identically under both versions (real `platform/pr-env.yaml`
+  where present), the six `*-pr-envs` ApplicationSets and the three live previews
+  (`checkout-api-pr-26/28/30`) moved to it, and they stayed `Synced`/`Healthy` with pods running.
+  kiac-dev reads that chart from glidepath `main`, so the change was live on push.
 - The Composition hardcodes the shared Infisical instance's organization id, so a cluster
   using its OWN separate Infisical instance would get the wrong one.
 
