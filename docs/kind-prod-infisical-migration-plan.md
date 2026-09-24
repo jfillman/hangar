@@ -406,13 +406,41 @@ secrets keep `Delete`, so credentials are still revoked.
   slug. Reusing that slug means adopting the leftover through the
   `secretstore-provisioner` ConfigMap, or deleting the project in Infisical by hand.
 
+**Operator source removed (2026-09-23).** Deleted `operators/infisical-secretstore-operator/`
+(source, Dockerfile, both CRD files, README) and its CI workflow from airframe - the
+workflow would otherwise have kept publishing an image nothing runs - and the operator's
+directory plus its `InfisicalProject` CR file from `gitops-cluster-kind-man` (that cluster
+no longer exists). The source stays in git history at tag v0.3.81 and earlier, and
+kiac-dev/kind-prod pins to those tags are unaffected. Also dropped the dead operator block
+from `refresh-kiac-hosts.sh` (with a note: kind-prod's `dev.kiac.local` aliases now use the
+laptop LAN address, so that script's VM-IP logic is wrong for it), and corrected glidepath's
+secrets-management doc. Left alone as history: comments in the Composition templates,
+gitops-cluster-dev, and this doc set.
+
+**Deliberately NOT removed - needs its own piece of work:**
+- **`apron`** (the live cluster template) still ships the operator. New clusters built from it
+  would install the retired operator: `hack/customize-cluster.sh` has operator-specific
+  prune/rename logic; the operator directory also holds the Infisical NodePort and
+  token-reviewer manifests that any Infisical-host cluster needs (those must move, not
+  vanish); and its `external-secrets/infisical-project.yaml` is still an operator CR, so a
+  new cluster's platform project would fail with no CRD. Fixing it means redesigning how a
+  template cluster gets its platform project (a SecretStore XR plus a hand-created
+  `provider-infisical-creds`), which cannot be verified without building a cluster.
+- **`gitops-cluster-template`** is the deprecated predecessor of apron; not touched.
+- **The published image** `ghcr.io/jfillman/infisical-secretstore-operator` is still on GHCR.
+  Deleting a package version is outward-facing and irreversible, so it is left for you.
+
 **Follow-ups, not done**
-- **Revoke the old admin token in Infisical.** Deleting the cluster Secret removes the copy
-  on kind-prod; it does not revoke the token itself.
-- ~~**`Delete` protection.**~~ **Done, same day (airframe v0.3.82).** See below.
-- **Operator source** (`airframe/operators/infisical-secretstore-operator/`), its CRD
-  files, and the `gitops-cluster-kind-man` copy are untouched. Nothing on a live cluster
-  uses them; delete when convenient.
+- **Revoke the old admin token in Infisical.** Deleting the cluster Secret removed kind-prod's
+  copy, not the token. It is the **`Instance Admin Identity`** - the only `token-auth`
+  identity in the org, role `admin`, created by Infisical's own autoBootstrap Job (the
+  `infisical-bootstrap-secret` name comes from that job). Revoke its token(s) under
+  *Organization -> Access Control -> Identities -> Instance Admin Identity -> Token Auth*.
+  Before doing so: kiac-dev still holds a leftover copy of the same token
+  (`infisical/infisical-bootstrap-secret`, plus `infisical-bootstrap-credentials`) that
+  no workload references, so revoking is safe for it too, but the Infisical chart's
+  autoBootstrap may recreate them on a redeploy. Deleting the *identity* rather than just its
+  token is a larger step that is not needed.
 - **Store shape.** Nothing in the catalog produces a cluster-wide platform store;
   `platform-secret-store` is still hand-authored, and the XR's composed
   `platform-cicd-kind-prod` store matches no namespace.
