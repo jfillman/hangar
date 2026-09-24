@@ -448,8 +448,14 @@ the result.**
   template at that version; the live dev cluster runs a forked `provider-github`
   (`v0.20.0-2.g7530c3d`) and `provider-helm` that the template's `crossplane/` directory
   does not ship (it pins upstream `provider-github` `v0.19.1` and has no `provider-helm`).
-- The tenant chart pins in `02-argocd-apps/` are v0.3.68 (kind-prod runs v0.3.76; the chart
-  is identical from v0.3.76 to v0.3.82).
+- ~~The tenant chart pins in `02-argocd-apps/` are v0.3.68.~~ **Resolved same day: apron's chart
+  and catalog pins are all v0.3.83.** Not a pin-only change: from airframe v0.3.69 the
+  release-tracking hooks' identity moved out of `airframe-application` into a separate
+  `airframe-identity` chart, so apron also gained a `tenant-identity` ApplicationSet (copied
+  from kind-prod's live one; the chart is byte-identical v0.3.76 -> v0.3.83). Without it an
+  upper env with releaseTracking on would fail its hooks for want of the `platform-outcome-hook`
+  ServiceAccount. Lower environments do not depend on it. **kiac-dev itself is still at v0.3.68**
+  for all three chart pins - it has not taken the chart split and has no `tenant-identity`.
 - The Composition hardcodes the shared Infisical instance's organization id, so a cluster
   using its OWN separate Infisical instance would get the wrong one.
 
