@@ -51,7 +51,7 @@ repo boundary.)*
 | Doc | Status | Read this when... |
 |---|---|---|
 | [Airframe Service Catalog](https://claude.ai/artifact/TBhiiN1TPjAbiwTTcctnK2) | current | You want the architecture reference with real diagrams — same content as `admin/architecture.md`. |
-| [Airframe Quickstart](https://claude.ai/artifact/WDPmWSD9BMBGurFzqATDWG) | **stale, 2026-09-23** | The illustrated walkthrough still follows the earlier Go version of `boarding-api`; `quickstart.md` now uses NodeJS and adds code pull-in and a canary. Trust the markdown until this is republished. |
+| [Airframe Quickstart](https://claude.ai/artifact/WDPmWSD9BMBGurFzqATDWG) | **current, 2026-09-24** | Illustrated walkthrough of `quickstart.md`: NodeJS `boarding-api`, code pull-in, ground and flight, Redis, canary. Not yet walked end to end; the markdown is corrected first if they differ. |
 | [Hangar Service Catalog](https://claude.ai/artifact/8tS9SWXGVVNL4hZCemzAMp) | vision, 2026-09-17 | You want the original ELI10 pitch and roadmap for components not yet built (Postgres, RabbitMQ, MongoDB, OAuth, nginx). **Its "dedicated vs. shared" diagram describes a `mode: create\|attach` field that was never built for Redis** — see `admin/architecture.md` for what actually shipped. |
 
 ## Glidepath — CI/CD
