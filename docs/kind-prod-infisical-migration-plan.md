@@ -417,16 +417,44 @@ laptop LAN address, so that script's VM-IP logic is wrong for it), and corrected
 secrets-management doc. Left alone as history: comments in the Composition templates,
 gitops-cluster-dev, and this doc set.
 
-**Deliberately NOT removed - needs its own piece of work:**
-- **`apron`** (the live cluster template) still ships the operator. New clusters built from it
-  would install the retired operator: `hack/customize-cluster.sh` has operator-specific
-  prune/rename logic; the operator directory also holds the Infisical NodePort and
-  token-reviewer manifests that any Infisical-host cluster needs (those must move, not
-  vanish); and its `external-secrets/infisical-project.yaml` is still an operator CR, so a
-  new cluster's platform project would fail with no CRD. Fixing it means redesigning how a
-  template cluster gets its platform project (a SecretStore XR plus a hand-created
-  `provider-infisical-creds`), which cannot be verified without building a cluster.
-- **`gitops-cluster-template`** is the deprecated predecessor of apron; not touched.
+**`apron` (the cluster template) - DONE (2026-09-23).** It still shipped the retired operator,
+so a cluster built from it would have installed it plus an `InfisicalProject` CR for its
+platform project. Changed:
+- `infisical-secretstore-operator/` removed; its NodePort and token-reviewer manifests (not
+  operator-specific) moved to a new `infisical-shared-k8s-auth/` Application, host cluster
+  only - the same split gitops-cluster-dev already made.
+- `external-secrets/infisical-project.yaml` (operator CR) replaced by `secretstore-xr.yaml`
+  (a SecretStore XR); `platform-secret-store` now reads `<slug>-infisical-creds`, the Secret
+  the Composition mints. Checked by rendering the real v0.3.82 Composition offline for the
+  generated cluster's XR: Secret name, namespace, keys and project slug all match.
+- provider-infisical pin `v0.0.0-5` -> `-7` (the universal-auth fix), runtime config given
+  `containers[]` and the `dev.kiac.local` hostAliases, ClusterProviderConfig given its
+  sync-wave/SkipDryRun. **The provider credential is now created by hand** - the template's
+  ExternalSecret read it out of the platform project this provider itself provisions, a
+  bootstrap cycle (and a lockout risk) - exactly what kind-prod's setup avoids.
+- Catalog pins `v0.3.35` -> `v0.3.82` (v0.3.35's SecretStore Composition renders the
+  operator CR).
+- `customize-cluster.sh`: operator prune/rename logic removed, `infisical-shared-k8s-auth`
+  pruned for remote consumers, a new hard invariant (a remote consumer needs the service
+  catalog, since its platform project is now an XR), and corrected next-steps text.
+
+Tested by running the script in scratch copies: remote consumer, Infisical host, the
+refused case, and external-secrets off. Outputs were clean, all YAML valid, no dangling
+references, no unsubstituted template literals. **Not tested: an actual cluster build from
+the result.**
+
+**Template drift found and NOT fixed** (outside this change, worth its own look):
+- The `full` (dev-cluster) catalog scope now pins v0.3.82 but has never been built from this
+  template at that version; the live dev cluster runs a forked `provider-github`
+  (`v0.20.0-2.g7530c3d`) and `provider-helm` that the template's `crossplane/` directory
+  does not ship (it pins upstream `provider-github` `v0.19.1` and has no `provider-helm`).
+- The tenant chart pins in `02-argocd-apps/` are v0.3.68 (kind-prod runs v0.3.76; the chart
+  is identical from v0.3.76 to v0.3.82).
+- The Composition hardcodes the shared Infisical instance's organization id, so a cluster
+  using its OWN separate Infisical instance would get the wrong one.
+
+**Still not touched:**
+- **`gitops-cluster-template`** is the deprecated predecessor of apron.
 - **The published image** `ghcr.io/jfillman/infisical-secretstore-operator` is still on GHCR.
   Deleting a package version is outward-facing and irreversible, so it is left for you.
 
