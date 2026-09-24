@@ -454,8 +454,16 @@ the result.**
   `airframe-identity` chart, so apron also gained a `tenant-identity` ApplicationSet (copied
   from kind-prod's live one; the chart is byte-identical v0.3.76 -> v0.3.83). Without it an
   upper env with releaseTracking on would fail its hooks for want of the `platform-outcome-hook`
-  ServiceAccount. Lower environments do not depend on it. **kiac-dev itself is still at v0.3.68**
-  for all three chart pins - it has not taken the chart split and has no `tenant-identity`.
+  ServiceAccount. Lower environments do not depend on it. **kiac-dev and kind-prod were then bumped
+  to v0.3.83 as well (same day).** kind-prod's move was a no-op (the charts are byte-identical
+  v0.3.76 -> v0.3.83). kiac-dev's crossed the split (it was at v0.3.68): checked first by
+  rendering all 11 real dev environment values files under both chart versions - byte-identical
+  every time - and by confirming nothing live uses `releaseTracking`; it needs no `tenant-identity`
+  (dev tenants carry only app-level identity files). After rollout, every kiac-dev Application
+  matched its pre-change sync/health, and kind-prod's fleet (SecretStores, ClusterSecretStores,
+  ExternalSecrets, managed resources, Applications) matched its baseline. Not touched:
+  `glidepath-app`'s own default chart pin (`v0.3.63`), which still sources the PR ephemeral
+  environments (`checkout-api-pr-26/28/30`).
 - The Composition hardcodes the shared Infisical instance's organization id, so a cluster
   using its OWN separate Infisical instance would get the wrong one.
 
