@@ -1981,3 +1981,59 @@ round" list above (Postgres/Mongo/RabbitMQ Dedicated-vs-Shared-tenant split,
 `nginx`'s real scope, Keycloak-as-confirmed-backend, `provider-rabbitmq`'s
 single-maintainer risk) are all still genuinely open and should be resolved before,
 not during, their respective build steps.
+
+## Round 2026-09-24: Postgres backend is CloudNativePG, and every component must label what it creates
+
+Two decisions from live testing on kiac-dev. Both supersede the `provider-sql`-first plan in
+the 2026-09-17 round above for Postgres.
+
+### Postgres on Kubernetes: CloudNativePG, not Bitnami and not a hand-rolled StatefulSet
+
+CloudNativePG (operator 1.30.1, chart 0.29.1) is installed on kiac-dev
+(`gitops-cluster-dev/10-crds-operators/cloudnative-pg/`). Operator and default Postgres
+images are multi-arch (amd64 + arm64). Why it, and what was proven on a throwaway `Cluster`:
+
+- **Tenant isolation.** By default any Postgres role can `CONNECT` to any database and list its
+  table names. Revoking `CONNECT` on `template1` does not help (CREATE DATABASE does not copy the
+  ACL). The rule that works is a custom `pg_hba` plus naming each tenant's database after its
+  role:
+  ```
+  host all      postgres all scram-sha-256   # admin (provider-sql / operator)
+  host samerole all      all scram-sha-256   # a role may reach only the database named for it
+  host all      all      all reject
+  ```
+  CNPG's `spec.postgresql.pg_hba` puts user rules after its fixed rules and before its default
+  `host all all all scram-sha-256`, so ours win (first match). Tested over TLS: a tenant reaches
+  its own database and is rejected on another tenant's, on `postgres`, on `template1` and on
+  CNPG's own `app` database, before authentication, and the rules survive a pod restart with data
+  intact. **The XRD must therefore set database name == role name.**
+- **Native per-resource CRDs.** CNPG ships `Database` and `DatabaseRole` (one resource each,
+  `cluster:` reference), with `databaseReclaimPolicy` / `databaseRoleReclaimPolicy: retain`. Tested:
+  deleting both CRs leaves the database and role in place, with none of the ownership deadlock
+  `provider-sql` had (a Delete-protected database blocks its owner role's drop, `2BP01`). This
+  makes `provider-sql` unnecessary for CNPG-hosted Postgres. It stays installed on kiac-dev only
+  as a route to Postgres that CNPG does not host.
+- **Gotchas found.** CNPG's `pg-superuser` secret carries `host: <cluster>-rw`, a short name that
+  a controller in another namespace cannot resolve; the Composition must use
+  `<cluster>-rw.<ns>.svc`. `DatabaseRole.passwordSecret` needs a `kubernetes.io/basic-auth` Secret
+  the Composition creates.
+- **Rejected:** Bitnami's chart (its versioned images were removed and the chart re-published as a
+  different appVersion, see the Redis note in the compositions), and the official image with our own
+  StatefulSet (we would own HA, backups and upgrades).
+
+### Every attached-tier component must propagate `hangar.io/*` labels to what it creates
+
+The application chart stamps `hangar.io/app`, `env`, `cluster` and `component-type` on the
+component XR, but nothing composed below the XR inherited them (checked live: a Redis cache's
+StatefulSet, Service, Secret and Pod carried only the chart's own labels), so
+`kubectl get all -l hangar.io/app=<app>` missed them. **Requirement:** a component Composition copies
+the XR's `hangar.io/*` labels onto its composed object and onto everything the backend creates,
+using whatever the backend offers:
+
+| Backend | Mechanism | Verified |
+|---|---|---|
+| Bitnami Redis chart | `commonLabels` value; labels every object and the pod template, not the StatefulSet selector or `volumeClaimTemplates` (so PVCs are not labelled) | live, chart 19.0.2 |
+| CloudNativePG | `spec.inheritedMetadata.labels` on the `Cluster`; labels Pod, PVC, Services, Secrets, ServiceAccount (the `Cluster` CR itself is labelled by the Composition) | live, 1.30.1 |
+
+Only `hangar.io/*` is copied. The XR's `app.kubernetes.io/*` labels describe the app and would
+collide with the backend's own.
