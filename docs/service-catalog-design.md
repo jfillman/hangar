@@ -2118,3 +2118,30 @@ declaring a queue outside its prefix, the producer reading the consumer's queue.
 - **kind-prod capacity.** Its podman VM was memory-saturated and hit the container's 2048-pid
   limit on 2026-09-25 (limit raised, VM 10 -> 12GB, observability scaled to 0). RabbitMQ
   (~1Gi) plus two operators is a real addition to that host.
+
+### Walked live (2026-09-25): the first real `InfraService`, and Phase 2's first consumers
+
+`skyport-broker` was created through the real path on kiac-dev: an `InfraService` XR
+(`tenants/skyport-broker/xr-requests/`), the `gitops-infra-skyport-broker` repo it scaffolds, and a
+`platform/envs/dev.yaml` with a `rabbitmq` component. This retires the earlier "`appType: infra` has
+never been used for real" caveat for the dev cluster. Guide: `airframe/docs/user/quickstart-broker.md`.
+
+- **Gap found and fixed:** the `idp-onboarding` AppProject did not whitelist `InfraService`
+  (`not permitted in project idp-onboarding`), so the XR never applied. Added in gitops-cluster-dev
+  and apron. kind-prod's copy is deliberately narrower (Bootstrap kinds are dev-only), so an
+  `InfraService`'s kind-prod environment is an `ApplicationEnvironment` created on dev.
+- **How an InfraService environment is defined:** `platform/envs/<env>.yaml` in
+  `gitops-infra-<name>`, because the tenant's `appRepoUrl` is that same repo and the lower-env
+  ApplicationSet reads `platform/envs/*.yaml` from it. Namespace: `app-<name>-<env>`.
+- **End to end, live:** flight-api (publisher) and boarding-api (consumer, evicts its Redis cache)
+  attached through `mode: attach` components and exchanged real events; a gate change reached the
+  board with `cached: false` at once. Both apps read their broker credentials with `env` `valueFrom`
+  (`secretKeyRef` and `configMapKeyRef`, no chart change needed).
+- **Image scan is a real gate:** flight-api on Spring Boot 3.3.4 failed the pipeline's Trivy scan
+  (39 HIGH/CRITICAL, all in the base: Tomcat, Spring, Jackson). Boot 3.5.16 plus pom overrides for
+  Tomcat, the Postgres driver, the RabbitMQ client and Netty cleared it. Part 2's flight-api would
+  fail the same scan today.
+- **Provenance gate:** boarding-api's release PR fails `provenance` on an unsigned commit; the user's
+  own earlier release PR (#11) did too and was merged, so signing is not enforced in practice.
+- **Still open:** the kind-prod flight environments for the broker and both apps (not walked; the
+  host was memory-short), `baggage-api`, and the PVC labelling gap.
