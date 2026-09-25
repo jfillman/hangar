@@ -2037,3 +2037,23 @@ using whatever the backend offers:
 
 Only `hangar.io/*` is copied. The XR's `app.kubernetes.io/*` labels describe the app and would
 collide with the backend's own.
+
+### Status (later 2026-09-24): built, and verified on both clusters
+
+The dedicated `PostgreSQL` component is built (airframe `xrds/postgresql.yaml`,
+`compositions/postgresql/`) and installed on kiac-dev and kind-prod, each with the CNPG operator and
+Crossplane RBAC for `postgresql.cnpg.io` and `networking.k8s.io`.
+
+- **The NetworkPolicy is necessary, proven on kind-prod (Calico).** The same `Cluster` in a
+  namespace with the app baseline policy but without the component's operator-allow policy never
+  became healthy (`Instance Status Extraction Error: HTTP communication issue`); with it, Ready in
+  about a minute. kiac-dev's CNI does not enforce policy, so only kind-prod could show this.
+  Cross-namespace access to the database was blocked.
+- **Kubernetes 1.37 on kind-prod.** CNPG 1.30 lists 1.34-1.36 as supported and 1.37 as "tested,
+  but not supported". Works here; not covered by upstream support.
+- **The component's credentials are consumed with `env` `valueFrom` (airframe v0.3.88)**, not copied
+  into Infisical: the chart used to drop `valueFrom` from `env` entries. Redis's password can be read
+  the same way.
+- **Known gap, in Tower not the chart:** the App Configuration *Environment variables* section is a
+  name/value form; editing it rewrites the whole `env` list and drops any `valueFrom` entry.
+- **First consumer:** Skyport's `flight-api`, see `airframe/docs/user/quickstart-flight-api.md`.
