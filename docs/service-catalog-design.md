@@ -2058,3 +2058,63 @@ Crossplane RBAC for `postgresql.cnpg.io` and `networking.k8s.io`.
   name/value form; editing it used to rewrite the whole `env` list as name/value and replace a
   `valueFrom` entry with an empty value. It now shows `valueFrom` rows read-only and keeps them.
 - **First consumer:** Skyport's `flight-api`, see `airframe/docs/user/quickstart-flight-api.md`.
+
+## Round 2026-09-25: RabbitMQ is a shared broker, attached per app with generated permissions
+
+Decisions (with the user) and what live testing on kiac-dev showed. The component is
+`airframe/xrds/rabbitmq.yaml` + `compositions/rabbitmq/`.
+
+### Shape
+
+- **Shared, not dedicated.** flight-api publishes; boarding-api and baggage-api consume. Nothing
+  crosses a vhost without federation/shovel, so they must share a broker and a vhost. Unlike
+  PostgreSQL/Redis this is one broker per cluster and environment, owned by an `InfraService`
+  (`skyport-broker`). Backend: RabbitMQ Cluster Operator 2.23.0 + Messaging Topology Operator
+  1.20.3 (both multi-arch), vendored under `10-crds-operators/rabbitmq-operators` in each
+  cluster's gitops repo. Both need cert-manager. Rejected: `provider-rabbitmq` (single
+  maintainer), Bitnami's chart.
+- **One vhost per domain** (`flights`), not per app (breaks fan-out) and not one for the whole
+  demo (no isolation between domains). Each app gets its own user with least-privilege
+  permissions on it.
+- **Two modes in one XRD.** `mode: broker` composes the `RabbitmqCluster`, its `Vhost`s and a
+  NetworkPolicy. `mode: attach` composes a `User` + `Permission` + a connection ConfigMap in the
+  *consumer's own* namespace, referencing the broker across namespaces. This avoids the
+  cross-namespace limit that ruled out shared PostgreSQL.
+- **Permissions are generated from names**, never raw regexes: `queuePrefix` (queues the app may
+  create/bind/consume), `publish` (exchanges it may declare and publish to), `consume` (exchanges
+  it may bind to). Binding a queue needs `write` on the queue and `read` on the exchange.
+- **Credentials** are the operator's `<xr>-user-credentials` Secret (username, password) in the
+  consumer's namespace, read with `env` `valueFrom`; host/port/vhost are in `<xr>-connection`.
+
+### Verified live (kiac-dev, arm64), over real AMQP
+
+A producer declared the exchange and published; a consumer declared its own queue, bound it,
+and received the message. Refused: the consumer publishing to the exchange, the consumer
+declaring a queue outside its prefix, the producer reading the consumer's queue.
+
+### Gotchas found
+
+- **Trust boundary:** a User/Permission from another namespace is refused unless the broker's
+  `rabbitmq.com/topology-allowed-namespaces` annotation lists that namespace (`allowedNamespaces`).
+  Anyone who can write a namespace's manifests can request any permission there, so the broker
+  owner controls who may attach, not what they ask for. Acceptable for the demo; a real
+  multi-team setup needs an admission policy.
+- **Use RabbitMQ 4.2, not 4.1:** the operator's startup probe calls
+  `/api/health/checks/reached-target-cluster-size`, which 4.1.8 answers 404; the pod never
+  becomes ready. Pinned to `rabbitmq:4.2.9-management`.
+- **Ownership conflict:** the Topology Operator makes a `Permission`'s `userReference` target its
+  controlling owner, which fails when Crossplane already controls the Permission. The
+  composition refers to the user by name instead, read from the observed `User` status (the
+  operator generates the username), so the Permission renders one reconcile after the User.
+- **No `Ready` condition:** a `RabbitmqCluster` reports `AllReplicasReady`, so
+  function-auto-ready never completes; readiness is derived from that condition.
+- **PVCs are not labelled** `hangar.io/*` (pods, Services, StatefulSet and Secrets are), the same
+  gap as Redis.
+
+### Not yet verified
+
+- **kind-prod (amd64, Calico).** The NetworkPolicy (operator on 15672/5672, allowed namespaces on
+  5672) is written but only kiac-dev has run it, and its CNI does not enforce policy.
+- **kind-prod capacity.** Its podman VM was memory-saturated and hit the container's 2048-pid
+  limit on 2026-09-25 (limit raised, VM 10 -> 12GB, observability scaled to 0). RabbitMQ
+  (~1Gi) plus two operators is a real addition to that host.
