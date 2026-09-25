@@ -2011,8 +2011,8 @@ images are multi-arch (amd64 + arm64). Why it, and what was proven on a throwawa
   `cluster:` reference), with `databaseReclaimPolicy` / `databaseRoleReclaimPolicy: retain`. Tested:
   deleting both CRs leaves the database and role in place, with none of the ownership deadlock
   `provider-sql` had (a Delete-protected database blocks its owner role's drop, `2BP01`). This
-  makes `provider-sql` unnecessary for CNPG-hosted Postgres. It stays installed on kiac-dev only
-  as a route to Postgres that CNPG does not host.
+  makes `provider-sql` unnecessary for CNPG-hosted Postgres. It was installed on kiac-dev for the
+  early tests and has been removed (nothing used it).
 - **Gotchas found.** CNPG's `pg-superuser` secret carries `host: <cluster>-rw`, a short name that
   a controller in another namespace cannot resolve; the Composition must use
   `<cluster>-rw.<ns>.svc`. `DatabaseRole.passwordSecret` needs a `kubernetes.io/basic-auth` Secret
@@ -2054,6 +2054,7 @@ Crossplane RBAC for `postgresql.cnpg.io` and `networking.k8s.io`.
 - **The component's credentials are consumed with `env` `valueFrom` (airframe v0.3.88)**, not copied
   into Infisical: the chart used to drop `valueFrom` from `env` entries. Redis's password can be read
   the same way.
-- **Known gap, in Tower not the chart:** the App Configuration *Environment variables* section is a
-  name/value form; editing it rewrites the whole `env` list and drops any `valueFrom` entry.
+- **Tower gap, fixed (backstage `366ea8c`):** the App Configuration *Environment variables* section is a
+  name/value form; editing it used to rewrite the whole `env` list as name/value and replace a
+  `valueFrom` entry with an empty value. It now shows `valueFrom` rows read-only and keeps them.
 - **First consumer:** Skyport's `flight-api`, see `airframe/docs/user/quickstart-flight-api.md`.
