@@ -76,3 +76,62 @@ six generated), so `*.release.yaml` cannot become an environment.
 3. The exclude with the real `*.release.yaml` name (U7 used a stand-in glob).
 4. Glidepath's deploy stage writing only the release file, with strings preserved.
 Test through a copy of the ApplicationSet under another name, not by editing the live one (ArgoCD self-heal).
+
+## Revisions after review (2026-09-26)
+
+Two questions were raised on this design. Both change it; the layout above still says `platform/` and
+`rollout.image` until the work is scheduled.
+
+### 1. The directory name: rename `platform/` to `airframe/`
+In the Hangar brand system "the platform" is Hangar itself. `platform/` in an app repo is a leftover from
+`platform-cicd` (the deprecated predecessor of Glidepath; `cicd.yaml` still says `apiVersion: platform/v1`). The
+files in it are exactly the values for the Airframe chart, so the directory should be named for the product
+that owns the contract, as the other pieces already are (`.tekton/` for Pipelines-as-Code, gitops repos for Flight).
+
+- **Recommended:** `airframe/` (`airframe/base.yaml`, `airframe/envs/<env>.yaml`, `airframe/envs/<env>.release.yaml`,
+  `airframe/pr-env.yaml`). Runner-up: `hangar/` (umbrella name, matches the `hangar.io` label domain, but says
+  less about what is inside). Rejected: `ground/` (base and release files are not Ground-specific ideas and the
+  PR-environment file lives there too).
+- **Cost, measured by grep:** the `platform/envs` path is read by the lower-envs ApplicationSet (apron and
+  gitops-cluster-dev, plus their `applicationset.yaml` and `Chart.yaml`), about eight Glidepath files
+  (`deploy-manifests`, `deliver-onboarding-files`, `open-release-pr`, `deploy` pipeline, `run-testworkflow`,
+  `ephemeral-envs`, `deploy-rbac`, `appproject`, the PR-preview notify job, the PaC config-only-push exemption),
+  Tower's `GlidepathTab` and `PromoteDialog`, and every app repo and scaffold.
+- **Migration shape:** do it inside the split migration, since every app repo is touched anyway. The files
+  generator can list both paths for a window (`platform/envs/*.yaml` and `airframe/envs/*.yaml`; an `envName`
+  must not appear in both), writers move first, then the old path is dropped.
+- **Not part of this rename:** `cicd.yaml` and its `platform/v1` apiVersion (Glidepath's own schema, baked into
+  the toolbox image). Worth a separate decision.
+
+### 2. Split the image out of `rollout`: a top-level `release:` object
+The ArgoCD/Helm precedence approach works and is proven (Helm deep-merges maps; later `valueFiles` win; the
+files here never conflict on a key). The reasons to go further are not about precedence:
+
+1. **The image is not a rollout setting.** It is the release artifact. The chart already uses `rollout.image` as the
+   fallback image for `jobs:` and `cronJobs:` (`_helpers.tpl`), so a Job's image is configured through the
+   Rollout's object. Naming it `release.image` says what it is.
+2. **Ownership becomes a fact about a top-level key.** With disjoint top-level keys (`release` and
+   `releaseTracking` versus everything else) `x-hangar-owner: release` sits on whole objects, and the validate
+   rule is one line: a human file may not contain `release`/`releaseTracking`, a release file may contain
+   nothing else. Today the rule has to say "`rollout.image` but not the rest of `rollout`", which is exactly the
+   nested-key ownership that path-level scope cannot express.
+3. **Merge hazards disappear.** Lists replace wholesale in Helm, and any tool that treats `rollout` as one object
+   (a planner merge-patch, the Config tab writing `rollout`, `yq` replacing it) can drop or resurrect an image
+   if both authors write under `rollout`. Disjoint keys cannot collide.
+4. **`rollout: null` stops being a trick.** Today "no workload" and "no image yet" both go through `rollout`.
+
+- **Cost, measured by grep:** the chart (`_helpers.tpl`, `rollout.yaml`, `values.yaml`, README), the
+  `ApplicationEnvironment` composition (three templates), four Glidepath tasks (`extract-promoted-image`,
+  `open-release-pr`, `deploy-manifests`, `verify-image-provenance`) plus `ephemeral-envs`, and Tower/Backstage
+  (`GlidepathTab`, `GlidepathSummaryPanel`, three backend config readers), plus every existing env file.
+- **Compatibility:** the chart reads `release.image` first and falls back to `rollout.image` for a deprecation
+  window, so this is a non-breaking chart release. `airframe validate` warns on `rollout.image` in a human file,
+  then errors once the writers have moved.
+- **Keep `releaseTracking` as it is** (already top-level and machine-owned; Tower's Release Record reads it).
+  Folding it under `release.tracking` is possible later but not needed.
+
+### Order of work (each step ships on its own, none breaks a live app)
+1. Chart: accept `release.image` (fallback to `rollout.image`); guard and helpers read the new key first.
+2. Glidepath and the `ApplicationEnvironment` composition write `release.image` into a release file; Tower reads both.
+3. ApplicationSet change (three `valueFiles`, `ignoreMissingValueFiles`, exclude), then split each app's files.
+4. Directory rename with a dual-path window; then remove the old path and the `rollout.image` fallback.
