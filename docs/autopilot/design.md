@@ -59,6 +59,8 @@ rules:
 
 Agent definitions and policy, profiles and their ceilings, app, gitops and tenants repos, cluster config, the Modelplane hub's inventory (classes, clusters, deployments, services), model routes, the Checkride corpus, gate definitions. Raising authority is always a reviewed commit. Lowering it is immediate and needs no review.
 
+> Industry context: [industry-context.md](industry-context.md) places this design against the emerging "agent substrate" category and records what we adopted from it.
+
 ## 2. Principles inherited, and what each forces
 
 | Principle (source) | Consequence |
@@ -91,6 +93,15 @@ Agent definitions and policy, profiles and their ceilings, app, gitops and tenan
 | Team | a parent run | definitions | child AgentRuns, each narrower than its parent |
 
 Services reuse the existing application path, so nothing new is invented for them. Holmes is already one.
+
+### 3.1 Additions from the substrate review (2026-09-26)
+
+- **Stable agent identity.** An agent has one identity per `AgentDefinition`, independent of any run. Runs inherit it. It is the key for per-agent policy, for "everything this agent ever did" in the audit chain, and for any future memory scope. Task: AP-A4.
+- **Model version is part of the record.** Each run records the exact model id/version it used, next to its tools, decisions and Checkride result, so a change in behaviour can be tied to a model change.
+- **Cost accounting.** Tokens and compute are recorded per run, per agent and per task tree, and shown in Tower. Task: AP-C2.
+- **Optional persistent state (session and team shapes only).** Default stays stateless, so a run's state is its Clearance channel and its artifacts. An agent may opt in to a workspace volume that can be snapshotted and resumed. Guards: size cap, retention TTL, a scan before restore (memory poisoning is the risk), and the volume belongs to the agent identity, never to another agent. Task: AP-D1, gated on U12.
+- **Sandbox substrate.** Before building more pod-rendering code, decide whether `function-agentrun` should render the upstream Kubernetes Agent Sandbox object (warm pools, gVisor/Kata, suspend/resume) instead of a raw pod. Answer: U11, before AP-A3.
+- **Rejected: a monolithic `AgentWorkspace` resource** that grants cpu, memory, namespaces and tools in one object. It merges what a run may do with what the platform grants, and it would put `kubectl` and `argocd` inside the sandbox. `AgentRun` plus an optional state volume keeps them apart.
 
 ### Runtime contract (any framework)
 
@@ -282,6 +293,7 @@ These are explicit decisions, not details:
 - Time-driven re-invocation through the function response TTL on your Crossplane version.
 - Whether provider-kubernetes Objects for Namespace, ResourceQuota, NetworkPolicy and Job apply cleanly with the grants drafted.
 - pgvector in the CloudNativePG image.
+- The upstream Kubernetes Agent Sandbox and GKE Agent Substrate: known only from a third-party survey, not read at source (U11).
 - Modelplane's usage-record contents, short-lived-credential support for `Existing` clusters, and behaviour on your Kubernetes versions (kind-prod is 1.37; kiac-dev's version I did not check).
 
 ## Sources

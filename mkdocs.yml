@@ -16,6 +16,8 @@ nav:
       - Airframe A+ program: autopilot/airframe-ai-friendly.md
       - Autopilot design: autopilot/design.md
       - Skyport AI workloads: autopilot/skyport-ai-workloads.md
+      - Industry context: autopilot/industry-context.md
+      - Decisions: autopilot/decisions.md
       - Glossary: autopilot/glossary.md
 
 plugins:

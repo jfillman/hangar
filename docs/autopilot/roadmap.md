@@ -87,7 +87,10 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 | **AP-B3** model proxy v0 (HTTP forwarder), hosted model route, key via Infisical | |
 | **AF-8** `airframe.*` tools, planner adapters | **the parachute sentence passes live**, with a seeded bad run and a resume test |
 | **AF-6b** `describe` and verify contracts; **AF-10c** chart `agent:` block | |
-| **AP-C1** Flight recorder: `task_id` everywhere, audit chain anchor | |
+| **AP-C1** Flight recorder: `task_id` everywhere, audit chain anchor; each run records the pinned model version and its Checkride result | ledger fields from [industry-context.md](industry-context.md) |
+| **AP-A4** stable agent identity, separate from a run (per-agent policy, history, memory scope) | one identity per AgentDefinition; runs inherit it |
+| **AP-C2** cost accounting: tokens and compute per run, per agent, per task tree, in the recorder and the Tower tab | from budgets already enforced |
+| **AF-2b** fix the T0 read set (`getLogs`, `getMetrics`, `getRelease`, `getDeploymentStatus`) and put it in the contract bundle | read tools taught by example |
 
 **Exit:** the parachute sentence works end to end on dev (a human merges the flight PRs); killing Clearance mid-run still ends every run on time; the seeded bad run scores as failed.
 
@@ -111,6 +114,7 @@ a Checkride case with a seeded bad run, and updates its quickstart's verified-st
 - Checkride as a regression gate on the Autopilot repo: profile, model and policy changes are PRs that must pass.
 - Autonomy tracker for one alert class (shadow, then approve, then auto), with the breaker.
 - Modelplane hub trial on a dedicated kind cluster, behind the OpenAI-compatible contract.
+- **AP-D1** opt-in persistent, resumable state for session and team shapes: size cap, retention TTL, scan before restore (needs U12; design in design.md 3.1).
 - Part 12: the nginx edge (optional), born A+.
 - Conformance on kind-prod: upper clusters get no runs, and a run cannot be created there.
 - The A+ run: scorecard 14 of 14 and overall at least 97, recorded.
@@ -149,6 +153,10 @@ repo setup, Modelplane reading. Do not parallelize the ownership split with Clea
 | U8 | Does provider-kubernetes accept the rendered Namespace, Quota, NetworkPolicy, ServiceAccount and Job? | `crossplane render` is not possible without Docker; use a scratch XR on kiac-dev |
 | U9 | Is pgvector available in the CloudNativePG image? | only if a vector store is wanted |
 | U10 | What do Modelplane's usage records contain, and does short-lived auth work for `Existing` clusters? | read a real record, in the M5 trial |
+| U11 | Is the upstream Kubernetes SIG Agent Sandbox real and mature enough (warm pools, gVisor/Kata, suspend/resume)? Could `function-agentrun` render its Sandbox object instead of a raw pod? | read the project and its CRDs, then install it on kiac-dev and render one run through it; answer before AP-A3 is built. Its current maturity is second-hand knowledge (see [industry-context.md](industry-context.md)) |
+| U12 | Can a run's workspace be snapshotted and restored (volume snapshot on kiac-dev's storage class), and what does restore cost in seconds? | scratch PVC plus VolumeSnapshot on kiac-dev; needed for AP-D1 |
+
+All U-experiments run on kiac-dev (decision 2026-09-26).
 
 ## 6. Risks
 - **One person, many repos.** airframe, glidepath, backstage, apron, the tenants repos and a new repo all change. Keep every change small, behind a gate, and reversible. Use worktrees.

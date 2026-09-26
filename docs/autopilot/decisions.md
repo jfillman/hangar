@@ -17,4 +17,8 @@ Answers to the open decisions in [roadmap.md](roadmap.md), recorded 2026-09-26.
 | D11 | Take the recommendation in roadmap.md. | Decided |
 | D12 | Take the recommendation in roadmap.md. | Decided |
 
-Experiments U1–U8 in the roadmap run on kiac-dev.
+All experiments (U1–U12) in the roadmap run on kiac-dev.
+
+## 2026-09-26, substrate review
+
+Accepted: stable agent identity (AP-A4), model version in the record (AP-C1), cost accounting (AP-C2), upstream Agent Sandbox evaluation (U11), resumable state (AP-D1, U12), fixed T0 read set (AF-2b), rejection of a monolithic `AgentWorkspace`. See [industry-context.md](industry-context.md).
