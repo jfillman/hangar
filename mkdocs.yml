@@ -10,6 +10,13 @@ nav:
       - Cluster provisioning: cluster-provisioning.md
       - Local clusters: local-clusters.md
       - Backstage (Tower) design: backstage-design.md
+  - Autopilot:
+      - Overview: autopilot/README.md
+      - Roadmap: autopilot/roadmap.md
+      - Airframe A+ program: autopilot/airframe-ai-friendly.md
+      - Autopilot design: autopilot/design.md
+      - Skyport AI workloads: autopilot/skyport-ai-workloads.md
+      - Glossary: autopilot/glossary.md
 
 plugins:
   - techdocs-core

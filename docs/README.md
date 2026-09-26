@@ -28,6 +28,20 @@ created — not batched up later.
 | [local-clusters.md](local-clusters.md) | You're running clusters locally and need the real operational notes. |
 | [backstage-design.md](backstage-design.md) | You want Tower's own design rationale — self-service flows, the terasky ingestor, catalog structure. |
 
+## Autopilot — AI agent workloads
+
+Added 2026-09-26. Design, plan and diagrams live in this repo under [`autopilot/`](autopilot/README.md).
+
+| Doc | Read this when... |
+|---|---|
+| [autopilot/README.md](autopilot/README.md) | You want the one-page overview and where everything is. |
+| [autopilot/roadmap.md](autopilot/roadmap.md) | You want the unified plan: Airframe A+, Autopilot and Skyport AI in six milestones, with decisions and unverified items. |
+| [autopilot/airframe-ai-friendly.md](autopilot/airframe-ai-friendly.md) | You want to know how AI-operable Airframe is (measured, baseline 27/100) and the ten workstreams to get to A+. |
+| [autopilot/design.md](autopilot/design.md) | You want the Autopilot design: two planes, the workload model, tiers, policy, backends, failure modes. |
+| [autopilot/skyport-ai-workloads.md](autopilot/skyport-ai-workloads.md) | You want the six Skyport agents, one per workload shape, and how each is tested. |
+| [autopilot/glossary.md](autopilot/glossary.md) | A term is unfamiliar. |
+| [autopilot/diagrams/index.html](autopilot/diagrams/index.html) | You want pictures: 37 one-page diagrams in three sets (open the file directly; TechDocs serves it as a static asset). |
+
 ## Airframe — the service catalog
 
 Developer- and admin-facing docs live in the `airframe` repo itself.

@@ -1,0 +1,39 @@
+# ILLUSTRATIVE. The shape is the design; the literal names and the Secret must be verified against the
+# real Redis component before this is used (the live env files show `cache-master` and an Infisical
+# secret named redis-password, which is not necessarily what the component itself emits).
+# Sidecar meta for the Redis component (a Kubernetes CRD's structural schema rejects unknown x- keys,
+# so this vocabulary lives beside the XRD, keyed by JSON pointer, and the contract generator merges it).
+kind: Redis
+summary: A Redis cache or shared-counter store for one application environment.
+fields:
+  /spec/size:
+    x-hangar-risk: low
+    x-hangar-effects: [resizes the StatefulSet, restarts Redis]
+    examples: [small]
+  /spec/persistence:
+    x-hangar-risk: medium
+    x-hangar-effects: [adds or removes a PersistentVolumeClaim]
+    examples: [false]
+outputs:
+  # Names are templates over the component's own name. `fromComponent: {name: cache, output: url}` resolves these.
+  url:
+    kind: literal
+    value: "redis://{name}-master.{namespace}.svc.cluster.local:6379"
+  host:
+    kind: literal
+    value: "{name}-master.{namespace}.svc.cluster.local"
+  port:
+    kind: literal
+    value: 6379
+  password:
+    kind: secretKeyRef
+    secret: "{name}"
+    key: redis-password
+verify:
+  - id: xr-ready
+    check: "XR condition Ready is True"
+  - id: secret-exists
+    check: "Secret {name} exists and has key redis-password"
+  - id: reachable
+    check: "TCP connect to {name}-master:6379 succeeds from the app namespace"
+owner: human

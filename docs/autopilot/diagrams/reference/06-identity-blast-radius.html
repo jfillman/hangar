@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agents are identities: each ring narrows the blast radius</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#f2efe9;--paper-2:#e8e3da;--ink:#1b1f24;--muted:#5b6570;--soft:#838b93;--accent:#b9791f;--link:#2e7ba6;--rule:rgba(27,31,36,0.12);
+--font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace}
+body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);padding:2.5rem 2rem 2rem}
+.frame{max-width:1120px;margin:0 auto}
+.eyebrow{font-family:var(--font-mono);font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+h1{font-family:var(--font-serif);font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.15;margin-bottom:.5rem}
+.lede{color:var(--muted);font-size:.9rem;line-height:1.5;max-width:70ch;margin-bottom:1.25rem}
+.fig{overflow-x:auto}
+svg{width:100%;min-width:900px;display:block}
+.cards{display:grid;grid-template-columns:1.15fr 1fr 1.05fr;gap:.75rem;margin-top:1.25rem}
+.card{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:1rem 1.1rem}
+.card .eyebrow{margin-bottom:.35rem}
+.card p,.card li{font-size:.8rem;line-height:1.5;color:var(--ink)}
+.card ul{padding-left:1rem}
+.card .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:.4rem;background:var(--muted)}
+.card .dot.accent{background:var(--accent)} .card .dot.link{background:var(--link)}
+.foot{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.06em;color:var(--soft);border-top:1px solid var(--rule);margin-top:1.25rem;padding-top:.6rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.foot a{color:var(--link);text-decoration:none}
+@media (max-width:900px){.cards{grid-template-columns:1fr}}
+@media print{@page{size:landscape;margin:10mm}body{padding:0}.cards{margin-top:.75rem}}
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">Nested · 06 of 10 · Agent identity</p>
+<h1>Agents are identities: each ring narrows the blast radius</h1>
+<p class="lede">Authority only narrows as it moves inward. The unit an agent actually holds is one token, for one verb, on one resource, and that is also the unit that gets audited.</p>
+<div class="fig">
+<svg viewBox="0 8 1000 528" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="identity-blast-radius-title identity-blast-radius-desc">
+<title id="identity-blast-radius-title">Agents are identities: each ring narrows the blast radius</title>
+<desc id="identity-blast-radius-desc">Nested containment from organization guardrails through a business line, an environment and an agent session down to a single tool call, where each ring narrows what an agent identity can reach.</desc>
+<defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs>
+<rect width="100%" height="100%" fill="#f2efe9"/>
+<rect x="24" y="24" width="952" height="392" rx="8" fill="rgba(27,31,36,0.015)" stroke="rgba(27,31,36,0.3)" stroke-width="1"/><rect x="36" y="18" width="112" height="12" rx="2" fill="#f2efe9"/><text x="92.0" y="27" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">L1 · ORGANIZATION</text><text x="40" y="56" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Organization guardrails</text><text x="960" y="56" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">SCPs · admission policy · audit retention</text><rect x="56" y="72" width="888" height="316" rx="8" fill="rgba(27,31,36,0.025)" stroke="rgba(27,31,36,0.45)" stroke-width="1"/><rect x="68" y="66" width="120" height="12" rx="2" fill="#f2efe9"/><text x="128.0" y="75" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">L2 · BUSINESS LINE</text><text x="72" y="104" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Business line: lending (Mogo)</text><text x="928" y="104" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">own accounts · own policy set · no cross-line reach</text><rect x="88" y="120" width="824" height="240" rx="8" fill="rgba(27,31,36,0.035)" stroke="rgba(27,31,36,0.6)" stroke-width="1"/><rect x="100" y="114" width="108" height="12" rx="2" fill="#f2efe9"/><text x="154.0" y="123" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">L3 · ENVIRONMENT</text><text x="104" y="152" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Environment: lending-dev</text><text x="896" y="152" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">namespace RBAC · quota · network segmentation</text><rect x="120" y="168" width="760" height="164" rx="8" fill="rgba(27,31,36,0.045)" stroke="rgba(27,31,36,0.8)" stroke-width="1"/><rect x="132" y="162" width="120" height="12" rx="2" fill="#f2efe9"/><text x="192.0" y="171" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">L4 · AGENT SESSION</text><text x="136" y="200" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Agent session</text><text x="864" y="200" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">identity TTL 30 min · task-scoped role · token budget</text><rect x="152" y="216" width="696" height="88" rx="6" fill="#f2efe9"/><rect x="152" y="216" width="696" height="88" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="500.0" y="258.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">One tool call</text><text x="500.0" y="274.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">one short-lived token · one verb · one resource · one audit row</text><text x="24" y="456" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">A compromised agent reaches exactly what its session was scoped to, and nothing in another business line.</text><line x1="24" y1="476" x2="976" y2="476" stroke="rgba(27,31,36,0.12)" stroke-width="0.8"/><text x="24" y="496" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text><rect x="96" y="488" width="16" height="12" rx="3" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="120" y="497" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Unit of authority</text><rect x="225" y="488" width="16" height="12" rx="3" fill="rgba(27,31,36,0.03)" stroke="rgba(27,31,36,0.30)" stroke-width="1"/><text x="249" y="497" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Scope ring (each narrower than the last)</text>
+</svg>
+</div>
+<div class="cards"><div class="card"><p class="eyebrow"><span class="dot "></span>Requirement</p><p>Agents are identities. They need scoped credentials, bounded blast radius, and audit trails that hold up across lending, payments, and securities regulation.</p></div><div class="card"><p class="eyebrow"><span class="dot accent"></span>Design choices</p><ul><li>Workload identity first (IRSA on EKS, the OCI equivalent); secrets only where federation cannot reach.</li><li>Dynamic, short-lived database credentials delivered by External Secrets.</li><li>Cross-line reach is denied by policy, not by convention.</li></ul></div><div class="card"><p class="eyebrow"><span class="dot link"></span>Evidence and gap</p><p>Built in Hangar: provider-infisical with declarative, Delete-protected projects adopted in place, ESO delivery, and a standing preference for never-persisted credentials. Honest gap: IRSA and the OCI equivalent were not exercised in Hangar.</p></div></div>
+<div class="foot"><span>Hangar · reference architecture</span><span></span></div>
+</div>
+</body>
+</html>
