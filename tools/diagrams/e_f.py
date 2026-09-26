@@ -102,7 +102,7 @@ def w_rollout():
             ('B · governed writes, lower only',[
                ('Interceptor agent-token route',5,6,1),('Model proxy v0',5,8,0),('T1 tools + run.spawn',6,9,0),('Gates: scope + identity',7,10,0)]),
             ('C · evidence and any agent',[
-               ('Agent XRD + two templates',9,13,0),('Recorder + GenAI traces',9,12,0),('Checkride v0',10,14,0)]),
+               ('Agent XRD + two templates',9,13,0),('Recorder + GenAI traces',9,12,0),('Preflight v0',10,14,0)]),
             ('D · widen',[
                ('Triggers + Holmes routing',13,16,0)])]
     for w in range(NW):
@@ -135,4 +135,4 @@ def w_rollout():
       body=''.join(b), W=1000, H=cur+16+52, y0=24,
       cards=[('Verify A · end of week 6','', UL(['A T0 call works end to end and leaves an audit row.','A run ends on time with Clearance stopped, and again with the function pod killed.','The network-policy canary fails on kiac-dev (reported honestly) and passes on kind-prod.','customize-cluster.sh refuses autopilot on a type: upper cluster.'])),
              ('Verify B · end of week 10','accent', UL(['A repo-scoped token cannot open a PR on any other repo.','Upper sync and any kubectl write are refused with the agent token.','A PR that edits .tekton/ turns agent-scope red and cannot merge.','A model call for a model off the allowlist is denied and audited.'])),
-             ('Verify C · end of week 14','link', UL(['One task_id runs from audit row to Argo annotation to a Loki line.','Checkride scores the seed cases, and a seeded bad run fails.','A new agent scaffolded from a template runs end to end with no platform change.']))])
+             ('Verify C · end of week 14','link', UL(['One task_id runs from audit row to Argo annotation to a Loki line.','Preflight scores the seed cases, and a seeded bad run fails.','A new agent scaffolded from a template runs end to end with no platform change.']))])

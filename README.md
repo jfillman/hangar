@@ -116,7 +116,7 @@ agents (measured by [`tools/airframe-scorecard`](tools/airframe-scorecard/): bas
 **durable changes are git commits; ephemeral runs are claims to Crossplane.** Start at
 [`docs/autopilot/README.md`](docs/autopilot/README.md); the plan is [`docs/autopilot/roadmap.md`](docs/autopilot/roadmap.md).
 Built so far, with 255 passing tests and no cluster: the Clearance core, the AppSpec planner (the
-"parachute" acceptance test), nine Skyport agent definitions and six Checkride cases. Drafted, never
+"parachute" acceptance test), nine Skyport agent definitions and six Preflight cases. Drafted, never
 applied: the `AgentRun` XRD and its composition function. Nothing is committed yet.
 
 ## Repos
@@ -126,7 +126,7 @@ hangar                      this repo — docs + running status (was "idp")
 glidepath                   the CI/CD engine (was "platform-cicd")
 airframe                    Crossplane XRDs/Compositions + the airframe-application chart, tagged v0.1.0, pinned+synced via ArgoCD (was "idp-service-catalog")
 apron                       gold-standard template for provisioning a new cluster repo - docs/cluster-provisioning.md (was "gitops-cluster-template")
-autopilot                   AI agent workloads: Clearance, AgentRun, planner (proposed repo; code is ~/tech/clearance today) - docs/autopilot/
+autopilot                   AI agent workloads: Clearance, AgentRun, planner (proposed repo; code is ~/tech/autopilot today) - docs/autopilot/
 gitops-cluster-dev          kind-dev's cluster config (Phase 1 done, live-verified)
 gitops-cluster-dev-tenants  kind-dev's app-onboarding requests - real xr-requests/ commits, live-verified 2026-08-15
 idp-cluster-baseline        shared cluster-config chart(s) (not started)

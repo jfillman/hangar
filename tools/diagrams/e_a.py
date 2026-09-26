@@ -105,7 +105,7 @@ def e03():
       lede='The agent never sees a GitHub token. Clearance derives who is acting from Tower\'s login, decides in CEL, and gets a token scoped to one repository for that one call. The audit id in the reply is the record the rest of the platform correlates on.',
       body=''.join(b), W=1000, H=640,
       cards=C3(P('Never-persisted credentials: mint per call, not cache and refresh. Isolation comes from the TokenReview answer, never from a claim in the request body.'),
-               UL(['New interceptor route beside /github-installation-token: it checks the caller is Clearance and the repo is in the session\'s profile.','Workload agents (Holmes, Checkride) authenticate with a projected service-account token, audience clearance.','Open decision: commits must satisfy the provenance gate. Sign with the self-hosted Fulcio (workload trust root) and extend the gate, or exempt agent PRs. Prefer the first.']),
+               UL(['New interceptor route beside /github-installation-token: it checks the caller is Clearance and the repo is in the session\'s profile.','Workload agents (Holmes, Preflight) authenticate with a projected service-account token, audience clearance.','Open decision: commits must satisfy the provenance gate. Sign with the self-hosted Fulcio (workload trust root) and extend the gate, or exempt agent PRs. Prefer the first.']),
                P('Add a test that forges a session id in the request body and confirms the decision still comes from the TokenReview namespace, as ADR-0002 does for CDEvents.')))
 
 def e04():

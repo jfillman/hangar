@@ -20,7 +20,7 @@ The aviation vocabulary is the brand's rule (see the Hangar Brand System): names
 | **Autopilot** | The sixth product: governed, bounded AI agent workloads. Accepted name. |
 | **Clearance** | Autopilot's tool gateway and policy: every agent action is checked and audited here. Accepted name. Like Tower's *Ground Control* it is a feature of a product, so it has no mark. |
 | **Flight recorder** | Autopilot's audit and correlation: one `task_id` on every record, plus a tamper-evident chain. Accepted name. Records both tiers, although "Flight" also names the upper tier. |
-| **Checkride** | Autopilot's evaluation harness. **Name open** (decision D7); Airworthiness is the recommended alternative. |
+| **Preflight** | Autopilot's evaluation harness: cases run against an agent definition before promotion. Decided name (D7). |
 | **Skyport** | The demo system (an airport). |
 
 ## Autopilot concepts

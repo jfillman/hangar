@@ -49,9 +49,14 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 | **AF-4a** `airframe validate` v0: strict-derived schema and `helm template` | use it on `baggage-api`'s env files as they are written |
 | **SP-2r** `baggage-api` (Python) through the current flow | record every stumble as a scorecard item; this is the manual version of the parachute sentence |
 | **AP-0** answer the unverified list (section 5) | 30 to 60 minutes each; they de-risk M2 and M3 |
-| **DX-0** decide and create the `autopilot` repo | move `~/tech/clearance` there; pytest as CI |
+| **DX-0** decide and create the `autopilot` repo | move `~/tech/autopilot` there; pytest as CI |
 
 **Exit:** the guard is live on dev; `airframe validate` catches an injected typo on a real PR; `baggage-api` runs on dev; every item in section 5 has an answer.
+
+**M0 status (2026-09-26): mostly done; scorecard 27.3 -> 40.2 (target 35).**
+- Done: AF-10a guard (Airframe v0.3.91, pinned on kiac-dev and kind-prod; all 7 live env files render byte-identically before and after); AF-10b chart tests and CI (the scorecard job needs a `FLEET_READ_TOKEN` secret); AF-1a `AGENTS.md`; AF-4a `airframe validate` v0; DX-0 `autopilot` repo (public, github.com/jfillman/autopilot); planner flipped (`Features.rollout_guard` defaults to True, the canary test retired); D7 decided (Preflight); D6 and D10 briefed ([briefings-d6-d10.md](briefings-d6-d10.md)); release-file split designed and proven on kiac-dev ([release-file-split.md](release-file-split.md)).
+- U1, U5, U6, U7, U11, U12 answered and U3 partly (section 5). Still open: U2 (function TTL re-invoke), U4 (Tower write actions need a human click on a stuck app), U8 (needs the `AgentRun` composition applied via a copy), U9 (only if a vector store is wanted), U10 (M5 trial).
+- `baggage-api`: created, code and dev env pushed, broker allows its dev namespace; see the Skyport handoff for whether the dev walkthrough has passed. The first two image scans failed (Debian base: 44 unfixed HIGH CVEs; then a stale setuptools), which is a scorecard item for the Python scaffold.
 
 ### M1 Contract (weeks 3-6), target 60
 | Task | Notes |
@@ -87,7 +92,7 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 | **AP-B3** model proxy v0 (HTTP forwarder), hosted model route, key via Infisical | |
 | **AF-8** `airframe.*` tools, planner adapters | **the parachute sentence passes live**, with a seeded bad run and a resume test |
 | **AF-6b** `describe` and verify contracts; **AF-10c** chart `agent:` block | |
-| **AP-C1** Flight recorder: `task_id` everywhere, audit chain anchor; each run records the pinned model version and its Checkride result | ledger fields from [industry-context.md](industry-context.md) |
+| **AP-C1** Flight recorder: `task_id` everywhere, audit chain anchor; each run records the pinned model version and its Preflight result | ledger fields from [industry-context.md](industry-context.md) |
 | **AP-A4** stable agent identity, separate from a run (per-agent policy, history, memory scope) | one identity per AgentDefinition; runs inherit it |
 | **AP-C2** cost accounting: tokens and compute per run, per agent, per task tree, in the recorder and the Tower tab | from budgets already enforced |
 | **AF-2b** fix the T0 read set (`getLogs`, `getMetrics`, `getRelease`, `getDeploymentStatus`) and put it in the contract bundle | read tools taught by example |
@@ -96,7 +101,7 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 
 ### M4 Skyport AI workloads (weeks 19-24), target 93
 Parts 6 to 11, in shape order: task, session, service, scheduled, event, team. Each is walked live, has
-a Checkride case with a seeded bad run, and updates its quickstart's verified-state note.
+a Preflight case with a seeded bad run, and updates its quickstart's verified-state note.
 
 | Task | Notes |
 |---|---|
@@ -108,10 +113,10 @@ a Checkride case with a seeded bad run, and updates its quickstart's verified-st
 | Part 11 `irregular-ops-team` | narrow-only, a denied spawn, a checker catching a wrong fact |
 | Tower Agent tab; `Agent` XRD and two templates; Holmes via Clearance (drop `github-mcp-token`) | |
 
-**Exit:** six Checkride cases pass and their seeded bad runs fail; one `task_id` traces a disruption from broker message to final artifact.
+**Exit:** six Preflight cases pass and their seeded bad runs fail; one `task_id` traces a disruption from broker message to final artifact.
 
 ### M5 Evidence and widen (weeks 25-28), target 97 and 14 of 14
-- Checkride as a regression gate on the Autopilot repo: profile, model and policy changes are PRs that must pass.
+- Preflight as a regression gate on the Autopilot repo: profile, model and policy changes are PRs that must pass.
 - Autonomy tracker for one alert class (shadow, then approve, then auto), with the breaker.
 - Modelplane hub trial on a dedicated kind cluster, behind the OpenAI-compatible contract.
 - **AP-D1** opt-in persistent, resumable state for session and team shapes: size cap, retention TTL, scan before restore (needs U12; design in design.md 3.1).
@@ -133,7 +138,7 @@ repo setup, Modelplane reading. Do not parallelize the ownership split with Clea
 | D4 | A separate GitHub App for agents | yes, so agent traffic cannot starve CI of API budget | M3 |
 | D5 | Audit store | enable MinIO object lock when the bucket is created | before AP-C1 |
 | D6 | Hub isolation for Modelplane | per-environment hub, dedicated accounts | before M5 |
-| D7 | **Checkride's name** | Airworthiness (open; the user likes Autopilot, Clearance, Flight recorder) | before AP-B2 |
+| D7 | **Preflight's name** | Airworthiness (open; the user likes Autopilot, Clearance, Flight recorder) | before AP-B2 |
 | D8 | A new `autopilot` repo | yes; `clearance/` becomes a package in it | M0 |
 | D9 | Release-file split and the ArgoCD `exclude` | prove on a scratch app first | M2 |
 | D10 | Strictness rollout dates | warn in M1, enforce at the end of M1 | M1 |
@@ -158,6 +163,17 @@ repo setup, Modelplane reading. Do not parallelize the ownership split with Clea
 
 All U-experiments run on kiac-dev (decision 2026-09-26).
 
+### Answers (2026-09-26)
+| # | Answer |
+|---|---|
+| U1 | **Pruned silently, by default.** ArgoCD synced a Redis XR with `persistance: true` and `bogusField: 1`, reported success, and the stored spec had neither. A server-side dry-run with `--validate=strict` rejects them (`strict decoding error: unknown field`), `warn` prints a warning, `ignore` accepts. Enum values (`size: gigantic`) are rejected by the XRD schema either way. So typos in an XR file look accepted and do nothing: `airframe validate` must cover XR files too. |
+| U5 | **Yes.** `argocd admin settings rbac can` with `p, role:clearance-lower, applications, sync, *-lower/*, allow`: `flight-api-lower/...` and `backstage-lower/...` allowed; `flight-api/...` (upper) and `app-flight-api-cicd-pr/...` denied. |
+| U6 | **Yes.** `helm lint` and `helm template` accept unknown `x-hangar-*` keys at the root and on a property; type enforcement still works (`appName=5` fails). |
+| U7 | **Yes, with the real name.** A git files generator with `path: .../*.release.yaml, exclude: true` generated exactly the `dev` and `test` apps and none for `dev.release.yaml` (live, scratch ApplicationSet on kiac-dev). |
+| U3 | **Partly.** On kind-prod, Backstage serves `/api/mcp-actions` (401 "Missing credentials", where a made-up path returns 404), so the plugin is mounted and behind auth. Not verified: that it lists Tower/catalog actions with a real token. |
+| U12 | **Not with VolumeSnapshot on kiac-dev today.** The cluster has no snapshot CRDs and its only storage class is `rancher.io/local-path`. Workspace persistence for AP-D1 needs either a snapshot-capable CSI driver or an archive-to-object-store approach (tar the workspace, scan it, store it); restore cost is not measured. |
+| U11 | **Real and usable; adopt behind the `AgentRun` contract.** kubernetes-sigs/agent-sandbox v1.0.4 (2026-09-24, weekly releases, API `v1beta1`): `Sandbox`, `SandboxTemplate`, `SandboxClaim`, `SandboxWarmPool`. Installed on kiac-dev (arm64 image works) and measured: a cold sandbox Ready in 2 s (image cached), suspend and resume in about 1 s, a claim served from a warm pool Ready in 89 ms, and a Sandbox with `shutdownTime` and `shutdownPolicy: Delete` was deleted by the controller within a second of expiry. `SandboxTemplate` carries `networkPolicy`/`networkPolicyManagement` and an env-injection policy, which overlap what `function-agentrun` renders. Not tested: gVisor/Kata, snapshot restore, and NetworkPolicy enforcement (kiac-dev does not enforce it). Removed again after the trial. Decision for AP-A3: render a `Sandbox` (or claim) instead of a raw pod, and treat the controller as a pinned dependency. |
+
 ## 6. Risks
 - **One person, many repos.** airframe, glidepath, backstage, apron, the tenants repos and a new repo all change. Keep every change small, behind a gate, and reversible. Use worktrees.
 - **Retrofit cost** if the contract slips behind the next components. Hence the ordering.
@@ -169,7 +185,7 @@ All U-experiments run on kiac-dev (decision 2026-09-26).
 
 ## 7. First ten actions
 1. Read `HANDOFF-hangar-autopilot-airframe-a-plus.md` and check each repo's branch and status.
-2. Decide D8 (the `autopilot` repo) and D7 (Checkride's name).
+2. Decide D8 (the `autopilot` repo) and D7 (Preflight's name).
 3. Answer U1, U5, U6 and U7 (quick, no cluster changes).
 4. Write the chart guard in an Airframe worktree with a fixture test; run it through a scratch app.
 5. Wire the scorecard and chart tests into CI.

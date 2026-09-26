@@ -1,8 +1,8 @@
 # Autopilot design: running any AI agent workload on Hangar
 
-Autopilot is the sixth Hangar product, beside Tower, Glidepath, Airframe and Apron. This is its design. The plan to build it, and the Airframe work it depends on, are in [roadmap.md](roadmap.md) and [airframe-ai-friendly.md](airframe-ai-friendly.md). Every claim is labelled **Built** (exists and is tested), **Draft** (written, never applied to a cluster), **Proposal** (designed, not written) or **Unverified** (depends on something not checked). Code lives in `~/tech/clearance` today and moves to a new `autopilot` repo (decision D8).
+Autopilot is the sixth Hangar product, beside Tower, Glidepath, Airframe and Apron. This is its design. The plan to build it, and the Airframe work it depends on, are in [roadmap.md](roadmap.md) and [airframe-ai-friendly.md](airframe-ai-friendly.md). Every claim is labelled **Built** (exists and is tested), **Draft** (written, never applied to a cluster), **Proposal** (designed, not written) or **Unverified** (depends on something not checked). Code lives in `~/tech/autopilot` today and moves to a new `autopilot` repo (decision D8).
 
-Names, checked against the Hangar Brand System on 2026-09-26. **Autopilot** (a sixth product beside Tower, Glidepath, Airframe and Apron, and the apron component name), **Clearance** (tool gateway and policy) and **Flight recorder** (audit and correlation) are accepted. **Checkride** (evaluation) is still open (Airworthiness is the recommended alternative; decision D7). Caveat on Flight recorder: "Flight" already means the upper-environment tier in Tower and the Airframe quickstart (Ground and Flight), so define it in the glossary as recording both tiers. Clearance and Flight recorder are features inside Autopilot, like Tower's "Ground Control" and "Release Record", so they need no mark of their own.
+Names, checked against the Hangar Brand System on 2026-09-26. **Autopilot** (a sixth product beside Tower, Glidepath, Airframe and Apron, and the apron component name), **Clearance** (tool gateway and policy) and **Flight recorder** (audit and correlation) are accepted. **Preflight** (evaluation) is still open (Airworthiness is the recommended alternative; decision D7). Caveat on Flight recorder: "Flight" already means the upper-environment tier in Tower and the Airframe quickstart (Ground and Flight), so define it in the glossary as recording both tiers. Clearance and Flight recorder are features inside Autopilot, like Tower's "Ground Control" and "Release Record", so they need no mark of their own.
 
 ## 0. Where this stands
 
@@ -10,7 +10,7 @@ Names, checked against the Hangar Brand System on 2026-09-26. **Autopilot** (a s
 |---|---|
 | Clearance core: tiers, path scope, narrow-only limits, definitions, sessions and the run tree, 19 CEL rules, hash-chained audit, gateway, model-proxy decisions, triggers, artifacts, the MCP surface | **Built**, 255 tests, no cluster needed |
 | AppSpec, and the planner that compiles it to a change set (the parachute test) | **Built** and tested, including against the real XRD schemas, Glidepath's `cicd.schema.json` and a real `helm template` |
-| Nine Skyport agent definitions and six Checkride cases | **Built** ([skyport-ai-workloads.md](skyport-ai-workloads.md)) |
+| Nine Skyport agent definitions and six Preflight cases | **Built** ([skyport-ai-workloads.md](skyport-ai-workloads.md)) |
 | `AgentRun` XRD, composition, `function-agentrun` | **Draft**, never applied |
 | Real adapters (GitHub, ArgoCD, Kubernetes, Backstage), authentication, HTTP transports, the model proxy forwarder, the CI gates, the interceptor route | **Proposal** |
 
@@ -57,7 +57,7 @@ rules:
 
 ### What stays in git
 
-Agent definitions and policy, profiles and their ceilings, app, gitops and tenants repos, cluster config, the Modelplane hub's inventory (classes, clusters, deployments, services), model routes, the Checkride corpus, gate definitions. Raising authority is always a reviewed commit. Lowering it is immediate and needs no review.
+Agent definitions and policy, profiles and their ceilings, app, gitops and tenants repos, cluster config, the Modelplane hub's inventory (classes, clusters, deployments, services), model routes, the Preflight corpus, gate definitions. Raising authority is always a reviewed commit. Lowering it is immediate and needs no review.
 
 > Industry context: [industry-context.md](industry-context.md) places this design against the emerging "agent substrate" category and records what we adopted from it.
 
@@ -97,7 +97,7 @@ Services reuse the existing application path, so nothing new is invented for the
 ### 3.1 Additions from the substrate review (2026-09-26)
 
 - **Stable agent identity.** An agent has one identity per `AgentDefinition`, independent of any run. Runs inherit it. It is the key for per-agent policy, for "everything this agent ever did" in the audit chain, and for any future memory scope. Task: AP-A4.
-- **Model version is part of the record.** Each run records the exact model id/version it used, next to its tools, decisions and Checkride result, so a change in behaviour can be tied to a model change.
+- **Model version is part of the record.** Each run records the exact model id/version it used, next to its tools, decisions and Preflight result, so a change in behaviour can be tied to a model change.
 - **Cost accounting.** Tokens and compute are recorded per run, per agent and per task tree, and shown in Tower. Task: AP-C2.
 - **Optional persistent state (session and team shapes only).** Default stays stateless, so a run's state is its Clearance channel and its artifacts. An agent may opt in to a workspace volume that can be snapshotted and resumed. Guards: size cap, retention TTL, a scan before restore (memory poisoning is the risk), and the volume belongs to the agent identity, never to another agent. Task: AP-D1, gated on U12.
 - **Sandbox substrate.** Before building more pod-rendering code, decide whether `function-agentrun` should render the upstream Kubernetes Agent Sandbox object (warm pools, gVisor/Kata, suspend/resume) instead of a raw pod. Answer: U11, before AP-A3.
@@ -119,9 +119,9 @@ Environment: `HANGAR_RUN_ID`, `_TASK_ID`, `_SESSION_ID`, `_AGENT`, `_EXPIRES_AT`
 
 | Repo / path | Change | Phase | Status |
 |---|---|---|---|
-| `/Users/jerf/tech/clearance` (new) | Gateway core, policy, audit, sessions, model proxy core, triggers, Checkride, MCP surface | A to C | **Built** (255 tests) |
-| `clearance/airframe-drafts/xrds/agentrun.yaml` | AgentRun XRD | A | **Draft** |
-| `clearance/airframe-drafts/functions/function-agentrun/` | Pure `compose()` plus a gRPC wrapper on the real SDK | A | **Built** (tests) and **Draft** (never run by Crossplane) |
+| `/Users/jerf/tech/clearance` (new) | Gateway core, policy, audit, sessions, model proxy core, triggers, Preflight, MCP surface | A to C | **Built** (255 tests) |
+| `autopilot/airframe-drafts/xrds/agentrun.yaml` | AgentRun XRD | A | **Draft** |
+| `autopilot/airframe-drafts/functions/function-agentrun/` | Pure `compose()` plus a gRPC wrapper on the real SDK | A | **Built** (tests) and **Draft** (never run by Crossplane) |
 | `airframe/xrds`, `compositions`, `functions` | Move the drafts in through a worktree | A | Proposal |
 | `provider-kubernetes-applied-resources` (gitops-cluster-dev) | Grants for Namespace, ResourceQuota, NetworkPolicy, ServiceAccount, batch/Job | A | Proposal |
 | `apron/cluster.yaml.example`, `hack/customize-cluster.sh`, `apron/55-autopilot/` | `components.autopilot`, refused on upper; types `hub` and `inference` | A | Proposal |
@@ -150,7 +150,7 @@ It composes only `provider-kubernetes` Objects, because Crossplane v2 rejects a 
 
 ### 5.2 AgentDefinition
 
-See `clearance/agents/*.yaml` (five shipped: a task agent, a researcher, an orchestrating team, an event-triggered triage agent, a scheduled reviewer). Baseline deny paths (`.tekton/**`, `cicd.yaml`, `CODEOWNERS`, `.github/**`, `**/appproject*.yaml`) apply to every agent and **cannot be removed** by a definition, so an agent can never edit the controls that constrain it.
+See `autopilot/agents/*.yaml` (five shipped: a task agent, a researcher, an orchestrating team, an event-triggered triage agent, a scheduled reviewer). Baseline deny paths (`.tekton/**`, `cicd.yaml`, `CODEOWNERS`, `.github/**`, `**/appproject*.yaml`) apply to every agent and **cannot be removed** by a definition, so an agent can never edit the controls that constrain it.
 
 ### 5.3 Policy as CEL
 
@@ -187,9 +187,9 @@ A claim or a child may only narrow what it inherits: tier, time, each budget, to
 - **ArgoCD**: `p, role:clearance-lower, applications, sync, *-lower/*, allow`. Tower's `role:tower-sync` is `*/*` today. **Unverified**: that the glob matches your `<app>-lower` AppProject names.
 - **Audit**: hash-chained JSON lines, arguments stored only as a hash. The chain proves consistency, not completeness: truncating the tail leaves a valid chain, so `checkpoint()` must be anchored somewhere the writer cannot rewrite (WORM storage, your self-hosted Rekor). Tests cover edit, delete, reorder, truncation and rewrite-after-anchor.
 
-### 5.6 Checkride
+### 5.6 Preflight
 
-A case names deterministic verifiers, a path scope, and denial and token budgets. Two guards against a harness that always says yes: a run that changed nothing cannot pass, and every case must fail a synthetic unfixed run. Seed cases come from your own dead-ends list (liveness probe path, `function-auto-ready`, RabbitMQ 4.1 versus operator 2.23, hand-applied XRD reverted by selfHeal, Trivy-gated Java pins, the broken canary). Two are written (`clearance/checkride/cases/`); the rest are listed in the diagram. Other agent types get their own suites, graded by deterministic checks such as schema-valid output and no forbidden tool calls.
+A case names deterministic verifiers, a path scope, and denial and token budgets. Two guards against a harness that always says yes: a run that changed nothing cannot pass, and every case must fail a synthetic unfixed run. Seed cases come from your own dead-ends list (liveness probe path, `function-auto-ready`, RabbitMQ 4.1 versus operator 2.23, hand-applied XRD reverted by selfHeal, Trivy-gated Java pins, the broken canary). Two are written (`autopilot/preflight/cases/`); the rest are listed in the diagram. Other agent types get their own suites, graded by deterministic checks such as schema-valid output and no forbidden tool calls.
 
 ## 6. Backend infrastructure
 
@@ -207,7 +207,7 @@ A case names deterministic verifiers, a path scope, and denial and token budgets
 | Self-hosted models | **Modelplane** (a separate fleet) | durable inventory, runtime replicas | Proposal |
 | Telemetry, DORA | existing otel, Loki, Tempo, Prometheus, dora-exporter | durable | **Built** |
 
-The model proxy's routes are durable git (`clearance/config/model-routes.example.yaml`): an alias maps to a backend. A run names an alias and never holds a key or a URL.
+The model proxy's routes are durable git (`autopilot/config/model-routes.example.yaml`): an alias maps to a backend. A run names an alias and never holds a key or a URL.
 
 ### 6.2 What Modelplane is
 
@@ -229,7 +229,7 @@ Building fleet scheduling, GPU cluster provisioning, weight caching and an infer
 
 - **The only thing Hangar depends on is an OpenAI or Anthropic compatible URL.** Hosted providers and Modelplane are interchangeable behind the model proxy. Nothing in phases A to C needs Modelplane, and hosted models come first.
 - Pin the version (git-source pinned tag, your standing rule), and treat its `v1alpha1` API as able to change.
-- A contract test in Checkride: a completion through the proxy against the inference gateway.
+- A contract test in Preflight: a completion through the proxy against the inference gateway.
 
 ### 6.4 Where it collides with your principles
 
@@ -279,7 +279,7 @@ These are explicit decisions, not details:
 
 ## 9. Built versus not
 
-`cd /Users/jerf/tech/clearance && ./.venv/bin/python -m pytest -q` runs **255 tests** with no cluster: scope and traversal safety, narrow-only limits, definition schema, sessions and the run tree (including the property test), 16 CEL rules one at a time and failing closed, hash-chain tamper detection, the gateway end to end with fakes, the model proxy, triggers, Checkride, the MCP surface on the mcp SDK v2, the AgentRun manifest against the XRD's own schema, and the composition function including its gRPC wrapper on the real SDK.
+`cd /Users/jerf/tech/clearance && ./.venv/bin/python -m pytest -q` runs **255 tests** with no cluster: scope and traversal safety, narrow-only limits, definition schema, sessions and the run tree (including the property test), 16 CEL rules one at a time and failing closed, hash-chain tamper detection, the gateway end to end with fakes, the model proxy, triggers, Preflight, the MCP surface on the mcp SDK v2, the AgentRun manifest against the XRD's own schema, and the composition function including its gRPC wrapper on the real SDK.
 
 **Not built:** the real GitHub, ArgoCD, Kubernetes and Backstage adapters; the auth adapters; MCP over HTTP; the model proxy's HTTP forwarder; the interceptor route; the CI gates; the drafts have never been applied or rendered by Crossplane. **Unit tests prove the composition logic, not that provider-kubernetes accepts what it renders.**
 

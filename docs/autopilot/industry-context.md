@@ -17,7 +17,7 @@ Platforms are moving from "an LLM behind an app" to "give an agent a secure, per
 | Permissions and policy | Clearance tiers, 19 CEL rules, narrow-only |
 | Scheduler | scheduled and event shapes, trigger bridge |
 | Agent-to-agent | team shape, run tree |
-| Evaluation | Checkride |
+| Evaluation | Preflight |
 | Observability, execution ledger | Flight recorder, hash-chained audit |
 
 ## Adopted from the survey

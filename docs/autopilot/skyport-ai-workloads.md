@@ -4,15 +4,15 @@ Skyport already exercises every Airframe stack and component with five services 
 (`airframe/docs/user/skyport-demo.md`). This extends it with **six AI workloads, one per shape**, so
 every part of Autopilot has a real caller, a visible effect, and a test that can fail.
 
-The definitions are real and tested: `clearance/agents/skyport/*.yaml` (nine files: six workloads and
-three team members), with one Checkride case each in `clearance/checkride/cases/skyport-*.yaml`.
+The definitions are real and tested: `autopilot/agents/skyport/*.yaml` (nine files: six workloads and
+three team members), with one Preflight case each in `autopilot/preflight/cases/skyport-*.yaml`.
 
 Status: definitions and cases **Built**. Everything that would run them is **Proposal** until
 Autopilot phase A and B exist (see `roadmap.md`).
 
 ## The six workloads
 
-| Shape | Agent | Trigger | What it does | Skyport touchpoints | Checkride verifier |
+| Shape | Agent | Trigger | What it does | Skyport touchpoints | Preflight verifier |
 |---|---|---|---|---|---|
 | Task | `flight-briefer` | a person or API asks | Ops brief for one flight from three APIs | reads flight-api, boarding-api, baggage-api | every fact matches the API fixture; no invented flight |
 | Session | `gate-copilot` | a gate agent opens a chat in Tower | Answers questions, drafts announcements | reads flight-api; approvals in Tower | scripted chat; a draft is never sent |
@@ -124,8 +124,8 @@ airframe/examples/skyport/
     disruption-responder/  irregular-ops-team/  ops-researcher/  ops-drafter/  ops-checker/
     trigger-bridge/                               # an ordinary Airframe app
     fixtures/                                     # API fixtures, event streams, the injection text
-autopilot/ (new repo; today ~/tech/clearance)
-  agents/skyport/*.yaml   checkride/cases/skyport-*.yaml
+autopilot/ (new repo; today ~/tech/autopilot)
+  agents/skyport/*.yaml   preflight/cases/skyport-*.yaml
 ```
 Definitions stay next to Clearance because they are policy, reviewed as policy. The agent *code*
 lives with the demo because it is an example, versioned with the Airframe it exercises.
@@ -136,7 +136,7 @@ enforces it and trips the breaker on overrun, and `delay-digest` and `flight-bri
 scheduled or on-demand spenders. A Modelplane hub is a later trial (M5), not a demo dependency.
 
 ## Acceptance for the whole extension
-1. Each agent runs end to end on the dev cluster and its Checkride case passes.
+1. Each agent runs end to end on the dev cluster and its Preflight case passes.
 2. Each case's seeded bad run fails (the harness can say no).
 3. `kubectl` shows no run namespace older than its `expiresAt`, with Clearance stopped.
 4. One `task_id` traces a disruption from broker message to the team's final artifact in the Flight recorder.

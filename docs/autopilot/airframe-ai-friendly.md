@@ -12,6 +12,8 @@ The test we are building toward is one sentence typed into a Claude Code session
 
 Status labels used here: **Built**, **Draft** (written, not applied), **Proposal**, **Unverified**.
 
+**Progress (2026-09-26, end of M0): 41.3/100, 2 of 14 acceptance checks.** Shipped in Airframe v0.3.91: the rollout guard (AF-10a), render tests and chart CI (AF-10b), `AGENTS.md` (AF-1a), `tools/airframe-validate` v0 (AF-4a). Validation moved 22 -> 76 and hygiene 46 -> 92. The scorecard's new baseline is `tools/airframe-scorecard/baseline-2026-09-26b.json`. One dimension went down: component contracts 4.0 -> 3.4, because `baggage-api`'s env file added four hand-written derived names (`bag-mq-connection`, `bag-mq-user-credentials`), which is the gap AF-3 (`fromComponent`) closes. Note: the values schema still accepts unknown keys; strictness lives in `airframe-validate` until AF-2 generates a strict schema. Unknown fields in an XR are silently pruned by ArgoCD (U1), so XR files need the same check.
+
 ## 1. Baseline (2026-09-26)
 
 Measured by the scorecard tool against the real repos. It scores readiness against the full A+
@@ -44,7 +46,7 @@ baseline is `tools/airframe-scorecard/baseline-2026-09-26.json`.
 2. **Configuring before the first image renders a broken Rollout.** Setting `rollout.steps` and `env`
    with no image renders `image: ':'`. The quickstart works around it with `rollout: null`, but then
    you cannot configure the rollout. An agent declaring everything up front, which is the natural
-   thing to do, hits this on the first environment. `clearance/tests/test_airframe_plan.py::test_CANARY_the_chart_bug_the_workaround_exists_for`
+   thing to do, hits this on the first environment. `autopilot/tests/test_airframe_plan.py::test_CANARY_the_chart_bug_the_workaround_exists_for`
    pins the behaviour and will fail on purpose when the chart is fixed.
 
 ## 2. What A+ means
@@ -64,11 +66,11 @@ baseline is `tools/airframe-scorecard/baseline-2026-09-26.json`.
 | 9 | No live file mixes human and machine-owned keys | 4 of 4 mixed |
 | 10 | A shared base layer exists in the ApplicationSets | no |
 | 11 | `airframe.*` tools exist | no |
-| 12 | An AppSpec schema exists | **Draft** (`clearance/schemas/appspec.schema.json`) |
+| 12 | An AppSpec schema exists | **Draft** (`autopilot/schemas/appspec.schema.json`) |
 | 13 | Executable walkthroughs replace prose quickstarts | 0 |
 | 14 | Every live values file renders cleanly | **yes** |
 
-Beyond the scorecard, the end-to-end acceptance test is the parachute sentence, run as a Checkride
+Beyond the scorecard, the end-to-end acceptance test is the parachute sentence, run as a Preflight
 case with a seeded bad run, and a resume test (kill the session mid-plan, resume by `task_id`).
 
 ## 3. The design: the values contract is the API
@@ -124,7 +126,7 @@ on every field. Nothing new adds to the retrofit.
 - `airframe/llms.txt`: an index of the contract and docs.
 - `hangar.io/agent-summary` annotation on every XRD; `add-to-catalog` reviewed for all 13.
 - `contract/airframe-contract.json` and the `airframe.capabilities` tool.
-- **Accept:** a cold-start Checkride case answers 10 capability questions from the contract alone.
+- **Accept:** a cold-start Preflight case answers 10 capability questions from the contract alone.
 - **Effort:** 2 days after AF-2's generator exists.
 
 ### AF-2 Schema precision (45 → A+)
@@ -204,11 +206,11 @@ Seed rules, each with a seeded failing fixture (the dead-ends list becomes lint)
 - **Effort:** 1 week; rides along with each Skyport part.
 
 ### AF-8 Interaction surface (27 → A+)
-- **AppSpec** (`clearance/schemas/appspec.schema.json`, Draft): desired state for an app and its environments in one place.
-- **Planner** (`clearance/src/clearance/airframe_plan.py`, **Built and tested**): AppSpec to an ordered ChangeSet across the tenants, app and gitops repos, with gates, dependencies, assumptions and warnings.
+- **AppSpec** (`autopilot/schemas/appspec.schema.json`, Draft): desired state for an app and its environments in one place.
+- **Planner** (`autopilot/src/clearance/airframe_plan.py`, **Built and tested**): AppSpec to an ordered ChangeSet across the tenants, app and gitops repos, with gates, dependencies, assumptions and warnings.
 - Tools in Clearance: `airframe.capabilities`, `describe`, `explain`, `plan`, `apply` (opens PRs), `status`, `verify`, `diagnose` (via Holmes).
 - Idempotent (same spec, same change set, a no-op when converged) and resumable (state on the `task_id`, PR labels and the audit log).
-- **Accept:** the parachute sentence passes as a Checkride case, plus a resume test.
+- **Accept:** the parachute sentence passes as a Preflight case, plus a resume test.
 - **Effort:** 3 weeks, mostly adapters (GitHub, ArgoCD, Kubernetes).
 
 ### AF-9 Safety integration (20 → A+)
@@ -250,7 +252,7 @@ in step by a shared conformance test.
 
 ## 6. AppSpec and the planner
 
-The parachute sentence, as the agent writes it (`clearance/examples/parachute.appspec.yaml`):
+The parachute sentence, as the agent writes it (`autopilot/examples/parachute.appspec.yaml`):
 
 ```yaml
 apiVersion: airframe/v1
@@ -295,5 +297,5 @@ so both flight environments go there; two upper clusters and no choice is a **qu
 
 ```bash
 python3 tools/airframe-scorecard/scorecard.py                  # the grade
-cd ~/tech/clearance && ./.venv/bin/python -m pytest -q          # 255 tests incl. the parachute planner
+cd ~/tech/autopilot && ./.venv/bin/python -m pytest -q          # 255 tests incl. the parachute planner
 ```

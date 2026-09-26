@@ -62,7 +62,7 @@ def e11():
             ('B · governed writes, lower only',[
                ('Interceptor agent-token route',5,6,1),('T1 write tools, lower only',6,8,0),('Gates: scope + identity',5,9,0)]),
             ('C · evidence and evaluation',[
-               ('Flight recorder task_id',8,11,0),('Checkride v0, 2 then 6 cases',8,12,0),('Holmes via Clearance',10,12,0)]),
+               ('Flight recorder task_id',8,11,0),('Preflight v0, 2 then 6 cases',8,12,0),('Holmes via Clearance',10,12,0)]),
             ('D · widen',[
                ('Autonomy tracker, shadow',12,15,0),('Conformance on EKS or OKE',13,16,0)])]
     for w in range(NW):
@@ -95,4 +95,4 @@ def e11():
       body=''.join(b), W=1000, H=cur+16+52, y0=24,
       cards=[('Verify A · end of week 4','', UL(['A T0 read call works end to end, and an audit row exists for it.','The network-policy canary fails as it should on kind-prod and is reported honestly on kiac-dev.','customize-cluster.sh refuses components.autopilot on a type: upper cluster.'])),
              ('Verify B · end of week 9','accent', UL(['An agent PR opens with a repo-scoped token, and the token cannot open a PR on any other repo.','Upper-env sync and any kubectl write are refused with the agent token.','A PR that edits .tekton/ turns agent-scope red and cannot merge.'])),
-             ('Verify C · end of week 12','link', UL(['Every record of one agent task shares a task_id, from audit row to Argo annotation.','Checkride scores the two seed cases, and a seeded bad run scores as failed.','Holmes opens a PR through Clearance; github-mcp-token is deleted.']))])
+             ('Verify C · end of week 12','link', UL(['Every record of one agent task shares a task_id, from audit row to Argo annotation.','Preflight scores the two seed cases, and a seeded bad run scores as failed.','Holmes opens a PR through Clearance; github-mcp-token is deleted.']))])

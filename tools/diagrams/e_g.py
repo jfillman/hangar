@@ -79,7 +79,7 @@ def p_roadmap():
       body=''.join(b), W=1000, H=cur+16+52, y0=24,
       cards=[('M0 to M2, before any agent writes','', UL(['Chart guard, strict schema, validate, outputs.','MongoDB and OAuth built already A+.','Ownership split and a base layer.'])),
              ('M3, the acceptance test','accent', UL(['Clearance, AgentRun, model proxy, real adapters.','airframe.* tools and the planner.','The parachute sentence passes live; a seeded bad run fails; killing Clearance still ends every run.'])),
-             ('M4 and M5, proof','link', UL(['Six agents, six Checkride cases, six seeded bad runs.','Regression gate, autonomy ladder, Modelplane trial.','Scorecard at 14 of 14 and at least 97.']))])
+             ('M4 and M5, proof','link', UL(['Six agents, six Preflight cases, six seeded bad runs.','Regression gate, autonomy ladder, Modelplane trial.','Scorecard at 14 of 14 and at least 97.']))])
 
 def p_deps():
     b=[]
@@ -144,7 +144,7 @@ def p_scorecard():
       body=''.join(b), W=1000, H=y+72+52, y0=64,
       cards=C3(P('Measured, not felt. Every check is automated, so "A+" is a result the scorecard prints, not an opinion.'),
                UL(['The biggest gaps are also the cheapest: AGENTS.md, a contract bundle, validate, outputs.','Two real bugs found by running the chart: typos pass silently, and configuring before an image renders image ":".','Baseline committed: tools/airframe-scorecard/baseline-2026-09-26.json.']),
-               P('The scorecard cannot judge whether an agent would actually succeed; the parachute sentence, run as a Checkride case, does. Use both.'), 'Limits'))
+               P('The scorecard cannot judge whether an agent would actually succeed; the parachute sentence, run as a Preflight case, does. Use both.'), 'Limits'))
 
 def p_contract():
     b=[]
@@ -209,7 +209,7 @@ def p_plan_seq():
 
 def p_skyport_matrix():
     b=[]
-    cols=[(24,208,'AGENT AND SHAPE'),(236,148,'TRIGGER'),(388,236,'WHAT IT DOES'),(628,176,'SKYPORT TOUCHPOINTS'),(808,168,'CHECKRIDE VERIFIER')]
+    cols=[(24,208,'AGENT AND SHAPE'),(236,148,'TRIGGER'),(388,236,'WHAT IT DOES'),(628,176,'SKYPORT TOUCHPOINTS'),(808,168,'PREFLIGHT VERIFIER')]
     for x,w,t in cols: b.append(text(x+8,108,t,8,500,MUTED,mono=True,ls='0.14em'))
     b.append(f'<line x1="24" y1="118" x2="976" y2="118" stroke="{RULE}" stroke-width="0.8"/>')
     rows=[('flight-briefer','task','a person or an API asks','Ops brief for one flight from three APIs','flight, boarding, baggage APIs (read)','every fact matches the fixture'),
@@ -231,11 +231,11 @@ def p_skyport_matrix():
     b.append(legend(y+12,[('backend','What it does'),('store','Touchpoints'),('focal','How it is proved')]))
     return dict(slug='skyport-ai-workloads', eyebrow='Matrix · 07 of 08 · Skyport AI',
       title='Skyport gains six AI workloads, one per shape',
-      desc='Matrix of six Skyport AI agents, flight-briefer as a task, gate-copilot as a session, passenger-assistant as a service, delay-digest as scheduled, disruption-responder as event-driven and irregular-ops-team as a team, with each one\'s trigger, purpose, Skyport touchpoints and the Checkride verifier that proves it.',
+      desc='Matrix of six Skyport AI agents, flight-briefer as a task, gate-copilot as a session, passenger-assistant as a service, delay-digest as scheduled, disruption-responder as event-driven and irregular-ops-team as a team, with each one\'s trigger, purpose, Skyport touchpoints and the Preflight verifier that proves it.',
       lede='Business-domain agents operating a system, plus the platform agents that already exist. None can apply a change: they read, draft, store artifacts, ask a human and spawn narrower runs. That is what "humans on the loop" looks like without the demo being able to break Skyport.',
       body=''.join(b), W=1000, H=y+12+52, y0=64,
       cards=C3(P('One workload per shape, so every part of Autopilot has a real caller and a test that can fail.'),
-               UL(['Definitions and cases are built: 9 YAML files and 6 Checkride cases, all tested.','Built in order: task, session, service, scheduled, event, team.','Each part is walked live before it is called done.']),
+               UL(['Definitions and cases are built: 9 YAML files and 6 Preflight cases, all tested.','Built in order: task, session, service, scheduled, event, team.','Each part is walked live before it is called done.']),
                P('The service agent asks for the hardened sandbox. kind and Apple container have no runtime class, so it is Rejected on the dev cluster by design; running it there takes a reviewed commit that lowers isolation.'), 'A deliberate failure'))
 
 def p_skyport_seq():
@@ -270,5 +270,5 @@ def p_skyport_seq():
       lede='Three things are proved here: at-least-once delivery does not start two runs, delegation only narrows, and consequential output waits for a person. Every step carries the same task id, so the Flight recorder shows one story.',
       body=''.join(b), W=1000, H=612,
       cards=C3(P('At-least-once delivery needs an idempotent consumer: task_id is a hash of (agent, message id), and the trigger bridge acks only after the audit record exists.'),
-               UL(['A storm brake (maxPerHour) bounds a flood of delayed events.','The denied spawn is a fixture, and the Checkride case asserts it was denied and audited.','Nothing is sent to a passenger: drafts wait for approval.']),
+               UL(['A storm brake (maxPerHour) bounds a flood of delayed events.','The denied spawn is a fixture, and the Preflight case asserts it was denied and audited.','Nothing is sent to a passenger: drafts wait for approval.']),
                P('Built and tested: topic matching, the dedupe key, the rate limiter, idempotent open_triggered, the narrow-only spawn and its denial. Not built: the bridge consumer and Tower\'s approvals.'), 'What is built'))

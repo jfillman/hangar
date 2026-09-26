@@ -150,7 +150,7 @@ def collect(tech: Path) -> dict:
             t = Path(f).read_text()
             fails += len(re.findall(r'\{\{-?\s*fail\b|\brequired\s+"', t))
     m["helm_guards"] = fails
-    m["chart_tests"] = len(list((chart / "tests").glob("*.yaml"))) if (chart / "tests").exists() else 0
+    m["chart_tests"] = len(list((chart / "tests").glob("**/*.yaml"))) if (chart / "tests").exists() else 0
     wf = list((af / ".github" / "workflows").glob("*.y*ml")) if (af / ".github" / "workflows").exists() else []
     m["ci_workflows"] = len(wf)
     m["ci_chart_workflow"] = any("chart" in w.name or "validate" in w.name for w in wf)
@@ -358,6 +358,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tech", default="/Users/jerf/tech")
     ap.add_argument("--json")
+    ap.add_argument("--baseline", help="committed baseline JSON; exit 1 if the score, any dimension or any acceptance check regresses")
     a = ap.parse_args()
     m = collect(Path(a.tech))
     res = score(m)
@@ -374,6 +375,22 @@ def main():
     if a.json:
         Path(a.json).write_text(json.dumps(res, indent=2, default=str))
         print(f"\nwrote {a.json}")
+    if a.baseline:
+        base = json.loads(Path(a.baseline).read_text())
+        bad = []
+        if res["overall"] < base["overall"]:
+            bad.append(f"overall {base['overall']} -> {res['overall']}")
+        for name, d in res["dimensions"].items():
+            b = base["dimensions"].get(name)
+            if b and d["score"] < b["score"]:
+                bad.append(f"{name} {b['score']} -> {d['score']}")
+        for n, was in base["acceptance"].items():
+            if was and not res["acceptance"].get(n, False):
+                bad.append(f"acceptance regressed: {n}")
+        if bad:
+            print("\nREGRESSION vs baseline:\n  " + "\n  ".join(bad))
+            return 1
+        print(f"\nno regression vs baseline ({base['overall']})")
     return 0
 
 

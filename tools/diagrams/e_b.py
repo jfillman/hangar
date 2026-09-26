@@ -8,7 +8,7 @@ def diamond(cx,cy,hw,hh,name,kind='backend'):
 
 def e05():
     b=[]
-    cols=[(308,'Triage agent','in-cluster'),(452,'Coding agent','human-delegated'),(596,'Checkride runner','sandbox only')]
+    cols=[(308,'Triage agent','in-cluster'),(452,'Coding agent','human-delegated'),(596,'Preflight runner','sandbox only')]
     for x,n,s in cols:
         b.append(text(x+68,104,n,12,600,INK,'middle')); b.append(text(x+68,120,s,8,400,MUTED,'middle',mono=True))
     b.append(text(748,112,'DELEGATED TO',8,500,MUTED,mono=True,ls='0.14em'))
@@ -40,7 +40,7 @@ def e05():
     b.append(legend(y+16,[('backend','Allow'),('store','Allow, reversible in git'),('propose','Propose only'),('optional','Never')]))
     return dict(slug='tool-tiers', eyebrow='Access matrix · 05 of 11 · Tool tiers',
       title='What each agent identity may do, and who really does it',
-      desc='Access matrix of eight tool groups against three agent profiles, triage agent, human-delegated coding agent and checkride runner, showing allow, allow but reversible in git, propose only, or never, with the delegated backing system for each tool.',
+      desc='Access matrix of eight tool groups against three agent profiles, triage agent, human-delegated coding agent and preflight runner, showing allow, allow but reversible in git, propose only, or never, with the delegated backing system for each tool.',
       lede='Write access is mostly a pull request, which a human can revert. The few imperative actions are delegated to systems that already audit themselves. The last row is not exposed to any identity, including Clearance itself.',
       body=''.join(b), W=1000, H=y+16+52, y0=64,
       cards=C3(P('Delegated over interactive. Every write action must state which category it falls in and the exact API it needs, before it is built (Tower write-action policy).'),
@@ -117,7 +117,7 @@ def e08():
           path([(884,204),(884,236)]), vlab(884,204,236,'BASELINE')]
     b += [node(24,140,152,64,'Seed corpus','documented dead ends','store'),
           node(232,140,136,64,'Broken fixture','AgentRun · TTL','optional'),
-          node(408,140,136,64,'Agent under test','profile: checkride','input'),
+          node(408,140,136,64,'Agent under test','profile: preflight','input'),
           node(584,140,160,64,'Verifier','deterministic checks','focal'),
           node(792,140,184,64,'Scorecard','Prometheus · Tower','store'),
           node(792,236,184,56,'Regression gate','blocks profile · model · policy')]
@@ -138,11 +138,11 @@ def e08():
         y+=28
     b.append(callout(24,y+32,'Real incidents with a known cause and a known-good fix, so no judge model is needed. Other agent types get their own suites.'))
     b.append(legend(y+64,[('focal','Judge of record'),('input','Under test'),('optional','Disposable'),('store','History'),('link','Score')]))
-    return dict(slug='checkride', eyebrow='Process · 08 of 11 · Checkride',
-      title='Checkride: score every agent change against incidents you have already solved',
+    return dict(slug='preflight', eyebrow='Process · 08 of 11 · Preflight',
+      title='Preflight: score every agent change against incidents you have already solved',
       desc='Process diagram of an evaluation harness in which a seed corpus of documented incidents is applied as a broken fixture in a disposable namespace inside a Glidepath PipelineRun, the agent under test works through Clearance, a deterministic verifier scores the result, and a regression gate blocks profile, model or policy changes that score worse than the baseline; a table lists six seed cases with their known root causes and verifiers.',
       lede='Hangar\'s own dead-ends list is the corpus: each case has a documented cause and a known fix, so the verifier is a deterministic check and not another model. Any change to a profile, a model or a policy has to score no worse than the last one.',
       body=''.join(b), W=1000, H=y+64+52, y0=76,
       cards=C3(P('Live verification: prove against real state, and never trust a pass that could mean the gate is off. Each case also has a seeded negative run that must fail.'),
-               UL(['Runs as a Glidepath pipeline, so it inherits provenance, signing and results archival.','Scored on outcome, blast radius (paths touched vs allowlist), Clearance denials, retries and cost.','Gate lives on the Clearance repo itself: profile, model and policy changes are PRs that must pass Checkride.']),
+               UL(['Runs as a Glidepath pipeline, so it inherits provenance, signing and results archival.','Scored on outcome, blast radius (paths touched vs allowlist), Clearance denials, retries and cost.','Gate lives on the Clearance repo itself: profile, model and policy changes are PRs that must pass Preflight.']),
                P('Proposal, not built. Start with two cases (the probe path and the auto-ready bug), because they are one-file fixes with unambiguous verifiers, and add the rest once the harness is trusted.'), 'Start small'))

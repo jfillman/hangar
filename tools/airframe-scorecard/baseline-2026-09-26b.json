@@ -1,0 +1,227 @@
+{
+  "overall": 41.3,
+  "grade": "F",
+  "dimensions": {
+    "1 Discoverability": {
+      "score": 49.5,
+      "grade": "F",
+      "checks": {
+        "human docs and quickstarts exist": 1.0,
+        "XRDs generate the Backstage catalog": 0.462,
+        "AGENTS.md at the repo root": 1.0,
+        "AGENTS.md per component": 0.0,
+        "machine-readable contract bundle": 0.0,
+        "llms.txt index": 0.0,
+        "agent-summary annotation on XRDs": 0.0,
+        "a docs table of contents": 1.0,
+        "chart README documents the values": 1.0
+      },
+      "note": "what an agent can enumerate without reading prose"
+    },
+    "2 Schema precision": {
+      "score": 45.3,
+      "grade": "F",
+      "checks": {
+        "values.schema.json exists": 1.0,
+        "top-level values keys covered by the schema": 1.0,
+        "a wrong-type value fails at render": 1.0,
+        "schema nodes with a description": 0.051,
+        "objects that reject unknown keys": 0.0,
+        "leaf fields with an enum, pattern or bound": 0.38,
+        "nodes with examples": 0.0,
+        "typo'd values files that fail (rather than pass silently)": 0.0,
+        "XRD fields with a description": 0.624,
+        "XRDs with a cross-field CEL rule": 0.077
+      },
+      "note": "how precisely the contract says what is valid"
+    },
+    "3 Component contracts": {
+      "score": 3.4,
+      "grade": "F",
+      "checks": {
+        "components declaring machine-readable outputs (of 6)": 0.0,
+        "env entries free of derived-name literals": 0.103,
+        "components declaring verify checks": 0.0
+      },
+      "note": "whether an agent can wire components without guessing names"
+    },
+    "4 Pre-merge validation": {
+      "score": 76.0,
+      "grade": "C",
+      "checks": {
+        "an `airframe validate` exists": 1.0,
+        "required check on env, gitops and tenants repos": 1.0,
+        "chart guards with actionable messages (of 25)": 0.44,
+        "dead-end lint rules (encoded and seeded)": 0.0,
+        "live values files that render cleanly": 1.0
+      },
+      "note": "the deterministic gate an agent can retry against"
+    },
+    "5 Write safety": {
+      "score": 24.8,
+      "grade": "F",
+      "checks": {
+        "live files with a single owner": 0.429,
+        "shared base layer": 0.0,
+        "machine-owned release file split out": 0.0,
+        "fields carrying an owner": 0.0,
+        "fields carrying a risk class": 0.0,
+        "secrets are references, never values": 1.0
+      },
+      "note": "whether path-level scope can protect machine-owned data"
+    },
+    "6 Observe and verify": {
+      "score": 21.4,
+      "grade": "F",
+      "checks": {
+        "Crossplane's standard Ready and Synced conditions": 1.0,
+        "custom conditions (e.g. CicdOnboarded)": 1.0,
+        "XRDs declaring status conditions": 0.0,
+        "XRDs with reason codes": 0.0,
+        "verify contracts": 0.0,
+        "a describe/status tool": 0.0
+      },
+      "note": "can an agent tell whether it worked, and why not"
+    },
+    "7 Docs for agents": {
+      "score": 53.8,
+      "grade": "F",
+      "checks": {
+        "walked-live quickstarts (true docs)": 1.0,
+        "doc YAML blocks that at least parse": 1.0,
+        "doc YAML blocks validated in CI": 0.0,
+        "executable walkthroughs (of 3)": 0.0,
+        "AGENTS.md": 1.0
+      },
+      "note": "docs an agent can rely on and replay"
+    },
+    "8 Interaction surface": {
+      "score": 27.3,
+      "grade": "F",
+      "checks": {
+        "airframe.* tools available to agents": 0.0,
+        "a desired-state AppSpec": 0.0,
+        "single GitOps write path": 1.0,
+        "UI-only config path exists (Tower), no API": 0.5
+      },
+      "note": "how an agent actually asks for a change"
+    },
+    "9 Safety integration": {
+      "score": 20.0,
+      "grade": "F",
+      "checks": {
+        "risk-classed fields": 0.0,
+        "field-level agent-scope gate": 0.0,
+        "secrets referenced, never inlined": 1.0,
+        "escape hatches (extraManifests) denied by default": 0.0
+      },
+      "note": "tiers that reach down to individual fields"
+    },
+    "10 Hygiene and determinism": {
+      "score": 91.8,
+      "grade": "A-",
+      "checks": {
+        "helm lint passes": 1.0,
+        "chart tests (of 10)": 0.7,
+        "chart CI": 1.0,
+        "fleet renders cleanly": 1.0
+      },
+      "note": "does the contract stay true as it changes"
+    }
+  },
+  "acceptance": {
+    "typo acceptance is 0%": false,
+    "schema description coverage >= 95%": false,
+    "every non-passthrough object rejects unknown keys": false,
+    "contract bundle published": false,
+    "AGENTS.md at root and on every component": false,
+    "all component XRDs declare outputs and verify checks": false,
+    "no derived-name literals in live env entries": false,
+    "airframe validate exists and is a required check": true,
+    "no live file mixes human and machine-owned keys": false,
+    "shared base layer in the ApplicationSets": false,
+    "airframe.* tools exist": false,
+    "AppSpec schema exists": false,
+    "executable walkthroughs replace prose quickstarts": false,
+    "every live values file renders cleanly": true
+  },
+  "a_plus": false,
+  "metrics": {
+    "schema": {
+      "nodes": 234,
+      "desc": 12,
+      "objects": 68,
+      "addl_false": 0,
+      "passthrough": 0,
+      "constrained": 63,
+      "leaves": 166,
+      "examples": 0,
+      "xhangar": 0,
+      "owner": 0,
+      "risk": 0
+    },
+    "schema_top_keys": 29,
+    "schema_owner_top": 0,
+    "xrd": {
+      "count": 13,
+      "nodes": 125,
+      "desc": 78,
+      "cel": 1,
+      "status_conditions": 0,
+      "status_reason": 0,
+      "summary": 0,
+      "catalog": 6
+    },
+    "xrd_kinds": [
+      "ApplicationEnvironment",
+      "GoApplication",
+      "InfraService",
+      "NodeJSApplication",
+      "PostgreSQL",
+      "PythonApplication",
+      "RabbitMQ",
+      "Redis",
+      "RolloutWatch",
+      "SecretStore",
+      "SLO",
+      "SpringBootApplication",
+      "TektonCICD"
+    ],
+    "agents_md": true,
+    "agents_md_components": 0,
+    "llms_txt": false,
+    "contract_bundle": false,
+    "outputs_meta": 0,
+    "validate_cli": true,
+    "appspec_schema": false,
+    "walkthroughs": 0,
+    "verify_meta": 0,
+    "helm_guards": 11,
+    "chart_tests": 7,
+    "ci_workflows": 2,
+    "ci_chart_workflow": true,
+    "helm_lint_ok": true,
+    "base_layer": false,
+    "release_file_split": false,
+    "live_upper": 3,
+    "live_lower": 4,
+    "mixed_owner_files": 4,
+    "live_files": 7,
+    "derived_literals": 26,
+    "env_entries": 29,
+    "schema_key_coverage": 1.0,
+    "secrets_by_reference": true,
+    "chart_readme_lines": 437,
+    "docs_index": true,
+    "custom_conditions": true,
+    "type_error_caught": true,
+    "fleet_baseline_ok": 7,
+    "fleet_total": 7,
+    "typo_tested": 7,
+    "typo_accepted": 7,
+    "doc_yaml_blocks": 14,
+    "doc_yaml_parse": 14,
+    "doc_yaml_validated_in_ci": 0,
+    "mcp_tools": 0
+  }
+}
