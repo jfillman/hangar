@@ -55,10 +55,13 @@ async function route(input: string, init?: RequestInit): Promise<Response> {
       case '/pipeline-order': return json(F.pipelineOrder);
       case '/provenance': return json(F.provenanceFor(q.get('image')!));
       case '/deploy-history': return json(F.deployHistoryFor(body.appName, body.environments));
-      case '/promote': return json({ mode: 'pr', prUrl: `https://github.com/${F.OWNER}/gitops-prod/pull/215`, alreadyOpen: false });
+      case '/promote': return json(body?.targetEnv === 'prod'
+        ? { mode: 'pr', prUrl: `https://github.com/${F.OWNER}/gitops-prod/pull/215`, alreadyOpen: false }
+        : { mode: 'direct-commit', commitUrl: `https://github.com/${F.OWNER}/${body?.appName}/commit/${F.shaFor('c3e81f0')}` });
       case '/argo/refresh':
       case '/argo/sync': return json({ ok: true });
-      case '/release-record': return json(F.releaseRecordFor(q), 404);
+      case '/release-record': { const r: any = F.releaseRecordFor(q); return r._ok ? json(r) : json(r, 404); }
+      case '/release-record/human-context': return json({ prUrl: `https://github.com/${F.OWNER}/gitops-prod/pull/217`, alreadyOpen: false });
       case '/config/cicd':
         if (method === 'GET') return json(F.cicdFor(q.get('repo') ?? q.get('appName') ?? F.FEATURED));
         return json({ prUrl: `https://github.com/${F.OWNER}/flight-api/pull/192`, alreadyOpen: false });
@@ -98,7 +101,7 @@ export const apis = {
     isStarred: async () => false,
   },
   notifications: {
-    getNotifications: async (opts: any) => ({ notifications: F.notificationsFor(opts?.search), totalCount: 9 }),
+    getNotifications: async (opts: any) => ({ notifications: F.notificationsFor(opts?.search), totalCount: F.notificationsFor(opts?.search).length }),
     getStatus: async () => ({ unread: 0, read: 0 }),
     notification$: () => ({ subscribe: () => ({ unsubscribe() {} }) }),
   },
