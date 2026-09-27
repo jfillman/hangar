@@ -10,7 +10,7 @@
 //
 // Output (all git-ignored):
 //   src/docs.generated/<product>/**.md   pages with frontmatter, links rewritten for the site
-//   public/docs-assets/<product>/**      images the pages reference
+//   public/docs-assets/<product>/**      images and standalone HTML pages the pages link to
 //   src/data/docs.generated.json         per-product navigation, taken from each mkdocs.yml
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix, resolve } from 'node:path';
@@ -41,7 +41,8 @@ const SOURCES = [
 // Never published: history, unreviewed drafts, generated diagram folders, and brand pages
 // (the brand has its own place on the site).
 const SKIP_DIRS = new Set(['archive', 'drafts', 'brand', 'diagrams', 'node_modules']);
-const IMAGE = /\.(svg|png|jpe?g|gif|webp)$/i;
+// Images, and standalone pages such as the illustrated guides, are copied as they are.
+const ASSET = /\.(svg|png|jpe?g|gif|webp|html)$/i;
 
 const outPages = join(web, 'src/docs.generated');
 const outAssets = join(web, 'public/docs-assets');
@@ -188,7 +189,7 @@ function resolveTarget(target, src, root, page, pages) {
     if (hit) return base + hit.route + anchor;
   }
   const full = join(root, rel);
-  if (IMAGE.test(rel) && existsSync(full)) {
+  if (ASSET.test(rel) && existsSync(full) && statSync(full).isFile()) {
     const out = join(outAssets, src.id, rel);
     mkdirSync(dirname(out), { recursive: true });
     cpSync(full, out);
