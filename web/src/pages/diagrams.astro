@@ -1,0 +1,49 @@
+---
+import Base from '../layouts/Base.astro';
+import { bySet, diagrams, SET_LABELS, type Diagram } from '../data/diagrams';
+import { u } from '../lib/url';
+const sets: { key: Diagram['set']; blurb: string }[] = [
+  { key: 'autopilot', blurb: 'How Hangar runs any AI agent workload: planes, shapes, runs, identity, authority, audit and rollout.' },
+  { key: 'plan', blurb: 'The Hangar family, the roadmap, the Airframe scorecard, the contract and the Skyport demo.' },
+  { key: 'reference', blurb: 'Reference architecture for agents on a platform: substrate, gateway, identity, observability, autonomy, evaluation.' },
+  { key: 'glidepath', blurb: 'Glidepath\'s CI/CD architecture: system overview, chaining, multi-cluster, onboarding, deploy versus release.' },
+];
+---
+<Base title="Diagrams" description={`All ${diagrams.length} Hangar architecture diagrams, by set.`} section="diagrams">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Diagrams · {diagrams.length} pages</p>
+      <h1>Every diagram, in one place</h1>
+      <p class="lede">
+        Each one is a single page with one idea, drawn from the same generator and the same visual grammar, and each
+        separates what is built from what is proposed. They are generated from code in the Hangar repo, so this gallery is
+        always the current set.
+      </p>
+      <nav class="sets" aria-label="Sets">
+        {sets.map((s) => <a href={`#${s.key}`}>{SET_LABELS[s.key]} <span>{bySet(s.key).length}</span></a>)}
+      </nav>
+    </section>
+    {sets.map((s) => (
+      <section id={s.key} class="set">
+        <h2>{SET_LABELS[s.key]}</h2>
+        <p class="muted">{s.blurb}</p>
+        <div class="grid">
+          {bySet(s.key).map((d) => (
+            <a class="card" href={u(`view/${d.id}/`)}>
+              <span class="eyebrow">{d.eyebrow}</span>
+              <h3>{d.title}</h3>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</Base>
+<style>
+  .sets { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+  .sets a { padding: 0.35rem 0.7rem; border: 1px solid var(--rule); border-radius: 999px; text-decoration: none; color: var(--ink); background: var(--raised); font-size: 0.92rem; }
+  .sets a:hover { border-color: var(--accent); }
+  .sets span { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); margin-left: 0.2rem; }
+  .set { scroll-margin-top: 70px; }
+  .set .card h3 { font-size: 1.15rem; line-height: 1.25; }
+</style>

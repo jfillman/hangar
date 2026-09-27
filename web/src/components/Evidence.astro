@@ -1,0 +1,23 @@
+---
+import type { Evidence } from '../data/principles';
+interface Props { items: Evidence[]; heading?: string }
+const { items, heading = 'Where Hangar does this' } = Astro.props;
+const label = { built: 'Built', draft: 'Draft', proposal: 'Proposal' };
+---
+<section class="evidence">
+  <p class="eyebrow">{heading}</p>
+  <ul>
+    {items.map((e) => (
+      <li>
+        <span class:list={['chip', e.status]}>{label[e.status]}</span>
+        {e.href ? <a href={e.href}>{e.text}</a> : <span>{e.text}</span>}
+      </li>
+    ))}
+  </ul>
+</section>
+<style>
+  .evidence { margin: 1.8rem 0; }
+  ul { list-style: none; padding: 0; margin: 0.6rem 0 0; }
+  li { display: grid; grid-template-columns: 5.8rem 1fr; gap: 0.6rem; align-items: baseline; padding: 0.55rem 0; border-top: 1px solid var(--rule); font-size: 0.97rem; line-height: 1.45; }
+  li .chip { justify-self: start; }
+</style>

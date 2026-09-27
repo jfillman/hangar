@@ -42,6 +42,7 @@ autopilot                   AI agent workloads: Clearance, AgentRun, planner (pr
 
 ```
 docs/   design docs, written as decisions land — same convention as glidepath/docs/
+web/    the website (hangarplatform.dev): Astro, built from docs/ and brand/ — see web/README.md
 ```
 
 ## Design language

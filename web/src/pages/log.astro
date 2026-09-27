@@ -1,0 +1,54 @@
+---
+import Base from '../layouts/Base.astro';
+import { gh } from '../lib/url';
+
+// Dated milestones, taken from the repos' own status notes and commit history.
+// Add new entries at the top.
+const entries = [
+  { date: '2026-09-27', title: 'This site', text: 'Hangar gets a home on the web: the platform, its principles and its diagrams in one place, built from the same repo.' },
+  { date: '2026-09-26', title: 'Autopilot, the sixth product', text: 'Design for running any AI agent workload, bounded and audited. The Clearance core, the AppSpec planner, nine Skyport agent definitions and six Preflight cases are built and tested; the AgentRun XRD is drafted. The Airframe scorecard lands with a committed baseline of 27 out of 100.', href: gh('hangar', 'docs/autopilot/README.md') },
+  { date: '2026-09-23', title: 'Infisical operator retired on kind-prod', text: 'All five apps and Glidepath itself migrated onto the new Airframe pin and External Secrets, phase by phase, with the plan and each phase recorded as it closed.', href: gh('hangar', 'docs/kind-prod-infisical-migration-plan.md') },
+  { date: '2026-09-22', title: 'kiac-prod decommissioned, replaced by kind-prod', text: 'The upper cluster is rebuilt from the Apron template instead of being patched in place.' },
+  { date: '2026-09-21', title: 'Every app stack scaffolds its cicd.yaml', text: 'The last hand-authored step in onboarding goes away. The same week, docs across every repo get one table of contents and TechDocs wiring in Tower.', href: gh('glidepath', 'docs/admin/adr/0017-cicd-yaml-scaffolded-not-hand-authored.md') },
+  { date: '2026-09-17', title: 'SecretStore on Infisical, built', text: 'One secret store per app and cluster, shared across that app\'s environments, never across clusters.', href: gh('hangar', 'docs/service-catalog-design.md') },
+  { date: '2026-09-07', title: 'The Hangar brand', text: 'The project is renamed Hangar, with the instrument-dial mark family: one gauge, one glyph per product, and the calm-cockpit colour rule.', href: gh('hangar', 'brand/README.md') },
+  { date: '2026-09-05', title: 'A self-hosted transparency log', text: 'Rekor and Trillian join the self-hosted Fulcio, so image signatures get a real transparency-log timestamp.', href: gh('glidepath', 'docs/admin/adr/0014-keyless-signing-two-trust-roots.md') },
+  { date: '2026-08-24', title: 'Testkube, and reading the source', text: 'The documented multi-namespace mode turns out to be paid-only in the source. The shared-namespace design ships, with a Kyverno policy closing the gap RBAC cannot.', href: gh('glidepath', 'docs/admin/adr/0007-testkube-shared-namespace.md') },
+  { date: '2026-08-16', title: 'Lower and upper environments become a real boundary', text: 'Built and verified live after a real bug: a separate AppProject, not just a separate folder.', href: gh('hangar', 'docs/gitops-strategy.md') },
+  { date: '2026-08-13', title: 'AI triage in the control plane', text: 'A Composition Function watches Argo Rollouts and dispatches a diagnosis on degradation. Proven end to end: a real broken canary, a real diagnosis, a real fix PR. The application chart is verified live the same day.', href: gh('airframe') },
+  { date: '2026-08-12', title: 'Design resolved, build starts', text: 'The GitOps strategy and service-catalog design settle, and the platform around Glidepath begins: Crossplane as the control plane, ArgoCD for delivery, Backstage as the pane of glass.', href: gh('hangar', 'docs/gitops-strategy.md') },
+];
+---
+<Base title="Log" description="Hangar's history: what changed, when, and why." section="log">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Log</p>
+      <h1>Hangar is never finished</h1>
+      <p class="lede">
+        The platform is the working version of everything on this site, so it keeps changing. These are the milestones,
+        newest first, each linked to where the decision is written down.
+      </p>
+    </section>
+    <ol class="log">
+      {entries.map((e) => (
+        <li>
+          <time datetime={e.date}>{e.date}</time>
+          <div>
+            <h3>{e.href ? <a href={e.href}>{e.title}</a> : e.title}</h3>
+            <p>{e.text}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Base>
+<style>
+  .log { list-style: none; padding: 0; margin: 1rem 0; }
+  .log li { display: grid; grid-template-columns: 7.5rem 1fr; gap: 1rem; padding: 1.2rem 0; border-top: 1px solid var(--rule); }
+  time { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); padding-top: 0.35rem; }
+  .log h3 { margin: 0 0 0.3rem; font-size: 1.35rem; }
+  .log h3 a { color: var(--ink); text-decoration: none; }
+  .log h3 a:hover { color: var(--accent); }
+  .log p { margin: 0; max-width: var(--prose); color: var(--muted); }
+  @media (max-width: 560px) { .log li { grid-template-columns: 1fr; gap: 0.2rem; } }
+</style>

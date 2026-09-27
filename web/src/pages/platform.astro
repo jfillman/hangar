@@ -1,0 +1,72 @@
+---
+import Base from '../layouts/Base.astro';
+import Diagram from '../components/Diagram.astro';
+import { products } from '../data/products';
+import { u } from '../lib/url';
+
+const rows = [
+  ['Defined by', 'An Airframe claim (app stack, environments, components) in git', 'An agent definition, schema-validated, in git'],
+  ['Created by', 'A reviewed commit, usually opened from Tower', 'A reviewed commit for the definition; a scoped claim for each run'],
+  ['Runs on', 'Its own namespaces per environment, on every cluster it is promoted to', 'A sandbox in one reserved namespace, on dev clusters only'],
+  ['Identity', 'Kubernetes service accounts, verified by TokenReview', 'The same, plus a scoped token per call from Clearance'],
+  ['Changes the platform by', 'Pull requests to its GitOps repo, synced by ArgoCD', 'Pull requests, through the same gates plus two for agents'],
+  ['Observed through', 'OTel traces, DORA metrics, SLOs in Tower', 'The same telemetry, plus a hash-chained flight recorder'],
+];
+---
+<Base title="The platform" description="How Hangar fits together: a Crossplane control plane, GitOps delivery and a Backstage pane of glass, serving container apps and AI agent workloads." section="platform">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">The platform · An internal developer platform, from the inside</p>
+      <h1>An API-centric, event-driven platform</h1>
+      <p class="lede">
+        Hangar is an internal developer platform with a Crossplane control plane, GitOps delivery through ArgoCD,
+        Backstage as the single pane of glass and Glidepath for CI/CD underneath. It runs two kinds of workload,
+        container apps and AI agents, through the same API and under the same rules.
+      </p>
+    </section>
+
+    <p class="principle">No cluster ever holds credentials for another cluster's API. The only thing that crosses a boundary is a reviewed, merged commit.</p>
+    <div class="prose">
+      <p>
+        That rule came out of Glidepath's multi-cluster work, was verified live twice, and every later design carries it
+        forward rather than reopening it. Backstage holds no Kubernetes credentials at all; even creating a new service
+        is a commit. Outcomes come back as events, never as an API call reaching the other way.
+      </p>
+    </div>
+
+    <h2>Four layers</h2>
+    <div class="grid">
+      <div class="card"><span class="eyebrow">Control plane</span><h3>Crossplane and Airframe</h3><p>The platform's API. XRDs define what a compliant service is; Compositions and Functions make it real, and watch it afterwards.</p></div>
+      <div class="card"><span class="eyebrow">Delivery</span><h3>Glidepath and ArgoCD</h3><p>Tekton pipelines chained by events, promotion by pull request, one ArgoCD per cluster as the only writer.</p></div>
+      <div class="card"><span class="eyebrow">Experience</span><h3>Tower on Backstage</h3><p>Self-service, release orchestration and operations in one place, with every change made as a GitOps PR.</p></div>
+      <div class="card"><span class="eyebrow">Ground</span><h3>Apron clusters</h3><p>Every cluster starts from the same template and the same bootstrap order, with its own trust roots.</p></div>
+    </div>
+
+    <Diagram id="plan/05-contract-architecture" />
+
+    <h2>Two kinds of workload, one platform</h2>
+    <p class="lede">An AI agent gets the same treatment as a service, with less authority by default.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>Container apps</th><th>AI agent workloads</th></tr></thead>
+        <tbody>{rows.map((r) => <tr><th scope="row">{r[0]}</th><td>{r[1]}</td><td>{r[2]}</td></tr>)}</tbody>
+      </table>
+    </div>
+
+    <Diagram id="autopilot/01-hangar-plus-autopilot" />
+    <Diagram id="reference/01-agent-substrate" />
+    <Diagram id="reference/05-multicloud-gitops" />
+
+    <h2>The products</h2>
+    <div class="grid">
+      {products.map((p) => (
+        <a class="card" href={p.repo}>
+          <span class="eyebrow"><img class="mark" src={u(`marks/${p.key}-tile.svg`)} alt="" width="28" height="28" />{p.name}</span>
+          <h3>{p.tag}</h3>
+          <p>{p.role}</p>
+        </a>
+      ))}
+    </div>
+    <p><a href={u('sdlc/')}>Follow a change through the whole lifecycle →</a></p>
+  </div>
+</Base>

@@ -1,0 +1,46 @@
+---
+import Base from '../../layouts/Base.astro';
+import Diagram from '../../components/Diagram.astro';
+import Evidence from '../../components/Evidence.astro';
+import StageRail from '../../components/StageRail.astro';
+import { stages, type Stage } from '../../data/sdlc';
+import { principles } from '../../data/principles';
+import { u } from '../../lib/url';
+
+export function getStaticPaths() {
+  return stages.map((stage, i) => ({ params: { slug: stage.slug }, props: { stage, prev: stages[i - 1], next: stages[i + 1] } }));
+}
+interface Props { stage: Stage; prev?: Stage; next?: Stage }
+const { stage, prev, next } = Astro.props;
+const themes = principles.filter((p) => stage.themes.includes(p.slug));
+---
+<Base title={`${stage.name} · SDLC`} description={stage.principle} section="sdlc">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">SDLC · Stage {stage.n} of {String(stages.length).padStart(2, '0')}</p>
+      <h1>{stage.name}</h1>
+      <p class="principle">{stage.principle}</p>
+      <p class="themes muted small">
+        Principles: {themes.map((t, i) => <>{i > 0 && ', '}<a href={u(`principles/#${t.slug}`)}>{t.name}</a></>)}
+      </p>
+    </section>
+
+    <div class="prose">{stage.body.map((b) => <p set:html={b} />)}</div>
+    <Evidence items={stage.evidence} />
+    {stage.diagrams.map((d) => <Diagram id={d.id} caption={d.caption} />)}
+
+    <section class="agents">
+      <p class="eyebrow">And for AI agents</p>
+      <h3>{stage.agents.title}</h3>
+      <div class="prose">{stage.agents.body.map((b) => <p set:html={b} />)}</div>
+      {stage.agents.diagrams.map((id) => <Diagram id={id} />)}
+      <p><a href={u('autopilot/')}>The full Autopilot walkthrough →</a></p>
+    </section>
+
+    <StageRail current={stage.slug} />
+    <div class="pager">
+      {prev ? <a href={u(`sdlc/${prev.slug}/`)}><span class="eyebrow">← Previous</span>{prev.name}</a> : <span />}
+      {next ? <a href={u(`sdlc/${next.slug}/`)} style="text-align:right"><span class="eyebrow">Next →</span>{next.name}</a> : <a href={u('cicd/')} style="text-align:right"><span class="eyebrow">Next →</span>CI/CD practices</a>}
+    </div>
+  </div>
+</Base>

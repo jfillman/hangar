@@ -1,0 +1,48 @@
+---
+import Base from '../../layouts/Base.astro';
+import { stages } from '../../data/sdlc';
+import { principles } from '../../data/principles';
+import { u } from '../../lib/url';
+const pname = Object.fromEntries(principles.map((p) => [p.slug, p.name]));
+---
+<Base title="The SDLC" description="The software development lifecycle from a platform engineer's side: seven stages, each with an opinion, Hangar's implementation, and what changes for AI agents." section="sdlc">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">The SDLC, from the platform side</p>
+      <h1>Seven stages, one platform underneath</h1>
+      <p class="lede">
+        A developer experiences the lifecycle as write, push, ship. The platform's job is everything that makes
+        that feel simple: contracts, pipelines, identity, promotion, telemetry and feedback. Each stage below is
+        an opinion about how that should work, the place in Hangar that does it, and what changes when the
+        author of a change is an AI agent.
+      </p>
+    </section>
+    <ol class="stages">
+      {stages.map((s) => (
+        <li>
+          <a href={u(`sdlc/${s.slug}/`)}>
+            <span class="n">{s.n}</span>
+            <span class="body">
+              <span class="name">{s.name}</span>
+              <span class="short">{s.short}</span>
+              <span class="p">{s.principle}</span>
+              <span class="themes">{s.themes.map((t) => <span>{pname[t]}</span>)}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Base>
+<style>
+  .stages { list-style: none; padding: 0; margin: 1rem 0; }
+  .stages a { display: grid; grid-template-columns: 3.5rem 1fr; gap: 1rem; padding: 1.4rem 0; border-top: 1px solid var(--rule); color: inherit; text-decoration: none; }
+  .stages a:hover .name { color: var(--accent); }
+  .n { font-family: var(--font-mono); color: var(--accent); padding-top: 0.5rem; }
+  .body > span { display: block; }
+  .name { font-family: var(--font-serif); font-size: 1.9rem; line-height: 1.1; }
+  .short { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 0.3rem 0 0.5rem; }
+  .p { max-width: 62ch; }
+  .themes { margin-top: 0.6rem; display: flex !important; flex-wrap: wrap; gap: 0.4rem; }
+  .themes span { font-size: 0.78rem; color: var(--muted); background: var(--paper-2); border-radius: 3px; padding: 0.1rem 0.45rem; }
+</style>

@@ -63,6 +63,9 @@ const marksOut = join(pub, 'marks');
 fresh(marksOut);
 cpSync(join(repo, 'brand/marks'), marksOut, { recursive: true });
 cpSync(join(repo, 'docs/brand/hangar-social-preview.png'), join(pub, 'social-preview.png'));
+const brandOut = join(pub, 'brand');
+fresh(brandOut);
+for (const f of ['hangar-brand-system.html', 'tower-release-matrix.html']) cpSync(join(repo, 'docs/brand', f), join(brandOut, f));
 
 // 4. The manifest the pages render from.
 writeFileSync(join(web, 'src/data/diagrams.generated.json'), JSON.stringify([...hangar, ...glidepath], null, 2) + '\n');

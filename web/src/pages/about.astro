@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import { u } from '../lib/url';
+// TODO(James): replace the placeholder paragraphs below with your bio and experience.
+---
+<Base title="About" description="About James Fillman, platform engineer and the builder of Hangar." section="about">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">About</p>
+      <h1>James Fillman</h1>
+      <p class="lede">Platform engineer. I build internal developer platforms, and Hangar is where I do it in the open.</p>
+    </section>
+    <div class="prose">
+      <p class="placeholder">Bio to come: who I am, what I have worked on, and why platform engineering.</p>
+      <p class="placeholder">Experience to come.</p>
+      <p>
+        What I believe about building platforms is on the <a href={u('principles/')}>principles</a> page, and the platform itself
+        is on <a href="https://github.com/jfillman">GitHub</a>.
+      </p>
+      <p>Get in touch: <a href="mailto:jamesfillman@gmail.com">jamesfillman@gmail.com</a> · <a href="https://www.linkedin.com/in/jfillman/">LinkedIn</a> · <a href="https://github.com/jfillman">GitHub</a></p>
+    </div>
+  </div>
+</Base>
+<style>
+  .placeholder { border: 1px dashed var(--rule-strong); border-radius: 6px; padding: 0.8rem 1rem; color: var(--muted); font-style: italic; }
+</style>

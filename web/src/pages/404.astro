@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro';
+import { u } from '../lib/url';
+---
+<Base title="Not found" description="This page is not in the hangar.">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">404</p>
+      <h1>Nothing parked here</h1>
+      <p class="lede">That page does not exist, or it moved. Try the <a href={u('')}>home page</a> or the <a href={u('diagrams/')}>diagram gallery</a>.</p>
+    </section>
+  </div>
+</Base>

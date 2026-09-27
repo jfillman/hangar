@@ -1,0 +1,31 @@
+---
+import Base from '../../layouts/Base.astro';
+import DiagramEmbed from '../../components/Diagram.astro';
+import { diagrams, SET_LABELS, type Diagram } from '../../data/diagrams';
+import { u } from '../../lib/url';
+
+export function getStaticPaths() {
+  return diagrams.map((d) => {
+    const siblings = diagrams.filter((x) => x.set === d.set);
+    const i = siblings.findIndex((x) => x.id === d.id);
+    return { params: { id: d.id }, props: { d, prev: siblings[i - 1], next: siblings[i + 1] } };
+  });
+}
+interface Props { d: Diagram; prev?: Diagram; next?: Diagram }
+const { d, prev, next } = Astro.props;
+---
+<Base title={d.title} description={`${SET_LABELS[d.set]} diagram: ${d.title}`} section="diagrams">
+  <div class="wrap">
+    <p class="crumbs"><a href={u('diagrams/')}>Diagrams</a> / <a href={u(`diagrams/#${d.set}`)}>{SET_LABELS[d.set]}</a></p>
+    <DiagramEmbed id={d.id} />
+    <div class="pager">
+      {prev ? <a href={u(`view/${prev.id}/`)}><span class="eyebrow">← Previous</span>{prev.title}</a> : <span />}
+      {next ? <a href={u(`view/${next.id}/`)} style="text-align:right"><span class="eyebrow">Next →</span>{next.title}</a> : <span />}
+    </div>
+  </div>
+</Base>
+<style>
+  .crumbs { margin: 2rem 0 0; font-size: 0.9rem; color: var(--muted); }
+  .pager { margin-top: 1.5rem; }
+  .pager a { max-width: 45%; }
+</style>

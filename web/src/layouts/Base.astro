@@ -10,6 +10,7 @@ interface Props {
 const { title, description, section } = Astro.props;
 const fullTitle = title === 'Hangar' ? 'Hangar · Platform engineering by James Fillman' : `${title} · Hangar`;
 const nav = [
+  { href: 'principles/', label: 'Principles', key: 'principles' },
   { href: 'platform/', label: 'Platform', key: 'platform' },
   { href: 'sdlc/', label: 'SDLC', key: 'sdlc' },
   { href: 'cicd/', label: 'CI/CD', key: 'cicd' },

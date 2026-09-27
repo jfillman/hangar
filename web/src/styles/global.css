@@ -133,7 +133,8 @@ th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.8rem; border-
 th { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 
 /* Numbered practice list (CI/CD page) */
-.practices { list-style: none; padding: 0; margin: 1.5rem 0; counter-reset: p; }
+main { counter-reset: p; }
+.practices { list-style: none; padding: 0; margin: 1.5rem 0; }
 .practices > li { counter-increment: p; position: relative; padding: 1.2rem 0 1.2rem 3.4rem; border-top: 1px solid var(--rule); }
 .practices > li::before {
   content: counter(p, decimal-leading-zero);
