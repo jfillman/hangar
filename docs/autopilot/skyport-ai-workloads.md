@@ -50,7 +50,7 @@ they spawn narrower runs. Anything consequential goes through `human.request`. A
 | **Trigger bridge** (broker to `open_triggered`) | event | design below; **Proposal** |
 | Chart `agent:` block (tokens, egress, contract) | service | **Proposal** (Airframe AF-10) |
 | `event` trigger type in the definition schema | event | **Built** |
-| Tower Agent tab: runs, audit, approvals | session, event, team | **Proposal** |
+| Autopilot plugin (fleet-wide) + Tower Agent tab (app-scoped session chat, reuses the plugin's backend) | session, event, team | **Proposal** (decided 2026-09-27, design.md 8.3a) |
 | Skyport APIs, broker, `baggage-api`, MongoDB | task, session, service, digest, responder, team | broker, flight-api, boarding-api **Built**; baggage-api and MongoDB next |
 
 ## The trigger bridge (event shape)
@@ -104,7 +104,7 @@ worth a paragraph in the quickstart.
 | 4 | `baggage-api` (Python) + MongoDB, consuming flight events | MongoDB component (born A+) |
 | 5 | `skyport-auth` (OAuth) and enforced JWTs | OAuth component (born A+) |
 | 6 | **Your first agent: `flight-briefer`** (task) | Autopilot phase A and B, model proxy v0 |
-| 7 | **`gate-copilot`** (session) | session channel, Tower Agent tab |
+| 7 | **`gate-copilot`** (session) | session channel, the Tower Agent tab (app-scoped; the standalone Autopilot plugin carries the fleet-wide view) |
 | 8 | **`passenger-assistant`** (service) | chart `agent:` block, the hardened-sandbox moment |
 | 9 | **`delay-digest`** (scheduled) | trigger runner, artifact store |
 | 10 | **`disruption-responder`** (event) | trigger bridge |

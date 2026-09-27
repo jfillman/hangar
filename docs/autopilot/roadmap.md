@@ -111,7 +111,7 @@ a Preflight case with a seeded bad run, and updates its quickstart's verified-st
 | Part 9 `delay-digest` | trigger runner; artifact store |
 | Part 10 `disruption-responder` | trigger bridge; redelivery and storm demos |
 | Part 11 `irregular-ops-team` | narrow-only, a denied spawn, a checker catching a wrong fact |
-| Tower Agent tab; `Agent` XRD and two templates; Holmes via Clearance (drop `github-mcp-token`) | |
+| A new, standalone Autopilot Backstage plugin (fleet-wide console: runs, budgets, the breaker, Preflight, audit) and a narrow Tower Agent tab for app-scoped session chat, reusing the plugin's backend the way Tower's Glidepath tab reuses Glidepath's (decided 2026-09-27, design.md section 8 item 3a); `Agent` XRD and two templates; Holmes via Clearance (drop `github-mcp-token`) | |
 
 **Exit:** six Preflight cases pass and their seeded bad runs fail; one `task_id` traces a disruption from broker message to final artifact.
 
