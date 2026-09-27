@@ -130,6 +130,11 @@ on every field. Nothing new adds to the retrofit.
 - **Effort:** 2 days after AF-2's generator exists.
 
 ### AF-2 Schema precision (45 → A+)
+**Chart-level values schema: done, `jfillman/airframe#6` (2026-09-27).** Descriptions 5% -> 100%, strictness
+100% (baked into `values.schema.json` directly, not a runtime pass), `values.yaml` generated, components[]
+discriminated against real XRDs, mutation test 48/48 on the live fleet. **Still open:** the XRD-level half
+(descriptions/CEL rules, still at 78/125 described) and the CI-required-check widening to app/tenants repos
+(that part is AF-4b).
 - Schema-first: move the 548 lines of prose from `values.yaml` comments into `values.schema.json` descriptions, then **generate** `values.yaml` (defaults and doc comments) from the schema so they cannot drift.
 - `additionalProperties: false` on every object except marked passthroughs (`podSpec`, `extraManifests`, `canaryAnalysis`, `blueGreen`).
 - Enums, patterns (DNS names, quantities), examples, defaults. Coverage gates in CI: descriptions ≥ 95%, strictness 100%.

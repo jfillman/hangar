@@ -71,6 +71,24 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 
 **Exit:** typo acceptance is 0% across every live file; the Mongo component ships with its contract; validate is a required, green check on three repos.
 
+**M1 status (2026-09-27): AF-2 done, `jfillman/airframe#6` open.** `values.schema.json` is now the
+single hand-authored source (additionalProperties:false baked in everywhere except the documented
+passthroughs; descriptions 5% -> 100%); `values.yaml` is generated from it
+(`tools/gen_airframe_schema.py --write-values`, CI-gated with `--check`) and never hand-edited again.
+`tools/airframe-validate` runs one pass against a compiled schema (`tools/airframe_schema.py`) that
+splices a discriminated `components[].type` union in from the real XRDs (redis, postgresql,
+rabbitmq) at validate time, replacing the old two-pass ad hoc check. Found and fixed a real latent
+gap along the way: `cronJobs[]`/`jobs[]` were missing `image`/`command`/`args`/`resources`/
+`containerSecurityContext` in the old schema, which strict mode would have wrongly rejected.
+Verified: all 8 live fleet files render byte-identical helm output before/after; 48/48 injected
+mutations (typo, unknown key, broken enum, across all 3 real component types) rejected by the new
+`tools/test_af2_mutations.py`, run against the real fleet in CI's scorecard job; `helm lint` and the
+chart fixture suite both pass. **Not yet done, still open for M1:** AF-3 (component outputs and
+`fromComponent`), AF-4b (validate layers 3-6, required check on app/tenants repos too - today only
+gitops), AF-1b (contract bundle/llms.txt, an easy follow-on now that AF-2's generator exists), AF-6a
+(status helper/reason codes), SP-3 (MongoDB, born A+). XRD-level descriptions/CEL rules are still at
+the M0 baseline (78/125 described) - a reasonable next slice of AF-2 itself, not scoped into #6.
+
 ### M2 Safe write (weeks 7-10), target 75
 | Task | Notes |
 |---|---|
