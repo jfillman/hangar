@@ -6,6 +6,8 @@ the Airframe A+ program that makes the service catalog operable by agents.
 > **One idea:** an agent is one more author of git commits. **Durable changes are commits. Ephemeral
 > runs are claims to Crossplane.** Everything else follows from keeping those two planes apart.
 
+**Brand:** the mark is Option A, Hold, chosen 2026-09-26; the five options considered are in [`docs/brand/autopilot-logo-options.html`](../brand/autopilot-logo-options.html) (open in a browser), and the files are in [`brand/marks/`](../../brand/marks/).
+
 **Code:** [github.com/jfillman/autopilot](https://github.com/jfillman/autopilot) (public; the `clearance` Python package, agent definitions, Preflight cases, the AppSpec planner, `AgentRun` drafts). **Status (2026-09-26):** M0 is nearly done; see the [roadmap](roadmap.md) status block. New: [release-file-split.md](release-file-split.md) (designed and proven), [briefings-d6-d10.md](briefings-d6-d10.md) (two decisions for you).
 
 ## Read in this order
