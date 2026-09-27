@@ -197,3 +197,58 @@ main { counter-reset: p; }
 
 .muted { color: var(--muted); }
 .small { font-size: 0.9rem; }
+
+/* Docs: product docs pulled from each repo (src/pages/docs). */
+.docs { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 3rem; padding-top: 2.5rem; align-items: start; }
+.docs-side { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow-y: auto; font-size: 0.92rem; padding-bottom: 2rem; }
+.docs-menu > summary { display: flex; gap: 0.55rem; align-items: center; font-weight: 600; font-size: 1rem; color: var(--ink); cursor: default; list-style: none; margin-bottom: 0.8rem; }
+.docs-menu > summary::-webkit-details-marker { display: none; }
+.docs-menu > summary img { border-radius: 5px; box-shadow: 0 0 0 1px var(--rule); }
+.docs-side ul { list-style: none; margin: 0; padding: 0; }
+.docs-side ul ul { padding-left: 0.8rem; border-left: 1px solid var(--rule); margin: 0.2rem 0 0.6rem; }
+.docs-side li { margin: 0; }
+.docs-side a { display: block; padding: 0.22rem 0.5rem; color: var(--muted); text-decoration: none; border-radius: 4px; line-height: 1.35; }
+.docs-side a:hover { color: var(--ink); background: var(--paper-2); }
+.docs-side a[aria-current='page'] { color: var(--ink); background: var(--paper-2); box-shadow: inset 2px 0 0 var(--accent); }
+.docs-side .group, .docs-side ul summary { display: block; margin: 0.9rem 0 0.2rem; padding: 0 0.5rem; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--soft); }
+.docs-side ul summary { cursor: pointer; }
+.docs-switch { margin-top: 1.4rem; padding: 0 0.5rem; color: var(--soft); font-size: 0.85rem; line-height: 1.6; }
+.docs-switch a { display: inline; padding: 0; color: var(--muted); text-decoration: underline; text-decoration-color: var(--rule); }
+
+.doc { min-width: 0; max-width: 80ch; padding-bottom: 4rem; overflow-wrap: break-word; }
+.doc .eyebrow a { color: inherit; }
+.doc h1 { font-family: var(--font-serif); font-weight: 400; font-size: clamp(2rem, 4vw, 2.8rem); line-height: 1.1; margin: 0.4rem 0 1.2rem; }
+.doc h2 { margin-top: 2.6rem; }
+.doc h3 { margin-top: 2rem; font-size: 1.15rem; }
+.doc h4 { margin-top: 1.5rem; font-size: 1rem; }
+.doc :is(h2, h3, h4) { scroll-margin-top: 76px; }
+.doc p, .doc li { line-height: 1.65; }
+.doc ul, .doc ol { padding-left: 1.3rem; }
+.doc li { margin: 0.3rem 0; }
+.doc img { max-width: 100%; height: auto; }
+.doc blockquote { margin: 1.4rem 0; padding: 0.2rem 1rem; border-left: 3px solid var(--accent); color: var(--muted); background: var(--paper-2); border-radius: 0 6px 6px 0; }
+.doc table { display: block; overflow-x: auto; margin: 1.4rem 0; font-size: 0.9rem; }
+.doc th, .doc td { vertical-align: top; }
+.doc pre { margin: 1.2rem 0; padding: 0.9rem 1rem; overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--raised); font-size: 0.84rem; line-height: 1.55; }
+.doc pre code { background: none; padding: 0; font-size: inherit; }
+
+.mermaid-out { margin: 1.4rem 0; padding: 1rem; overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--raised); text-align: center; }
+.mermaid-out svg { max-width: 100%; height: auto; }
+.doc-foot { margin-top: 3.5rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.92rem; }
+
+/* Shiki emits both themes as CSS variables; pick one to match the page. */
+.astro-code, .astro-code span { color: var(--shiki-light); }
+:root[data-theme='dark'] :is(.astro-code, .astro-code span) { color: var(--shiki-dark); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) :is(.astro-code, .astro-code span) { color: var(--shiki-dark); }
+}
+
+@media (max-width: 860px) {
+  .docs { grid-template-columns: minmax(0, 1fr); gap: 1rem; padding-top: 1.5rem; }
+  .docs-side { position: static; max-height: none; overflow: visible; padding: 0.6rem 0.8rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--raised); }
+  .docs-menu > summary { margin: 0; cursor: pointer; }
+  .docs-menu > summary::after { content: '▾'; margin-left: auto; color: var(--soft); }
+  .docs-menu[open] > summary { margin-bottom: 0.8rem; }
+}
+@media (min-width: 861px) { .docs-menu > summary { pointer-events: none; } }
+.doc :not(pre) > code { overflow-wrap: anywhere; }

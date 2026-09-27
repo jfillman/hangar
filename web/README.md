@@ -16,6 +16,12 @@ npm run build    # writes dist/
   `tools/diagrams/build_hangar.py`), the brand marks and two brand pages into `public/`, and writes
   `src/data/diagrams.generated.json`. Regenerate a diagram in `tools/diagrams`, and the site picks it up on the next
   build.
+- **Docs are not copied into git either.** `scripts/sync-docs.mjs` reads each product's `docs/` folder and its
+  `mkdocs.yml` nav (the same files Backstage TechDocs uses), points links at the site or at GitHub, and writes the
+  pages to `src/docs.generated/` for `/docs/`. Hangar's own docs come from this repo; the others come from
+  `DOCS_REPOS_DIR` (the workflow checks them out there) or, locally, from sibling checkouts next to this repo. A repo
+  that isn't found is skipped. Fix a page in its own repo; the nightly build picks it up. `docs/archive`,
+  `drafts`, `brand` and the three home-lab runbooks in `hangar/docs` are never published.
 - **Themes.** The site follows the system light or dark setting, and the header button overrides it (saved in
   `localStorage`). Diagrams carry their own dark theme from the generator, and the page keeps each embedded diagram
   in step with its own theme.

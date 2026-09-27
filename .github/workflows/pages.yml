@@ -1,5 +1,7 @@
 # Builds web/ (the hangarplatform.dev site) and deploys it to GitHub Pages.
 # One-time setup: Settings > Pages > Source: GitHub Actions; then set the custom domain there.
+# The Docs section pulls each product's docs from its own repo at build time, so a nightly
+# run picks up doc changes made in those repos.
 name: Site
 
 on:
@@ -7,17 +9,17 @@ on:
     branches: [main]
     paths:
       - web/**
-      - docs/autopilot/diagrams/**
-      - docs/brand/**
+      - docs/**
       - brand/**
       - .github/workflows/pages.yml
   pull_request:
     paths:
       - web/**
-      - docs/autopilot/diagrams/**
-      - docs/brand/**
+      - docs/**
       - brand/**
       - .github/workflows/pages.yml
+  schedule:
+    - cron: '17 9 * * *'
   workflow_dispatch:
 
 permissions:
@@ -32,6 +34,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The other product repos, for the Docs section (all public, so no token is needed).
+      - uses: actions/checkout@v4
+        with: { repository: jfillman/glidepath, path: _docs/glidepath }
+      - uses: actions/checkout@v4
+        with: { repository: jfillman/airframe, path: _docs/airframe }
+      - uses: actions/checkout@v4
+        with: { repository: jfillman/tower, path: _docs/tower }
+      - uses: actions/checkout@v4
+        with: { repository: jfillman/autopilot, path: _docs/autopilot }
+      - uses: actions/checkout@v4
+        with: { repository: jfillman/apron, path: _docs/apron }
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -48,6 +61,7 @@ jobs:
           # Empty on a pull request, where the defaults (hangarplatform.dev at /) apply.
           SITE_URL: ${{ steps.pages.outputs.origin }}
           SITE_BASE: ${{ steps.pages.outputs.base_path }}
+          DOCS_REPOS_DIR: ${{ github.workspace }}/_docs
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:

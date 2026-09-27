@@ -1,0 +1,85 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import DocNav from '../../components/DocNav.astro';
+import { docSet, docSets, productOf } from '../../data/docs';
+import { u } from '../../lib/url';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('docs');
+  return entries.map((entry) => ({
+    params: { slug: entry.data.route.replace(/^docs\//, '').replace(/\/$/, '') },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const set = docSet(entry.data.product)!;
+const product = productOf(entry.data.product);
+const name = product?.name ?? entry.data.product;
+---
+<Base title={`${entry.data.title} · ${name} docs`} description={product?.tag ?? `${name} documentation`} section="docs">
+  <div class="wrap docs">
+    <aside class="docs-side">
+      <details class="docs-menu" open>
+        <summary>
+          <img src={u(`marks/${entry.data.product}-tile.svg`)} width="22" height="22" alt="" />
+          <span>{name} docs</span>
+        </summary>
+        <nav aria-label={`${name} docs`}>
+          <a class="docs-home" href={u(set.home)} aria-current={entry.data.route === set.home ? 'page' : undefined}>Overview</a>
+          <DocNav items={set.nav.filter((n) => n.route !== set.home)} current={entry.data.route} />
+        </nav>
+        <p class="docs-switch">
+          Other products:
+          {docSets.filter((d) => d.id !== set.id).map((d, i) => <>{i > 0 && ', '}<a href={u(d.home)}>{productOf(d.id)?.name ?? d.id}</a></>)}
+        </p>
+      </details>
+    </aside>
+    <script is:inline>
+      // On a phone the page menu starts folded, so the page itself comes first.
+      if (matchMedia('(max-width: 860px)').matches) document.querySelector('.docs-menu')?.removeAttribute('open');
+    </script>
+    <article class="doc">
+      <p class="eyebrow"><a href={u('docs/')}>Docs</a> · {name}</p>
+      <Content />
+      <footer class="doc-foot">
+        <p>
+          This page lives in <a href={`https://github.com/jfillman/${set.repo}`}>jfillman/{set.repo}</a>, next to the code it
+          describes. <a href={entry.data.source}>View or edit it on GitHub ↗</a>
+        </p>
+      </footer>
+    </article>
+  </div>
+  <script>
+    // Glidepath's docs draw a few diagrams in mermaid. The library is only fetched on pages
+    // that have one, and redraws when the theme changes.
+    async function drawMermaid() {
+      let nodes: Element[] = [...document.querySelectorAll('pre > code.language-mermaid')].map((c) => c.parentElement!);
+      if (nodes.length) {
+        const { default: mermaid } = await import('mermaid');
+        const sources = nodes.map((node) => node.textContent ?? "");
+        const dark = () => document.documentElement.dataset.theme === 'dark' ||
+          (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+        let n = 0;
+        const draw = async () => {
+          mermaid.initialize({ startOnLoad: false, theme: dark() ? 'dark' : 'neutral', fontFamily: 'Geist, system-ui, sans-serif' });
+          for (const [i, node] of nodes.entries()) {
+            try {
+              const { svg } = await mermaid.render(`mmd-${n++}`, sources[i]);
+              const out = document.createElement('div');
+              out.className = 'mermaid-out';
+              out.innerHTML = svg;
+              node.replaceWith(out);
+              nodes[i] = out;
+            } catch {}
+          }
+        };
+        await draw();
+        document.addEventListener('themechange', draw);
+      }
+    }
+    drawMermaid();
+  </script>
+</Base>

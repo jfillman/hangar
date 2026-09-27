@@ -7,4 +7,9 @@ export default defineConfig({
   base: process.env.SITE_BASE || '/',
   trailingSlash: 'ignore',
   build: { format: 'directory' },
+  markdown: {
+    // Code in the docs follows the page theme; mermaid blocks are drawn in the browser.
+    syntaxHighlight: { type: 'shiki', excludeLangs: ['mermaid'] },
+    shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' }, defaultColor: false },
+  },
 });
