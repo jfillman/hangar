@@ -110,7 +110,7 @@ Environment: `HANGAR_RUN_ID`, `_TASK_ID`, `_SESSION_ID`, `_AGENT`, `_EXPIRES_AT`
 ### Sandbox and compute classes
 
 - `standard`: pod security `restricted`, non-root, read-only root filesystem, all capabilities dropped, default-deny egress with only the exceptions the network mode names, a quota that forbids Secrets and Services.
-- `hardened`: adds a runtime class (gVisor or Kata). **If the cluster has none, the run is Rejected. It is never silently downgraded.** kind and Apple `container` clusters have none, so `hardened` is a production-cluster feature.
+- `hardened`: adds a runtime class (gVisor or Kata). **If the cluster has none, the run is Rejected. It is never silently downgraded.** The home lab's local clusters have none, so `hardened` is a production-cluster feature.
 - Compute classes (`small`, `medium`, `large`, `gpu`) are declared per cluster in the function's input; a class the cluster lacks is Rejected. This borrows Modelplane's idea of a platform team publishing hardware classes that workloads request by name.
 - Network modes, ordered by reach: `none`, `clearance`, `clearance+model`, `allowlist` (explicit CIDRs, never `/0`).
 - Agent images are untrusted code. They are signed by Glidepath, referenced by digest (the XRD schema rejects a tag), and admission verifies the signature.
@@ -259,7 +259,7 @@ These are explicit decisions, not details:
 | Agent burns GitHub or model budget | Shared bucket starves CI (has happened) | Per-session budgets, a separate GitHub App, the breaker; token overrun trips it |
 | Time-driven re-invocation does not fire | Expiry is late | **Unverified**: the function sets a response TTL. Test first; fallback is an independent sweep |
 | PR-namespace sweep reaps runs | Live runs killed | Never use `hangar.io/ephemeral-env`; tested |
-| NetworkPolicy not enforced (kiac-dev) | Egress claim is false | Canary gates `autopilotReady` |
+| NetworkPolicy not enforced (dev cluster) | Egress claim is false | Canary gates `autopilotReady` |
 | Hub compromised | Holds inference cluster credentials | Per-environment hubs, dedicated accounts, no app data on those clusters |
 | Modelplane API changes (v1alpha1) | Backend breaks | Pinned; the contract is the URL; contract test |
 | Prompt injection via logs, PR text, repo content | Agent steered | Tool output is data; T2 is propose-only; T3 is never |
@@ -294,7 +294,7 @@ These are explicit decisions, not details:
 - Whether provider-kubernetes Objects for Namespace, ResourceQuota, NetworkPolicy and Job apply cleanly with the grants drafted.
 - pgvector in the CloudNativePG image.
 - The upstream Kubernetes Agent Sandbox and GKE Agent Substrate: known only from a third-party survey, not read at source (U11).
-- Modelplane's usage-record contents, short-lived-credential support for `Existing` clusters, and behaviour on your Kubernetes versions (kind-prod is 1.37; kiac-dev's version I did not check).
+- Modelplane's usage-record contents, short-lived-credential support for `Existing` clusters, and behaviour on your Kubernetes versions (prod is 1.37; the dev cluster's version I did not check).
 
 ## Sources
 

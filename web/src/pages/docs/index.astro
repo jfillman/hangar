@@ -1,0 +1,60 @@
+---
+import Base from '../../layouts/Base.astro';
+import { docSets, guides, productOf } from '../../data/docs';
+import { u } from '../../lib/url';
+
+const total = docSets.reduce((n, d) => n + d.pages, 0);
+---
+<Base title="Docs" description="User and admin documentation for every Hangar product, in one place." section="docs">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Docs · {total} pages</p>
+      <h1>The Hangar docs, all in one place</h1>
+      <p class="lede">
+        Each product keeps its docs in its own repo, right next to the code, and this page gathers them up every time the
+        site builds. If you use Hangar, start with a product's user guide. If you run it, the admin guides have the
+        architecture, the operations and the reasoning behind each decision.
+      </p>
+    </section>
+
+    <div class="grid docs-grid">
+      {docSets.map((d) => {
+        const p = productOf(d.id);
+        const g = guides(d);
+        return (
+          <section class="card doc-card">
+            <a class="doc-card-head" href={u(d.home)}>
+              <img class="mark" src={u(`marks/${d.id}-tile.svg`)} width="40" height="40" alt="" />
+              <span>
+                <strong>{p?.name ?? d.id}</strong>
+                <span class="muted">{d.pages} {d.pages === 1 ? 'page' : 'pages'}</span>
+              </span>
+            </a>
+            <p>{p?.tag}</p>
+            <p class="doc-links">
+              <a href={u(d.home)}>Overview</a>
+              {g.user && <a href={u(g.user)}>User guide</a>}
+              {g.admin && <a href={u(g.admin)}>Admin guide</a>}
+            </p>
+          </section>
+        );
+      })}
+    </div>
+
+    <div class="prose">
+      <h2>A work in progress, on purpose</h2>
+      <p>
+        Some of these docs are thorough and some are still thin, and I'd rather show them as they are than hide them until
+        they're perfect. Every page links back to its source on GitHub, so if something is wrong or missing, that's where
+        to fix it.
+      </p>
+    </div>
+  </div>
+</Base>
+<style>
+  .docs-grid { margin: 2rem 0 3rem; }
+  .doc-card-head { display: flex; gap: 0.8rem; align-items: center; color: var(--ink); text-decoration: none; }
+  .doc-card-head strong { display: block; font-size: 1.15rem; }
+  .doc-card-head .muted { font-size: 0.85rem; }
+  .doc-links { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: auto; font-size: 0.95rem; }
+</style>

@@ -272,16 +272,16 @@ Generalized for the IDP:
   bare `spec:` with nothing under it parses to `spec: null`, and merging that wipes
   `sources` *and* `destination` on every tenant that didn't opt in, not just leaving
   them unset. `{}` is the verified-safe no-op. See either cluster repo's own
-  `tenant-onboarding/applicationset.yaml` for the implementation (kind-dev's carries
-  the full rationale in its header; kind-prod's points at it).
+  `tenant-onboarding/applicationset.yaml` for the implementation (the dev cluster's carries
+  the full rationale in its header; the prod cluster's points at it).
 
 `gitops-<app-name>` layout — **upper environments only**, see §10 for where lower/
 ephemeral envs live instead:
 
 ```
 gitops-<app-name>/
-  kind-prod-1/staging/values.yaml
-  kind-prod-2/prod/values.yaml
+  prod-1/staging/values.yaml
+  prod-2/prod/values.yaml
 ```
 
 One `values.yaml` per cluster×env an app actually targets — satisfies requirement 4 (an
@@ -427,7 +427,7 @@ Two rules carried forward, both already established preferences, not new ones:
 **Built and live-verified 2026-08-16**, prompted by a real bug: a `NodeJSApplication`
 (`nodejs-demo-app`) onboarded with `cicd.yaml` declaring
 `deploy.lowerEnvironments: [dev]`, and nothing ever provisioned that namespace -
-`ApplicationEnvironment` structurally refuses `kind-dev` targets by design (this
+`ApplicationEnvironment` structurally refuses dev-cluster targets by design (this
 section's whole point), so `platform-cicd`'s chart-rendered `Role`/`RoleBinding` for
 that env sat permanently `OutOfSync` (`namespaces "app-nodejs-demo-app-dev" not
 found`). One real correction to how this section is phrased below: "`argocd-apps`...

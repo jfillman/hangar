@@ -1,0 +1,29 @@
+---
+import type { NavItem } from '../data/docs';
+import { u } from '../lib/url';
+
+interface Props { items: NavItem[]; current: string }
+const { items, current } = Astro.props;
+const holds = (n: NavItem): boolean => n.route === current || !!n.children?.some(holds);
+---
+<ul>
+  {items.map((n) => (
+    <li>
+      {n.children ? (
+        n.more ? (
+          <details open={holds(n)}>
+            <summary>{n.label}</summary>
+            <Astro.self items={n.children} current={current} />
+          </details>
+        ) : (
+          <>
+            <span class="group">{n.label}</span>
+            <Astro.self items={n.children} current={current} />
+          </>
+        )
+      ) : (
+        <a href={u(n.route!)} aria-current={n.route === current ? 'page' : undefined}>{n.label}</a>
+      )}
+    </li>
+  ))}
+</ul>

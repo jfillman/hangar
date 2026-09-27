@@ -63,14 +63,14 @@ Writers must **preserve strings**. Round-tripping through a YAML library changes
 ## Proof so far (offline, 2026-09-26)
 Split the four real live files by the two release keys, then compared `helm template` of the single file with
 `helm template -f human -f release`. Rendered output is **byte-identical for all four** (Ground: boarding-api
-11,505 bytes, flight-api 11,310; Flight kind-prod staging: boarding-api 25,370, flight-api 18,157 rendered
+11,505 bytes, flight-api 11,310; Flight prod-cluster staging: boarding-api 25,370, flight-api 18,157 rendered
 bytes; the fourth needed the timestamp quoting above). The test asserts non-zero output and real release keys
 were moved (`rollout` and `releaseTracking` present in the release files).
 
 Also proven: an ApplicationSet git files generator excludes files by glob (U7: nine files, three excluded,
 six generated), so `*.release.yaml` cannot become an environment.
 
-## Still to prove (needs kiac-dev, a cluster write)
+## Still to prove (needs the dev cluster, a cluster write)
 1. A scratch app with the new ApplicationSet: three `valueFiles`, one missing, syncs and renders identically to today.
 2. Changing only the release file (an image tag) rolls the app and touches no human file.
 3. The exclude with the real `*.release.yaml` name (U7 used a stand-in glob).
@@ -153,7 +153,7 @@ files here never conflict on a key). The reasons to go further are not about pre
 ## Progress (2026-09-26)
 | Step | State |
 |---|---|
-| 1. Chart accepts `release.image`, falls back to `rollout.image` | **Shipped** in Airframe v0.3.92, pinned on kiac-dev and kind-prod. All 7 live env files render byte-identically before and after. The values schema has a strict `release` object; `airframe-validate` warns on `rollout.image`, `release` and `releaseTracking` in a human file (AF-OWNER-001). |
+| 1. Chart accepts `release.image`, falls back to `rollout.image` | **Shipped** in Airframe v0.3.92, pinned on the dev and prod clusters. All 7 live env files render byte-identically before and after. The values schema has a strict `release` object; `airframe-validate` warns on `rollout.image`, `release` and `releaseTracking` in a human file (AF-OWNER-001). |
 | 2. Writers write `release.image`; readers read both | **Shipped** in Glidepath (`deploy-manifests`, `open-release-pr`, `extract-promoted-image`, `verify-image-provenance`, `ephemeral-envs`). Live-verified on `baggage-api`: the Ground deploy wrote `release.image`, the rollout followed it; the Flight release PR carries `release.image`, and the `image-scan`, `sbom` and `provenance` (image-verification step) gates read it. A writer also drops a bootstrap `rollout: null`, because with a real image the chart needs its rollout defaults. Tower needs no change: it is whitelist-based, so `release` is already outside what it reads or writes. The `ApplicationEnvironment` composition still seeds Flight files with `rollout: null`; that is now unnecessary (the guard covers it) but is left alone because that file was once wiped by a composition change. |
 | 3. ApplicationSet with three `valueFiles`, then split each app's files | Not done. Needs `deploy.releaseFile` in `cicd.yaml` first (Glidepath currently hardcodes the path). |
 | 4. Rename `platform/` to `airframe/` with a dual-path window | Not done. |
