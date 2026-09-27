@@ -51,7 +51,12 @@ const brandOut = join(pub, 'brand');
 fresh(brandOut);
 for (const f of ['hangar-brand-system.html', 'tower-release-matrix.html']) cpSync(join(repo, 'docs/brand', f), join(brandOut, f));
 
-// 4. The manifest the pages render from.
+// 4. Architecture reviews: standalone pages in docs/reviews/, shown on /review/.
+const reviewsOut = join(pub, 'reviews');
+fresh(reviewsOut);
+for (const f of readdirSync(join(repo, 'docs/reviews')).filter((f) => f.endsWith('.html'))) cpSync(join(repo, 'docs/reviews', f), join(reviewsOut, f));
+
+// 5. The manifest the pages render from.
 writeFileSync(join(web, 'src/data/diagrams.generated.json'), JSON.stringify([...hangar, ...glidepath], null, 2) + '\n');
 console.log(`sync-assets: ${hangar.length + glidepath.length} diagrams, marks copied`);
 

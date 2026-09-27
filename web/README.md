@@ -24,6 +24,8 @@ npm run build    # writes dist/
   quickstarts in `airframe/docs/user/html/`) are copied to `public/docs-assets/` as they are. Fix a page in its own
   repo; the nightly build picks it up. `docs/archive`,
   `drafts`, `brand` and the three home-lab runbooks in `hangar/docs` are never published.
+- **Reviews.** `scripts/sync-assets.mjs` also copies the standalone architecture reviews in `docs/reviews/*.html` into
+  `public/reviews/`; `/review/` embeds the current one. Add a new review there and point `src/pages/review.astro` at it.
 - **Themes.** The site follows the system light or dark setting, and the header button overrides it (saved in
   `localStorage`). Diagrams carry their own dark theme from the generator, and the page keeps each embedded diagram
   in step with its own theme.

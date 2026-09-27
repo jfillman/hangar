@@ -15,6 +15,14 @@ the control-plane layer for things like automated triage of a degraded deploymen
 Design resolved (`docs/gitops-strategy.md`, `docs/service-catalog-design.md`), build
 started 2026-08-12/13.
 
+### 2026-09-27: Architecture review
+
+A staff-architect review of the whole platform: **conditional approval**. The architecture is approved and a pilot
+is worth funding; production waits on five gates (prod independent of the dev cluster, a GitHub organization and
+SSO, authorization on Tower's write actions, a tested restore, admission-time signature checks). Rich page:
+[`docs/reviews/2026-09-27-architecture-review.html`](docs/reviews/2026-09-27-architecture-review.html), also at
+`/review/` on the site.
+
 ### 2026-09-26: Autopilot, the Airframe A+ program, and Skyport AI workloads
 
 Hangar gains a sixth product, **Autopilot**: it runs any AI agent workload (task, session, service,

@@ -28,6 +28,14 @@ created — not batched up later.
 | [local-clusters.md](local-clusters.md) | You're running clusters locally and want the operational notes. |
 | [backstage-design.md](backstage-design.md) | You want Tower's own design rationale — self-service flows, the terasky ingestor, catalog structure. |
 
+## Architecture reviews
+
+Added 2026-09-27. Point-in-time reviews of the whole platform, each a standalone illustrated page under [`reviews/`](reviews/README.md).
+
+| Doc | Read this when... |
+|---|---|
+| [reviews/2026-09-27-architecture-review.html](reviews/2026-09-27-architecture-review.html) | You want a staff architect's verdict on Hangar as the company platform: conditional approval, ten findings with evidence, what to add, change and remove, and the five gates for production. Open the file in a browser. |
+
 ## Autopilot — AI agent workloads
 
 Added 2026-09-26. Design, plan and diagrams live in this repo under [`autopilot/`](autopilot/README.md).
