@@ -1,0 +1,100 @@
+---
+import '../styles/global.css';
+import { u } from '../lib/url';
+
+interface Props {
+  title: string;
+  description: string;
+  section?: string;
+}
+const { title, description, section } = Astro.props;
+const fullTitle = title === 'Hangar' ? 'Hangar · Platform engineering by James Fillman' : `${title} · Hangar`;
+const nav = [
+  { href: 'platform/', label: 'Platform', key: 'platform' },
+  { href: 'sdlc/', label: 'SDLC', key: 'sdlc' },
+  { href: 'cicd/', label: 'CI/CD', key: 'cicd' },
+  { href: 'autopilot/', label: 'AI workloads', key: 'autopilot' },
+  { href: 'diagrams/', label: 'Diagrams', key: 'diagrams' },
+  { href: 'log/', label: 'Log', key: 'log' },
+  { href: 'about/', label: 'About', key: 'about' },
+];
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={u('marks/hangar-tile.svg')} />
+    <link rel="mask-icon" href={u('marks/hangar-mask-icon.svg')} color="#E8A33D" />
+    <meta name="theme-color" content="#f2efe9" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(u('social-preview.png'), Astro.site)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site">
+      <div class="wrap bar">
+        <a class="brand" href={u('')} aria-label="Hangar home">
+          <img src={u('marks/hangar-tile.svg')} width="30" height="30" alt="" />
+          <span>Hangar</span>
+        </a>
+        <nav aria-label="Main">
+          {nav.map((n) => (
+            <a href={u(n.href)} aria-current={section === n.key ? 'page' : undefined}>{n.label}</a>
+          ))}
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="site">
+      <div class="wrap foot">
+        <p>
+          <strong>Hangar</strong> is James Fillman's platform, built in the open as the working version of
+          everything on this site. The code is on <a href="https://github.com/jfillman/hangar">GitHub</a>.
+        </p>
+        <p class="muted small">
+          Claims are labelled <span class="chip built">Built</span>, <span class="chip draft">Draft</span> or
+          <span class="chip proposal">Proposal</span>, the same way the design docs label them.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .skip { position: absolute; left: -999px; }
+  .skip:focus { left: 1rem; top: 1rem; background: var(--raised); padding: 0.5rem 0.8rem; z-index: 10; }
+  header.site { border-bottom: 1px solid var(--rule); background: var(--paper); position: sticky; top: 0; z-index: 5; }
+  .bar { display: flex; align-items: center; gap: 1.5rem; min-height: 60px; }
+  .brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--ink); flex-shrink: 0; }
+  .brand span { font-family: var(--font-serif); font-size: 1.5rem; letter-spacing: -0.01em; }
+  nav { display: flex; gap: 0.2rem; overflow-x: auto; scrollbar-width: none; margin-left: auto; }
+  nav::-webkit-scrollbar { display: none; }
+  nav a {
+    font-size: 0.9rem; color: var(--muted); text-decoration: none; padding: 0.4rem 0.6rem; border-radius: 4px; white-space: nowrap;
+  }
+  nav a:hover { color: var(--ink); background: var(--paper-2); }
+  nav a[aria-current='page'] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); border-radius: 0; }
+  @media (max-width: 720px) {
+    .bar { flex-wrap: wrap; gap: 0.3rem; padding-top: 0.6rem; padding-bottom: 0.3rem; }
+    nav { margin-left: 0; width: 100%; margin-inline: -0.6rem; }
+  }
+  footer.site { border-top: 1px solid var(--rule); margin-top: 6rem; padding: 2rem 0 3rem; }
+  .foot p { max-width: var(--prose); }
+</style>

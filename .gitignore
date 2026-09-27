@@ -1,2 +1,11 @@
 .DS_Store
 __pycache__/
+
+# web/ (the hangarplatform.dev site): build output and copies made by web/scripts/sync-assets.mjs
+web/node_modules/
+web/dist/
+web/.astro/
+web/public/diagrams/
+web/public/marks/
+web/public/social-preview.png
+web/src/data/diagrams.generated.json

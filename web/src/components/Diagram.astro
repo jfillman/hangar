@@ -1,0 +1,55 @@
+---
+// Embeds one diagram. Hangar's diagram-design pages are whole HTML documents, so they go in
+// a same-origin iframe that sizes itself to its content; Glidepath's are plain SVGs.
+import { diagram } from '../data/diagrams';
+import { u } from '../lib/url';
+
+interface Props { id: string; caption?: string; }
+const { id, caption } = Astro.props;
+const d = diagram(id);
+const src = u(d.path);
+---
+<figure class:list={['diagram', d.kind]}>
+  {d.kind === 'html' ? (
+    <iframe src={src} title={d.title} loading="lazy" data-autosize height="720"></iframe>
+  ) : (
+    <div class="svg-frame"><img src={src} alt={d.title} loading="lazy" /></div>
+  )}
+  <figcaption>
+    <span class="eyebrow">{d.eyebrow}</span>
+    <span class="t">{caption ?? d.title}</span>
+    <a href={src} target="_blank" rel="noopener">Open full page ↗</a>
+  </figcaption>
+</figure>
+
+<script>
+  // Grow each diagram iframe to its document height so the page, not the frame, scrolls.
+  function fit(frame: HTMLIFrameElement) {
+    const doc = frame.contentDocument;
+    if (!doc?.documentElement) return;
+    frame.style.height = `${doc.documentElement.scrollHeight}px`;
+  }
+  for (const frame of document.querySelectorAll<HTMLIFrameElement>('iframe[data-autosize]')) {
+    const attach = () => {
+      fit(frame);
+      const body = frame.contentDocument?.body;
+      if (body) new ResizeObserver(() => fit(frame)).observe(body);
+      frame.contentDocument?.fonts?.ready.then(() => fit(frame));
+    };
+    frame.addEventListener('load', attach);
+    if (frame.contentDocument?.readyState === 'complete') attach();
+  }
+</script>
+
+<style>
+  .diagram { margin: 2rem 0; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--paper); }
+  iframe { display: block; width: 100%; border: 0; background: var(--paper); }
+  .svg-frame { overflow-x: auto; background: #fff; padding: 1rem; }
+  .svg-frame img { display: block; min-width: 760px; width: 100%; height: auto; }
+  figcaption {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 1rem;
+    padding: 0.7rem 1rem; border-top: 1px solid var(--rule); background: var(--raised); font-size: 0.9rem;
+  }
+  figcaption .t { flex: 1 1 30ch; color: var(--muted); }
+  figcaption a { font-size: 0.85rem; white-space: nowrap; }
+</style>
