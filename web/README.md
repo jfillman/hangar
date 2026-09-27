@@ -17,7 +17,7 @@ npm run build    # writes dist/
   `src/data/diagrams.generated.json`. Regenerate a diagram in `tools/diagrams`, and the site picks it up on the next
   build.
 - **Docs are not copied into git either.** `scripts/sync-docs.mjs` reads each product's `docs/` folder and its
-  `mkdocs.yml` nav (the same files Backstage TechDocs uses), points links at the site or at GitHub, and writes the
+  `mkdocs.yml` nav (the same files Backstage TechDocs uses), points links at the site or at GitHub, swaps the home lab's cluster names for "dev" and "prod", and writes the
   pages to `src/docs.generated/` for `/docs/`. Hangar's own docs come from this repo; the others come from
   `DOCS_REPOS_DIR` (the workflow checks them out there) or, locally, from sibling checkouts next to this repo. A repo
   that isn't found is skipped. Images and standalone HTML pages a doc links to (the illustrated Airframe
@@ -29,7 +29,8 @@ npm run build    # writes dist/
 - **Themes.** The site follows the system light or dark setting, and the header button overrides it (saved in
   `localStorage`). Diagrams carry their own dark theme from the generator, and the page keeps each embedded diagram
   in step with its own theme.
-- **Words** live in `src/data/` (`principles.ts`, `sdlc.ts`, `products.ts`) and in the pages under `src/pages/`.
+- **Words** live in `src/data/` (`principles.ts`, `sdlc.ts`, `products.ts`, and `stack.ts`, which feeds `/stack/` and the
+  homepage's flight path) and in the pages under `src/pages/`.
   Every claim carries a status (Built, Draft, Proposal); keep it honest when the platform changes.
 - **The log** is `src/pages/log.astro`; add new entries at the top.
 

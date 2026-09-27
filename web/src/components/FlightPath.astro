@@ -1,0 +1,164 @@
+---
+// The stack drawn as the route one change takes, from intent to production. Pick a tool to see why it's there.
+// Every tool's detail is rendered here and only shown or hidden, so the page works without building HTML in script.
+import { rails, stages, toolByName, tools } from '../data/stack';
+import { u } from '../lib/url';
+
+const agentTools = tools.filter((t) => t.layer === 'agents');
+const onPath = new Set(stages.flatMap((s) => s.tools));
+const railTools = (key: string) => tools.filter((t) => t.layer === key && !onPath.has(t.name));
+const shown = [...new Set([...agentTools.map((t) => t.name), ...onPath, ...rails.flatMap((r) => railTools(r.key).map((t) => t.name))])];
+const first = 'ArgoCD, one per cluster';
+const ci = stages.filter((s) => s.side === 'ci');
+const cluster = stages.filter((s) => s.side === 'cluster');
+---
+<div class="fp" data-fp>
+  <div class="fp-agents">
+    <img src={u('marks/autopilot-tile.svg')} alt="" width="26" height="26" />
+    <p><strong>When the author is an agent:</strong> same path, less authority. An agent's change goes through Clearance and lands as a pull request, through the same gates plus two of its own.</p>
+    <div class="fp-chips">
+      {agentTools.map((t) => (
+        <button type="button" class="fp-tool" data-t={t.name} aria-pressed="false"><span>{t.name}</span><span class={`fp-dot ${t.status}`}></span></button>
+      ))}
+    </div>
+  </div>
+
+  <div class="fp-sides" aria-hidden="true"><span>The dev cluster builds and proves</span><span></span><span>Each cluster pulls and runs</span></div>
+
+  <ol class="fp-path">
+    {[...ci.map((s, i) => ({ s, i })), null, ...cluster.map((s, i) => ({ s, i: i + ci.length }))].map((x) =>
+      x === null ? (
+        <li class="fp-wall" aria-label="Boundary"><span>Only a reviewed, merged commit crosses here</span></li>
+      ) : (
+        <li class={`fp-stage ${x.s.side}`}>
+          <span class="fp-n">{String(x.i + 1).padStart(2, '0')}</span>
+          <h3>{x.s.name}</h3>
+          <p class="fp-q">{x.s.q}</p>
+          <div class="fp-list">
+            {x.s.tools.map((n) => {
+              const t = toolByName.get(n)!;
+              return <button type="button" class="fp-tool" data-t={t.name} aria-pressed={t.name === first ? 'true' : 'false'}><span>{t.name}</span><span class={`fp-dot ${t.status}`}></span></button>;
+            })}
+          </div>
+          <p class="fp-why">{x.s.why}</p>
+        </li>
+      ),
+    )}
+  </ol>
+
+  <div class="fp-rails">
+    {rails.map((r) => (
+      <div class="fp-rail">
+        <h3>{r.name}</h3>
+        <p>{r.why}</p>
+        <div class="fp-chips">
+          {railTools(r.key).map((t) => (
+            <button type="button" class="fp-tool" data-t={t.name} aria-pressed="false"><span>{t.name}</span><span class={`fp-dot ${t.status}`}></span></button>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <section class="fp-detail" aria-live="polite">
+    {shown.map((n) => {
+      const t = toolByName.get(n)!;
+      return (
+        <div class="fp-d" data-d={t.name} hidden={t.name !== first}>
+          <div>
+            <p class="eyebrow">Why this tool</p>
+            <h3>{t.name}</h3>
+            <p class="fp-role">{t.role}</p>
+            <span class={`chip ${t.status}`}>{t.status}</span>
+          </div>
+          <div>
+            <p class="fp-dwhy">{t.why}</p>
+            {t.over && <p class="fp-over">Chosen over <b>{t.over}</b></p>}
+            <a href={t.src}>Read the decision →</a>
+          </div>
+        </div>
+      );
+    })}
+  </section>
+  <p class="fp-more"><a href={u('stack/')}>Every tool, what I chose it over, and why →</a></p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-fp]').forEach((root) => {
+    const detail = root.querySelector<HTMLElement>('.fp-detail')!;
+    root.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('.fp-tool');
+      if (!b) return;
+      const name = b.dataset.t;
+      root.querySelectorAll<HTMLButtonElement>('.fp-tool').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.t === name)));
+      root.querySelectorAll<HTMLElement>('.fp-d').forEach((d) => (d.hidden = d.dataset.d !== name));
+      if (detail.getBoundingClientRect().top > innerHeight) detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+</script>
+
+<style>
+  .fp { margin: 2rem 0 0; }
+  .fp-agents { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem 1rem; background: var(--raised); border: 1px solid var(--rule); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 0.8rem; }
+  .fp-agents img { border-radius: 6px; box-shadow: 0 0 0 1px var(--rule); }
+  .fp-agents p { margin: 0; flex: 1 1 280px; font-size: 0.92rem; }
+  .fp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fp-sides { display: none; }
+  .fp-path { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .fp-stage { position: relative; display: flex; flex-direction: column; gap: 0.5rem; background: var(--raised); border: 1px solid var(--rule); border-radius: 10px; padding: 0.9rem 0.9rem 1rem; }
+  .fp-stage.cluster { background: var(--sky-soft); border-color: transparent; }
+  .fp-n { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; color: var(--accent); }
+  .fp-stage h3 { margin: 0; font-size: 1.5rem; line-height: 1; }
+  .fp-q { margin: 0; font-size: 0.85rem; color: var(--muted); }
+  .fp-list { display: flex; flex-direction: column; gap: 4px; }
+  .fp-why { margin: 0; font-size: 0.82rem; line-height: 1.45; border-top: 1px solid var(--rule); padding-top: 0.5rem; }
+  .fp-tool {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; width: 100%;
+    font: inherit; font-size: 0.84rem; line-height: 1.3; text-align: left; color: var(--ink);
+    background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 6px; padding: 0.3rem 0.55rem; cursor: pointer;
+  }
+  .fp-chips .fp-tool { width: auto; }
+  .fp-stage.cluster .fp-tool { background: var(--raised); }
+  .fp-tool:hover, .fp-tool[aria-pressed='true'] { border-color: var(--accent); }
+  .fp-tool[aria-pressed='true'] { box-shadow: inset 0 0 0 1px var(--accent); }
+  .fp-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); flex: none; }
+  .fp-dot.draft { background: var(--accent); }
+  .fp-dot.proposal { background: var(--sky); }
+  .fp-wall { border: 1px dashed var(--accent); border-radius: 10px; padding: 0.6rem 0.9rem; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; color: var(--accent); text-align: center; }
+  .fp-rails { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+  .fp-rail { border: 1px dashed var(--rule-strong); border-radius: 10px; padding: 0.8rem 1rem; }
+  .fp-rail h3 { margin: 0; font-size: 1.15rem; }
+  .fp-rail p { margin: 0.2rem 0 0.6rem; font-size: 0.85rem; color: var(--muted); }
+  .fp-detail { margin-top: 14px; background: var(--cockpit); color: #e8e4dc; border-radius: 10px; padding: 1.1rem 1.3rem; }
+  .fp-d { display: grid; grid-template-columns: 1fr; gap: 0.4rem 1.4rem; }
+  .fp-d[hidden] { display: none; }
+  .fp-d .eyebrow { color: #a1aab3; margin: 0; }
+  .fp-d h3 { margin: 0.2rem 0 0; font-size: 1.6rem; color: #fff; }
+  .fp-role { margin: 0.2rem 0 0.6rem; color: #a1aab3; font-size: 0.92rem; }
+  .fp-d .chip.built { color: #5fae84; }
+  .fp-d .chip.draft { color: #e8a33d; }
+  .fp-d .chip.proposal { color: #6fb2d9; }
+  .fp-dwhy { margin: 0; font-size: 1.05rem; }
+  .fp-over { margin: 0.5rem 0 0.4rem; color: #a1aab3; font-size: 0.88rem; }
+  .fp-over b { color: #e8a33d; font-weight: 500; }
+  .fp-d a { color: #6fb2d9; }
+  .fp-more { margin: 1rem 0 0; }
+
+  @media (min-width: 720px) {
+    .fp-rails { grid-template-columns: 1fr 1fr; }
+    .fp-d { grid-template-columns: 250px 1fr; }
+  }
+  @media (min-width: 960px) {
+    .fp-sides { display: grid; grid-template-columns: 4fr 28px 2fr; gap: 10px; margin-bottom: 0.4rem; }
+    .fp-sides span { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--rule-strong); padding-bottom: 0.3rem; }
+    .fp-sides span:nth-child(2) { border: 0; }
+    .fp-path { grid-template-columns: repeat(4, 1fr) 28px repeat(2, 1fr); }
+    .fp-stage:not(:nth-child(4)):not(:last-child)::after {
+      content: ''; position: absolute; right: -9px; top: 1.4rem; width: 8px; height: 8px; z-index: 1;
+      border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); transform: rotate(45deg);
+    }
+    .fp-wall { position: relative; border: 0; padding: 0; display: flex; align-items: center; justify-content: center; }
+    .fp-wall::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 2px dashed var(--accent); }
+    .fp-wall span { position: relative; writing-mode: vertical-rl; transform: rotate(180deg); background: var(--paper); padding: 0.5rem 0; font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; }
+  }
+</style>
