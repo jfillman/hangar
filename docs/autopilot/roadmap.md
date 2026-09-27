@@ -71,7 +71,19 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 
 **Exit:** typo acceptance is 0% across every live file; the Mongo component ships with its contract; validate is a required, green check on three repos.
 
-**M1 status (2026-09-27): AF-2 merged (#6); AF-3 and AF-4b open for review, stacked (#8 on #6, #9 on #8).**
+**M1 status (2026-09-27): AF-2/AF-3/AF-4b/AF-1b (#6-#10) all merged, tagged v0.3.95, live-verified on
+both clusters and on a real PipelineRun.** Airframe `v0.3.95` tagged; `glidepath-catalog`'s
+`valuesValidatorImage`/`chartVersion` bumped (pushed direct to `glidepath` main, its own convention).
+`gitops-cluster-dev`'s `idp-service-catalog` Application had a real live-cluster risk found and fixed
+before the pin moved: its `xrds/*.yaml` include glob was a wildcard that would have caught AF-3's new
+`xrds/*.meta.yaml` sidecar files as invalid manifests - narrowed to an explicit 13-file list (verified
+by simulating the glob against the real tag: exactly 13 XRDs + 13 compositions, zero `.meta.yaml`).
+`gitops-cluster-kind-prod`'s equivalent already used an explicit list, so only needed the bump. Both
+synced `Synced`/`Healthy` with the expected resource counts; the live Redis XRD carries its new
+`hangar.io/agent-summary`. A real fixture PR against `gitops-baggage-api` (closed after) confirmed the
+`values` guardrail catches `AF-SECRET-001` (a GitHub-token-shaped literal) and warns `AF-COMP-003` on
+baggage-api's own real unmigrated component references, on a live PipelineRun with a `fail`-reporting
+GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 - **AF-2, merged.** `values.schema.json` is the single hand-authored source (additionalProperties:false
   baked in everywhere except the documented passthroughs; descriptions 5% -> 100%); `values.yaml` is
   generated from it, CI-gated. `tools/airframe-validate` runs one pass against a compiled schema
@@ -104,11 +116,9 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 - **Not yet started for M1:** AF-6a (status helper/reason codes), SP-3 (MongoDB, born A+). XRD-level
   descriptions/CEL rules are still at the M0 baseline in most XRDs (AF-1b's own summaries don't count
   as the per-field description sweep AF-2 originally scoped there).
-- **Immediate next steps:** #6 is merged; merge #7 and #8 next (either order - both branch from post-#6
-  main and make the same one-line Containerfile fix, which merges cleanly either way), then #9, then
-  #10 (each stacked on the last). After all five are in: rebuild the `airframe-validate` image and bump
-  `glidepath-catalog`'s pin the same way M0's `release-file-schema` rebuild did, then re-verify the live
-  `values` guardrail on a real PR; sign and push the boarding-api migration.
+- **Immediate next steps:** sign and push the `boarding-api` `fromComponent` migration (still staged,
+  unsigned - gitsign blocker); decide on `add-to-catalog` for the 7 newly-annotated XRDs (a real product
+  decision, not blocking); then continue M1 with AF-6a (status/reason codes) and SP-3 (MongoDB).
 
 ### M2 Safe write (weeks 7-10), target 75
 | Task | Notes |
