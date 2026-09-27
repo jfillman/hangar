@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hangar Architecture Review</title>
+<meta name="description" content="A staff platform architect's evaluation of Hangar as the next-generation application and AI agent platform: conditional approval, ten findings, recommendations and five production gates.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The Hangar diagram profile (web/src/styles/global.css, tools/diagrams/lib.py): warm paper,
+   ink, amber accent, sky links; Instrument Serif, Geist, Geist Mono. Semantic colours mark
+   severity only. Theme follows the system unless <html data-theme> is set (the site sets it
+   when this page is embedded). */
+:root{
+  color-scheme:light;
+  --ground:#f2efe9; --paper:#fbfaf7; --ink:#1b1f24; --ink-2:#5b6570; --rule:rgba(27,31,36,.14);
+  --accent:#2e7ba6; --accent-soft:#dcebf4; --amber:#b9791f;
+  --ok:#2e7d4f; --ok-bg:#e1efe5; --warn:#9a6212; --warn-bg:#f4e6c9; --bad:#a3352b; --bad-bg:#f5e1dd; --info:#5b6570; --info-bg:#e8e3da;
+  --code-bg:#e8e3da;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+    --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+    --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+    --code-bg:#1b1f24;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+  --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+  --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+  --code-bg:#1b1f24;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,2.75rem)}
+h2{font-size:1.9rem;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+h3{font-size:1.3rem}
+p{margin:0}
+section{display:flex;flex-direction:column;gap:16px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+code{font-family:var(--mono);font-size:.85em;background:var(--code-bg);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.85rem;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:500}
+
+.verdict{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--warn);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.verdict .stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);padding:4px 10px;border-radius:3px}
+.verdict h2{border:0;padding:0;font-size:1.8rem}
+.verdict ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+
+.tbl{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--rule)}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:500;background:var(--ground)}
+tr:last-child td{border-bottom:0}
+td.area{font-weight:600;white-space:nowrap}
+.chip{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.04em;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.c-ok{color:var(--ok);background:var(--ok-bg)} .c-warn{color:var(--warn);background:var(--warn-bg)} .c-bad{color:var(--bad);background:var(--bad-bg)} .c-info{color:var(--info);background:var(--info-bg)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.card h3{font-size:1rem;font-family:var(--sans);font-weight:600}
+.card p{font-size:.92rem;color:var(--ink-2)}
+
+.finding{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);border-radius:4px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.finding.sev-high{border-left-color:var(--bad)} .finding.sev-med{border-left-color:var(--warn)} .finding.sev-low{border-left-color:var(--info)}
+.finding .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.finding .id{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.finding h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;flex:1 1 300px}
+.finding p{font-size:.94rem}
+.ev{font-size:.84rem;color:var(--ink-2)}
+.ev b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin-right:6px}
+.flist{display:flex;flex-direction:column;gap:10px}
+
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.rec{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.rec h3{display:flex;align-items:center;gap:8px}
+.rec ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:.92rem}
+.rec li b{font-weight:600}
+
+.gates{counter-reset:g;display:flex;flex-direction:column;gap:0;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.gate{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+.gate:last-child{border-bottom:0}
+.gate .n{font-family:var(--mono);font-size:.85rem;color:var(--accent);background:var(--accent-soft);border-radius:4px;height:28px;display:flex;align-items:center;justify-content:center}
+.gate p{font-size:.94rem}
+.gate .when{font-size:.82rem;color:var(--ink-2)}
+
+.phase{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.note{font-size:.85rem;color:var(--ink-2)}
+ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:16px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Hangar · Architecture review · Platform approval</span>
+  <h1>Hangar Architecture Review</h1>
+  <p class="prose" style="color:var(--ink-2)">An evaluation of Hangar as the company's next-generation application and AI agent platform: its architecture, goals, roadmap and current state, with a decision and the conditions attached to it.</p>
+  <div class="meta">
+    <span><b>Reviewed</b> 27 Sep 2026</span>
+    <span><b>Proposed by</b> James (senior platform engineer)</span>
+    <span><b>Scope</b> 12 repositories: hangar, airframe, glidepath, tower, backstage, apron, autopilot, three Skyport apps, two providers</span>
+  </div>
+</header>
+
+<div class="verdict">
+  <span class="stamp">Conditional approval</span>
+  <h2>I approve the architecture. I do not yet approve it for production workloads.</h2>
+  <p class="prose">Hangar's design principles are the strongest I have seen in a proposal of this kind, and I want the company's platform built on them. The implementation, however, has been proven on two laptop-hosted clusters under a personal GitHub account by one engineer, and the roadmap drives toward an AI-operability target without a matching track for production hardening. I am approving a funded pilot, with five gates that must pass before any customer-facing workload moves onto it.</p>
+  <ul>
+    <li><b>Approve now:</b> the principles, the GitOps topology, Glidepath as the CI/CD standard, and Airframe's contract-first direction.</li>
+    <li><b>Approve with changes:</b> Autopilot, narrowed to two workload shapes and built on the upstream Agent Sandbox directly.</li>
+    <li><b>Not approved yet:</b> production use, until the dev-cluster control-plane dependency, identity model, authorization gaps and disaster recovery are fixed (gates 1 to 5 below).</li>
+  </ul>
+</div>
+
+<section>
+  <h2>What Hangar is</h2>
+  <div class="prose">
+    <p>Hangar is an internal developer platform built from six products. <b>Airframe</b> is the service catalog: Crossplane XRDs and compositions plus one Helm chart (<code>airframe-application</code>) that every environment renders through. <b>Glidepath</b> is CI/CD on Tekton and Pipelines-as-Code, driven by a single developer-facing <code>cicd.yaml</code>. <b>Tower</b> is a Backstage plugin for releases, deployments and configuration. <b>Apron</b> is a template that stamps out per-cluster GitOps repos. <b>Autopilot</b>, added on 26 Sep, runs AI agent workloads through a policy gateway called Clearance.</p>
+    <p>One rule holds it together: every durable change is a reviewed git commit, no cluster holds credentials for another, and outcomes flow back as CDEvents rather than API calls. Autopilot extends this with a second plane: ephemeral agent runs are Crossplane claims with hard deadlines that can only narrow what git grants.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Scorecard by area</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Area</th><th>Rating</th><th>Summary</th></tr></thead>
+      <tbody>
+        <tr><td class="area">Architectural principles</td><td><span class="chip c-ok">Strong</span></td><td>Git as the only write path, no cross-cluster credentials, delegated over interactive access. Consistent and applied everywhere.</td></tr>
+        <tr><td class="area">CI/CD (Glidepath)</td><td><span class="chip c-ok">Strong</span></td><td>17 ADRs, keyless signing, provenance, OTel traces per flow, loud governance stubs, a published known-gaps list.</td></tr>
+        <tr><td class="area">Service catalog (Airframe)</td><td><span class="chip c-warn">Adequate</span></td><td>13 XRDs, live-verified. Relies on Crossplane writing files to GitHub, which has caused rate-limit exhaustion and a data-loss incident.</td></tr>
+        <tr><td class="area">Developer portal (Tower)</td><td><span class="chip c-warn">Adequate</span></td><td>Rich UI, but about 25k lines with no tests, distributed by copy-paste, and write routes that authenticate without authorizing.</td></tr>
+        <tr><td class="area">AI agent platform (Autopilot)</td><td><span class="chip c-warn">Promising</span></td><td>Excellent threat model and policy core. Real adapters, auth and the runtime are still proposals.</td></tr>
+        <tr><td class="area">Multi-cluster and topology</td><td><span class="chip c-bad">Weak</span></td><td>Prod depends on the dev cluster for secrets and bootstrap. Cross-cluster paths use NodePorts, SSH tunnels and host IPs.</td></tr>
+        <tr><td class="area">Identity and access</td><td><span class="chip c-bad">Weak</span></td><td>Personal GitHub account with a classic PAT holding <code>delete_repo</code>. One hardcoded admin in Backstage. No enterprise SSO.</td></tr>
+        <tr><td class="area">Day-2 operations</td><td><span class="chip c-bad">Gap</span></td><td>No backup and restore design, no platform SLOs, no upgrade playbooks. Prod observability is scaled to zero.</td></tr>
+        <tr><td class="area">Documentation</td><td><span class="chip c-warn">Adequate</span></td><td>Deep and candid, but written as running logs (the catalog design is 155 KB). Stale names and some inconsistent figures.</td></tr>
+        <tr><td class="area">Delivery risk</td><td><span class="chip c-bad">High</span></td><td>One engineer across 12 repos, 28-week plan. The roadmap lists this as its first risk.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Why I want this architecture</h2>
+  <div class="cards">
+    <div class="card"><h3>The security boundary is structural</h3><p>Upper and lower environments get separate ArgoCD AppProjects. The rejection was attack-tested live with throwaway Applications, not asserted from YAML.</p></div>
+    <div class="card"><h3>Developers write one file</h3><p><code>cicd.yaml</code> has a strict JSON Schema and is scaffolded at onboarding (ADR-0017). Nobody writes Tekton YAML.</p></div>
+    <div class="card"><h3>Operator values beat developer values</h3><p>ArgoCD's <code>valuesObject</code> precedence over <code>valueFiles</code> was tested with a planted hostile override. It is used as a safety mechanism on purpose.</p></div>
+    <div class="card"><h3>It is honest about its state</h3><p>Every claim is labelled Built, Draft, Proposal or Unverified. Stub gates report "stub", never "pass". Known gaps are published with evidence.</p></div>
+    <div class="card"><h3>The agent design is ahead of the market</h3><p>Two planes, narrow-only budgets, tripwire tools, expiry that needs no gateway, hash-chained audit with an external anchor, and evaluations that must fail a seeded bad run.</p></div>
+    <div class="card"><h3>It prefers upstream to custom</h3><p>The docs catch and reverse the reflex to write controllers: provider-sql, the RabbitMQ operators, CloudNativePG and the upstream Agent Sandbox were chosen over bespoke code.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Findings</h2>
+  <p class="note">Ordered by severity. Each carries the evidence I checked. "High" means it blocks production approval.</p>
+
+  <div class="flist">
+    <div class="finding sev-high">
+      <div class="top"><span class="chip c-bad">High</span><span class="id">F1</span><h3>The dev cluster is a production dependency</h3></div>
+      <p>Bootstrap-tier Crossplane runs only on the dev cluster, and so does the only Infisical instance. The prod cluster's secret stores pull from it at <code>http://dev.kiac.local:31800</code> over plain HTTP, through a NodePort that works because both clusters share one home network. A dev-cluster outage or compromise therefore reaches prod secrets and blocks new environments everywhere. The org-level <code>INFISICAL_ADMIN_TOKEN</code> already has blast radius on both clusters, which the design accepts.</p>
+      <p class="ev"><b>Evidence</b><code>kind-prod-infisical-migration-plan.md</code> lines 40, 156 and 201; <code>service-catalog-design.md</code> §0 and item 8 "Still open".</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="top"><span class="chip c-bad">High</span><span class="id">F2</span><h3>Identity rests on a personal GitHub account and a classic PAT</h3></div>
+      <p>GitHub Apps cannot create repos under a user account, so provider-github runs on a classic PAT with <code>repo</code> and <code>delete_repo</code>. Decommissioning an app deletes both of its repos. Branch rulesets on private repos need a paid plan, and the API refuses to show them on this account, so the guardrails that make release checks required cannot be audited.</p>
+      <p class="ev"><b>Evidence</b><code>service-catalog-design.md</code> §1; Glidepath <code>known-gaps.md</code> #14; <code>airframe/docs/user/decommission-app.md</code>.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="top"><span class="chip c-bad">High</span><span class="id">F3</span><h3>Tower's write actions authenticate but do not authorize</h3></div>
+      <p>The backend routes for ArgoCD sync, promote, config edits and <code>cicd.yaml</code> edits read the caller's identity only to log it. The permission policy covers catalog and scaffolder actions and a single hardcoded admin (<code>user:default/jfillman</code>), so any signed-in user can sync any mapped app on any cluster. The ArgoCD account behind it is described as <code>role:tower-sync */*</code>. This contradicts the lower-only write policy the Autopilot design relies on.</p>
+      <p class="ev"><b>Evidence</b><code>backstage/packages/backend/src/glidepathProvenance.ts</code> lines 1587 to 1640; <code>permissionPolicy.ts</code>; <code>autopilot/design.md</code> §5.5.</p>
+    </div>
+
+    <div class="finding sev-high">
+      <div class="top"><span class="chip c-bad">High</span><span class="id">F4</span><h3>No disaster recovery design</h3></div>
+      <p>I found no backup or restore plan for cluster state, CloudNativePG databases, RabbitMQ, the audit bucket or the Crossplane-managed GitHub state. Infisical's root encryption key is noted as "unrecoverable if lost" with no escrow procedure. Prod observability is scaled to zero for capacity, so prod has no monitoring today.</p>
+      <p class="ev"><b>Evidence</b><code>cluster-provisioning.md</code> line 144; <code>roadmap.md</code> §6 risks; search across all 12 repos for backup, Velero and restore.</p>
+    </div>
+
+    <div class="finding sev-med">
+      <div class="top"><span class="chip c-warn">Medium</span><span class="id">F5</span><h3>Crossplane writing files to GitHub is the most fragile part of the design</h3></div>
+      <p>Bootstrap XRDs reconcile <code>RepositoryFile</code> objects through GitHub's Contents API. That produced an annotation flip burning about 280 calls a minute, a retry loop burning about 16,000 calls an hour against a 5,000 budget shared with Backstage, a lost external-name that turned into repeated create attempts, and a Usage/finalizer deadlock that is "suspected resolved, not proven". It also needs a patched fork of provider-upjet-github. The team has hardened it well, but a reconcile loop is the wrong tool for a one-time scaffold.</p>
+      <p class="ev"><b>Evidence</b>Airframe <code>README.md</code> status notes of 23 and 24 Sep; <code>service-catalog-design.md</code> §0 and the 18 Aug incident; fork commits <code>ea893ce</code> and <code>7530c3d</code>.</p>
+    </div>
+
+    <div class="finding sev-med">
+      <div class="top"><span class="chip c-warn">Medium</span><span class="id">F6</span><h3>Supply-chain gates are real but not enforced end to end</h3></div>
+      <p>An unsigned release PR failed <code>provenance</code> and was merged anyway, so commit signing is not enforced in practice. Signatures are checked at release time, but nothing verifies them at admission, because <code>policy-validation</code> is still a stub and Kyverno carries only Testkube policies. The dev cluster's CNI does not enforce NetworkPolicy, and ground env files are committed straight to <code>main</code> with no validation.</p>
+      <p class="ev"><b>Evidence</b><code>service-catalog-design.md</code> 25 Sep round; Glidepath <code>release-guardrails.md</code>, known gaps #4 and #5; <code>apron/30-policy</code>.</p>
+    </div>
+
+    <div class="finding sev-med">
+      <div class="top"><span class="chip c-warn">Medium</span><span class="id">F7</span><h3>The roadmap has no production-readiness track</h3></div>
+      <p>M0 to M5 measure progress with the Airframe scorecard, which grades how operable Airframe is by agents. That is a good metric, but it is the only one. SSO, team tenancy, a cloud target, HA, DR, platform SLOs and upgrade testing appear in no milestone. The "parachute" acceptance test proves an agent can provision an app, not that the company can run one.</p>
+      <p class="ev"><b>Evidence</b><code>roadmap.md</code> §2 milestones and §6 risks; <code>airframe-ai-friendly.md</code> §2.</p>
+    </div>
+
+    <div class="finding sev-med">
+      <div class="top"><span class="chip c-warn">Medium</span><span class="id">F8</span><h3>Operating surface is large for the team behind it</h3></div>
+      <p>Each cluster runs two ArgoCD instances, Crossplane with four or more providers, Tekton, PaC, the CDEvents broker, ESO, Infisical, Kyverno, Sloth, Argo Rollouts, Contour, a full observability stack and HolmesGPT. Each app gets a source repo, a gitops repo and an entry in each cluster's tenants repo. The shared <code>idp-cluster-baseline</code> chart meant to keep clusters thin was never built, so every cluster is a full vendored copy of the template. Custom code (the broker interceptor, dora-exporter, results relay, rollout-watcher, provider-infisical, Tower, Clearance) all needs owners.</p>
+      <p class="ev"><b>Evidence</b><code>gitops-strategy.md</code> §1 to §3; <code>apron/README.md</code> "What this template does not model yet".</p>
+    </div>
+
+    <div class="finding sev-med">
+      <div class="top"><span class="chip c-warn">Medium</span><span class="id">F9</span><h3>Autopilot's runtime choices need revisiting before they are built</h3></div>
+      <p>Crossplane on this installation re-renders compositions only every 60 seconds (U2), which is fine for batch tasks but slow for interactive sessions, and the team already concluded that hard expiry must come from the Sandbox controller. Clearance keeps sessions in memory on a single replica. Six workload shapes, a team orchestrator and a self-hosted inference hub are a lot of surface before the first real adapter exists.</p>
+      <p class="ev"><b>Evidence</b><code>roadmap.md</code> §5 answers U2 and U11; <code>design.md</code> §7 failure modes.</p>
+    </div>
+
+    <div class="finding sev-low">
+      <div class="top"><span class="chip c-info">Low</span><span class="id">F10</span><h3>Documentation drifts from the code</h3></div>
+      <p>The Autopilot docs claim 255 tests; I ran the suite and got <b>218 passed, 4 skipped</b>. The Autopilot README says 15 CEL rules while the design says 19 (the code has R000 to R019). The scorecard defaults to <code>/Users/jerf/tech</code> and needs Helm, so nobody else can reproduce the published 27 and 41 scores. Airframe and Apron still link to <code>jfillman/idp</code> and <code>platform-cicd</code>. Design docs are session logs rather than as-built references.</p>
+      <p class="ev"><b>Evidence</b><code>pytest -q</code> in <code>autopilot</code> on 27 Sep; <code>autopilot/README.md</code>; <code>tools/airframe-scorecard/scorecard.py</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Recommendations</h2>
+  <div class="recs">
+    <div class="rec">
+      <h3><span class="chip c-ok">Add</span></h3>
+      <ol>
+        <li><b>A management cluster tier.</b> Move Bootstrap-tier Crossplane, Infisical (in HA) and Backstage off the dev cluster onto a dedicated <code>type: mgmt</code> cluster with its own change bar. Dev goes back to being disposable.</li>
+        <li><b>A GitHub organization with GitHub Apps.</b> Retire the PAT, split Apps by role (platform, scaffolder, agents), and manage rulesets as code generated from <code>releaseGuardrails</code>.</li>
+        <li><b>Enterprise SSO and team tenancy.</b> OIDC to the corporate IdP for Backstage and ArgoCD, group-based RBAC, and team ownership in the catalog.</li>
+        <li><b>Authorization on every Tower write.</b> Backstage permissions per action and per ownership, lower-only ArgoCD sync by default, and a durable audit record of the initiator.</li>
+        <li><b>Backup and restore.</b> Velero for cluster state, CloudNativePG backups to object storage, key escrow for Infisical, object lock on the audit bucket, and a restore drill each quarter.</li>
+        <li><b>Admission-time verification.</b> Kyverno <code>verifyImages</code> or the Sigstore policy controller, so an unsigned image cannot run even if a gate is bypassed.</li>
+        <li><b>A cloud target.</b> One managed Kubernetes environment and managed-database compositions (RDS or Cloud SQL) behind the same component XRDs.</li>
+        <li><b>Platform SLOs and alerting.</b> Starting with Glidepath's own "no PaC event in N hours" gap.</li>
+      </ol>
+    </div>
+    <div class="rec">
+      <h3><span class="chip c-warn">Change</span></h3>
+      <ol>
+        <li><b>Scaffold once, reconcile never.</b> Create repos and first commits with a one-shot scaffolder action through the token-minting interceptor, and keep Crossplane for resources that need continuous reconciliation. This removes most of the GitHub API budget risk and the provider fork.</li>
+        <li><b>Build <code>idp-cluster-baseline</code></b> before a third cluster exists, as §8 of the GitOps strategy intended.</li>
+        <li><b>Autopilot on the Sandbox directly.</b> Make <code>SandboxClaim</code> the run primitive, keep Crossplane for durable agent definitions, and give Clearance a persistent session store and two replicas.</li>
+        <li><b>Buy the model gateway.</b> Use an existing LLM gateway for routing and keys, and keep Clearance's budget and allowlist logic as the policy layer in front of it.</li>
+        <li><b>Add a production-readiness scorecard</b> beside the Airframe one, with its own milestone exits.</li>
+        <li><b>Turn the design logs into ADRs and as-built references,</b> fix the stale names, and make the scorecard runnable in CI with no local paths.</li>
+        <li><b>Package Tower as a versioned npm plugin with tests,</b> not a directory copied into the app.</li>
+      </ol>
+    </div>
+    <div class="rec">
+      <h3><span class="chip c-bad">Remove or defer</span></h3>
+      <ol>
+        <li><b>Modelplane and self-hosted inference.</b> Remove from the plan until there is a funded GPU need. Hosted models only (already decided as D6 option 1).</li>
+        <li><b>Four of six agent shapes for v1.</b> Ship task and event agents first. Session, service, scheduled and team shapes wait for real demand.</li>
+        <li><b>The nginx component</b> until its scope question is answered. It risks duplicating the ingress layer.</li>
+        <li><b>Shared-Infisical cross-cluster access over NodePort.</b> Replace it with the management tier or with the cloud's own secret manager.</li>
+        <li><b>New brand and website work</b> until gates 1 to 5 pass. The site is good; it is not what blocks adoption.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Approval gates</h2>
+  <p class="prose">Production approval follows when these pass. Each is a demonstration, recorded the way the project already records live verification.</p>
+  <div class="gates">
+    <div class="gate"><span class="n">G1</span><div><p><b>Topology.</b> Prod keeps serving and syncing with the dev cluster powered off, and no prod component resolves a dev hostname.</p><p class="when">Closes F1</p></div></div>
+    <div class="gate"><span class="n">G2</span><div><p><b>Identity.</b> The platform runs under a GitHub organization with no classic PAT, rulesets are applied from code, and users sign in through corporate SSO.</p><p class="when">Closes F2</p></div></div>
+    <div class="gate"><span class="n">G3</span><div><p><b>Authorization.</b> A non-owner is refused on every Tower write route, and nobody can sync an upper environment from the portal without an explicit grant.</p><p class="when">Closes F3</p></div></div>
+    <div class="gate"><span class="n">G4</span><div><p><b>Recovery.</b> A timed restore drill rebuilds a cluster, a CloudNativePG database and Infisical from backup, with the recovery time written down.</p><p class="when">Closes F4</p></div></div>
+    <div class="gate"><span class="n">G5</span><div><p><b>Supply chain.</b> An unsigned image is refused at admission on an upper cluster, and a release PR with a failing <code>provenance</code> check cannot be merged.</p><p class="when">Closes F6</p></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Suggested sequencing</h2>
+  <div class="phase">
+    <div class="card"><span class="eyebrow">Phase 1 · Harden</span><h3>Gates 1 to 5</h3><p>Management tier, GitHub org and SSO, Tower authorization, DR, admission policy. Continue Airframe M1 (contract and strict schema) in parallel, since it has no conflict.</p></div>
+    <div class="card"><span class="eyebrow">Phase 2 · Pilot</span><h3>Two internal teams</h3><p>Onboard two real non-critical services on the cloud target. Measure onboarding time, change failure rate and support load, and staff at least three more engineers.</p></div>
+    <div class="card"><span class="eyebrow">Phase 3 · Agents</span><h3>Autopilot M3, narrowed</h3><p>Real adapters, task and event agents, Preflight as a CI gate. Agents stay dev-only until the audit anchor and cost accounting are live.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>What I checked</h2>
+  <ul class="plain">
+    <li>Read Hangar's full design set: GitOps strategy, service catalog design (all rounds), Backstage design, cluster provisioning, local clusters, the Infisical migration plan, and every Autopilot document including the roadmap, decisions and briefings.</li>
+    <li>Read the READMEs, ADR index, security model and known-gaps lists of Glidepath and Airframe, and Tower's backend routes and permission policy in the backstage repo.</li>
+    <li>Ran the Autopilot suite: 218 passed and 4 skipped (the skips need sibling checkouts and Helm).</li>
+    <li>Tried to reproduce the Airframe scorecard. It could not run here: it defaults to the author's local path and needs Helm, which this environment could not download. The published scores are the author's, not mine.</li>
+    <li>Not checked: the gitops-cluster-* and tenants repos (outside this project's access), live cluster behaviour, and the Claude-hosted illustrated artifacts the docs link to.</li>
+  </ul>
+</section>
+
+<footer>Hangar Architecture Review · 27 September 2026 · Prepared for the platform approval decision on Hangar as the next-generation application and AI agent platform.</footer>
+
+</div>
+</body>
+</html>

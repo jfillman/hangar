@@ -1,10 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
-import { gh } from '../lib/url';
+import { gh, u } from '../lib/url';
 
 // Dated milestones, taken from the repos' own status notes and commit history.
 // Add new entries at the top.
 const entries = [
+  { date: '2026-09-27', title: 'An architecture review', text: 'A staff-architect review of the whole platform: a conditional approval, ten findings with evidence, and five gates before production. The biggest are prod\'s dependency on the dev cluster, identity on a personal GitHub account, and no restore plan.', href: u('review/') },
   { date: '2026-09-27', title: 'This site', text: 'Hangar gets a home on the web: the platform, its principles and its diagrams in one place, built from the same repo.' },
   { date: '2026-09-26', title: 'Autopilot, the sixth product', text: 'Design for running any AI agent workload, bounded and audited. The Clearance core, the AppSpec planner, nine Skyport agent definitions and six Preflight cases are built and tested; the AgentRun XRD is drafted. The Airframe scorecard lands with a committed baseline of 27 out of 100.', href: gh('hangar', 'docs/autopilot/README.md') },
   { date: '2026-09-23', title: 'Infisical operator retired on the prod cluster', text: 'All five apps and Glidepath itself migrated onto the new Airframe pin and External Secrets, phase by phase, with the plan and each phase recorded as it closed.' },

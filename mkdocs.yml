@@ -10,6 +10,8 @@ nav:
       - Cluster provisioning: cluster-provisioning.md
       - Local clusters: local-clusters.md
       - Backstage (Tower) design: backstage-design.md
+  - Reviews:
+      - Architecture reviews: reviews/README.md
   - Autopilot:
       - Overview: autopilot/README.md
       - Roadmap: autopilot/roadmap.md
