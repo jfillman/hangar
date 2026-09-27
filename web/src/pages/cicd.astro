@@ -90,7 +90,7 @@ const groups: { name: string; practices: Practice[] }[] = [
       <p>
         A CI/CD platform that claims to have no gaps is not being used. Glidepath keeps a
         <a href={gh('glidepath', 'docs/admin/known-gaps.md')}>known-gaps list</a> of problems found building real apps
-        on it, each with its evidence and a direction: a fragile webhook path that once stayed down for hours without an
+        on it, each with its evidence and a direction: webhook delivery that once failed for hours without an
         alert, required checks that assume every PR is a release PR, and unsigned agent commits failing the provenance
         gate. Those are the next things to fix, and they are listed in public on purpose.
       </p>

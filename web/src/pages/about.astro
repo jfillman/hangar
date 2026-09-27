@@ -1,26 +1,105 @@
 ---
 import Base from '../layouts/Base.astro';
 import { u } from '../lib/url';
-// TODO(James): replace the placeholder paragraphs below with your bio and experience.
+
+const roles = [
+  {
+    org: 'Best Buy Canada',
+    years: '2021 to 2026',
+    title: 'Platform Engineer',
+    summary: 'Architected and led key parts of the internal developer platform on OpenShift 4, owning its GitOps strategy, CI/CD architecture and self-service tooling.',
+    points: [
+      'Defined the GitOps strategy and ArgoCD architecture that moved roughly 500 applications across 9 clusters off manual <code>kubectl apply</code> onto a declarative, git-driven model.',
+      'Replaced Sealed Secrets with External Secrets Operator, Azure Key Vault and OPA policy enforcement.',
+      'Built self-service onboarding (Ansible Tower, then multi-cluster ArgoCD ApplicationSets) as the platform\'s single path for provisioning and onboarding.',
+      'Authored the CI/CD v2 strategy: Tekton in place of Jenkins, with SLSA provenance and Sigstore signing, driven by PCI supply-chain requirements.',
+      'Embedded an automated production-readiness gate in the pipeline: image and SAST scanning, change verification, test results, provenance and signature checks.',
+      'Introduced progressive delivery with Argo Rollouts, and ran the Ops Community of Practice for several years.',
+    ],
+  },
+  {
+    org: 'Central 1 Credit Union',
+    years: '2001 to 2020',
+    title: 'Systems Architect',
+    summary: 'Owned the architecture and strategy for the Linux fleet and core services behind online banking and bill payments.',
+    points: [
+      'Developed a Container-as-a-Service hybrid-cloud strategy: automated OpenShift 4 installs, ArgoCD GitOps, Tekton CI/CD and OPA governance.',
+      'Built an automation platform around Rundeck and Chef: self-service provisioning, one-click failover, automated DDoS response and auto-remediation.',
+      'Architected a multi-site, highly available Splunk Enterprise platform.',
+    ],
+  },
+];
+
+const skills = [
+  ['Platform', 'Kubernetes, OpenShift, Crossplane, Linux, Istio'],
+  ['CI/CD and GitOps', 'ArgoCD, Tekton, Argo Rollouts, Jenkins, GitHub Actions, Helm, Kustomize, Ansible'],
+  ['Supply chain and security', 'Sigstore, SLSA, OPA, External Secrets, Sealed Secrets'],
+  ['Observability', 'OpenTelemetry, Prometheus, ELK, Splunk, Dynatrace, PagerDuty'],
+  ['Cloud and code', 'Azure, AWS, Terraform · Bash, Python, JavaScript, Groovy'],
+];
 ---
-<Base title="About" description="About James Fillman, platform engineer and the builder of Hangar." section="about">
+<Base title="About" description="James Fillman: senior platform engineer in Squamish, BC, and the builder of Hangar." section="about">
   <div class="wrap">
     <section class="hero">
-      <p class="eyebrow">About</p>
+      <p class="eyebrow">About · Senior Platform Engineer · Squamish, BC</p>
       <h1>James Fillman</h1>
-      <p class="lede">Platform engineer. I build internal developer platforms, and Hangar is where I do it in the open.</p>
-    </section>
-    <div class="prose">
-      <p class="placeholder">Bio to come: who I am, what I have worked on, and why platform engineering.</p>
-      <p class="placeholder">Experience to come.</p>
-      <p>
-        What I believe about building platforms is on the <a href={u('principles/')}>principles</a> page, and the platform itself
-        is on <a href="https://github.com/jfillman">GitHub</a>.
+      <p class="lede">
+        I build internal developer platforms: self-service, GitOps-driven delivery on Kubernetes, with CI/CD and
+        supply-chain security built in rather than bolted on. My career runs from web-server farms, through enterprise
+        bare metal and VMware, to Kubernetes-native platforms, and the goal has stayed the same: less friction for the
+        people shipping software, and more reliability, speed and cost control in how it gets to production.
       </p>
-      <p>Get in touch: <a href="mailto:jamesfillman@gmail.com">jamesfillman@gmail.com</a> · <a href="https://www.linkedin.com/in/jfillman/">LinkedIn</a> · <a href="https://github.com/jfillman">GitHub</a></p>
+      <p class="contact">
+        <a href="mailto:jamesfillman@gmail.com">jamesfillman@gmail.com</a>
+        <a href="https://www.linkedin.com/in/jfillman/">LinkedIn</a>
+        <a href="https://github.com/jfillman">GitHub</a>
+      </p>
+    </section>
+
+    <div class="prose">
+      <h2>Why Hangar</h2>
+      <p>
+        Hangar is where I put my opinions to work. It is a complete internal developer platform that I build in the open
+        and run on a home lab of two Kubernetes clusters, one dev and one prod. Everything on this site is backed by it,
+        and when I change my mind, the platform changes too. The <a href={u('principles/')}>principles</a> page is the
+        short version of what I believe; the <a href={u('log/')}>log</a> is how it got here.
+      </p>
+    </div>
+
+    <h2>Experience</h2>
+    {roles.map((r) => (
+      <section class="role">
+        <div class="head">
+          <h3>{r.org}</h3>
+          <span class="eyebrow">{r.title} · {r.years}</span>
+        </div>
+        <p class="prose">{r.summary}</p>
+        <ul class="prose">{r.points.map((p) => <li set:html={p} />)}</ul>
+      </section>
+    ))}
+
+    <h2>Toolbox</h2>
+    <div class="table-wrap">
+      <table>
+        <tbody>{skills.map(([k, v]) => <tr><th scope="row">{k}</th><td>{v}</td></tr>)}</tbody>
+      </table>
+    </div>
+
+    <div class="prose">
+      <h2>Away from the keyboard</h2>
+      <p>
+        I live the good life in beautiful Squamish with my dog, Riley. Most days that means climbing, trail running or
+        hiking, and on the rest there is usually a chess game going.
+      </p>
     </div>
   </div>
 </Base>
 <style>
-  .placeholder { border: 1px dashed var(--rule-strong); border-radius: 6px; padding: 0.8rem 1rem; color: var(--muted); font-style: italic; }
+  .contact { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; margin-top: 1.4rem; }
+  .role { border-top: 1px solid var(--rule); padding: 1.4rem 0 0.4rem; margin-top: 1.2rem; }
+  .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 1rem; }
+  .head h3 { margin: 0; }
+  .role ul { padding-left: 1.2rem; }
+  .role li { margin: 0.35rem 0; }
+  th[scope='row'] { width: 14rem; }
 </style>
