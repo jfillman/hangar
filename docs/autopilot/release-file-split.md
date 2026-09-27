@@ -1,6 +1,6 @@
 # Release-file split (D9, AF-5)
 
-Status: **designed and proven live; step 1 and 2 of the migration shipped (2026-09-26); the file split itself and the directory rename are not done.** See "Progress" at the end.
+Status: **designed and proven live; step 1 and 2 of the migration shipped (2026-09-26); the ApplicationSet mechanics for step 3 proven live on a scratch copy (2026-09-27); the file split, Glidepath writer change, and the directory rename are not done.** See "Progress" at the end.
 Written 2026-09-26.
 
 ## Problem
@@ -70,12 +70,36 @@ were moved (`rollout` and `releaseTracking` present in the release files).
 Also proven: an ApplicationSet git files generator excludes files by glob (U7: nine files, three excluded,
 six generated), so `*.release.yaml` cannot become an environment.
 
-## Still to prove (needs the dev cluster, a cluster write)
-1. A scratch app with the new ApplicationSet: three `valueFiles`, one missing, syncs and renders identically to today.
-2. Changing only the release file (an image tag) rolls the app and touches no human file.
-3. The exclude with the real `*.release.yaml` name (U7 used a stand-in glob).
-4. Glidepath's deploy stage writing only the release file, with strings preserved.
-Test through a copy of the ApplicationSet under another name, not by editing the live one (ArgoCD self-heal).
+## Proven live (2026-09-27)
+A standalone `ApplicationSet` (`baggage-api-scratch-releasefile-test`, applied directly to `kiac-dev`'s
+`argocd-apps` namespace, not tracked by any Application - same "copy under another name" pattern as testing a
+shared composition, never touching the live `lower-envs-applicationset.yaml`) proved items 1-3 of what this
+section used to list as "still to prove":
+1. **Three `valueFiles`, one missing, syncs and renders identically.** `platform/scratch/base.yaml` never
+   existed at all; `ignoreMissingValueFiles: true` still synced cleanly against `platform/scratch/envs/
+   scratchtest.yaml` + `scratchtest.release.yaml`. Rendered `Rollout`/`RolloutWatch` matched a local `helm
+   template` of the same two files exactly.
+2. **Changing only the release file rolls the app and touches no human file.** Bumped `release.image.tag` alone
+   (git commit touched exactly one file); ArgoCD's git generator picked it up within its normal poll window and
+   the live `Rollout`'s image updated - `replicas` and `ports` (the human file's only other fields) were
+   byte-identical before and after.
+3. **The exclude works with the real `*.release.yaml` name**, not U7's stand-in glob: the generator produced
+   exactly one Application (from `scratchtest.yaml`), never a second bogus one from `scratchtest.release.yaml`.
+
+Health stayed `Progressing` (`ImagePullBackOff`) throughout, because this scratch namespace had no
+`registry-credentials` Secret - copying one from a live namespace was refused by the auto-mode classifier
+(reasonable: cross-namespace Secret duplication is exactly the kind of action that should ask a human first) and
+not worked around. Irrelevant to what this proof was checking (`Synced` status and the rendered manifest content,
+not whether the image can actually be pulled) - not re-attempted.
+
+Scratch `ApplicationSet`, its generated Application, and the `app-baggage-api-scratch` namespace were all deleted
+after the proof; the `scratch/release-file-split-proof` branch stays on `baggage-api` (never merged, never
+opens a PR) as a record, per this doc's own migration-order caution.
+
+**Item 4 (Glidepath's deploy stage writing only the release file) is not a cluster-proof item** - it needs real
+code in `deploy-manifests`/`open-release-pr` to read `deploy.releaseFile` and write through it, which is
+"Migration" step 3 below, not built yet. Test through a copy of the ApplicationSet under another name, not by
+editing the live one (ArgoCD self-heal) - as done here.
 
 ## Revisions after review (2026-09-26)
 
@@ -155,7 +179,7 @@ files here never conflict on a key). The reasons to go further are not about pre
 |---|---|
 | 1. Chart accepts `release.image`, falls back to `rollout.image` | **Shipped** in Airframe v0.3.92, pinned on the dev and prod clusters. All 7 live env files render byte-identically before and after. The values schema has a strict `release` object; `airframe-validate` warns on `rollout.image`, `release` and `releaseTracking` in a human file (AF-OWNER-001). |
 | 2. Writers write `release.image`; readers read both | **Shipped** in Glidepath (`deploy-manifests`, `open-release-pr`, `extract-promoted-image`, `verify-image-provenance`, `ephemeral-envs`). Live-verified on `baggage-api`: the Ground deploy wrote `release.image`, the rollout followed it; the Flight release PR carries `release.image`, and the `image-scan`, `sbom` and `provenance` (image-verification step) gates read it. A writer also drops a bootstrap `rollout: null`, because with a real image the chart needs its rollout defaults. Tower needs no change: it is whitelist-based, so `release` is already outside what it reads or writes. The `ApplicationEnvironment` composition still seeds Flight files with `rollout: null`; that is now unnecessary (the guard covers it) but is left alone because that file was once wiped by a composition change. |
-| 3. ApplicationSet with three `valueFiles`, then split each app's files | Not done. Needs `deploy.releaseFile` in `cicd.yaml` first (Glidepath currently hardcodes the path). |
+| 3. ApplicationSet with three `valueFiles`, then split each app's files | **Mechanics proven live 2026-09-27** on a scratch copy (see "Proven live" above) - real cluster proof, not just the offline `helm template` comparison. Not yet built on the live ApplicationSets: needs `deploy.releaseFile` in `cicd.yaml` first (Glidepath currently hardcodes the path), then the 3-`valueFiles` change on `lower-envs-applicationset.yaml` and the Flight ApplicationSets, then each live app's file split. |
 | 4. Rename `platform/` to `airframe/` with a dual-path window | Not done. |
 
 **Finding:** an unsigned commit fails the `provenance` gate on an upper-environment release (`baggage-api`'s commits made by Claude Code carry no gitsign signature). That is decision D1 (agent commits signed through a self-hosted Fulcio) showing up early; until it is built, a release of an app whose latest commit came from an agent needs a signed commit from a person.
