@@ -94,12 +94,19 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
   conformance, SARIF output, AF-ENV-002/AF-PROBE-001/AF-ARCH-001/AF-RABBIT-001 (need cluster/build
   context this session didn't reach), and widening the required check from gitops-only to app + tenants
   repos (Tekton/CI wiring, not an `airframe-validate` change).
-- **Not yet started for M1:** AF-1b (contract bundle/llms.txt - an easy follow-on now that AF-2's
-  generator exists), AF-6a (status helper/reason codes), SP-3 (MongoDB, born A+). XRD-level descriptions/
-  CEL rules are still at the M0 baseline (78/125 described).
+- **AF-1b (`jfillman/airframe#10`), done, stacked on #9.** `hangar.io/agent-summary` on all 13 XRDs;
+  `contract/airframe-contract.json` (generated from the same sources the chart/validator use);
+  `tools/airframe-capabilities` (a CLI answering component/XRD/field/output questions from the bundle
+  alone); `llms.txt`. `tools/test_capabilities_coldstart.py` proves 10 real capability questions
+  answered correctly from the bundle, cross-checked against source. **Not done:** the
+  `add-to-catalog` Backstage-template review (a real product decision, left for the user) and wiring
+  the 10-question proof into the separate `autopilot` repo's own Preflight harness.
+- **Not yet started for M1:** AF-6a (status helper/reason codes), SP-3 (MongoDB, born A+). XRD-level
+  descriptions/CEL rules are still at the M0 baseline in most XRDs (AF-1b's own summaries don't count
+  as the per-field description sweep AF-2 originally scoped there).
 - **Immediate next steps:** #6 is merged; merge #7 and #8 next (either order - both branch from post-#6
-  main and make the same one-line Containerfile fix, which merges cleanly either way), then #9 (branches
-  from #8, so it must come last). After all four are in: rebuild the `airframe-validate` image and bump
+  main and make the same one-line Containerfile fix, which merges cleanly either way), then #9, then
+  #10 (each stacked on the last). After all five are in: rebuild the `airframe-validate` image and bump
   `glidepath-catalog`'s pin the same way M0's `release-file-schema` rebuild did, then re-verify the live
   `values` guardrail on a real PR; sign and push the boarding-api migration.
 

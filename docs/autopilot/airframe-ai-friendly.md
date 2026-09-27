@@ -122,6 +122,12 @@ the chart's agent block) ships with outputs, verify checks, sidecar meta, `AGENT
 on every field. Nothing new adds to the retrofit.
 
 ### AF-1 Discoverability (35 → A+)
+**AF-1b done: `jfillman/airframe#10` (2026-09-27).** `llms.txt`, `contract/airframe-contract.json`,
+`hangar.io/agent-summary` on all 13 XRDs, and `airframe.capabilities`. 10/10 real capability questions
+answered from the bundle alone and cross-checked against source (`tools/test_capabilities_coldstart.py`).
+**Still open:** `add-to-catalog` review for all 13 (a real Backstage-template decision, left for the
+user), and wiring the 10-question proof as a registered case in the separate `autopilot` repo's own
+Preflight harness. AF-1a (`AGENTS.md`) shipped in M0.
 - `airframe/AGENTS.md` (root) and `compositions/<x>/AGENTS.md`: where the contract lives, how to validate, what not to touch. Draft: `drafts/airframe/AGENTS.md`.
 - `airframe/llms.txt`: an index of the contract and docs.
 - `hangar.io/agent-summary` annotation on every XRD; `add-to-catalog` reviewed for all 13.
