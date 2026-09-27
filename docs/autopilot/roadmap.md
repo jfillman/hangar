@@ -116,9 +116,18 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 - **Not yet started for M1:** AF-6a (status helper/reason codes), SP-3 (MongoDB, born A+). XRD-level
   descriptions/CEL rules are still at the M0 baseline in most XRDs (AF-1b's own summaries don't count
   as the per-field description sweep AF-2 originally scoped there).
-- **Immediate next steps:** sign and push the `boarding-api` `fromComponent` migration (still staged,
-  unsigned - gitsign blocker); decide on `add-to-catalog` for the 7 newly-annotated XRDs (a real product
-  decision, not blocking); then continue M1 with AF-6a (status/reason codes) and SP-3 (MongoDB).
+- **`boarding-api`'s `fromComponent` migration merged** (`jfillman/boarding-api#9`). Merging it exposed
+  a real gap: the chart's `lower-envs`/`tenant-onboarding`/`tenant-identity` ApplicationSet pins - a
+  **third**, easy-to-miss pin location for `airframe-application` beyond Glidepath's `chartVersion` and
+  each cluster's `idp-service-catalog` sync pin - were still at `v0.3.94` (dev)/`v0.3.92` (kind-prod),
+  predating `fromComponent`. The live `boarding-api-dev` pod crash-looped (`REDIS_URL="<nil>"`) within
+  seconds of the merge syncing; caught immediately by watching the Rollout, fixed within minutes
+  (`gitops-cluster-dev` `f5d15b3`, `gitops-cluster-kind-prod` `da0f5cf` preventively), confirmed by the
+  actual pod going healthy and its logs showing it consuming events normally. See
+  [[feedback_airframe_chart_three_pin_locations]] (memory) and the handoff's live-incident block for
+  the full timeline - this is now a standing checklist item for the next chart-behavior release.
+- **Immediate next steps:** decide on `add-to-catalog` for the 7 newly-annotated XRDs (a real product
+  decision, not blocking); continue M1 with AF-6a (status/reason codes) and SP-3 (MongoDB).
 
 ### M2 Safe write (weeks 7-10), target 75
 | Task | Notes |
