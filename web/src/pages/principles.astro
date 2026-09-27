@@ -6,14 +6,15 @@ import Frame from '../components/Frame.astro';
 import { principles } from '../data/principles';
 import { u } from '../lib/url';
 ---
-<Base title="Principles" description="The five architectural ideas Hangar is built around: an intelligent control plane, events, good interfaces, platform as a product, and paved roads." section="principles">
+<Base title="Principles" description="The seven ideas Hangar is built around, from treating the platform as a product to being honest about what is built." section="principles">
   <div class="wrap">
     <section class="hero">
       <p class="eyebrow">Principles</p>
-      <h1>Five things I build around</h1>
+      <h1>What I believe about platforms</h1>
       <p class="lede">
-        These are the ideas I keep coming back to. None of them is new; what I care about is holding to them all at
-        once, in a platform that actually runs. Each one below says where Hangar does it, and how far along that is.
+        These are the ideas I keep coming back to. None of them is new, and I didn't invent any of them. What I care
+        about is holding to all of them at once, in a platform that actually runs. Each one says why it matters to me,
+        where Hangar does it, and how far along that is.
       </p>
       <ol class="toc">
         {principles.map((p) => <li><a href={`#${p.slug}`}>{p.name}</a></li>)}
@@ -27,7 +28,7 @@ import { u } from '../lib/url';
         <p class="principle">{p.claim}</p>
         <div class="prose">{p.body.map((b) => <p set:html={b} />)}</div>
         <Evidence items={p.evidence} />
-        {p.slug === 'beautiful-ui' && (
+        {p.slug === 'interfaces' && (
           <>
             <Frame path="brand/tower-release-matrix.html" title="Tower's release matrix: which release is live where, along the real promotion order" eyebrow="Tower · UI design" />
             <Frame path="brand/hangar-brand-system.html" title="The Hangar brand system" eyebrow="Brand" />

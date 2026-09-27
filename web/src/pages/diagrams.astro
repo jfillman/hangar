@@ -15,9 +15,9 @@ const sets: { key: Diagram['set']; blurb: string }[] = [
       <p class="eyebrow">Diagrams · {diagrams.length} pages</p>
       <h1>Every diagram, in one place</h1>
       <p class="lede">
-        Each one is a single page with one idea, drawn from the same generator and the same visual grammar, and each
-        separates what is built from what is proposed. They are generated from code in the Hangar repo, so this gallery is
-        always the current set.
+        I think in pictures, so a lot of Hangar's design lives here. Each diagram is one page with one idea, drawn
+        with the same tool and the same visual style, and each one is clear about what's built and what's still a plan.
+        They're generated from code in the Hangar repo, so this gallery is always up to date.
       </p>
       <nav class="sets" aria-label="Sets">
         {sets.map((s) => <a href={`#${s.key}`}>{SET_LABELS[s.key]} <span>{bySet(s.key).length}</span></a>)}

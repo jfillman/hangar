@@ -10,19 +10,19 @@ import { u } from '../lib/url';
   <div class="wrap">
     <section class="hero">
       <p class="eyebrow">Platform engineering · James Fillman</p>
-      <h1>Platforms are products, APIs and opinions. <em>Hangar</em> is mine, running.</h1>
+      <h1>Good platforms give people their time back. <em>Hangar</em> is how I build one.</h1>
       <p class="lede">
-        This is where I write about platform engineering: how I think software should get from a developer's
-        head to production, and what a platform owes the people who use it. Everything here is backed by
-        Hangar, an internal developer platform I build in the open. It serves container apps and AI agent
-        workloads through the same control plane, and it keeps changing as I learn.
+        Hi, I'm James. I've spent a long career helping software get from a developer's head to production with
+        less friction and fewer surprises. This site is where I share how I think about that work, and Hangar is
+        where I put it into practice: an internal developer platform I build in the open, for container apps and
+        AI agents alike. It's never finished, and neither are my opinions.
       </p>
     </section>
 
     <Diagram id="plan/01-hangar-family" />
 
-    <h2>Five things I build around</h2>
-    <p class="lede">The same five ideas show up in every part of Hangar. Each page on this site comes back to them.</p>
+    <h2>What I believe</h2>
+    <p class="lede">Seven ideas shape almost every decision in Hangar, roughly in order of how much they matter to me.</p>
     <div class="grid principles">
       {principles.map((p) => (
         <a class="card" href={u(`principles/#${p.slug}`)}>
@@ -35,8 +35,9 @@ import { u } from '../lib/url';
 
     <h2>The whole SDLC, from the platform side</h2>
     <p class="lede">
-      Seven stages, from design to improvement. Each one pairs an opinion with the part of Hangar that implements
-      it, and says what changes when the author of a change is an AI agent rather than a person.
+      Follow a change from the first design conversation to the day you measure whether it worked. Each stage
+      pairs what I believe with the part of Hangar that does it, and what's different when the author of the change
+      is an AI agent.
     </p>
     <StageRail />
 
@@ -58,8 +59,22 @@ import { u } from '../lib/url';
       <a class="card" href={u('platform/')}><span class="eyebrow">Architecture</span><h3>How the platform fits together</h3><p>The control plane, the delivery path and the pane of glass, for containers and agents.</p></a>
       <a class="card" href={u('log/')}><span class="eyebrow">Log</span><h3>What changed, and why</h3><p>Hangar is never finished. This is its history, one dated entry at a time.</p></a>
     </div>
+
+    <section class="hello">
+      <div>
+        <p class="eyebrow">Away from the keyboard</p>
+        <p>
+          I live in Squamish, BC, with my dog Riley. When I'm not building platforms I'm usually on a rock face, a trail
+          or a chessboard. If any of this is useful to you, or you'd like to talk platforms, I'd love to hear from you.
+        </p>
+        <p><a href={u('about/')}>More about me →</a></p>
+      </div>
+    </section>
   </div>
 </Base>
 <style>
   .principles .card h3 { font-size: 1.25rem; }
+  .hello { margin-top: 4rem; padding: 1.6rem 1.8rem; border-radius: 12px; background: var(--accent-soft); max-width: 46rem; }
+  .hello p { margin: 0.5rem 0; font-size: 1.05rem; }
+  .hello .eyebrow { font-size: 0.7rem; margin: 0; }
 </style>
