@@ -180,8 +180,8 @@ footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padd
   <div class="flist">
     <div class="finding sev-high">
       <div class="top"><span class="chip c-bad">High</span><span class="id">F1</span><h3>The dev cluster is a production dependency</h3></div>
-      <p>Bootstrap-tier Crossplane runs only on the dev cluster, and so does the only Infisical instance. The prod cluster's secret stores pull from it at <code>http://dev.kiac.local:31800</code> over plain HTTP, through a NodePort that works because both clusters share one home network. A dev-cluster outage or compromise therefore reaches prod secrets and blocks new environments everywhere. The org-level <code>INFISICAL_ADMIN_TOKEN</code> already has blast radius on both clusters, which the design accepts.</p>
-      <p class="ev"><b>Evidence</b><code>kind-prod-infisical-migration-plan.md</code> lines 40, 156 and 201; <code>service-catalog-design.md</code> §0 and item 8 "Still open".</p>
+      <p>Bootstrap-tier Crossplane runs only on the dev cluster, and so does the only Infisical instance. The prod cluster's secret stores pull from it over plain HTTP, through a NodePort that works because both clusters share one home network. A dev-cluster outage or compromise therefore reaches prod secrets and blocks new environments everywhere. The org-level <code>INFISICAL_ADMIN_TOKEN</code> already has blast radius on both clusters, which the design accepts.</p>
+      <p class="ev"><b>Evidence</b>the prod cluster's Infisical migration plan lines 40, 156 and 201; <code>service-catalog-design.md</code> §0 and item 8 "Still open".</p>
     </div>
 
     <div class="finding sev-high">

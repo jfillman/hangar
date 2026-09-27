@@ -110,7 +110,7 @@ def e03():
 
 def e04():
     b=[]
-    b += [zone(24,84,952,152,'kiac-dev · type: dev · arm64'), zone(24,256,952,144,'github.com'), zone(24,420,952,144,'kind-prod · type: upper · amd64')]
+    b += [zone(24,84,952,152,'dev cluster · type: dev · arm64'), zone(24,256,952,144,'github.com'), zone(24,420,952,144,'prod cluster · type: upper · amd64')]
     b += [path([(252,180),(276,180)]),
           path([(144,216),(144,272),(364,272),(364,292)],'link'), lab(250,254,'HTTPS · PR',LINK),
           path([(382,216),(382,292)],'link'),
@@ -133,4 +133,4 @@ def e04():
       body=''.join(b), W=1000, H=620, y0=64,
       cards=C3(P('Cluster-agnostic and generator-driven (ADR-0006). A cluster gets the feature by a toggle in cluster.yaml, and customize-cluster.sh refuses the invalid combination.'),
                UL(['apron/cluster.yaml: new components.autopilot, refused on type: upper like providerGithub and platformCicd.','New group apron/55-autopilot/ (after 50-platform-cicd, before 60-backstage).','Registry ConfigMap gains autopilotReady, set only after the network-policy canary passes.']),
-               P('kiac-dev\'s CNI does not enforce NetworkPolicy; kind-prod\'s Calico does. Do not set autopilotReady on a claim. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
+               P('The dev cluster\'s CNI does not enforce NetworkPolicy; the prod cluster\'s Calico does. Do not set autopilotReady on a claim. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))

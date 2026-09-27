@@ -2,7 +2,7 @@ from libx import *
 
 def w_placement():
     b=[]
-    b += [zone(24,84,952,152,'kiac-dev · type: dev · arm64'), zone(24,256,952,144,'github.com'), zone(24,420,952,144,'kind-prod · type: upper · amd64')]
+    b += [zone(24,84,952,152,'dev cluster · type: dev · arm64'), zone(24,256,952,144,'github.com'), zone(24,420,952,144,'prod cluster · type: upper · amd64')]
     b += [path([(320,170),(368,170)]), hlab(320,368,170,'BROKER'),
           path([(648,170),(696,170)]), hlab(648,696,170,'CLAIM',ACC),
           path([(180,216),(180,272),(400,272),(400,292)],'link'), lab(290,254,'HTTPS · CHECKS',LINK),
@@ -24,7 +24,7 @@ def w_placement():
       body=''.join(b), W=1000, H=620, y0=64,
       cards=C3(P('Cluster-agnostic and generator-driven (ADR-0006). A cluster gets the feature by a toggle in cluster.yaml, and customize-cluster.sh refuses the invalid combination.'),
                UL(['apron/cluster.yaml: components.autopilot, refused on type: upper like providerGithub and platformCicd. New types hub and inference for the model fleet.','New group apron/55-autopilot/, and provider-kubernetes grants for the kinds a run renders.','Registry ConfigMap gains autopilotReady, set only after the network-policy canary passes.']),
-               P('kiac-dev\'s CNI does not enforce NetworkPolicy; kind-prod\'s Calico does. Do not set autopilotReady on a claim. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
+               P('The dev cluster\'s CNI does not enforce NetworkPolicy; the prod cluster\'s Calico does. Do not set autopilotReady on a claim. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
 
 def w_tiers():
     b=[]
@@ -133,6 +133,6 @@ def w_rollout():
       desc='Gantt chart of twelve tasks over sixteen weeks in four phases: read-only and claims on dev, governed writes on lower environments, evidence and any-agent support, then triggers and routing Holmes through Clearance, with live-verify checkpoints after weeks six, ten and fourteen.',
       lede='Each phase ends with a check against real state, not a checklist. Durations are estimates for one person working alone, which is how Hangar has been built. A Modelplane hub trial and a second cloud come after this, once agents run and their spend is bounded.',
       body=''.join(b), W=1000, H=cur+16+52, y0=24,
-      cards=[('Verify A · end of week 6','', UL(['A T0 call works end to end and leaves an audit row.','A run ends on time with Clearance stopped, and again with the function pod killed.','The network-policy canary fails on kiac-dev (reported honestly) and passes on kind-prod.','customize-cluster.sh refuses autopilot on a type: upper cluster.'])),
+      cards=[('Verify A · end of week 6','', UL(['A T0 call works end to end and leaves an audit row.','A run ends on time with Clearance stopped, and again with the function pod killed.','The network-policy canary fails on the dev cluster (reported honestly) and passes on the prod cluster.','customize-cluster.sh refuses autopilot on a type: upper cluster.'])),
              ('Verify B · end of week 10','accent', UL(['A repo-scoped token cannot open a PR on any other repo.','Upper sync and any kubectl write are refused with the agent token.','A PR that edits .tekton/ turns agent-scope red and cannot merge.','A model call for a model off the allowlist is denied and audited.'])),
              ('Verify C · end of week 14','link', UL(['One task_id runs from audit row to Argo annotation to a Loki line.','Preflight scores the seed cases, and a seeded bad run fails.','A new agent scaffolded from a template runs end to end with no platform change.']))])
