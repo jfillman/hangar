@@ -4,7 +4,7 @@ metadata:
   name: hangar
   description: >-
     Home base for building, releasing, and watching every service you run —
-    the umbrella system grouping Airframe, Glidepath, Tower, and Apron.
+    the umbrella system grouping Airframe, Glidepath, Tower, Apron and Autopilot.
     docs/README.md is the table of contents across the whole platform.
   annotations:
     github.com/project-slug: jfillman/hangar

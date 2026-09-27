@@ -7,11 +7,11 @@
 # Documentation
 
 The table of contents for the whole Hangar platform — Hangar itself, Airframe
-(the service catalog), Glidepath (CI/CD), Tower (the Backstage UI), and Apron
-(the cluster template). Available two ways: browsable here across each repo's own
+(the service catalog), Glidepath (CI/CD), Tower (the Backstage UI), Apron
+(the cluster template), and Autopilot (AI agent workloads, bounded and audited). Available two ways: browsable here across each repo's own
 `docs/`, and through **Tower's TechDocs tab** once a component's `catalog-info.yaml`
 is registered in the catalog (Airframe and Glidepath are wired as of 2026-09-21;
-Tower/backstage and Apron are not yet — see [Open items](#open-items)).
+Tower now has a `catalog-info.yaml` and `mkdocs.yml`; Backstage itself and Apron are not yet — see [Open items](#open-items)).
 
 **Convention going forward:** every new illustrated doc/artifact this project
 produces gets a line added to the relevant section below, at the time it's
