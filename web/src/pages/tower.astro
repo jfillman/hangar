@@ -1,0 +1,129 @@
+---
+import Base from '../layouts/Base.astro';
+import { u, gh } from '../lib/url';
+
+const chapters: [number, string][] = [
+  [0, 'Fleet dashboard'],
+  [15, 'One app at a glance'],
+  [30, 'Pipelines'],
+  [42, 'Deployments and the canary'],
+  [64, 'Releases'],
+  [69, 'Topology'],
+  [82, 'SLOs'],
+  [87, 'Config as a pull request'],
+  [103, 'Glidepath settings'],
+];
+const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+---
+<Base title="Tower" description="A two-minute walkthrough of Tower, the Backstage plugin at the front of Hangar: fleet views, pipelines, canary deployments, releases, SLOs and config changes as pull requests." section="platform">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow"><img class="mark" src={u('marks/tower-tile.svg')} alt="" width="22" height="22" />Tower · The pane of glass, in motion</p>
+      <h1>The place I'd want to <em>look first</em></h1>
+      <p class="lede">
+        Tower is the Backstage plugin at the front of Hangar. It's where you go to see what's live, what's moving and
+        whether it's healthy, without first working out which cluster, pipeline or GitOps repo to ask. Here's a
+        two-minute tour.
+      </p>
+    </section>
+
+    <figure class="video">
+      <video id="tower-video" controls playsinline muted preload="metadata" poster={u('media/tower-walkthrough-poster.jpg')} width="1440" height="900">
+        <source src={u('media/tower-walkthrough.webm')} type="video/webm" />
+        <source src={u('media/tower-walkthrough.mp4')} type="video/mp4" />
+        Your browser can't play this video. <a href={u('media/tower-walkthrough.mp4')}>Download it instead</a>.
+      </video>
+      <figcaption>
+        Everything you see is the real plugin. The data behind it is made up: four demo apps across dev, staging and
+        prod, so nothing here comes from a real cluster.
+      </figcaption>
+    </figure>
+
+    <nav class="chapters" aria-label="Chapters">
+      {chapters.map(([t, label]) => (
+        <button type="button" data-t={t}><span class="t">{stamp(t)}</span>{label}</button>
+      ))}
+    </nav>
+
+    <p class="principle">If someone has to ask which cluster to look at, the platform hasn't finished its job yet.</p>
+
+    <div class="prose">
+      <h2>What you're watching</h2>
+      <p>
+        <strong>It starts with the fleet.</strong> Every app, every environment, one glance. I care about this view more
+        than any other, because it's the one people leave open on a second screen. If it's calm, you can get on with
+        your day. If something's amber, it tells you which app and where.
+      </p>
+      <p>
+        <strong>Then one app, in the order a change lives.</strong> The tabs run from pull request to pipeline, to
+        deployment, to release, to where it's running and how it's performing afterwards. You shouldn't have to
+        remember Tekton, ArgoCD and Prometheus are three different systems. Tower stitches them to the same commit and
+        the same image, so the story reads top to bottom.
+      </p>
+      <p>
+        <strong>A canary should feel like a conversation, not a mystery.</strong> In the video, prod is paused at 40%
+        traffic while a background analysis watches the error rate. Tower says so in plain words, shows the ramp and
+        the measurements, and draws the stable and canary ReplicaSets splitting traffic. Nobody has to decode a
+        "Suspended" status at 5pm on a Friday.
+      </p>
+      <p>
+        <strong>The evidence travels with the release.</strong> Provenance, SBOM, signature and the transparency log
+        entry sit right beside the deployment they vouch for, not in a separate security tool nobody opens.
+      </p>
+      <p>
+        <strong>And every change is a pull request.</strong> Editing an environment's config, or the pipeline's own
+        <code>cicd.yaml</code>, is a friendly form, but it never writes to a cluster. It opens a reviewed GitOps PR,
+        which is <a href={u('principles/')}>the principle I hold most firmly</a>.
+      </p>
+
+      <h2>How it's built</h2>
+      <p>
+        Tower is a Backstage frontend plugin. It reads each cluster through Backstage's Kubernetes proxy, gets pipeline
+        runs straight from Tekton, asks ArgoCD for sync and health, and leaves the writing to Glidepath's backend, which
+        only ever opens pull requests. Backstage itself holds no cluster credentials. There's more on how the pieces fit
+        on the <a href={u('platform/')}>platform page</a>, and the code is in the <a href={gh('tower')}>tower repo</a>.
+      </p>
+    </div>
+  </div>
+</Base>
+
+<script>
+  const video = document.getElementById('tower-video') as HTMLVideoElement | null;
+  document.querySelectorAll<HTMLButtonElement>('.chapters button').forEach((b) => {
+    b.addEventListener('click', () => {
+      if (!video) return;
+      video.currentTime = Number(b.dataset.t);
+      video.play();
+    });
+  });
+</script>
+
+<style>
+  .hero .eyebrow { display: flex; align-items: center; gap: 0.5rem; }
+  .hero .eyebrow img { border-radius: 5px; }
+  .video { margin: 0 0 1rem; }
+  .video video {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    border: 1px solid var(--rule-strong);
+    background: var(--cockpit);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  }
+  .video figcaption { margin-top: 0.7rem; color: var(--muted); font-size: 0.92rem; max-width: 70ch; }
+  .chapters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 1rem; }
+  .chapters button {
+    font: inherit;
+    font-size: 0.88rem;
+    color: var(--ink);
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 0.35rem 0.8rem;
+    cursor: pointer;
+  }
+  .chapters button:hover { border-color: var(--accent); }
+  .chapters .t { font-family: var(--font-mono); color: var(--accent); margin-right: 0.45rem; font-size: 0.8rem; }
+  .prose h2 { margin-top: 2.5rem; }
+</style>
