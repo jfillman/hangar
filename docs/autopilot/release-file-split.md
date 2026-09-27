@@ -1,6 +1,6 @@
 # Release-file split (D9, AF-5)
 
-Status: **designed; offline proof done; live ArgoCD proof pending** (needs a scratch app on kiac-dev).
+Status: **designed and proven live; step 1 and 2 of the migration shipped (2026-09-26); the file split itself and the directory rename are not done.** See "Progress" at the end.
 Written 2026-09-26.
 
 ## Problem
@@ -82,24 +82,38 @@ Test through a copy of the ApplicationSet under another name, not by editing the
 Two questions were raised on this design. Both change it; the layout above still says `platform/` and
 `rollout.image` until the work is scheduled.
 
-### 1. The directory name: rename `platform/` to `airframe/`
-In the Hangar brand system "the platform" is Hangar itself. `platform/` in an app repo is a leftover from
-`platform-cicd` (the deprecated predecessor of Glidepath; `cicd.yaml` still says `apiVersion: platform/v1`). The
-files in it are exactly the values for the Airframe chart, so the directory should be named for the product
-that owns the contract, as the other pieces already are (`.tekton/` for Pipelines-as-Code, gitops repos for Flight).
+### 1. Who owns the folder, and therefore its name: Airframe, so `airframe/`
+The test is compartmentalization: each product must be installable without the others. Applied to the files:
 
-- **Recommended:** `airframe/` (`airframe/base.yaml`, `airframe/envs/<env>.yaml`, `airframe/envs/<env>.release.yaml`,
-  `airframe/pr-env.yaml`). Runner-up: `hangar/` (umbrella name, matches the `hangar.io` label domain, but says
-  less about what is inside). Rejected: `ground/` (base and release files are not Ground-specific ideas and the
-  PR-environment file lives there too).
+| File | What it is | Owner | Why |
+|---|---|---|---|
+| `airframe/base.yaml`, `airframe/envs/<env>.yaml`, `airframe/pr-env.yaml` | what to run and how: scaling, ports, env vars, components, secrets | **Airframe** | Airframe defines the schema, the validator, the chart that consumes it and the Tower Config tab that edits it. Glidepath standalone has no use for it. |
+| the **release file** (`release.image`, `releaseTracking`) | the record of what was released | **content: Glidepath** (it is Glidepath's output); **format: Airframe** (the chart consumes it) | The two products meet here, so this is a contract, not a shared folder. |
+| `cicd.yaml`, `.tekton/` | pipeline definition and its generated files | **Glidepath** (and Pipelines-as-Code) | Not touched by this rename. |
+
+**Today the boundary is broken:** Glidepath hardcodes `platform/envs/<env>.yaml` in `deploy-manifests` (the
+`yq` write into an Airframe-shaped file) and writes `rollout.image` into the gitops repo's `values.yaml` in
+`open-release-pr`. A standalone Glidepath would write an Airframe values file that nothing reads.
+
+**Design:** the folder belongs to Airframe and is named for it. Glidepath is a *writer* of the release file, and
+where it writes is configuration, not code: a new `cicd.yaml` field `deploy.releaseFile`, a path template such as
+`airframe/envs/{env}.release.yaml`. Its schema default (no Airframe present) is a Glidepath-owned location
+(`glidepath/releases/{env}.yaml`). The Airframe scaffolds that create `cicd.yaml` set it to the Airframe path.
+So Glidepath alone works and writes a plain record; Airframe alone works (a person or any other CI writes the
+release file); together they meet through one documented file shape. Airframe's ApplicationSet layers whatever
+`airframe/envs/<env>.release.yaml` it finds. `airframe/pr-env.yaml` moves with the rest: it is Airframe values
+for PR environments, which Glidepath's ephemeral-env ApplicationSet merely references.
+
+- **Name:** `airframe/`. Runner-up `hangar/` (umbrella name, says less about the contents). Rejected: `ground/`.
 - **Cost, measured by grep:** the `platform/envs` path is read by the lower-envs ApplicationSet (apron and
-  gitops-cluster-dev, plus their `applicationset.yaml` and `Chart.yaml`), about eight Glidepath files
+  gitops-cluster-dev, plus their `applicationset.yaml` and `Chart.yaml`), about ten Glidepath files
   (`deploy-manifests`, `deliver-onboarding-files`, `open-release-pr`, `deploy` pipeline, `run-testworkflow`,
   `ephemeral-envs`, `deploy-rbac`, `appproject`, the PR-preview notify job, the PaC config-only-push exemption),
-  Tower's `GlidepathTab` and `PromoteDialog`, and every app repo and scaffold.
-- **Migration shape:** do it inside the split migration, since every app repo is touched anyway. The files
-  generator can list both paths for a window (`platform/envs/*.yaml` and `airframe/envs/*.yaml`; an `envName`
-  must not appear in both), writers move first, then the old path is dropped.
+  Tower's `GlidepathTab` and `PromoteDialog`, and every app repo and scaffold. Making the Glidepath side
+  configurable (`deploy.releaseFile`) is what removes most of the Glidepath hardcoding for good.
+- **Migration shape:** inside the split migration, since every app repo is touched anyway. The files generator can
+  list both paths for a window (`platform/envs/*.yaml` and `airframe/envs/*.yaml`; an `envName` must not appear
+  in both); writers move first, then the old path is dropped.
 - **Not part of this rename:** `cicd.yaml` and its `platform/v1` apiVersion (Glidepath's own schema, baked into
   the toolbox image). Worth a separate decision.
 
@@ -132,6 +146,16 @@ files here never conflict on a key). The reasons to go further are not about pre
 
 ### Order of work (each step ships on its own, none breaks a live app)
 1. Chart: accept `release.image` (fallback to `rollout.image`); guard and helpers read the new key first.
-2. Glidepath and the `ApplicationEnvironment` composition write `release.image` into a release file; Tower reads both.
+2. Glidepath and the `ApplicationEnvironment` composition write `release.image` (Glidepath to the path named by the new `deploy.releaseFile`); Tower reads both.
 3. ApplicationSet change (three `valueFiles`, `ignoreMissingValueFiles`, exclude), then split each app's files.
 4. Directory rename with a dual-path window; then remove the old path and the `rollout.image` fallback.
+
+## Progress (2026-09-26)
+| Step | State |
+|---|---|
+| 1. Chart accepts `release.image`, falls back to `rollout.image` | **Shipped** in Airframe v0.3.92, pinned on kiac-dev and kind-prod. All 7 live env files render byte-identically before and after. The values schema has a strict `release` object; `airframe-validate` warns on `rollout.image`, `release` and `releaseTracking` in a human file (AF-OWNER-001). |
+| 2. Writers write `release.image`; readers read both | **Shipped** in Glidepath (`deploy-manifests`, `open-release-pr`, `extract-promoted-image`, `verify-image-provenance`, `ephemeral-envs`). Live-verified on `baggage-api`: the Ground deploy wrote `release.image`, the rollout followed it; the Flight release PR carries `release.image`, and the `image-scan`, `sbom` and `provenance` (image-verification step) gates read it. A writer also drops a bootstrap `rollout: null`, because with a real image the chart needs its rollout defaults. Tower needs no change: it is whitelist-based, so `release` is already outside what it reads or writes. The `ApplicationEnvironment` composition still seeds Flight files with `rollout: null`; that is now unnecessary (the guard covers it) but is left alone because that file was once wiped by a composition change. |
+| 3. ApplicationSet with three `valueFiles`, then split each app's files | Not done. Needs `deploy.releaseFile` in `cicd.yaml` first (Glidepath currently hardcodes the path). |
+| 4. Rename `platform/` to `airframe/` with a dual-path window | Not done. |
+
+**Finding:** an unsigned commit fails the `provenance` gate on an upper-environment release (`baggage-api`'s commits made by Claude Code carry no gitsign signature). That is decision D1 (agent commits signed through a self-hosted Fulcio) showing up early; until it is built, a release of an app whose latest commit came from an agent needs a signed commit from a person.

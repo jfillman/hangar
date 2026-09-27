@@ -141,7 +141,7 @@ repo setup, Modelplane reading. Do not parallelize the ownership split with Clea
 | D7 | **Preflight's name** | Airworthiness (open; the user likes Autopilot, Clearance, Flight recorder) | before AP-B2 |
 | D8 | A new `autopilot` repo | yes; `clearance/` becomes a package in it | M0 |
 | D9 | Release-file split and the ArgoCD `exclude` | prove on a scratch app first | M2 |
-| D10 | Strictness rollout dates | **Decided 2026-09-26: option A, enforce now** (the fleet sweep is clean). `airframe validate` becomes a required check on env-file PRs; wiring it into Glidepath's validate step is the first M1 task | M1 |
+| D10 | Strictness rollout dates | **Decided 2026-09-26: option A, enforce now** (the fleet sweep is clean). `airframe validate` becomes a required check on gitops PRs. **Built 2026-09-26, not yet required:** Airframe publishes `ghcr.io/jfillman/airframe-validate` (multi-arch, on release tags; contract `validate-values`), Glidepath has the generic `validate-values` Task, `values-check` Pipeline and a gitops onboarding template. Rollout: resync PRs deliver `.tekton/pull-request-values.yaml` to each gitops repo (baggage-api's is #3; boarding-api, flight-api and skyport-broker were triggered), then register `values-validation` in `releaseGuardrails` to make it required. Ground (app repo) env edits are not gated yet: direct commits to main have no PR to block | M1 |
 | D11 | Debugging a run without pod exec | accept: debug via output, logs and audit | M3 |
 | D12 | Where agent code lives | `airframe/examples/skyport/agents/` | M4 |
 
