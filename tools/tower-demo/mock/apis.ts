@@ -60,18 +60,18 @@ async function route(input: string, init?: RequestInit): Promise<Response> {
       case '/argo/sync': return json({ ok: true });
       case '/release-record': return json(F.releaseRecordFor(q), 404);
       case '/config/cicd':
-        if (method === 'GET') return json(F.cicdFor(q.get('repo') ?? q.get('appName') ?? 'storefront'));
-        return json({ prUrl: `https://github.com/${F.OWNER}/storefront/pull/192`, alreadyOpen: false });
+        if (method === 'GET') return json(F.cicdFor(q.get('repo') ?? q.get('appName') ?? F.FEATURED));
+        return json({ prUrl: `https://github.com/${F.OWNER}/flight-api/pull/192`, alreadyOpen: false });
       case '/config':
-        if (method === 'GET') return json(F.appConfigFor(q.get('appName') ?? q.get('repo') ?? 'storefront', q.get('env') ?? 'dev', q.get('cluster') ?? 'dev'));
+        if (method === 'GET') return json(F.appConfigFor(q.get('appName') ?? q.get('repo') ?? F.FEATURED, q.get('env') ?? 'dev', q.get('cluster') ?? 'dev'));
         return json({ prUrl: `https://github.com/${F.OWNER}/gitops-${body?.env === 'prod' ? 'prod' : 'dev'}/pull/${body?.env === 'prod' ? 216 : 78}`, alreadyOpen: false });
       case '/config/platform-envs': return json({ envs: ['dev', 'staging'] });
       case '/config/platform-env':
-        if (method === 'GET') { const c = F.appConfigFor(q.get('appName') ?? 'storefront', q.get('env') ?? 'dev', 'dev'); return json({ repo: `${F.OWNER}/${q.get('appName')}`, path: `platform/${q.get('env') ? 'envs/' + q.get('env') : 'pr-env'}.yaml`, values: c.values, raw: c.raw }); }
-        return json({ prUrl: `https://github.com/${F.OWNER}/storefront/pull/193`, alreadyOpen: false });
+        if (method === 'GET') { const c = F.appConfigFor(q.get('appName') ?? F.FEATURED, q.get('env') ?? 'dev', 'dev'); return json({ repo: `${F.OWNER}/${q.get('appName')}`, path: `platform/${q.get('env') ? 'envs/' + q.get('env') : 'pr-env'}.yaml`, values: c.values, raw: c.raw }); }
+        return json({ prUrl: `https://github.com/${F.OWNER}/flight-api/pull/193`, alreadyOpen: false });
       case '/config/env-xr': return json({ env: q.get('env'), path: `envs/${q.get('env')}.yaml`, configMapGenerator: true });
       case '/config/configmap-files':
-        if (method === 'GET') return json({ cluster: q.get('cluster'), env: q.get('env'), path: `apps/${q.get('appName')}/${q.get('env')}/files`, configMapName: `${q.get('appName')}-files`, files: [{ name: 'app.properties', content: 'checkout.currency=CAD\ncheckout.maxItems=50\n' }] });
+        if (method === 'GET') return json({ cluster: q.get('cluster'), env: q.get('env'), path: `apps/${q.get('appName')}/${q.get('env')}/files`, configMapName: `${q.get('appName')}-files`, files: [{ name: 'application.properties', content: 'spring.jpa.open-in-view=false\nmanagement.endpoint.health.probes.enabled=true\n' }] });
         return json({ prUrl: `https://github.com/${F.OWNER}/gitops-dev/pull/79`, alreadyOpen: false });
       case '/config/schema':
       case '/config/cicd/schema': return json({ type: 'object' });
@@ -93,7 +93,7 @@ export const apis = {
     },
   },
   starred: {
-    starredEntitie$: () => ({ subscribe: (fn: any) => { const v = typeof fn === 'function' ? fn : fn.next; v?.(new Set(['component:default/storefront'])); return { unsubscribe() {} }; } }),
+    starredEntitie$: () => ({ subscribe: (fn: any) => { const v = typeof fn === 'function' ? fn : fn.next; v?.(new Set([`component:default/${F.FEATURED}`])); return { unsubscribe() {} }; } }),
     toggleStarred: async () => {},
     isStarred: async () => false,
   },
@@ -120,7 +120,7 @@ export const apis = {
   },
   kubernetesProxy: {
     getPodLogs: async ({ podName }: any) => ({
-      text: [0, 1, 2, 3, 4, 5, 6, 7].map(i => `${new Date(Date.now() - (8 - i) * 4000).toISOString()} INFO  GET /api/products 200 ${12 + i * 3}ms`).join('\n') + `\n${new Date().toISOString()} INFO  ${podName} ready`,
+      text: [0, 1, 2, 3, 4, 5, 6, 7].map(i => `${new Date(Date.now() - (8 - i) * 4000).toISOString()} INFO  GET /api/flights 200 ${12 + i * 3}ms`).join('\n') + `\n${new Date().toISOString()} INFO  ${podName} ready`,
     }),
     getEventsByInvolvedObjectName: async () => [],
   },

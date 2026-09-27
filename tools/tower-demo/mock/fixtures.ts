@@ -1,9 +1,10 @@
 import { dump as yamlDump } from 'js-yaml';
-// Demo data for the Tower walkthrough harness. Everything here is invented:
-// a fictional "hangar-demo" org with four apps across generic dev, staging and
+// Demo data for the Tower walkthrough harness. The apps are the Skyport demo
+// services from airframe/examples/skyport; everything Tower shows about them
+// (versions, runs, PRs, metrics) is invented, across generic dev, staging and
 // prod environments on two clusters named dev and prod.
 
-export const OWNER = 'hangar-demo';
+export const OWNER = 'skyport';
 const NOW = Date.now();
 export const ago = (min: number) => new Date(NOW - min * 60_000).toISOString();
 
@@ -30,60 +31,48 @@ const V = (ver: string, sha: string, deployedMin: number) => ({ ver, sha, deploy
 
 export const APPS: DemoApp[] = [
   {
-    name: 'storefront',
-    title: 'Customer-facing web shop',
-    lang: 'nodejs',
+    name: 'flight-api',
+    title: 'System of record for flights and gates',
+    lang: 'springboot',
     strategy: 'canary',
-    port: 3000,
+    port: 8080,
     versions: {
-      dev: V('2.14.0', '4f9c2ab', 95),
-      staging: V('2.14.0', '4f9c2ab', 62),
-      prod: V('2.14.0', '4f9c2ab', 9),
+      dev: V('1.8.0', '4f9c2ab', 95),
+      staging: V('1.8.0', '4f9c2ab', 62),
+      prod: V('1.8.0', '4f9c2ab', 9),
     },
     canary: { env: 'prod', stepIndex: 2, phase: 'Paused', message: 'CanaryPauseStep' },
     replicas: { dev: 1, staging: 2, prod: 4 },
   },
   {
-    name: 'orders-api',
-    title: 'Order capture and fulfilment API',
-    lang: 'springboot',
+    name: 'boarding-api',
+    title: 'The passenger-facing gate board',
+    lang: 'nodejs',
     strategy: 'canary',
-    port: 8080,
+    port: 3000,
     versions: {
-      dev: V('1.31.2', '9ad04e1', 300),
-      staging: V('1.31.2', '9ad04e1', 280),
-      prod: V('1.31.2', '9ad04e1', 1440),
+      dev: V('2.3.1', '9ad04e1', 300),
+      staging: V('2.3.1', '9ad04e1', 280),
+      prod: V('2.3.1', '9ad04e1', 1440),
     },
     replicas: { dev: 1, staging: 2, prod: 3 },
   },
   {
-    name: 'payments-worker',
-    title: 'Async payment settlement worker',
-    lang: 'go',
-    strategy: 'rolling',
-    port: 9090,
-    versions: {
-      dev: V('0.9.4', 'c3e51f7', 2000),
-      staging: V('0.9.4', 'c3e51f7', 1900),
-      prod: V('0.9.4', 'c3e51f7', 1800),
-    },
-    replicas: { dev: 1, staging: 1, prod: 2 },
-  },
-  {
-    name: 'search-indexer',
-    title: 'Catalog search indexing service',
+    name: 'baggage-api',
+    title: "Tracks each bag's journey",
     lang: 'python',
     strategy: 'rolling',
     port: 8000,
     versions: {
-      dev: V('3.2.0', '71b8e2c', 40),
-      staging: V('3.1.5', 'e04d9a3', 3000),
-      prod: V('3.1.5', 'e04d9a3', 2900),
+      dev: V('0.6.0', '71b8e2c', 40),
+      staging: V('0.5.4', 'e04d9a3', 3000),
+      prod: V('0.5.4', 'e04d9a3', 2900),
     },
     replicas: { dev: 1, staging: 1, prod: 2 },
   },
 ];
 
+export const FEATURED = 'flight-api';
 export const appByName = (n?: string) => APPS.find(a => a.name === n);
 export const imageOf = (app: DemoApp, env: string) => {
   const v = app.versions[env];
@@ -107,7 +96,7 @@ export const entities = APPS.map(a => ({
       'github.com/project-slug': `${OWNER}/${a.name}`,
     },
   },
-  spec: { type: 'service', lifecycle: 'production', owner: 'team-commerce' },
+  spec: { type: 'service', lifecycle: 'production', owner: 'team-skyport' },
 }));
 
 // ---------- kubernetes objects ----------
@@ -272,7 +261,7 @@ export function k8sObjectsFor(entity: any) {
           { type: 'services', resources: envs.flatMap(e => app.strategy === 'canary' ? [service(app, e), service(app, e, `${app.name}-canary`), service(app, e, `${app.name}-stable`)] : [service(app, e)]) },
           { type: 'deployments', resources: [] },
           { type: 'horizontalpodautoscalers', resources: all(e => hpa(app, e)) },
-          { type: 'configmaps', resources: all(e => simple('ConfigMap', 'v1', app, e, `${app.name}-config`, { data: { LOG_LEVEL: e === 'prod' ? 'info' : 'debug', FEATURE_NEW_CHECKOUT: e === 'prod' ? 'false' : 'true' } })) },
+          { type: 'configmaps', resources: all(e => simple('ConfigMap', 'v1', app, e, `${app.name}-config`, { data: { LOG_LEVEL: e === 'prod' ? 'info' : 'debug', SIMULATOR_ENABLED: e === 'prod' ? 'false' : 'true' } })) },
           { type: 'secrets', resources: all(e => simple('Secret', 'v1', app, e, `${app.name}-secrets`, { type: 'Opaque' })) },
           { type: 'ingresses', resources: [] },
         ],
@@ -536,16 +525,16 @@ function runsFor(app: DemoApp) {
   const specs: RunSpec[] = [];
   const cur = app.versions.dev;
   const slugs = ['amber-heron', 'quiet-falcon', 'steady-otter', 'bright-lynx', 'calm-kestrel', 'swift-marten'];
-  if (app.name === 'storefront') {
+  if (app.name === FEATURED) {
     // A new build running right now, the current release's flow, and an older one
-    specs.push({ pipeline: 'build', app, ver: '2.15.0', sha: 'd81f3c6', startMin: 4, phase: 'running', slug: 'bright-lynx', chain: 'c-81f3', stepIndex: 0, author: 'priya-k', branch: 'main' });
-    specs.push({ pipeline: 'release', app, ver: '2.14.0', sha: '4f9c2ab', env: 'prod', startMin: 21, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 5 });
-    specs.push({ pipeline: 'deploy', app, ver: '2.14.0', sha: '4f9c2ab', env: 'staging', startMin: 64, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 3 });
-    specs.push({ pipeline: 'test', app, ver: '2.14.0', sha: '4f9c2ab', env: 'dev', startMin: 80, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 2 });
-    specs.push({ pipeline: 'deploy', app, ver: '2.14.0', sha: '4f9c2ab', env: 'dev', startMin: 97, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 1 });
-    specs.push({ pipeline: 'build', app, ver: '2.14.0', sha: '4f9c2ab', startMin: 106, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 0, author: 'jamie-dev' });
-    specs.push({ pipeline: 'build', app, ver: '2.13.3', sha: '0c2d7e9', startMin: 260, phase: 'failed', slug: 'quiet-falcon', chain: 'c-0c2d', stepIndex: 0, failTask: 'unit-test', author: 'sam-r', branch: 'feat/gift-cards' });
-    specs.push({ pipeline: 'build', app, ver: '2.13.2', sha: 'b71e0d4', startMin: 1500, phase: 'succeeded', slug: 'steady-otter', chain: 'c-b71e', stepIndex: 0 });
+    specs.push({ pipeline: 'build', app, ver: '1.9.0', sha: 'd81f3c6', startMin: 4, phase: 'running', slug: 'bright-lynx', chain: 'c-81f3', stepIndex: 0, author: 'priya-k', branch: 'main' });
+    specs.push({ pipeline: 'release', app, ver: '1.8.0', sha: '4f9c2ab', env: 'prod', startMin: 21, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 5 });
+    specs.push({ pipeline: 'deploy', app, ver: '1.8.0', sha: '4f9c2ab', env: 'staging', startMin: 64, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 3 });
+    specs.push({ pipeline: 'test', app, ver: '1.8.0', sha: '4f9c2ab', env: 'dev', startMin: 80, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 2 });
+    specs.push({ pipeline: 'deploy', app, ver: '1.8.0', sha: '4f9c2ab', env: 'dev', startMin: 97, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 1 });
+    specs.push({ pipeline: 'build', app, ver: '1.8.0', sha: '4f9c2ab', startMin: 106, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 0, author: 'jamie-dev' });
+    specs.push({ pipeline: 'build', app, ver: '1.7.3', sha: '0c2d7e9', startMin: 260, phase: 'failed', slug: 'quiet-falcon', chain: 'c-0c2d', stepIndex: 0, failTask: 'unit-test', author: 'sam-r', branch: 'feat/flight-events' });
+    specs.push({ pipeline: 'build', app, ver: '1.7.2', sha: 'b71e0d4', startMin: 1500, phase: 'succeeded', slug: 'steady-otter', chain: 'c-b71e', stepIndex: 0 });
   } else {
     specs.push({ pipeline: 'deploy', app, ver: cur.ver, sha: cur.sha, env: 'dev', startMin: cur.deployedMin + 3, phase: 'succeeded', slug: slugs[app.name.length % 6], chain: `c-${cur.sha.slice(0, 4)}`, stepIndex: 1 });
     specs.push({ pipeline: 'build', app, ver: cur.ver, sha: cur.sha, startMin: cur.deployedMin + 12, phase: 'succeeded', slug: slugs[app.name.length % 6], chain: `c-${cur.sha.slice(0, 4)}`, stepIndex: 0 });
@@ -570,22 +559,19 @@ export function taskLog(path: string): string {
   const t = (s: number) => new Date(NOW - s * 1000).toISOString();
   const lines: Record<string, string[]> = {
     'build-and-push': [
-      'STEP 1/9: FROM cgr.dev/chainguard/node:latest-dev AS build',
-      'STEP 2/9: WORKDIR /app',
-      'STEP 3/9: COPY package*.json ./',
-      'STEP 4/9: RUN npm ci --omit=dev',
-      'added 412 packages in 11s',
-      'STEP 5/9: COPY . .',
-      'STEP 6/9: RUN npm run build',
-      '\u001b[32m✓\u001b[0m built in 8.21s',
-      'STEP 7/9: FROM cgr.dev/chainguard/node:latest',
-      'COMMIT ghcr.io/hangar-demo/storefront:2.15.0-d81f3c6',
+      'STEP 1/6: FROM cgr.dev/chainguard/jre:latest',
+      'STEP 2/6: WORKDIR /app',
+      'STEP 3/6: COPY target/flight-api.jar app.jar',
+      'STEP 4/6: USER 65532',
+      'STEP 5/6: EXPOSE 8080',
+      'STEP 6/6: ENTRYPOINT ["java", "-jar", "app.jar"]',
+      'COMMIT ghcr.io/skyport/flight-api:1.9.0-d81f3c6',
       'Getting image source signatures',
       'Copying blob sha256:7a1b… done',
       'Writing manifest to image destination',
     ],
-    test: ['> storefront@2.15.0 test', '> vitest run --coverage', '', ' \u001b[32m✓\u001b[0m src/cart/cart.test.ts (38 tests) 412ms', ' \u001b[32m✓\u001b[0m src/checkout/checkout.test.ts (64 tests) 903ms', ' \u001b[32m✓\u001b[0m src/catalog/search.test.ts (21 tests) 188ms', '', ' Test Files  18 passed (18)', '      Tests  412 passed (412)', ' Coverage   87.4% statements'],
-    semgrep: ['Scanning 214 files with 1,148 rules…', 'Findings: 0 blocking, 2 informational', '\u001b[32mSAST gate passed\u001b[0m'],
+    test: ['[INFO] --- surefire:3.2.5:test (default-test) @ flight-api ---', '[INFO] Running io.skyport.flight.FlightControllerTest', '[INFO] Tests run: 38, Failures: 0, Errors: 0, Skipped: 0', '[INFO] Running io.skyport.flight.FlightServiceTest', '[INFO] Tests run: 64, Failures: 0, Errors: 0, Skipped: 0', '[INFO] Running io.skyport.flight.SimulatorTest', '[INFO] Tests run: 21, Failures: 0, Errors: 0, Skipped: 0', '[INFO] Results:', '[INFO] Tests run: 412, Failures: 0, Errors: 0, Skipped: 0', '[INFO] \u001b[32mBUILD SUCCESS\u001b[0m'],
+    semgrep: ['Scanning 96 files with 1,148 rules…', 'Findings: 0 blocking, 2 informational', '\u001b[32mSAST gate passed\u001b[0m'],
   };
   const body = lines[step] ?? ['starting…', 'done'];
   return body.map((l, i) => `${t(body.length - i + 30)} ${l}`).join('\n');
@@ -632,10 +618,10 @@ export function imagesFor(appName: string) {
   if (!app) return [];
   const vs = new Map<string, { ver: string; sha: string; min: number }>();
   Object.values(app.versions).forEach(v => vs.set(v.sha, { ver: v.ver, sha: v.sha, min: v.deployedMin + 10 }));
-  if (app.name === 'storefront') {
-    vs.set('b71e0d4', { ver: '2.13.2', sha: 'b71e0d4', min: 1490 });
-    vs.set('8e3f1a0', { ver: '2.13.1', sha: '8e3f1a0', min: 4300 });
-    vs.set('5d2c9b7', { ver: '2.13.0', sha: '5d2c9b7', min: 7200 });
+  if (app.name === FEATURED) {
+    vs.set('b71e0d4', { ver: '1.7.2', sha: 'b71e0d4', min: 1490 });
+    vs.set('8e3f1a0', { ver: '1.7.1', sha: '8e3f1a0', min: 4300 });
+    vs.set('5d2c9b7', { ver: '1.7.0', sha: '5d2c9b7', min: 7200 });
   }
   const out: any[] = [];
   [...vs.values()].sort((a, b) => a.min - b.min).forEach(v => {
@@ -656,12 +642,12 @@ export function deployHistoryFor(appName: string, envs: Array<{ env: string }>) 
     const v = app.versions[env];
     if (!v) return;
     const hist: any[] = [];
-    if (app.name === 'storefront') {
+    if (app.name === FEATURED) {
       const offs: Record<string, number> = { dev: 0, staging: 30, prod: 90 };
-      hist.push({ sha: fullSha('5d2c9b7'), date: ago(7100 - (offs[env] ?? 0)), imageTag: '2.13.0-5d2c9b7' });
-      hist.push({ sha: fullSha('8e3f1a0'), date: ago(4200 - (offs[env] ?? 0)), imageTag: '2.13.1-8e3f1a0' });
-      hist.push({ sha: fullSha('b71e0d4'), date: ago(1400 - (offs[env] ?? 0)), imageTag: '2.13.2-b71e0d4' });
-    } else if (app.name === 'search-indexer' && env === 'dev') {
+      hist.push({ sha: fullSha('5d2c9b7'), date: ago(7100 - (offs[env] ?? 0)), imageTag: '1.7.0-5d2c9b7' });
+      hist.push({ sha: fullSha('8e3f1a0'), date: ago(4200 - (offs[env] ?? 0)), imageTag: '1.7.1-8e3f1a0' });
+      hist.push({ sha: fullSha('b71e0d4'), date: ago(1400 - (offs[env] ?? 0)), imageTag: '1.7.2-b71e0d4' });
+    } else if (app.name === 'baggage-api' && env === 'dev') {
       hist.push({ sha: fullSha('e04d9a3'), date: ago(3050), imageTag: '3.1.5-e04d9a3' });
     }
     hist.push({ sha: fullSha(v.sha), date: ago(v.deployedMin), imageTag: `${v.ver}-${v.sha}` });
@@ -703,7 +689,7 @@ export function argoAppFor(argoName: string) {
 
 export function repoHead(repo: string, ref?: string) {
   const app = appByName(repo);
-  return { sha: ref ?? fullSha(app?.versions.dev.sha ?? '0000000'), branch: 'main', author: 'jamie-dev', pushedAt: ago(110), message: 'checkout: remember the shopper\'s last shipping choice' };
+  return { sha: ref ?? fullSha(app?.versions.dev.sha ?? '0000000'), branch: 'main', author: 'jamie-dev', pushedAt: ago(110), message: 'Record a gate change and its event in one transaction' };
 }
 
 export const pipelineOrder = { order: ['dev', 'staging', 'prod'], lower: ['dev', 'staging'], upper: ['prod'], upperClusters: { prod: 'prod' } };
@@ -722,17 +708,17 @@ export function demoPullRequests(appName: string) {
     { name: 'Pipelines as Code CI / governance-check', status: 'completed', conclusion: 'success', message: 'Change window open, approver present' },
   ];
   const prs: any[] = [];
-  if (app.name === 'storefront') {
+  if (app.name === FEATURED) {
     prs.push(
-      { number: 214, repo: 'gitops', title: 'Release: storefront to prod @ 2.14.0-4f9c2ab', url: url('gitops-prod', 214), state: 'merged', author: 'glidepath-bot', labels: ['release'], createdAt: ago(20), updatedAt: ago(10), mergedAt: ago(10), mergeCommitSha: fullSha('aa12bc3'), review: { state: 'approved' }, ci: { state: 'success', passedChecks: 6, totalChecks: 6, checks: checks('success') } },
-      { number: 188, repo: 'source', title: 'Gift cards at checkout', url: url('storefront', 188), state: 'open', author: 'sam-r', labels: ['preview'], createdAt: ago(300), updatedAt: ago(250), review: { state: 'changes_requested' }, ci: { state: 'failure', passedChecks: 3, totalChecks: 4, checks: [] } },
-      { number: 191, repo: 'source', title: 'Speed up product image loading with AVIF', url: url('storefront', 191), state: 'open', author: 'priya-k', labels: [], createdAt: ago(90), updatedAt: ago(5), review: { state: 'pending' }, ci: { state: 'pending', passedChecks: 2, totalChecks: 4, checks: [] } },
-      { number: 187, repo: 'source', title: "Remember the shopper's last shipping choice", url: url('storefront', 187), state: 'merged', author: 'jamie-dev', labels: [], createdAt: ago(600), updatedAt: ago(110), mergedAt: ago(110), mergeCommitSha: fullSha('4f9c2ab'), review: { state: 'approved' } },
-      { number: 185, repo: 'source', title: 'Fix basket total rounding for CAD', url: url('storefront', 185), state: 'merged', author: 'alex-m', labels: [], createdAt: ago(1700), updatedAt: ago(1510), mergedAt: ago(1510), mergeCommitSha: fullSha('b71e0d4'), review: { state: 'approved' } },
-      { number: 209, repo: 'gitops', title: 'Release: storefront to prod @ 2.13.2-b71e0d4', url: url('gitops-prod', 209), state: 'merged', author: 'glidepath-bot', labels: ['release'], createdAt: ago(1340), updatedAt: ago(1310), mergedAt: ago(1310), review: { state: 'approved' } },
+      { number: 214, repo: 'gitops', title: 'Release: flight-api to prod @ 1.8.0-4f9c2ab', url: url('gitops-prod', 214), state: 'merged', author: 'glidepath-bot', labels: ['release'], createdAt: ago(20), updatedAt: ago(10), mergedAt: ago(10), mergeCommitSha: fullSha('aa12bc3'), review: { state: 'approved' }, ci: { state: 'success', passedChecks: 6, totalChecks: 6, checks: checks('success') } },
+      { number: 188, repo: 'source', title: 'Publish flight events to the broker', url: url('flight-api', 188), state: 'open', author: 'sam-r', labels: ['preview'], createdAt: ago(300), updatedAt: ago(250), review: { state: 'changes_requested' }, ci: { state: 'failure', passedChecks: 3, totalChecks: 4, checks: [] } },
+      { number: 191, repo: 'source', title: 'Page the flight events endpoint', url: url('flight-api', 191), state: 'open', author: 'priya-k', labels: [], createdAt: ago(90), updatedAt: ago(5), review: { state: 'pending' }, ci: { state: 'pending', passedChecks: 2, totalChecks: 4, checks: [] } },
+      { number: 187, repo: 'source', title: 'Record a gate change and its event in one transaction', url: url('flight-api', 187), state: 'merged', author: 'jamie-dev', labels: [], createdAt: ago(600), updatedAt: ago(110), mergedAt: ago(110), mergeCommitSha: fullSha('4f9c2ab'), review: { state: 'approved' } },
+      { number: 185, repo: 'source', title: 'Use estimated departure for the boarding group', url: url('flight-api', 185), state: 'merged', author: 'alex-m', labels: [], createdAt: ago(1700), updatedAt: ago(1510), mergedAt: ago(1510), mergeCommitSha: fullSha('b71e0d4'), review: { state: 'approved' } },
+      { number: 209, repo: 'gitops', title: 'Release: flight-api to prod @ 1.7.2-b71e0d4', url: url('gitops-prod', 209), state: 'merged', author: 'glidepath-bot', labels: ['release'], createdAt: ago(1340), updatedAt: ago(1310), mergedAt: ago(1310), review: { state: 'approved' } },
     );
-  } else if (app.name === 'search-indexer') {
-    prs.push({ number: 77, repo: 'gitops', title: 'Release: search-indexer to staging @ 3.2.0-71b8e2c', url: url('gitops-dev', 77), state: 'open', author: 'glidepath-bot', labels: ['release'], createdAt: ago(25), updatedAt: ago(3), review: { state: 'pending' }, ci: { state: 'pending', passedChecks: 5, totalChecks: 6, checks: checks('pending') } });
+  } else if (app.name === 'baggage-api') {
+    prs.push({ number: 77, repo: 'gitops', title: 'Release: baggage-api to staging @ 0.6.0-71b8e2c', url: url('gitops-dev', 77), state: 'open', author: 'glidepath-bot', labels: ['release'], createdAt: ago(25), updatedAt: ago(3), review: { state: 'pending' }, ci: { state: 'pending', passedChecks: 5, totalChecks: 6, checks: checks('pending') } });
   }
   return prs;
 }
@@ -747,20 +733,20 @@ export function notificationsFor(search?: string) {
     origin: 'plugin:glidepath',
     payload: { title, description, topic, severity, link: '/tower' },
   });
-  if (app.name !== 'storefront') return [n(1, 300, 'build', `${app.name}: build succeeded`, `${app.versions.dev.ver}-${app.versions.dev.sha} · main`)];
-  const repo = `${OWNER}/storefront`;
+  if (app.name !== FEATURED) return [n(1, 300, 'build', `${app.name}: build succeeded`, `${app.versions.dev.ver}-${app.versions.dev.sha} · main`)];
+  const repo = `${OWNER}/${FEATURED}`;
   const d = (env: string | undefined, sha: string, tag: string, extra = '') =>
     [env ? `Environment: ${env}` : '', `Repo: ${repo} @ ${sha}`, `Image: ghcr.io/${repo}:${tag}`, `Chain: c-${sha.slice(0, 4)}`, extra].filter(Boolean).join('\n');
   return [
-    n(1, 4, 'build', 'storefront: build started', d(undefined, 'd81f3c6', '2.15.0-d81f3c6')),
-    n(2, 9, 'deploying', 'storefront: deploying to prod', d('prod', '4f9c2ab', '2.14.0-4f9c2ab')),
-    n(3, 10, 'release', 'storefront: release PR merged', d('prod', '4f9c2ab', '2.14.0-4f9c2ab', `PR: https://github.com/${OWNER}/gitops-prod/pull/214`)),
-    n(4, 20, 'release', 'storefront: release PR opened', d('prod', '4f9c2ab', '2.14.0-4f9c2ab', `PR: https://github.com/${OWNER}/gitops-prod/pull/214`)),
-    n(5, 62, 'deploy', 'storefront: deploy succeeded', d('staging', '4f9c2ab', '2.14.0-4f9c2ab')),
-    n(6, 80, 'test', 'storefront: tests succeeded', d('dev', '4f9c2ab', '2.14.0-4f9c2ab')),
-    n(7, 95, 'deploy', 'storefront: deploy succeeded', d('dev', '4f9c2ab', '2.14.0-4f9c2ab')),
-    n(8, 104, 'build', 'storefront: build succeeded', d(undefined, '4f9c2ab', '2.14.0-4f9c2ab')),
-    n(9, 255, 'build', 'storefront: build failed', d(undefined, '0c2d7e9', '2.13.3-0c2d7e9'), 'high'),
+    n(1, 4, 'build', 'flight-api: build started', d(undefined, 'd81f3c6', '1.9.0-d81f3c6')),
+    n(2, 9, 'deploying', 'flight-api: deploying to prod', d('prod', '4f9c2ab', '1.8.0-4f9c2ab')),
+    n(3, 10, 'release', 'flight-api: release PR merged', d('prod', '4f9c2ab', '1.8.0-4f9c2ab', `PR: https://github.com/${OWNER}/gitops-prod/pull/214`)),
+    n(4, 20, 'release', 'flight-api: release PR opened', d('prod', '4f9c2ab', '1.8.0-4f9c2ab', `PR: https://github.com/${OWNER}/gitops-prod/pull/214`)),
+    n(5, 62, 'deploy', 'flight-api: deploy succeeded', d('staging', '4f9c2ab', '1.8.0-4f9c2ab')),
+    n(6, 80, 'test', 'flight-api: tests succeeded', d('dev', '4f9c2ab', '1.8.0-4f9c2ab')),
+    n(7, 95, 'deploy', 'flight-api: deploy succeeded', d('dev', '4f9c2ab', '1.8.0-4f9c2ab')),
+    n(8, 104, 'build', 'flight-api: build succeeded', d(undefined, '4f9c2ab', '1.8.0-4f9c2ab')),
+    n(9, 255, 'build', 'flight-api: build failed', d(undefined, '0c2d7e9', '1.7.3-0c2d7e9'), 'high'),
   ];
 }
 
@@ -829,7 +815,7 @@ export function cicdFor(appName: string) {
     deploy: { lowerEnvironments: ['dev', 'staging'], upperEnvironments: [{ name: 'prod', cluster: 'prod' }], strategy: 'rollout', promotionOrder: ['dev', 'staging', 'prod'] },
     ephemeralEnvironments: { pullRequest: { enabled: true, labels: ['preview'] }, ttl: '3d' },
     governance: { sast: true, imageScan: true, policyCheck: true, sbom: true, allowedCommitSigners: ['jamie@example.com', 'priya@example.com', 'sam@example.com'] },
-    notifications: { slack: { enabled: true, channel: '#commerce-releases', scanResults: true }, backstage: { enabled: true } },
+    notifications: { slack: { enabled: true, channel: '#skyport-releases', scanResults: true }, backstage: { enabled: true } },
     pipelines: {
       ci: {
         trigger: { source: 'git', event: 'push', branch: 'main' },
@@ -856,14 +842,15 @@ export function appConfigFor(appName: string, env: string, cluster: string) {
       readinessProbe: { httpGet: { path: '/healthz', port: 'http' }, periodSeconds: 10 },
       ...(app?.strategy === 'canary' ? { steps: CANARY_STEPS.map((st: any) => st.analysis ? { analysis: { templates: st.analysis.templates, args: [{ name: 'canary-hash', valueFrom: { podTemplateHashValue: 'Latest' } }] } } : st) } : {}),
     },
-    env: [{ name: 'LOG_LEVEL', value: prod ? 'info' : 'debug' }, { name: 'FEATURE_NEW_CHECKOUT', value: prod ? 'false' : 'true' }],
+    env: [{ name: 'LOG_LEVEL', value: prod ? 'info' : 'debug' }, { name: 'SIMULATOR_ENABLED', value: prod ? 'false' : 'true' }, { name: 'SIMULATOR_INTERVAL_MS', value: '30000' }],
     autoscaling: prod ? { enabled: true, min: app?.replicas.prod, max: (app?.replicas.prod ?? 2) * 3, targetCPUPercent: 70 } : { enabled: false },
     podDisruptionBudget: env === 'dev' ? { enabled: false } : { enabled: true, minAvailable: 1 },
     httpRoute: { enabled: true, hostnames: [`${appName}.${env}.example.internal`], parentRefs: [{ name: 'hangar', namespace: 'hangar-gateway' }] },
     serviceMonitor: { enabled: true, path: '/metrics', interval: '30s' },
     networkPolicy: { enabled: true, allowIngressFromIngressController: true },
     serviceAccount: { create: true },
-    notifications: { slack: { enabled: true, channel: '#commerce-releases' } },
+    ...(appName === FEATURED ? { components: [{ type: 'postgresql', name: 'flight-db', spec: { instances: prod ? 3 : 1, storage: prod ? '20Gi' : '5Gi' } }] } : {}),
+    notifications: { slack: { enabled: true, channel: '#skyport-releases' } },
     slos: [{ name: 'availability', objective: prod ? 99.9 : 99 }, { name: 'latency', objective: 99, thresholdSeconds: 0.3 }],
   };
   const raw = yamlDump(values);

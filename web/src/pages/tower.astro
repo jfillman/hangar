@@ -4,15 +4,15 @@ import { u, gh } from '../lib/url';
 
 const chapters: [number, string][] = [
   [0, 'Fleet dashboard'],
-  [15, 'One app at a glance'],
-  [30, 'Pipelines'],
-  [42, 'Deployments and the canary'],
-  [64, 'Releases'],
-  [69, 'Topology'],
-  [82, 'SLOs'],
-  [87, 'Config as a pull request'],
-  [103, 'Glidepath settings'],
-];
+  [19, 'One app at a glance'],
+  [29, 'Pipelines'],
+  [41, 'Deployments and the canary'],
+  [63, 'Releases'],
+  [68, 'Topology'],
+  [81, 'SLOs'],
+  [86, 'Config as a pull request'],
+  [102, 'Glidepath settings'],
+]
 const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 ---
 <Base title="Tower" description="A two-minute walkthrough of Tower, the Backstage plugin at the front of Hangar: fleet views, pipelines, canary deployments, releases, SLOs and config changes as pull requests." section="platform">
@@ -34,8 +34,9 @@ const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2,
         Your browser can't play this video. <a href={u('media/tower-walkthrough.mp4')}>Download it instead</a>.
       </video>
       <figcaption>
-        Everything you see is the real plugin. The data behind it is made up: four demo apps across dev, staging and
-        prod, so nothing here comes from a real cluster.
+        Everything you see is the real plugin. The apps are the <a href={gh('airframe', 'docs/user/skyport-demo.md')}>Skyport
+        demo</a> services, with flight-api in the lead, but the data behind them is made up, so nothing here comes from
+        a real cluster.
       </figcaption>
     </figure>
 
@@ -61,7 +62,7 @@ const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2,
         the same image, so the story reads top to bottom.
       </p>
       <p>
-        <strong>A canary should feel like a conversation, not a mystery.</strong> In the video, prod is paused at 40%
+        <strong>A canary should feel like a conversation, not a mystery.</strong> In the video, flight-api's prod rollout is paused at 40%
         traffic while a background analysis watches the error rate. Tower says so in plain words, shows the ramp and
         the measurements, and draws the stable and canary ReplicaSets splitting traffic. Nobody has to decode a
         "Suspended" status at 5pm on a Friday.

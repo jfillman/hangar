@@ -1,9 +1,9 @@
 # Tower demo harness
 
 This is what records the Tower walkthrough on hangarplatform.dev/tower/. It runs Tower's real
-plugin source in a small Vite app with Backstage's API providers, and feeds it invented data:
-four demo apps (storefront, orders-api, payments-worker, search-indexer) across dev, staging and
-prod on two clusters called dev and prod. No cluster, GitHub or Backstage backend is involved.
+plugin source in a small Vite app with Backstage's API providers, and feeds it invented data about
+the Skyport demo services from airframe/examples/skyport (flight-api in the lead, boarding-api,
+baggage-api) across dev, staging and prod on two clusters called dev and prod. No cluster, GitHub or Backstage backend is involved.
 
 ## Pieces
 

@@ -85,7 +85,7 @@ await snap('opswall');
 await caption('One canary is mid-flight in prod. Let’s open that app.');
 await clickEl(page.getByText('All applications').first());
 await wait(900);
-await clickEl(page.getByText('storefront', { exact: true }).first());
+await clickEl(page.getByText('flight-api', { exact: true }).first());
 await page.waitForLoadState('networkidle');
 await wait(2200);
 await caption('Overview: what’s live where, on the promotion path from dev to prod.');
