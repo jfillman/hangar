@@ -7,15 +7,18 @@ const chapters: [number, string][] = [
   [19, 'One app at a glance'],
   [29, 'Pipelines'],
   [41, 'Deployments and the canary'],
-  [63, 'Releases'],
-  [68, 'Topology'],
-  [81, 'SLOs'],
-  [86, 'Config as a pull request'],
-  [102, 'Glidepath settings'],
+  [64, 'Release matrix'],
+  [78, 'Promoting a release'],
+  [92, 'Release log'],
+  [100, 'Release record'],
+  [134, 'Topology'],
+  [147, 'SLOs'],
+  [152, 'Config as a pull request'],
+  [168, 'Glidepath settings'],
 ]
 const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 ---
-<Base title="Tower" description="A two-minute walkthrough of Tower, the Backstage plugin at the front of Hangar: fleet views, pipelines, canary deployments, releases, SLOs and config changes as pull requests." section="platform">
+<Base title="Tower" description="A three-minute walkthrough of Tower, the Backstage plugin at the front of Hangar: fleet views, pipelines, canary deployments, promotions, release records, SLOs and config changes as pull requests." section="platform">
   <div class="wrap">
     <section class="hero">
       <p class="eyebrow"><img class="mark" src={u('marks/tower-tile.svg')} alt="" width="22" height="22" />Tower · The pane of glass, in motion</p>
@@ -23,7 +26,7 @@ const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2,
       <p class="lede">
         Tower is the Backstage plugin at the front of Hangar. It's where you go to see what's live, what's moving and
         whether it's healthy, without first working out which cluster, pipeline or GitOps repo to ask. Here's a
-        two-minute tour.
+        three-minute tour.
       </p>
     </section>
 
@@ -66,6 +69,20 @@ const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2,
         traffic while a background analysis watches the error rate. Tower says so in plain words, shows the ramp and
         the measurements, and draws the stable and canary ReplicaSets splitting traffic. Nobody has to decode a
         "Suspended" status at 5pm on a Friday.
+      </p>
+      <p>
+        <strong>Promoting should be boring.</strong> The release matrix reads two ways: down a column for what's live in
+        an environment, across a row for one release's journey. There's only ever one place a release can go next, and
+        that's where the promote button lives. For staging that's a direct commit to the app's config. For prod it's
+        always a reviewed pull request. Either way it goes through Git, so ArgoCD deploys it and Tower never touches a
+        cluster.
+      </p>
+      <p>
+        <strong>Every prod release leaves a record.</strong> Once a release reaches prod, Tower writes it up: the pull
+        requests that went in, the pipeline runs that built and tested it, every gate it passed and when it moved
+        between environments. The confidence score shows its working. Then there's the part only people can add: a
+        plain summary, how risky it felt, how it was checked and who signed off. That's committed through a PR as well,
+        and the whole thing exports as a PDF or HTML page for whoever asks later.
       </p>
       <p>
         <strong>The evidence travels with the release.</strong> Provenance, SBOM, signature and the transparency log

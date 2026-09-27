@@ -37,7 +37,7 @@ export const APPS: DemoApp[] = [
     strategy: 'canary',
     port: 8080,
     versions: {
-      dev: V('1.8.0', '4f9c2ab', 95),
+      dev: V('1.8.1', '6a0e5d2', 38),
       staging: V('1.8.0', '4f9c2ab', 62),
       prod: V('1.8.0', '4f9c2ab', 9),
     },
@@ -528,6 +528,9 @@ function runsFor(app: DemoApp) {
   if (app.name === FEATURED) {
     // A new build running right now, the current release's flow, and an older one
     specs.push({ pipeline: 'build', app, ver: '1.9.0', sha: 'd81f3c6', startMin: 4, phase: 'running', slug: 'bright-lynx', chain: 'c-81f3', stepIndex: 0, author: 'priya-k', branch: 'main' });
+    specs.push({ pipeline: 'test', app, ver: '1.8.1', sha: '6a0e5d2', env: 'dev', startMin: 34, phase: 'succeeded', slug: 'calm-kestrel', chain: 'c-6a0e', stepIndex: 2 });
+    specs.push({ pipeline: 'deploy', app, ver: '1.8.1', sha: '6a0e5d2', env: 'dev', startMin: 40, phase: 'succeeded', slug: 'calm-kestrel', chain: 'c-6a0e', stepIndex: 1 });
+    specs.push({ pipeline: 'build', app, ver: '1.8.1', sha: '6a0e5d2', startMin: 49, phase: 'succeeded', slug: 'calm-kestrel', chain: 'c-6a0e', stepIndex: 0, author: 'alex-m' });
     specs.push({ pipeline: 'release', app, ver: '1.8.0', sha: '4f9c2ab', env: 'prod', startMin: 21, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 5 });
     specs.push({ pipeline: 'deploy', app, ver: '1.8.0', sha: '4f9c2ab', env: 'staging', startMin: 64, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 3 });
     specs.push({ pipeline: 'test', app, ver: '1.8.0', sha: '4f9c2ab', env: 'dev', startMin: 80, phase: 'succeeded', slug: 'amber-heron', chain: 'c-4f9c', stepIndex: 2 });
@@ -619,6 +622,7 @@ export function imagesFor(appName: string) {
   const vs = new Map<string, { ver: string; sha: string; min: number }>();
   Object.values(app.versions).forEach(v => vs.set(v.sha, { ver: v.ver, sha: v.sha, min: v.deployedMin + 10 }));
   if (app.name === FEATURED) {
+    vs.set('4f9c2ab', { ver: '1.8.0', sha: '4f9c2ab', min: 105 });
     vs.set('b71e0d4', { ver: '1.7.2', sha: 'b71e0d4', min: 1490 });
     vs.set('8e3f1a0', { ver: '1.7.1', sha: '8e3f1a0', min: 4300 });
     vs.set('5d2c9b7', { ver: '1.7.0', sha: '5d2c9b7', min: 7200 });
@@ -647,6 +651,7 @@ export function deployHistoryFor(appName: string, envs: Array<{ env: string }>) 
       hist.push({ sha: fullSha('5d2c9b7'), date: ago(7100 - (offs[env] ?? 0)), imageTag: '1.7.0-5d2c9b7' });
       hist.push({ sha: fullSha('8e3f1a0'), date: ago(4200 - (offs[env] ?? 0)), imageTag: '1.7.1-8e3f1a0' });
       hist.push({ sha: fullSha('b71e0d4'), date: ago(1400 - (offs[env] ?? 0)), imageTag: '1.7.2-b71e0d4' });
+      if (env === 'dev') hist.push({ sha: fullSha('4f9c2ab'), date: ago(95), imageTag: '1.8.0-4f9c2ab' });
     } else if (app.name === 'baggage-api' && env === 'dev') {
       hist.push({ sha: fullSha('e04d9a3'), date: ago(3050), imageTag: '3.1.5-e04d9a3' });
     }
@@ -742,6 +747,9 @@ export function notificationsFor(search?: string) {
     n(2, 9, 'deploying', 'flight-api: deploying to prod', d('prod', '4f9c2ab', '1.8.0-4f9c2ab')),
     n(3, 10, 'release', 'flight-api: release PR merged', d('prod', '4f9c2ab', '1.8.0-4f9c2ab', `PR: https://github.com/${OWNER}/gitops-prod/pull/214`)),
     n(4, 20, 'release', 'flight-api: release PR opened', d('prod', '4f9c2ab', '1.8.0-4f9c2ab', `PR: https://github.com/${OWNER}/gitops-prod/pull/214`)),
+    n(10, 32, 'test', 'flight-api: tests succeeded', d('dev', '6a0e5d2', '1.8.1-6a0e5d2')),
+    n(11, 38, 'deploy', 'flight-api: deploy succeeded', d('dev', '6a0e5d2', '1.8.1-6a0e5d2')),
+    n(12, 47, 'build', 'flight-api: build succeeded', d(undefined, '6a0e5d2', '1.8.1-6a0e5d2')),
     n(5, 62, 'deploy', 'flight-api: deploy succeeded', d('staging', '4f9c2ab', '1.8.0-4f9c2ab')),
     n(6, 80, 'test', 'flight-api: tests succeeded', d('dev', '4f9c2ab', '1.8.0-4f9c2ab')),
     n(7, 95, 'deploy', 'flight-api: deploy succeeded', d('dev', '4f9c2ab', '1.8.0-4f9c2ab')),
@@ -802,7 +810,42 @@ export function promRange(query: string, start: number, end: number, step: numbe
 
 // ---------- release records ----------
 export function releaseRecordFor(params: URLSearchParams) {
-  return { found: false };
+  const app = params.get('appName');
+  const tag = params.get('imageTag') ?? '';
+  const docs: Record<string, any> = {
+    '1.8.0-4f9c2ab': {
+      summary: 'Gate changes and their events now commit in one transaction, so the gate board can never show a gate the event stream never announced.',
+      risk: 'medium',
+      riskNotes: 'Touches the gate write path. Canary holds at 40% for the error-rate analysis before going wider.',
+      verificationNotes: 'e2e-smoke green in dev and staging. Watched gate-change latency in staging for 45m, p99 flat at 38ms.',
+      approvals: [{ by: 'priya-k', at: ago(18), role: 'service owner' }, { by: 'sam-r', at: ago(16), role: 'on-call' }],
+      authoredBy: 'jamie-dev',
+      tags: ['gate-board', 'outbox'],
+    },
+    '1.7.2-b71e0d4': {
+      summary: 'Boarding groups use the estimated departure time instead of the scheduled one.',
+      risk: 'low',
+      verificationNotes: 'Checked against three delayed flights in staging.',
+      approvals: [{ by: 'priya-k', at: ago(1320), role: 'service owner' }],
+      authoredBy: 'alex-m',
+    },
+  };
+  const hc = app === FEATURED ? docs[tag] : undefined;
+  if (!hc) return { found: false };
+  const [ver, sha] = tag.split('-');
+  return {
+    schemaVersion: 1,
+    id: `${app}-${tag}`,
+    appName: app,
+    imageTag: tag,
+    imageRepo: `ghcr.io/${OWNER}/${app}`,
+    gitRevisionShort: sha,
+    cluster: 'prod',
+    env: 'prod',
+    generatedAt: ago(tag.startsWith('1.8.0') ? 8 : 1300),
+    humanContext: hc,
+    _ok: true,
+  };
 }
 
 // ---------- config / cicd ----------
