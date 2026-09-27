@@ -71,23 +71,37 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 
 **Exit:** typo acceptance is 0% across every live file; the Mongo component ships with its contract; validate is a required, green check on three repos.
 
-**M1 status (2026-09-27): AF-2 done, `jfillman/airframe#6` open.** `values.schema.json` is now the
-single hand-authored source (additionalProperties:false baked in everywhere except the documented
-passthroughs; descriptions 5% -> 100%); `values.yaml` is generated from it
-(`tools/gen_airframe_schema.py --write-values`, CI-gated with `--check`) and never hand-edited again.
-`tools/airframe-validate` runs one pass against a compiled schema (`tools/airframe_schema.py`) that
-splices a discriminated `components[].type` union in from the real XRDs (redis, postgresql,
-rabbitmq) at validate time, replacing the old two-pass ad hoc check. Found and fixed a real latent
-gap along the way: `cronJobs[]`/`jobs[]` were missing `image`/`command`/`args`/`resources`/
-`containerSecurityContext` in the old schema, which strict mode would have wrongly rejected.
-Verified: all 8 live fleet files render byte-identical helm output before/after; 48/48 injected
-mutations (typo, unknown key, broken enum, across all 3 real component types) rejected by the new
-`tools/test_af2_mutations.py`, run against the real fleet in CI's scorecard job; `helm lint` and the
-chart fixture suite both pass. **Not yet done, still open for M1:** AF-3 (component outputs and
-`fromComponent`), AF-4b (validate layers 3-6, required check on app/tenants repos too - today only
-gitops), AF-1b (contract bundle/llms.txt, an easy follow-on now that AF-2's generator exists), AF-6a
-(status helper/reason codes), SP-3 (MongoDB, born A+). XRD-level descriptions/CEL rules are still at
-the M0 baseline (78/125 described) - a reasonable next slice of AF-2 itself, not scoped into #6.
+**M1 status (2026-09-27): AF-2 merged (#6); AF-3 and AF-4b open for review, stacked (#8 on #6, #9 on #8).**
+- **AF-2, merged.** `values.schema.json` is the single hand-authored source (additionalProperties:false
+  baked in everywhere except the documented passthroughs; descriptions 5% -> 100%); `values.yaml` is
+  generated from it, CI-gated. `tools/airframe-validate` runs one pass against a compiled schema
+  (`tools/airframe_schema.py`) with a discriminated `components[].type` union spliced in from the real
+  XRDs. Found and fixed a real latent gap: `cronJobs[]`/`jobs[]` were missing several fields the strict
+  form would have wrongly rejected. 48/48 injected mutations rejected on the real fleet. A follow-on fix
+  (`jfillman/airframe#7`, also open) bakes the new `airframe_schema.py` module into the validate image -
+  #6 alone would have shipped a broken image.
+- **AF-3 (`jfillman/airframe#8`), component outputs and `fromComponent`.** Redis/PostgreSQL/RabbitMQ each
+  declare their real outputs in `xrds/<type>.meta.yaml`, verified against their actual Compositions.
+  `env: [{name, fromComponent: {name, output}}]` resolves to a real valueFrom, with `AF-COMP-002` lint
+  rejecting a bad reference. A real migration PR against `boarding-api` (branch
+  `af3-fromcomponent-migration`, staged, needs a user-signed commit - gitsign/Sigstore needs an
+  interactive browser login this session couldn't complete) replaces its hand-written `cache-master`/
+  `board-mq-connection`/`board-mq-user-credentials` literals, dropping a manually-Infisical-synced
+  Redis password in the process.
+- **AF-4b (`jfillman/airframe#9`), partial.** Five dead-end rules (`AF-CLUSTER-001`, `AF-ENV-001`,
+  `AF-COMP-001`, `AF-SECRET-001`, and `AF-COMP-003` - an advisory that fires exactly on the fleet's
+  remaining hand-written component references) plus `--format json`. **Not done:** L3 kubeconform
+  conformance, SARIF output, AF-ENV-002/AF-PROBE-001/AF-ARCH-001/AF-RABBIT-001 (need cluster/build
+  context this session didn't reach), and widening the required check from gitops-only to app + tenants
+  repos (Tekton/CI wiring, not an `airframe-validate` change).
+- **Not yet started for M1:** AF-1b (contract bundle/llms.txt - an easy follow-on now that AF-2's
+  generator exists), AF-6a (status helper/reason codes), SP-3 (MongoDB, born A+). XRD-level descriptions/
+  CEL rules are still at the M0 baseline (78/125 described).
+- **Immediate next steps:** #6 is merged; merge #7 and #8 next (either order - both branch from post-#6
+  main and make the same one-line Containerfile fix, which merges cleanly either way), then #9 (branches
+  from #8, so it must come last). After all four are in: rebuild the `airframe-validate` image and bump
+  `glidepath-catalog`'s pin the same way M0's `release-file-schema` rebuild did, then re-verify the live
+  `values` guardrail on a real PR; sign and push the boarding-api migration.
 
 ### M2 Safe write (weeks 7-10), target 75
 | Task | Notes |

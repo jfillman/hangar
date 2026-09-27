@@ -145,6 +145,10 @@ discriminated against real XRDs, mutation test 48/48 on the live fleet. **Still 
 - **Effort:** 1 week. **Risk:** strictness can break an existing environment, hence the sweep.
 
 ### AF-3 Component contracts (4 → A+)
+**Redis/PostgreSQL/RabbitMQ: done, `jfillman/airframe#8` (2026-09-27).** Sidecar meta + `fromComponent` +
+`AF-COMP-002` lint, verified against real Compositions; a real migration PR staged against `boarding-api`
+(unsigned - awaiting the user's own commit). **Still open:** SecretStore, and `status.outputs` published
+live on the XR itself (needs XRD schema + Composition patches, cluster-verification-heavy).
 - Each component declares outputs in its sidecar meta: Secret and ConfigMap names, keys, service DNS, ports.
 - Chart feature `fromComponent`: `env: [{name: REDIS_URL, fromComponent: {name: cache, output: url}}]`, resolved to a literal or a `valueFrom` reference. Agents stop guessing `cache-master`.
 - Components publish `status.outputs` so it is discoverable at runtime.
@@ -153,6 +157,11 @@ discriminated against real XRDs, mutation test 48/48 on the live fleet. **Still 
 - **Effort:** 1 week for Redis, Postgres, RabbitMQ, SecretStore; MongoDB and OAuth are born with it.
 
 ### AF-4 Pre-merge validation (22 → A+)
+**Partial: `jfillman/airframe#9` (2026-09-27).** L1/L2 plus five dead-end rules (AF-CLUSTER-001,
+AF-ENV-001, AF-COMP-001, AF-SECRET-001, and an advisory AF-COMP-003 that fires on the fleet's remaining
+hand-written component references - real, not hypothetical). `--format json` added. **Still open:** L3
+kubeconform, SARIF, the remaining seed rules below that need cluster/build context, and required-check
+widening from gitops-only to app + tenants repos.
 `airframe validate` is one tool with six layers. It runs as a required check on app repos
 (`platform/envs`), gitops repos, and the tenants repo (`xr-requests`), and as an agent tool.
 
