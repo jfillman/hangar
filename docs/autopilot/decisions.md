@@ -12,12 +12,12 @@ Answers to the open decisions in [roadmap.md](roadmap.md), recorded 2026-09-26.
 | D6 | Model-hub isolation: needs more context. | **Decided 2026-09-26:** hosted providers only for now (option 1); one hub per environment with dedicated accounts (option 2) is the M5 default |
 | D7 | Name for the evaluation harness. | **Decided 2026-09-26: Preflight** (replaces the working name Checkride) |
 | D8 | A new `autopilot` repo, with Clearance as a package inside it. | Decided |
-| D9 | Release-file split: yes; design it fully and prove it out. | Decided; designed and proven live on kiac-dev ([release-file-split.md](release-file-split.md)); Glidepath's writer change still to build |
+| D9 | Release-file split: yes; design it fully and prove it out. | Decided; designed and proven live on the dev cluster ([release-file-split.md](release-file-split.md)); Glidepath's writer change still to build |
 | D10 | Strictness rollout timing. | **Decided 2026-09-26: option A, enforce now.** Gate built (validator image, `values-check`); becomes required once every gitops repo has the check file. See [briefings-d6-d10.md](briefings-d6-d10.md) |
 | D11 | Take the recommendation in roadmap.md. | Decided |
 | D12 | Take the recommendation in roadmap.md. | Decided |
 
-All experiments (U1–U12) in the roadmap run on kiac-dev.
+All experiments (U1–U12) in the roadmap run on the dev cluster.
 
 ## 2026-09-26, substrate review
 

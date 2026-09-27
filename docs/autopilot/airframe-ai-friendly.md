@@ -166,7 +166,7 @@ Seed rules, each with a seeded failing fixture (the dead-ends list becomes lint)
 
 | Id | Catches |
 |---|---|
-| AF-CLUSTER-001 | `devCluster` other than the registry's dev value (`kind-dev` even on kiac-dev) |
+| AF-CLUSTER-001 | `devCluster` other than the registry's canonical dev value (even when the physical cluster is named differently) |
 | AF-ENV-001 | an environment named like a pipeline stage (`test`) |
 | AF-ENV-002 | `env` used where `envName` is meant |
 | AF-ROLLOUT-001 | rollout config with no image (until the chart guard lands) |
@@ -281,7 +281,7 @@ config:
 
 With the A+ features on, `ground-rollout` disappears and the config is written once into a base layer.
 
-Assumptions and warnings the planner surfaces instead of hiding: the only upper cluster is `kind-prod`
+Assumptions and warnings the planner surfaces instead of hiding: the only upper cluster is `prod`
 so both flight environments go there; two upper clusters and no choice is a **question**, not a guess;
 `test` collides with the `test` pipeline stage; a single 100% step promotes immediately.
 
@@ -289,7 +289,7 @@ so both flight environments go there; two upper clusters and no choice is a **qu
 
 - **Never edit shared things in place.** Test-via-copy: chart and schema changes go through a scratch app first; a new composition through one XR's `compositionRef`.
 - **Worktrees.** Airframe, glidepath and apron have all been on the user's branches before. Check the branch, work in a worktree, and leave tags to the user.
-- **Strictness in stages:** warn, sweep the fleet (dev and kind-prod), enforce.
+- **Strictness in stages:** warn, sweep the fleet (dev and prod), enforce.
 - **Multi-arch:** everything new builds for arm64 and amd64.
 - **Unverified, check first:** how ArgoCD applies XRs (are unknown fields rejected or pruned?), the git-generator `exclude`, Helm and unknown `x-` keywords, and whether chart and schema changes need a chart version bump per your release process.
 

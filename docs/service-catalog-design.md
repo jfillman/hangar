@@ -254,7 +254,7 @@ remembering then, not a reason to act now.
 Closes the doc's own opening claim ("resolves the one thing `gitops-strategy.md`
 deliberately deferred... where Crossplane actually runs") for real, once a fleet with
 more than one dev cluster and real upper-env clusters is on the table (a second, real
-`kind-prod` cluster now exists for testing this). Reasoning worked through live in
+`prod` cluster now exists for testing this). Reasoning worked through live in
 conversation, not asserted — kept here so it isn't lost:
 
 **The two XRD tiers have different locality requirements, and that difference is the
@@ -284,7 +284,7 @@ PR-reviewed object per cluster — a labeled `ConfigMap` is enough, no new CRD n
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kind-prod          # cluster name
+  name: prod          # cluster name
   namespace: crossplane-system
   labels: {platform.io/cluster-registry: "true"}
 data:
@@ -331,7 +331,7 @@ tidiness** — §10 of `gitops-strategy.md` is explicit that `gitops-<app-name>`
 `ApplicationEnvironment` writes into) carries upper environments *only*; a dev cluster's
 environments belong to the separately-scoped `platform/envs/`-live-read mechanism
 instead, with its own narrower `AppProject`. Nothing currently stops `ApplicationEnvironment`
-from targeting a dev cluster — it's only ever pointed at `kind-dev` today because that's
+from targeting a dev cluster — it's only ever pointed at `dev` today because that's
 the sole cluster that exists, not because anything enforces the boundary. This closes
 that gap once the registry exists to check against.
 
@@ -385,7 +385,7 @@ dependent `Application` finishes its own finalizer cleanup permanently stuck tha
 isn't obviously possible. Originally planned as a homegrown extra-resources lookup on
 `NodeJSApplication`'s own Composition (query for remaining `ApplicationEnvironment`
 XRs, refuse deletion if any exist) — superseded before building it once `kubectl
-api-resources` on `kind-dev` confirmed Crossplane itself already ships a real
+api-resources` on `dev` confirmed Crossplane itself already ships a real
 primitive for exactly this: `protection.crossplane.io/v1beta1` `Usage` ("defines a
 deletion blocking relationship between two resources"), enforced by a live
 `crossplane-no-usages` admission webhook already installed with this cluster's
@@ -397,7 +397,7 @@ deployment-gate status): `spec.of` = the parent `NodeJSApplication` (by
 NodeJSApplication`'s own Composition needed **zero** changes — a real simplification
 versus the original design, since the webhook and Usage controller do all the
 blocking purely by watching `Usage` objects, regardless of what composed them.
-Live-verified end-to-end on `kind-dev`: a real `NodeJSApplication` + referencing
+Live-verified end-to-end on `dev`: a real `NodeJSApplication` + referencing
 `ApplicationEnvironment`, confirmed the `Usage` object and the `crossplane.io/in-use`
 label it drives, confirmed `kubectl delete` on the app is cleanly rejected at
 admission time (not a finalizer hang) while the env exists, confirmed the `Usage` is
@@ -417,7 +417,7 @@ into `tenants/<app>/xr-requests/nodejsapplication.yaml` created the `app-<app>-c
 namespace and the XR, which provisioned real GitHub repos and committed `app.yaml`
 back, which the pre-existing `tenant-appprojects` `ApplicationSet` then turned into a
 real per-app `AppProject` — closing the loop with zero manual `kubectl apply` anywhere.
-A second commit (`applicationenvironment.yaml`, targeting `kind-prod`) deployed a real
+A second commit (`applicationenvironment.yaml`, targeting `prod`) deployed a real
 env on the second cluster the same way. The `idp-onboarding` `AppProject` boundary was
 attack-tested, not just asserted: a committed `Secret` was rejected with `resource
 :Secret is not permitted in project idp-onboarding`.
@@ -441,7 +441,7 @@ Two real bugs found live during this build:
   `PrunePropagationPolicy=background` was tried as a fix and did not resolve it on a
   same-day retest. A later same-day pass (afternoon) live-reproduced the same deletion
   path **3 times, including one attempt matching the original failure's timing and
-  target cluster almost exactly** (`kind-prod`, ~13 minutes dwell before deletion, same
+  target cluster almost exactly** (`prod`, ~13 minutes dwell before deletion, same
   git-commit-removal path) — all 3 tore down cleanly with no manual finalizer-clearing.
   No code change was made to the `Usage`/finalizer mechanism itself between the
   confirmed failures and the clean runs. The one relevant thing that *did* change: a
@@ -457,7 +457,7 @@ Two real bugs found live during this build:
   soak time.
 
 **AI-triage (`function-rollout-watcher`/`diagnosis-holmes-dispatch`) redesign — DONE,
-live-verified 2026-08-18/19 on `kind-prod`** (built directly on this section's own
+live-verified 2026-08-18/19 on `prod`** (built directly on this section's own
 design below, written the session before). Confirmed live, not just by reading code,
 that the old mechanism — watching `req.observed.resources["rollout"]`, a Rollout
 composed by *step 1 of the function's own pipeline* (the `ai-rollout`-derived
@@ -477,7 +477,7 @@ still the only thing this Composition composes.
 GitOps/source repo coordinates turned out simpler than planned: `NodeJSApplication` has
 no live `appRepoUrl` *field* to read (it was only ever a template-computed string, never
 persisted) and can't be cross-cluster-looked-up anyway (Bootstrap-tier centralizes on
-`kind-dev`; `RolloutWatch` runs on whichever cluster the app is actually deployed to).
+`dev`; `RolloutWatch` runs on whichever cluster the app is actually deployed to).
 Derives them deterministically instead — `gitops-<appName>` / `<appName>`, same fixed
 platform owner, `<cluster>/<env>/values.yaml` — mirroring exactly what
 `ApplicationEnvironment`'s own Composition already computes for the same app. No per-XR
@@ -493,13 +493,13 @@ live worth remembering: an `ANTHROPIC_API_KEY` env var alone does **not** regist
 usable model — Holmes' own `/api/model` reported only the built-in `"Robusta"` hosted
 model until an explicit `modelList` entry (`envRef:ANTHROPIC_API_KEY` sugar) was added.
 
-Live-verified end-to-end on `kind-prod`'s real (not manufactured) `checkout-api`
+Live-verified end-to-end on `prod`'s real (not manufactured) `checkout-api`
 `ImagePullBackOff` — see [[idp_session_ai_triage_extra_resources]] for the full account.
 
 **Upper-env half built and live-verified 2026-08-15**: the registry,
 `ApplicationEnvironment.spec.cluster` becoming real, the `type: upper`/`crossplaneReady`
 gating (both the rejection and success paths), and the first-time `app.yaml` seeding
-are all real and proven end-to-end against `kind-prod` — see Item 3's own "Built and
+are all real and proven end-to-end against `prod` — see Item 3's own "Built and
 live-verified for real" note below for the detail, including one real bug found and
 fixed (`managementPolicies`, not `deletionPolicy`). Still not buildable: a second
 *dev* cluster (`NodeJSApplication.spec.devCluster` and its own registry gate) — no
@@ -882,26 +882,26 @@ This split maps directly onto the lower/upper security boundary already designed
 everything these two XRDs do is inherently dev-cluster, self-service, no-review-gate-needed
 territory; promoting to a real environment is a deliberately separate, higher-trust action.
 
-**Status: `NodeJSApplication` built 2026-08-13**, live-verified on `kind-dev`
+**Status: `NodeJSApplication` built 2026-08-13**, live-verified on `dev`
 (`idp-service-catalog/xrds/nodejsapplication.yaml`, `compositions/nodejsapplication/`).
 At build time, the "CICD onboarding" half of this scope genuinely couldn't complete
-yet — `platform-cicd`'s control plane wasn't running on `kind-dev` — so the Composition
+yet — `platform-cicd`'s control plane wasn't running on `dev` — so the Composition
 surfaced the gap as an explicit custom condition (`CicdOnboarded: False`, reason
 `CicdOnboardingPending`) rather than silently succeeding or blocking. **Real as of
 2026-08-15**: `platform-cicd`'s control plane now runs as a second, independent instance
-on `kind-dev` (see `platform-cicd/docs/bootstrap.md`'s own note), and the Composition
+on `dev` (see `platform-cicd/docs/bootstrap.md`'s own note), and the Composition
 gained a real step committing `tenants/<app-name>/identity.yaml` into
-`platform-cicd-kind-dev-tenants` — `platform-cicd`'s own tenant-onboarding
+`platform-cicd-dev-tenants` — `platform-cicd`'s own tenant-onboarding
 `ApplicationSet` picks it up and stands up the app's actual CICD pipeline. **Redirected
 2026-08-16** (`idp-service-catalog` v0.3.5): that dedicated repo was eliminated once
-live history showed it only ever held throwaway apps and `kind-dev`'s platform-cicd
+live history showed it only ever held throwaway apps and `dev`'s platform-cicd
 instance was confirmed idp-exclusive - the same commit now lands in
 `gitops-cluster-dev-tenants` instead, alongside `app.yaml`. See that repo's own README
 and `cicd-identity-yaml.yaml`'s own header comment for the full reasoning.
 `CicdOnboarded` now reflects the real observed status of that commit (`True` once it's
 Ready), not a hardcoded `False` — live-verified end-to-end with a throwaway app,
 including a real signed build (genuine `.att` OCI attestation in the registry, Fulcio
-cert chained to `kind-dev`'s own independently-generated root CA — not just the
+cert chained to `dev`'s own independently-generated root CA — not just the
 `chains.tekton.dev/signed: "true"` annotation, which has lied on this platform before).
 Custom condition, not an override of the standard `Ready` condition, which
 `function-go-templating` reserves and errors on if a Composition tries to set it
@@ -923,7 +923,7 @@ needs `delete_repo` alongside `repo` — without it, `Repository` deletion 403s 
 composed resource gets stuck `Terminating` (hit live during cleanup; not a
 `NodeJSApplication` bug, but relevant to anyone deprovisioning through this provider).
 
-**Status: `SpringBootApplication` built 2026-08-24**, live-verified on `kind-dev`
+**Status: `SpringBootApplication` built 2026-08-24**, live-verified on `dev`
 (`idp-service-catalog/xrds/springbootapplication.yaml`,
 `compositions/springbootapplication/`) — a structural port of `NodeJSApplication` onto
 the Java/Spring Boot stack, same devCluster-gated onboarding mechanism, same
@@ -945,7 +945,7 @@ need for the build toolchain at all (unlike Node's runtime interpreter, which is
 same binary either way).
 
 Live verification (real `kubectl apply`, throwaway `springbootapp-verify-test` on
-`kind-dev`, both `maven`- and `gradle`-`buildTool` branches exercised via
+`dev`, both `maven`- and `gradle`-`buildTool` branches exercised via
 `crossplane render` first, then a real end-to-end `kubectl apply` for the `maven`
 branch) needed no corrections beyond what `NodeJSApplication` already discovered and
 fixed in this same provider/pipeline plumbing — confirms this catalog's "port the
@@ -1002,14 +1002,14 @@ applicationenvironment.yaml`, `compositions/applicationenvironment/`). Two desig
 calls resolved concretely, both confirmed against already-live code before deciding,
 not guessed:
 
-- ~~**`cluster` stays a fixed Composition constant (`"kind-dev"`), not a spec field** —
+- ~~**`cluster` stays a fixed Composition constant (`"dev"`), not a spec field** —
   confirmed the already-built `tenant-onboarding` ApplicationSet
   (`gitops-cluster-dev/02-argocd-apps/tenant-onboarding/applicationset.yaml`) already
   hardcodes the same literal in two places (`valuesObject.cluster` and its
   `valueFiles` path); there's no real multi-cluster wiring anywhere downstream yet to
   make a spec field meaningful. Matches `NodeJSApplication`'s own precedent
   (`platformOwner`/`tenantsRepo` as fixed constants).~~ **Superseded 2026-08-15**, now
-  that a second, real upper-env cluster (`kind-prod`) exists to design and test
+  that a second, real upper-env cluster (`prod`) exists to design and test
   against: `cluster` becomes a required spec field, gated via the new cluster registry
   (`type: upper` + `crossplaneReady`) — explicitly rejecting `type: dev` targets, since
   §10 scopes `gitops-<app-name>` to upper environments only. See "Where Crossplane runs
@@ -1017,7 +1017,7 @@ not guessed:
   first-time-on-a-cluster `app.yaml`-seeding gap this surfaces).
 - **Initial `values.yaml` is an identity-only stub, `rollout: null`** — no real image
   exists to deploy at XR-creation time regardless of CICD control-plane availability
-  (`platform-cicd` now runs on `kind-dev` as of 2026-08-15, but a real image only
+  (`platform-cicd` now runs on `dev` as of 2026-08-15, but a real image only
   exists once a developer's own push actually completes a real release through it).
   Rather than seed a placeholder image that would sit in permanent `ImagePullBackOff`,
   the Composition reports a sibling `WorkloadDeployed: False` custom condition — same
@@ -1035,17 +1035,17 @@ nothing branches on the specific value; it was always pure path/name interpolati
 enum with a `pattern` matching Kubernetes' own DNS-1123 namespace-label rule plus
 `maxLength: 20`, so a value Kubernetes would reject still fails at XR admission with a
 clear message rather than downstream as an ArgoCD sync failure. Live-verified on
-`kind-dev`: a custom name (`perf-test`, previously impossible) reconciles end-to-end
+`dev`: a custom name (`perf-test`, previously impossible) reconciles end-to-end
 for real; an invalid one (`Staging!`) is rejected at admission with the expected
 pattern-mismatch error.
 
 **Built and live-verified for real 2026-08-15** (same day as the design above,
 different session): `cluster` is now a real required field, the cluster registry
-exists (`gitops-cluster-dev/00-bootstrap/cluster-registry/`), and `kind-prod` was
-bootstrapped as a real second cluster (`gitops-cluster-kind-prod`, reusing its
+exists (`gitops-cluster-dev/00-bootstrap/cluster-registry/`), and `prod` was
+bootstrapped as a real second cluster (`gitops-cluster-prod`, reusing its
 pre-existing ArgoCD instance) specifically to prove both the rejection path
 (`crossplaneReady: "false"` → `ClusterReady: False`, zero resources created) and the
-success path (real commits, `kind-prod`'s own ArgoCD picking up the new tenant on
+success path (real commits, `prod`'s own ArgoCD picking up the new tenant on
 its own, a real namespace/`ServiceAccount`/`NetworkPolicy`) end-to-end, not just in
 design. One real bug found live and fixed: the cluster's shared `app.yaml` can't use
 `spec.deletionPolicy: Orphan` as originally planned — `provider-upjet-github`
@@ -1081,7 +1081,7 @@ workbook's real 4-window pattern (page + ticket tiers each have a fast AND a slo
 alert; the hand-rolled version only had one per severity), and "wrap an existing tool"
 is this project's convention everywhere else (Argo Rollouts, ESO, component charts) -
 the hand-rolled version was the outlier, not the house style. Also built and
-live-verified on `kind-dev`, on a second pass after this: the XRD got SIMPLER, not
+live-verified on `dev`, on a second pass after this: the XRD got SIMPLER, not
 more complex, switching to Sloth - `spec.window` and `spec.alerting.burnRates` are
 both gone, since Sloth computes the compliance period (a controller-wide default, not
 per-SLO - confirmed against Sloth's own CRD schema) and the full canonical burn-rate
@@ -1209,13 +1209,13 @@ in, an app's own or a dedicated infra one.
 > **Status (2026-09-18): fully built and live.** The "mechanism not yet confirmed"
 > question two paragraphs down is resolved — `github.com/jfillman/provider-infisical`
 > (upjet-generated from the official `Infisical/infisical` Terraform provider) is real
-> and live. Every app-tier `SecretStore` on kiac-dev (the kubernetes-auth branch: the
+> and live. Every app-tier `SecretStore` on the dev cluster (the kubernetes-auth branch: the
 > cluster that hosts Infisical itself) and `platform-cicd-control-plane`'s own project
 > are cut over to it; the hand-rolled `infisical-secretstore-operator` this section's
 > "Mechanism not yet confirmed" paragraph anticipated as a possible fallback was
-> decommissioned entirely on kiac-dev the same day (CRDs, RBAC, Deployment all
+> decommissioned entirely on the dev cluster the same day (CRDs, RBAC, Deployment all
 > removed — zero `InfisicalProject`/`InfisicalEnvironment` CRs remain). Universal-auth
-> clusters (kind-prod, kind-man — every cluster that ISN'T the Infisical host)
+> clusters (prod, mgmt — every cluster that ISN'T the Infisical host)
 > deliberately still run their own separate copy of the old operator: a real,
 > unfixed-upstream bug in `terraform-provider-infisical`'s Go SDK
 > (`IdentityUniversalAuthClientSecret`'s response unmarshal) blocks that auth path on
@@ -1383,17 +1383,17 @@ Infisical.
 
 **Auth method, per cluster, not universal.** Kubernetes Auth (above) only works
 because Infisical and the workload calling it are the same cluster - Infisical
-only ever runs on kind-dev. A `ClusterSecretStore` on any OTHER cluster (kind-prod
+only ever runs on the dev cluster. A `ClusterSecretStore` on any OTHER cluster (prod
 today) would mean Infisical calling TokenReview against a DIFFERENT cluster's API,
 which Infisical CE can only do via Gateway mode - Enterprise-only. Two real options
 weighed with you: a second Infisical instance per cluster (keeps Kubernetes Auth
 everywhere, zero persisted credentials anywhere, real infra cost per cluster) vs.
-Universal Auth on non-kind-dev clusters only (one shared instance, cheaper, but a
+Universal Auth on non-dev clusters only (one shared instance, cheaper, but a
 real persisted `clientId`/`clientSecret` on upper-env clusters specifically - the
 higher-stakes environments). **You chose Universal Auth for upper clusters** -
 `InfisicalProject` gained `spec.authMethod` (`kubernetes` | `universal`), set by
 the `SecretStore` Composition from a plain string comparison on `spec.cluster`
-(`"kind-dev"` → `kubernetes`, else → `universal`) - a static topology fact, not an
+(`"dev"` → `kubernetes`, else → `universal`) - a static topology fact, not an
 `ExtraResources` cluster-registry lookup like `ApplicationEnvironment`'s own gate.
 
 **Secrets organization: `environmentSlug` gained a real second mode**, not a new
@@ -1418,27 +1418,27 @@ the identical slug its "shared" sibling already used, with zero lookups.
 **Auto-provisioning mechanism - NOT `ApplicationEnvironment`'s own Composition
 directly, a real correction of the original plan.** Both `NodeJSApplication` and
 `ApplicationEnvironment` are `provider-github`-only (§0/§1) - neither can create a
-native Kubernetes resource on ANY cluster, including kind-dev's own. The real
+native Kubernetes resource on ANY cluster, including the dev cluster's own. The real
 mechanism is the same one every other Attached-tier resource already uses:
 `idp-application`'s own chart (`templates/attached/secretstore.yaml`) renders the
 `SecretStore` XR - unconditionally, `"shared"` mode, into a dedicated
 `app-<appName>-secrets` namespace (redundant-but-harmless idempotent writes from
 every env release, same convention `cluster-app-yaml.yaml` already established -
 needs a namespace that doesn't vary per env for this to actually be one shared
-object, not N different ones), plus, on any cluster other than kind-dev, this
+object, not N different ones), plus, on any cluster other than the dev cluster, this
 env's own non-`"shared"`-mode XR too. `SecretStore` itself (and its own
-`InfisicalProject`) therefore needed installing on kind-prod for the first
+`InfisicalProject`) therefore needed installing on the prod cluster for the first
 time, alongside a new, small `InfisicalEnvironment` CRD/reconcile loop in the
 same operator (ensures one environment exists in an already-existing project;
 never creates a project itself).
 
 **Genuinely cross-cluster, proven live, not simulated**: a real secret written
-into Infisical on kind-dev, pulled by a real `ExternalSecret` on kind-prod, over
-a live-verified NodePort path from kind-prod's own node to kind-dev's
-(`infisical-nodeport.yaml`) - both kind clusters happen to share one L3 network on
-this podman host, confirmed live (a real 403 from kind-dev's own API server proved
+into Infisical on the dev cluster, pulled by a real `ExternalSecret` on the prod cluster, over
+a live-verified NodePort path from the prod cluster's own node to the dev cluster's
+(`infisical-nodeport.yaml`) - both clusters happen to share one L3 network in
+the home lab, confirmed live (a real 403 from the dev cluster's own API server proved
 TCP reachability before ever exposing Infisical), a real but explicitly
-kind-sandbox-specific stand-in for what a routable endpoint between genuinely
+lab-specific stand-in for what a routable endpoint between genuinely
 separate clusters would be. Isolation proven live too: a correctly-namespaced
 `ExternalSecret` pulls the right value; a wrong-namespace one hard-fails
 (`could not get secret data from provider`), not just an authz warning. Five real
@@ -1452,14 +1452,14 @@ lint`'s all-empty defaults, which YAML parses as an ambiguous block-sequence
 indicator, not a plain scalar - fixed by quoting; Crossplane's own core
 controller had no RBAC for the new `infisicalenvironments` CRD, on either
 cluster; and a real off-by-one in this operator's own `INFISICAL_API_URL` for
-kind-prod's copy (`/api` included when it shouldn't be - `main.py`'s own client
+the prod cluster's copy (`/api` included when it shouldn't be - `main.py`'s own client
 already prefixes every path with `/api/v1/...`), caught live as a real
 `/api/api/v1/...` 404.
 
 **Still open**: the org-level `INFISICAL_ADMIN_TOKEN` now has real blast radius on
 two clusters, not one - an accepted, flagged cost of one shared instance, not
 solved further here. A genuinely separate, real upper-env cluster (not sharing
-this podman host's network with kind-dev) would need a real routable endpoint in
+the lab's network with the dev cluster) would need a real routable endpoint in
 place of the NodePort stand-in - not designed here, flagged as the thing to revisit
 first if this pattern is ever extended beyond this local sandbox.
 
@@ -1472,9 +1472,9 @@ and not created until long after an app might actually need it. Considered
 composing the `SecretStore` XR directly from `NodeJSApplication`/
 `ApplicationEnvironment`'s own Compositions first - real nuance worth recording:
 `NodeJSApplication` structurally *could* (its Composition already runs on
-kind-dev, exactly where the dev-cluster store needs to live too), but
+the dev cluster, exactly where the dev-cluster store needs to live too), but
 `ApplicationEnvironment` structurally *can't* for an upper-cluster store (its
-Composition also runs on kind-dev - Bootstrap-tier's centralization - but the
+Composition also runs on the dev cluster - Bootstrap-tier's centralization - but the
 resource has to land on the target cluster, and `provider-kubernetes` remote
 credentials would violate "no cluster ever holds credentials for another
 cluster's API," the same constraint that already kept `AppProject`/`Application`
@@ -1485,8 +1485,8 @@ tenants repo for `ApplicationEnvironment`'s copy. `idp-application`'s
 `attached/secretstore.yaml` is deleted entirely, not just made conditional.
 
 One real, necessary piece of new infrastructure this exposed: `xr-requests` was
-kind-dev-only before (Bootstrap-tier never ran anywhere else). kind-prod now has
-its own copy (`gitops-cluster-kind-prod/02-argocd-apps/xr-requests/`), narrowly
+dev-only before (Bootstrap-tier never ran anywhere else). The prod cluster now has
+its own copy (`gitops-cluster-prod/02-argocd-apps/xr-requests/`), narrowly
 scoped to just `SecretStore` in its `AppProject` - `NodeJSApplication`/
 `ApplicationEnvironment` still correctly never run there.
 
@@ -1499,11 +1499,11 @@ whether that app had ever shipped a release. Two real bugs found live in the
 process, both from the *previous* revision's chart-triggered mechanism having
 already run for real apps before this fix landed (tag/pin bump + sync happened
 in-between the two revisions) - not bugs in this design itself, but real
-contamination it had to clean up: (1) kind-dev's own `idp-onboarding` `AppProject`
+contamination it had to clean up: (1) the dev cluster's own `idp-onboarding` `AppProject`
 (xr-requests' scoping project) didn't whitelist `SecretStore` yet - "resource
 catalog.idp.io:SecretStore is not permitted in project idp-onboarding", same real
-gap independently caught and fixed on kind-prod's copy already, missed on
-kind-dev's because that file wasn't touched building the first pass; (2) the
+gap independently caught and fixed on the prod cluster's copy already, missed on
+the dev cluster's because that file wasn't touched building the first pass; (2) the
 old chart-rendered `SecretStore` XRs (a duplicate, same deterministic project
 slug, different Kubernetes namespace) had already created real Infisical
 projects for `checkout-api` on both clusters - deleting them out from under the
@@ -1523,16 +1523,16 @@ The per-environment stores existed and were correctly isolated (proven by
 hand-written `ExternalSecret`s during that build) but nothing developer-facing
 ever used them. Fixed via ESO's real, confirmed (not guessed)
 `ExternalSecretData.sourceRef.storeRef` per-entry override: a non-`shared` secret
-on any cluster but kind-dev now targets its own per-environment store directly
+on any cluster but dev now targets its own per-environment store directly
 (no path prefix needed - the store itself is already scoped to that one
-environment); kind-dev, which has no per-environment store at all by design,
+environment); the dev cluster, which has no per-environment store at all by design,
 keeps the original path-prefix convention unchanged.
 
-**One more real naming bug, caught by user review, fixed the same day**: kind-prod's
-new `xr-requests` (above) originally reused kind-dev's `app-<appName>-cicd`
+**One more real naming bug, caught by user review, fixed the same day**: the prod cluster's
+new `xr-requests` (above) originally reused the dev cluster's `app-<appName>-cicd`
 destination namespace, copy-pasted for mechanical consistency without weighing
-what the name actually claims. On kind-dev that name is accurate (the real CICD
-control plane also lives there); kind-prod never runs anything CICD-related, so
+what the name actually claims. On the dev cluster that name is accurate (the real CICD
+control plane also lives there); prod never runs anything CICD-related, so
 reusing it there falsely implied it did. Renamed to `app-<appName>-xrs` -
 describes what's actually there and generalizes to any future XR kind this
 mechanism ever carries on an upper cluster, not just `SecretStore`. Migrated the
@@ -1550,8 +1550,8 @@ the standard `status.conditions[type=Ready].status=="True"` shape, which neither
 CRD's schema even had a field for. Fixed by adding `status.conditions` to both
 CRDs and having `reconcile()`/`reconcile_environment()` write a real `Ready: True`
 condition on success (`ready_condition()` helper) - live-verified on both
-kind-dev (`checkout-api-kind-dev` SecretStore, Kubernetes Auth) and kind-prod
-(all three `checkout-api-kind-prod*` SecretStores, Universal Auth) by rebuilding
+the dev cluster (`checkout-api-dev` SecretStore, Kubernetes Auth) and prod
+(all three `checkout-api-prod*` SecretStores, Universal Auth) by rebuilding
 the operator image, applying the updated CRDs, and restarting the Deployment on
 both clusters; `checkout-api-xr-requests`/`nodejs-demo-app-xr-requests` ArgoCD
 Applications went `Healthy` immediately after, no other change needed.
@@ -1654,7 +1654,7 @@ Re-verified against the live repos rather than assumed from the doc:
 
 ### What the outstanding `provider-github` bug actually teaches for this build
 
-The stuck-`Ready`/403-misread bug (`project_kiac_dev_provider_github_bugs`) is
+The stuck-`Ready`/403-misread bug is
 `provider-upjet-github`-specific and only touches Bootstrap-tier git-commit resources —
 it doesn't block Component XRDs directly. But the live-ops lessons from surviving it
 generalize directly, at higher stakes, because these six services carry real persistent
@@ -1846,7 +1846,7 @@ this build already hit and solved - worth reusing the playbook, not rediscoverin
   `ProjectEnvironment`, `Identity`, `IdentityKubernetesAuth`, `IdentityUniversalAuth` +
   `IdentityUniversalAuthClientSecret`, `ProjectIdentity`). Built, live-verified
   standalone, packaged, published to `ghcr.io/jfillman/provider-infisical`.
-- **All 7 real app-tier `SecretStore` XRs on kiac-dev** (the kubernetes-auth branch -
+- **All 7 real app-tier `SecretStore` XRs on the dev cluster** (the kubernetes-auth branch -
   the cluster that hosts Infisical itself) cut over from the hand-rolled
   `infisical-secretstore-operator`'s `InfisicalProject` CR to this provider's native
   resource chain, one app at a time, each verified `Ready: True` before moving to the
@@ -1862,15 +1862,15 @@ this build already hit and solved - worth reusing the playbook, not rediscoverin
   projects (7 apps + platform-cicd), despite the cutover being a real
   destroy-and-recreate of each Infisical project along the way (see "Crossplane does
   NOT auto-garbage-collect" below for why that was unavoidable).
-- **The old operator fully decommissioned on kiac-dev**: Deployment, RBAC, both CRDs
+- **The old operator fully decommissioned on the dev cluster**: Deployment, RBAC, both CRDs
   (`InfisicalProject`/`InfisicalEnvironment`) deleted. Zero CRs of either kind remain
   anywhere on the cluster. The two genuinely shared objects it used to also carry (the
   Kubernetes token-reviewer ServiceAccount/Secret every `IdentityKubernetesAuth`
-  resource reads from, and the cross-cluster Infisical NodePort kind-prod's own
+  resource reads from, and the cross-cluster Infisical NodePort the prod cluster's own
   separate operator instance still needs) were split into their own
   directory/Application first and adopted there via `ServerSideApply` - zero
   disruption, confirmed via unchanged object creation timestamps.
-- kind-prod and kind-man each keep running their **own separate copy** of the old
+- The prod and mgmt clusters each keep running their **own separate copy** of the old
   operator, unaffected and out of scope - their universal-auth branch deliberately
   still uses the old CR kind, blocked on a real, unfixed upstream bug (see below).
 
@@ -1984,12 +1984,12 @@ not during, their respective build steps.
 
 ## Round 2026-09-24: Postgres backend is CloudNativePG, and every component must label what it creates
 
-Two decisions from live testing on kiac-dev. Both supersede the `provider-sql`-first plan in
+Two decisions from live testing on the dev cluster. Both supersede the `provider-sql`-first plan in
 the 2026-09-17 round above for Postgres.
 
 ### Postgres on Kubernetes: CloudNativePG, not Bitnami and not a hand-rolled StatefulSet
 
-CloudNativePG (operator 1.30.1, chart 0.29.1) is installed on kiac-dev
+CloudNativePG (operator 1.30.1, chart 0.29.1) is installed on the dev cluster
 (`gitops-cluster-dev/10-crds-operators/cloudnative-pg/`). Operator and default Postgres
 images are multi-arch (amd64 + arm64). Why it, and what was proven on a throwaway `Cluster`:
 
@@ -2011,7 +2011,7 @@ images are multi-arch (amd64 + arm64). Why it, and what was proven on a throwawa
   `cluster:` reference), with `databaseReclaimPolicy` / `databaseRoleReclaimPolicy: retain`. Tested:
   deleting both CRs leaves the database and role in place, with none of the ownership deadlock
   `provider-sql` had (a Delete-protected database blocks its owner role's drop, `2BP01`). This
-  makes `provider-sql` unnecessary for CNPG-hosted Postgres. It was installed on kiac-dev for the
+  makes `provider-sql` unnecessary for CNPG-hosted Postgres. It was installed on the dev cluster for the
   early tests and has been removed (nothing used it).
 - **Gotchas found.** CNPG's `pg-superuser` secret carries `host: <cluster>-rw`, a short name that
   a controller in another namespace cannot resolve; the Composition must use
@@ -2041,15 +2041,15 @@ collide with the backend's own.
 ### Status (later 2026-09-24): built, and verified on both clusters
 
 The dedicated `PostgreSQL` component is built (airframe `xrds/postgresql.yaml`,
-`compositions/postgresql/`) and installed on kiac-dev and kind-prod, each with the CNPG operator and
+`compositions/postgresql/`) and installed on the dev and prod clusters, each with the CNPG operator and
 Crossplane RBAC for `postgresql.cnpg.io` and `networking.k8s.io`.
 
-- **The NetworkPolicy is necessary, proven on kind-prod (Calico).** The same `Cluster` in a
+- **The NetworkPolicy is necessary, proven on the prod cluster (Calico).** The same `Cluster` in a
   namespace with the app baseline policy but without the component's operator-allow policy never
   became healthy (`Instance Status Extraction Error: HTTP communication issue`); with it, Ready in
-  about a minute. kiac-dev's CNI does not enforce policy, so only kind-prod could show this.
+  about a minute. The dev cluster's CNI does not enforce policy, so only prod could show this.
   Cross-namespace access to the database was blocked.
-- **Kubernetes 1.37 on kind-prod.** CNPG 1.30 lists 1.34-1.36 as supported and 1.37 as "tested,
+- **Kubernetes 1.37 on the prod cluster.** CNPG 1.30 lists 1.34-1.36 as supported and 1.37 as "tested,
   but not supported". Works here; not covered by upstream support.
 - **The component's credentials are consumed with `env` `valueFrom` (airframe v0.3.88)**, not copied
   into Infisical: the chart used to drop `valueFrom` from `env` entries. Redis's password can be read
@@ -2061,7 +2061,7 @@ Crossplane RBAC for `postgresql.cnpg.io` and `networking.k8s.io`.
 
 ## Round 2026-09-25: RabbitMQ is a shared broker, attached per app with generated permissions
 
-Decisions (with the user) and what live testing on kiac-dev showed. The component is
+Decisions (with the user) and what live testing on the dev cluster showed. The component is
 `airframe/xrds/rabbitmq.yaml` + `compositions/rabbitmq/`.
 
 ### Shape
@@ -2086,7 +2086,7 @@ Decisions (with the user) and what live testing on kiac-dev showed. The componen
 - **Credentials** are the operator's `<xr>-user-credentials` Secret (username, password) in the
   consumer's namespace, read with `env` `valueFrom`; host/port/vhost are in `<xr>-connection`.
 
-### Verified live (kiac-dev, arm64), over real AMQP
+### Verified live (dev, arm64), over real AMQP
 
 A producer declared the exchange and published; a consumer declared its own queue, bound it,
 and received the message. Refused: the consumer publishing to the exchange, the consumer
@@ -2113,23 +2113,22 @@ declaring a queue outside its prefix, the producer reading the consumer's queue.
 
 ### Not yet verified
 
-- **kind-prod (amd64, Calico).** The NetworkPolicy (operator on 15672/5672, allowed namespaces on
-  5672) is written but only kiac-dev has run it, and its CNI does not enforce policy.
-- **kind-prod capacity.** Its podman VM was memory-saturated and hit the container's 2048-pid
-  limit on 2026-09-25 (limit raised, VM 10 -> 12GB, observability scaled to 0). RabbitMQ
-  (~1Gi) plus two operators is a real addition to that host.
+- **prod (amd64, Calico).** The NetworkPolicy (operator on 15672/5672, allowed namespaces on
+  5672) is written but only dev has run it, and its CNI does not enforce policy.
+- **prod capacity.** The prod cluster is resource-constrained (observability is scaled
+  to 0). RabbitMQ (~1Gi) plus two operators is a real addition to it.
 
 ### Walked live (2026-09-25): the first real `InfraService`, and Phase 2's first consumers
 
-`skyport-broker` was created through the real path on kiac-dev: an `InfraService` XR
+`skyport-broker` was created through the real path on the dev cluster: an `InfraService` XR
 (`tenants/skyport-broker/xr-requests/`), the `gitops-infra-skyport-broker` repo it scaffolds, and a
 `platform/envs/dev.yaml` with a `rabbitmq` component. This retires the earlier "`appType: infra` has
 never been used for real" caveat for the dev cluster. Guide: `airframe/docs/user/quickstart-broker.md`.
 
 - **Gap found and fixed:** the `idp-onboarding` AppProject did not whitelist `InfraService`
   (`not permitted in project idp-onboarding`), so the XR never applied. Added in gitops-cluster-dev
-  and apron. kind-prod's copy is deliberately narrower (Bootstrap kinds are dev-only), so an
-  `InfraService`'s kind-prod environment is an `ApplicationEnvironment` created on dev.
+  and apron. The prod cluster's copy is deliberately narrower (Bootstrap kinds are dev-only), so an
+  `InfraService`'s prod environment is an `ApplicationEnvironment` created on dev.
 - **How an InfraService environment is defined:** `platform/envs/<env>.yaml` in
   `gitops-infra-<name>`, because the tenant's `appRepoUrl` is that same repo and the lower-env
   ApplicationSet reads `platform/envs/*.yaml` from it. Namespace: `app-<name>-<env>`.
@@ -2143,5 +2142,5 @@ never been used for real" caveat for the dev cluster. Guide: `airframe/docs/user
   fail the same scan today.
 - **Provenance gate:** boarding-api's release PR fails `provenance` on an unsigned commit; the user's
   own earlier release PR (#11) did too and was merged, so signing is not enforced in practice.
-- **Still open:** the kind-prod flight environments for the broker and both apps (not walked; the
+- **Still open:** the prod flight environments for the broker and both apps (not walked; the
   host was memory-short), `baggage-api`, and the PVC labelling gap.

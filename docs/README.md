@@ -24,8 +24,8 @@ created — not batched up later.
 | [service-catalog-design.md](service-catalog-design.md) | You want the full design history and open decisions behind Airframe — the running log, not the as-built summary. |
 | [gitops-strategy.md](gitops-strategy.md) | You want the repo topology, ArgoCD instance split, and the lower/upper env security boundary. |
 | [cluster-provisioning.md](cluster-provisioning.md) | You're standing up a new cluster. |
-| [kind-prod-infisical-migration-plan.md](kind-prod-infisical-migration-plan.md) | You're moving kind-prod onto the new airframe pin and retiring the Infisical operator (plan, not yet executed). |
-| [local-clusters.md](local-clusters.md) | You're running clusters locally and need the real operational notes. |
+| [kind-prod-infisical-migration-plan.md](kind-prod-infisical-migration-plan.md) | You're moving the prod cluster onto the new airframe pin and retiring the Infisical operator (plan, not yet executed). |
+| [local-clusters.md](local-clusters.md) | You're running clusters locally and want the operational notes. |
 | [backstage-design.md](backstage-design.md) | You want Tower's own design rationale — self-service flows, the terasky ingestor, catalog structure. |
 
 ## Autopilot — AI agent workloads
@@ -50,7 +50,7 @@ Developer- and admin-facing docs live in the `airframe` repo itself.
 |---|---|
 | [airframe/docs/user/README.md](https://github.com/jfillman/airframe/blob/main/docs/user/README.md) | You're creating a service, adding ground/flight environments, or attaching a component. |
 | [airframe/docs/user/quickstart.md](https://github.com/jfillman/airframe/blob/main/docs/user/quickstart.md) | You want the full worked example — `boarding-api` (NodeJS): pull in the code, both env tiers, a Redis cache, a canary. |
-| [airframe/docs/user/quickstart-flight-api.md](https://github.com/jfillman/airframe/blob/main/docs/user/quickstart-flight-api.md) | You want a service that owns a database — `flight-api` (Spring Boot + PostgreSQL): the database as a component, credentials read from its Secret with `valueFrom`, a call from `boarding-api`, and the same service on `kind-prod`. Read part 1 first. |
+| [airframe/docs/user/quickstart-flight-api.md](https://github.com/jfillman/airframe/blob/main/docs/user/quickstart-flight-api.md) | You want a service that owns a database — `flight-api` (Spring Boot + PostgreSQL): the database as a component, credentials read from its Secret with `valueFrom`, a call from `boarding-api`, and the same service on the prod cluster. Read part 1 first. |
 | [airframe/docs/user/skyport-demo.md](https://github.com/jfillman/airframe/blob/main/docs/user/skyport-demo.md) | You want the plan for the five-service Skyport demo system that exercises every stack and component, and where its code lives. |
 | [airframe/docs/user/decommission-app.md](https://github.com/jfillman/airframe/blob/main/docs/user/decommission-app.md) | You need to delete/decommission an app: what gets destroyed (both GitHub repos), the git-driven order of operations, and the ArgoCD ordering bug. Proven once on boarding-api. |
 | [airframe/docs/admin/architecture.md](https://github.com/jfillman/airframe/blob/main/docs/admin/architecture.md) | You want the as-built reference — every XRD's inputs/outputs, the composition graph, the plumbing. |
@@ -144,5 +144,5 @@ same artifact list. Not linked from Tower.
 - **Tower has no `docs/user/`/`docs/admin/` split** — worth doing once its
   illustrated mockups above settle into an as-built state, the same distinction
   Airframe and Glidepath already draw.
-- **`kind-dev Radar` and `Podman Sleep Instability`** are live-status/incident
+- **Live-status and incident write-ups for the dev cluster** are one-off
   artifacts, not curated docs — deliberately left out of this index.

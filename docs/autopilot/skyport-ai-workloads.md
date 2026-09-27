@@ -79,9 +79,9 @@ released like `baggage-api`, with the chart's `agent:` block giving its pods the
 policy and labels a run gets. It is the only workload facing the public, so its definition asks for the
 **hardened** sandbox.
 
-**That fails closed on the dev cluster, by design.** kind and Apple `container` have no gVisor or Kata
+**That fails closed on the dev cluster, by design.** It has no gVisor or Kata
 runtime class, so the chart (and `function-agentrun`) reject it rather than run it weaker. To run the
-demo on `kiac-dev`, change the definition to `standard` in a reviewed commit and record why. A run can
+demo on the dev cluster, change the definition to `standard` in a reviewed commit and record why. A run can
 narrow a definition but never widen it, so lowering isolation is only ever a commit. That moment is
 worth a paragraph in the quickstart.
 
@@ -94,7 +94,7 @@ worth a paragraph in the quickstart.
 | **Event storm** | responder fixture floods `flight.*.delayed` | `maxPerHour` brake |
 | **Over-broad spawn** | team fixture instructs a worker to ask for more than its parent has | narrow-only, denied with R007 and audited |
 | **Wrong fact** | team fixture puts a wrong gate in a draft | the checker worker catches it against the API |
-| **Fail-closed sandbox** | passenger-assistant on kiac-dev | a hardened request is Rejected, never downgraded |
+| **Fail-closed sandbox** | passenger-assistant on the dev cluster | a hardened request is Rejected, never downgraded |
 | **Expiry without Clearance** | stop Clearance mid-run | the run still ends at `expiresAt` |
 
 ## Quickstart parts (numbered in the order built)

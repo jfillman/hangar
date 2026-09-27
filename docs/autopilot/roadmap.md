@@ -54,7 +54,7 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 **Exit:** the guard is live on dev; `airframe validate` catches an injected typo on a real PR; `baggage-api` runs on dev; every item in section 5 has an answer.
 
 **M0 status (2026-09-26): mostly done; scorecard 27.3 -> 40.2 (target 35).**
-- Done: AF-10a guard (Airframe v0.3.91, pinned on kiac-dev and kind-prod; all 7 live env files render byte-identically before and after); AF-10b chart tests and CI (the scorecard job needs a `FLEET_READ_TOKEN` secret); AF-1a `AGENTS.md`; AF-4a `airframe validate` v0; DX-0 `autopilot` repo (public, github.com/jfillman/autopilot); planner flipped (`Features.rollout_guard` defaults to True, the canary test retired); D7 decided (Preflight); D6 and D10 briefed ([briefings-d6-d10.md](briefings-d6-d10.md)); release-file split designed and proven on kiac-dev ([release-file-split.md](release-file-split.md)).
+- Done: AF-10a guard (Airframe v0.3.91, pinned on the dev and prod clusters; all 7 live env files render byte-identically before and after); AF-10b chart tests and CI (the scorecard job needs a `FLEET_READ_TOKEN` secret); AF-1a `AGENTS.md`; AF-4a `airframe validate` v0; DX-0 `autopilot` repo (public, github.com/jfillman/autopilot); planner flipped (`Features.rollout_guard` defaults to True, the canary test retired); D7 decided (Preflight); D6 and D10 briefed ([briefings-d6-d10.md](briefings-d6-d10.md)); release-file split designed and proven on the dev cluster ([release-file-split.md](release-file-split.md)).
 - U1, U5, U6, U7, U11, U12 answered and U3 partly (section 5). Still open: U2 (function TTL re-invoke), U4 (Tower write actions need a human click on a stuck app), U8 (needs the `AgentRun` composition applied via a copy), U9 (only if a vector store is wanted), U10 (M5 trial).
 - `baggage-api`: created, code and dev env pushed, broker allows its dev namespace; see the Skyport handoff for whether the dev walkthrough has passed. The first two image scans failed (Debian base: 44 unfixed HIGH CVEs; then a stale setuptools), which is a scorecard item for the Python scaffold.
 
@@ -73,7 +73,7 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 ### M2 Safe write (weeks 7-10), target 75
 | Task | Notes |
 |---|---|
-| **AF-5** base layer and release-file split | migrate dev first, then kind-prod, each via a scratch app; coordinate airframe, glidepath's `open-release-pr` and deploy stage, and Tower's Config tab |
+| **AF-5** base layer and release-file split | migrate dev first, then prod, each via a scratch app; coordinate airframe, glidepath's `open-release-pr` and deploy stage, and Tower's Config tab |
 | **AF-5b** ownership gate, risk classes, comment-preserving patch engine | |
 | **AF-9a** field-level `agent-scope` specified and tested | Clearance policy grows a JSON-pointer allow and deny |
 | **SP-4** OAuth component, `skyport-auth`, enforced JWTs (part 5) | born A+ |
@@ -84,7 +84,7 @@ Score targets are the scorecard's overall (baseline 27/100, A+ needs 97 and 14 o
 ### M3 Autopilot core (weeks 11-18), target 88
 | Task | Notes |
 |---|---|
-| **AP-A1** apron `components.autopilot` toggle, registry `autopilotReady`, network-policy canary | refused on `type: upper`; the canary fails honestly on kiac-dev |
+| **AP-A1** apron `components.autopilot` toggle, registry `autopilotReady`, network-policy canary | refused on `type: upper`; the canary fails honestly on the dev cluster |
 | **AP-A2** Clearance as an InfraService; T0 tools with real adapters | Backstage MCP, ArgoCD read-only account |
 | **AP-A3** `AgentRun` XRD, `function-agentrun`, `provider-kubernetes` grants, namespaced Role | copy-tested; expiry proven with Clearance stopped and with the function pod killed |
 | **AP-B1** interceptor `/agent-installation-token`, separate GitHub App, ArgoCD accounts | commit-signing decision executed |
@@ -121,7 +121,7 @@ a Preflight case with a seeded bad run, and updates its quickstart's verified-st
 - Modelplane hub trial on a dedicated kind cluster, behind the OpenAI-compatible contract.
 - **AP-D1** opt-in persistent, resumable state for session and team shapes: size cap, retention TTL, scan before restore (needs U12; design in design.md 3.1).
 - Part 12: the nginx edge (optional), born A+.
-- Conformance on kind-prod: upper clusters get no runs, and a run cannot be created there.
+- Conformance on prod: upper clusters get no runs, and a run cannot be created there.
 - The A+ run: scorecard 14 of 14 and overall at least 97, recorded.
 
 ## 3. Critical path
@@ -148,20 +148,20 @@ repo setup, Modelplane reading. Do not parallelize the ownership split with Clea
 ## 5. Unverified: answer these in M0
 | # | Question | How to check |
 |---|---|---|
-| U1 | Does ArgoCD apply XRs so that unknown fields are rejected, or pruned silently? | apply an XR with a bogus field to kiac-dev via a scratch Application |
+| U1 | Does ArgoCD apply XRs so that unknown fields are rejected, or pruned silently? | apply an XR with a bogus field to the dev cluster via a scratch Application |
 | U2 | Does the function response TTL re-invoke `function-agentrun` near expiry? | a toy composition on a scratch namespace; the expiry test in M3 depends on it |
 | U3 | Is Backstage's `mcpActions` endpoint live on a cluster? | request it from the Tower backend |
 | U4 | Were Tower's Tier 1 write actions ever live-verified? | click Refresh, Sync and Re-run against a genuinely stuck app |
 | U5 | Does the ArgoCD glob `*-lower/*` match `<app>-lower` AppProject names? | `argocd proj list` against the policy |
 | U6 | Does Helm ignore unknown `x-hangar-*` keywords in `values.schema.json`? | `helm lint` on a schema with the keys |
 | U7 | Can the ArgoCD git files generator exclude `*.release.yaml`? | a scratch ApplicationSet |
-| U8 | Does provider-kubernetes accept the rendered Namespace, Quota, NetworkPolicy, ServiceAccount and Job? | `crossplane render` is not possible without Docker; use a scratch XR on kiac-dev |
+| U8 | Does provider-kubernetes accept the rendered Namespace, Quota, NetworkPolicy, ServiceAccount and Job? | `crossplane render` is not possible without Docker; use a scratch XR on the dev cluster |
 | U9 | Is pgvector available in the CloudNativePG image? | only if a vector store is wanted |
 | U10 | What do Modelplane's usage records contain, and does short-lived auth work for `Existing` clusters? | read a real record, in the M5 trial |
-| U11 | Is the upstream Kubernetes SIG Agent Sandbox real and mature enough (warm pools, gVisor/Kata, suspend/resume)? Could `function-agentrun` render its Sandbox object instead of a raw pod? | read the project and its CRDs, then install it on kiac-dev and render one run through it; answer before AP-A3 is built. Its current maturity is second-hand knowledge (see [industry-context.md](industry-context.md)) |
-| U12 | Can a run's workspace be snapshotted and restored (volume snapshot on kiac-dev's storage class), and what does restore cost in seconds? | scratch PVC plus VolumeSnapshot on kiac-dev; needed for AP-D1 |
+| U11 | Is the upstream Kubernetes SIG Agent Sandbox real and mature enough (warm pools, gVisor/Kata, suspend/resume)? Could `function-agentrun` render its Sandbox object instead of a raw pod? | read the project and its CRDs, then install it on the dev cluster and render one run through it; answer before AP-A3 is built. Its current maturity is second-hand knowledge (see [industry-context.md](industry-context.md)) |
+| U12 | Can a run's workspace be snapshotted and restored (volume snapshot on the dev cluster's storage class), and what does restore cost in seconds? | scratch PVC plus VolumeSnapshot on the dev cluster; needed for AP-D1 |
 
-All U-experiments run on kiac-dev (decision 2026-09-26).
+All U-experiments run on the dev cluster (decision 2026-09-26).
 
 ### Answers (2026-09-26)
 | # | Answer |
@@ -169,18 +169,18 @@ All U-experiments run on kiac-dev (decision 2026-09-26).
 | U1 | **Pruned silently, by default.** ArgoCD synced a Redis XR with `persistance: true` and `bogusField: 1`, reported success, and the stored spec had neither. A server-side dry-run with `--validate=strict` rejects them (`strict decoding error: unknown field`), `warn` prints a warning, `ignore` accepts. Enum values (`size: gigantic`) are rejected by the XRD schema either way. So typos in an XR file look accepted and do nothing: `airframe validate` must cover XR files too. |
 | U5 | **Yes.** `argocd admin settings rbac can` with `p, role:clearance-lower, applications, sync, *-lower/*, allow`: `flight-api-lower/...` and `backstage-lower/...` allowed; `flight-api/...` (upper) and `app-flight-api-cicd-pr/...` denied. |
 | U6 | **Yes.** `helm lint` and `helm template` accept unknown `x-hangar-*` keys at the root and on a property; type enforcement still works (`appName=5` fails). |
-| U7 | **Yes, with the real name.** A git files generator with `path: .../*.release.yaml, exclude: true` generated exactly the `dev` and `test` apps and none for `dev.release.yaml` (live, scratch ApplicationSet on kiac-dev). |
+| U7 | **Yes, with the real name.** A git files generator with `path: .../*.release.yaml, exclude: true` generated exactly the `dev` and `test` apps and none for `dev.release.yaml` (live, scratch ApplicationSet on the dev cluster). |
 | U2 | **No, not on our Crossplane.** A function's response TTL only takes effect when Crossplane's beta realtime-compositions flag is on (it is off: the args are `core start`); otherwise the XR is requeued at the poll interval, default 1 minute, and the per-XR `crossplane.io/poll-interval` annotation cannot go below `--min-poll-interval`, default 1 minute. Measured: a composition that renders the current time re-rendered every 60 s whether the TTL annotation or a 10 s poll-interval annotation was set. Also: installed `function-go-templating` v0.12.3 has no TTL support at all, and installing a second package from the same repo under another name collides in the package lock (health flapped for about a minute, then recovered; nothing was left behind). **Consequence:** expiry cannot be driven by re-invocation faster than about a minute. Use the Sandbox `shutdownTime` (U11: enforced within a second) or the Job's `activeDeadlineSeconds` for hard expiry, and treat Crossplane's poll as the status refresh only. |
-| U8 | **Yes, once granted RBAC; today it is denied.** Rendered the six `AgentRun` objects with `function-agentrun`'s own `compose()` (docker.io alpine pinned by digest) and applied them as provider-kubernetes `Object`s on kiac-dev. Before any grant every one failed to observe with `forbidden` (provider-kubernetes has no rights on namespaces, resourcequotas, serviceaccounts, networkpolicies or jobs). With a scratch ClusterRole for exactly those kinds, all six synced and went Ready, the Job **completed** under `pod-security: restricted`, and deleting the Objects removed the run namespace. The narrow role is drafted in `autopilot/airframe-drafts/rbac/`; it must be reviewed as a privilege grant (namespace create/delete cluster-wide) before it ships. Not tested: NetworkPolicy enforcement (kiac-dev does not enforce it), the Modelplane path, or the composition running under a real XR (the function image is not built). |
-| U3 | **Partly.** On kind-prod, Backstage serves `/api/mcp-actions` (401 "Missing credentials", where a made-up path returns 404), so the plugin is mounted and behind auth. Not verified: that it lists Tower/catalog actions with a real token. |
-| U12 | **Not with VolumeSnapshot on kiac-dev today.** The cluster has no snapshot CRDs and its only storage class is `rancher.io/local-path`. Workspace persistence for AP-D1 needs either a snapshot-capable CSI driver or an archive-to-object-store approach (tar the workspace, scan it, store it); restore cost is not measured. |
-| U11 | **Real and usable; adopt behind the `AgentRun` contract.** kubernetes-sigs/agent-sandbox v1.0.4 (2026-09-24, weekly releases, API `v1beta1`): `Sandbox`, `SandboxTemplate`, `SandboxClaim`, `SandboxWarmPool`. Installed on kiac-dev (arm64 image works) and measured: a cold sandbox Ready in 2 s (image cached), suspend and resume in about 1 s, a claim served from a warm pool Ready in 89 ms, and a Sandbox with `shutdownTime` and `shutdownPolicy: Delete` was deleted by the controller within a second of expiry. `SandboxTemplate` carries `networkPolicy`/`networkPolicyManagement` and an env-injection policy, which overlap what `function-agentrun` renders. Not tested: gVisor/Kata, snapshot restore, and NetworkPolicy enforcement (kiac-dev does not enforce it). Removed again after the trial. Decision for AP-A3: render a `Sandbox` (or claim) instead of a raw pod, and treat the controller as a pinned dependency. |
+| U8 | **Yes, once granted RBAC; today it is denied.** Rendered the six `AgentRun` objects with `function-agentrun`'s own `compose()` (docker.io alpine pinned by digest) and applied them as provider-kubernetes `Object`s on the dev cluster. Before any grant every one failed to observe with `forbidden` (provider-kubernetes has no rights on namespaces, resourcequotas, serviceaccounts, networkpolicies or jobs). With a scratch ClusterRole for exactly those kinds, all six synced and went Ready, the Job **completed** under `pod-security: restricted`, and deleting the Objects removed the run namespace. The narrow role is drafted in `autopilot/airframe-drafts/rbac/`; it must be reviewed as a privilege grant (namespace create/delete cluster-wide) before it ships. Not tested: NetworkPolicy enforcement (the dev cluster does not enforce it), the Modelplane path, or the composition running under a real XR (the function image is not built). |
+| U3 | **Partly.** On the prod cluster, Backstage serves `/api/mcp-actions` (401 "Missing credentials", where a made-up path returns 404), so the plugin is mounted and behind auth. Not verified: that it lists Tower/catalog actions with a real token. |
+| U12 | **Not with VolumeSnapshot on the dev cluster today.** The cluster has no snapshot CRDs and its only storage class is `rancher.io/local-path`. Workspace persistence for AP-D1 needs either a snapshot-capable CSI driver or an archive-to-object-store approach (tar the workspace, scan it, store it); restore cost is not measured. |
+| U11 | **Real and usable; adopt behind the `AgentRun` contract.** kubernetes-sigs/agent-sandbox v1.0.4 (2026-09-24, weekly releases, API `v1beta1`): `Sandbox`, `SandboxTemplate`, `SandboxClaim`, `SandboxWarmPool`. Installed on the dev cluster (arm64 image works) and measured: a cold sandbox Ready in 2 s (image cached), suspend and resume in about 1 s, a claim served from a warm pool Ready in 89 ms, and a Sandbox with `shutdownTime` and `shutdownPolicy: Delete` was deleted by the controller within a second of expiry. `SandboxTemplate` carries `networkPolicy`/`networkPolicyManagement` and an env-injection policy, which overlap what `function-agentrun` renders. Not tested: gVisor/Kata, snapshot restore, and NetworkPolicy enforcement (the dev cluster does not enforce it). Removed again after the trial. Decision for AP-A3: render a `Sandbox` (or claim) instead of a raw pod, and treat the controller as a pinned dependency. |
 
 ## 6. Risks
 - **One person, many repos.** airframe, glidepath, backstage, apron, the tenants repos and a new repo all change. Keep every change small, behind a gate, and reversible. Use worktrees.
 - **Retrofit cost** if the contract slips behind the next components. Hence the ordering.
-- **kiac-dev does not enforce NetworkPolicy.** `autopilotReady` is gated on a canary, and runs are never trusted on a claim.
-- **kind-prod is resource-limited** (12 GB, observability scaled to 0). Runs are dev-only; kind-prod gets none.
+- **The dev cluster does not enforce NetworkPolicy.** `autopilotReady` is gated on a canary, and runs are never trusted on a claim.
+- **The prod cluster is resource-limited** (observability scaled to 0). Runs are dev-only; prod gets none.
 - **Hosted model cost.** Token budgets and the breaker; two on-demand or scheduled spenders in the demo.
 - **Upstream churn.** Modelplane is v0.1 and the mcp SDK is v2; both sit behind contracts and pins.
 - **Strictness breaks an environment.** Warn first, sweep the fleet, then enforce.

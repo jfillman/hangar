@@ -16,7 +16,7 @@ failure becomes blocking** rather than a warning.
 ### What we measured (2026-09-26)
 - The strict schema closes 46 objects. Passthrough objects (`podSpec`, `extraManifests` items) stay open.
 - Every live file passes it: both Ground env files (`boarding-api`, `flight-api`) and both Flight values files
-  (`boarding-api` and `flight-api` on kind-prod staging). **Zero violations, so the fleet sweep is already clean.**
+  (`boarding-api` and `flight-api` on prod-cluster staging). **Zero violations, so the fleet sweep is already clean.**
 - It catches the three test typos: `rolout:`, `replcas:`, and `size: gigantic` on a component (the last needs the
   XRD schema, which validate now reads).
 

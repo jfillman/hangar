@@ -1,9 +1,9 @@
-# Backstage design (upstream, kind-man)
+# Backstage design (upstream, mgmt cluster)
 
 **Status: DRAFT — plan, not yet built. Revised once already** (first pass targeted
 Red Hat Developer Hub; corrected to plain upstream Backstage after the user flagged
 RHDH isn't a no-cost path — see "Dynamic plugins, revisited" below for what survived
-that correction). Answers where Backstage runs, how it reaches `kind-dev`/`kind-prod`,
+that correction). Answers where Backstage runs, how it reaches `dev`/`prod`,
 how the plugin set actually gets built and delivered, and what changes in
 `gitops-cluster-template`. Two decisions below were made explicitly with the user
 rather than assumed — flagged as such, since both revise or extend prior design in
@@ -13,7 +13,7 @@ rather than assumed — flagged as such, since both revise or extend prior desig
 
 1. **§0's "zero Kubernetes credentials of any kind" is revised to "zero *write*
    credentials."** Backstage gets a **read-only** ServiceAccount token per cluster
-   (`kind-dev`, `kind-prod`, and its own `kind-man`) so live-status plugins (Kubernetes,
+   (`dev`, `prod`, and its own `mgmt`) so live-status plugins (Kubernetes,
    ArgoCD, pod logs) work. Every *mutation* still goes through the existing GitOps-commit
    path — `token-review-interceptor`'s `/github-installation-token` endpoint for
    scaffolder actions, exactly as §0 already designed. This is a scoped exception, not a
@@ -52,17 +52,17 @@ already applies to chart configs):
 
 ## Where it runs
 
-`kind-man` — already scaffolded from `gitops-cluster-template` and, it turns out,
+`mgmt` — already scaffolded from `gitops-cluster-template` and, it turns out,
 already bootstrapped live (ArgoCD, cert-manager, Crossplane, External Secrets,
 Infisical remote-consumer, observability stack, Contour, Sloth all present as of this
 session's implementation start — the design doc's earlier "not yet live" note was
-based on a transient podman VM wedge, not an actual unbootstrapped cluster; see
+based on a transient host-level hiccup, not an actual unbootstrapped cluster; see
 implementation log below). Still registered in the cluster registry as
 `cicdReady: false`/`crossplaneReady: false` pending live verification of those.
 Backstage
 is a **singleton platform component**, same category as Infisical (`infisicalHost`) or
 platform-cicd's control plane (`platformCicd`) — one instance for the whole fleet, not
-something every cluster runs. `kind-man`'s `type: upper` doesn't conflict with either
+something every cluster runs. `mgmt`'s `type: upper` doesn't conflict with either
 existing invariant the template enforces (`providerGithub`/`platformCicd` must be
 false on `upper`) — Backstage is neither.
 
@@ -96,20 +96,19 @@ manifests, same split every other component here already follows (e.g.
 Add a `components.backstage` toggle to `cluster.yaml.example`'s schema (same pattern as
 `components.secrets.infisicalHost` / `components.platformCicd`) and to
 `hack/customize-cluster.sh` — `false` by default, deletes `60-backstage/` when unset,
-`true` only ever set on `kind-man`. No new hard invariant needed (Backstage isn't
+`true` only ever set on `mgmt`. No new hard invariant needed (Backstage isn't
 mutually exclusive with anything `type: upper` already forbids), just a normal optional
 directory like `contour`/`sloth`.
 
 ## Cross-cluster reachability — reuse a known-fragile pattern, flag it up front
 
-Reaching `kind-dev`'s and `kind-prod`'s API servers from `kind-man` (separate
-podman-network containers, no shared cluster network) is the same class of problem
+Reaching `dev`'s and `prod`'s API servers from `mgmt` (separate
+clusters, no shared cluster network) is the same class of problem
 already solved once for Infisical: expose via **NodePort on the API server's own host
-podman IP**. That existing solution has broken **three times already**
-([[platform_cicd_infisical_hardcoded_ip_todo]]) because the podman-network IP isn't
-stable across a cluster restart/rebuild and drifts non-monotonically. Adding a second
-and third consumer of the same fragile-IP pattern (Backstage → kind-dev,
-Backstage → kind-prod) makes this worse, not better, unless the structural fix lands
+IP**. That existing solution has broken **three times already** because the host IP isn't
+stable across a cluster restart/rebuild. Adding a second
+and third consumer of the same fragile-IP pattern (Backstage → dev,
+Backstage → prod) makes this worse, not better, unless the structural fix lands
 first or alongside.
 
 **Recommendation: do the structural fix (or at minimum a live-verified lookup, not a
@@ -126,29 +125,28 @@ discipline every existing consumer already needs.
 this round" above) so there's no `valuesObject` to wire IPs into any more; the actual
 consumer became `app-config.yaml`'s `kubernetes.clusterLocatorMethods` +
 `argocd.appLocatorMethods`. Neither "cluster-registry-driven lookup" nor
-"host-network-stable fronting" panned out as options once the kiac migration landed
-(kiac has no static-IP feature at all - confirmed upstream, `idp/docs/
-local-clusters.md` - so there's no stable per-cluster address a registry could even
-record). What shipped instead: `app-config.yaml` holds stable hostnames
-(`kube-apiserver.{dev,prod}.kiac.local`, `argocd-apps.{dev,prod}.kiac.local`) that
-never need editing again, and `gitops-cluster-kind-man/60-backstage/backstage/
+"host-network-stable fronting" panned out as options in the current lab setup
+(its cluster nodes get no static IPs, so there's no stable per-cluster address a
+registry could even record). What shipped instead: `app-config.yaml` holds stable hostnames
+(`kube-apiserver.{dev,prod}.example.internal`, `argocd-apps.{dev,prod}.example.internal`) that
+never need editing again, and `gitops-cluster-mgmt/60-backstage/backstage/
 deployment.yaml`'s `hostAliases` is the ONE place that still needs a live IP
-re-verified after a kiac-dev/kiac-prod restart - centralizing the staleness this
-section worried about into a single, scriptable spot (`refresh-kiac-hosts.sh` now
-rewrites it) rather than eliminating the underlying VM-IP-churn problem, which isn't
+re-verified after a dev or prod cluster restart - centralizing the staleness this
+section worried about into a single, scriptable spot (a host-refresh script now
+rewrites it) rather than eliminating the underlying IP-churn problem, which isn't
 actually fixable at this layer.
 
 ## Credentials
 
-- **Read-only K8s ServiceAccount token per cluster** (`kind-dev`, `kind-prod`,
-  `kind-man`) — `get`/`list`/`watch` on the resource kinds each plugin actually reads
+- **Read-only K8s ServiceAccount token per cluster** (`dev`, `prod`,
+  `mgmt`) — `get`/`list`/`watch` on the resource kinds each plugin actually reads
   (Pods, Deployments, Rollouts, PipelineRuns, ...), no write verbs, no `secrets` read.
-  Delivered to `kind-man` via ESO `ExternalSecret`s pointing at Infisical, same as every
+  Delivered to `mgmt` via ESO `ExternalSecret`s pointing at Infisical, same as every
   other cross-cluster credential in this platform — never pasted to an assistant, never
   committed in the clear.
 - **ArgoCD**: each cluster runs its own ArgoCD instance (self-managing, per
   [[idp_session_gitops_strategy]]) — Backstage's ArgoCD plugin needs one **read-only
-  API token per instance** (kind-dev's ArgoCD, kind-prod's ArgoCD), not one shared
+  API token per instance** (the dev cluster's ArgoCD, the prod cluster's ArgoCD), not one shared
   credential.
 - **GitHub**: reuse the existing GitHub App used for `provider-github`/repo creds as
   Backstage's sign-in + catalog-discovery identity — add Backstage's OAuth callback URL
@@ -160,7 +158,7 @@ actually fixable at this layer.
   `token-review-interceptor`'s `/github-installation-token` endpoint exactly as §0
   designed, authenticated by a K8s ServiceAccount token that carries **no** resource-write
   RBAC — unchanged by this plan.
-- **Grafana**: read-only API key/service-account token for kind-man's own
+- **Grafana**: read-only API key/service-account token for the mgmt cluster's own
   `kube-prometheus-stack-grafana` (plugin #9 below) — new, not previously listed.
 
 ## Data stores
@@ -173,7 +171,7 @@ actually fixable at this layer.
   precedent Infisical's own `application.yaml` documents, unless RHDH's chart supports
   `existingSecret` cleanly (verify — don't assume it does or doesn't without checking
   the actual chart, same trap Infisical's own header called out for its own chart).
-- **TechDocs storage**: reuse `kind-man`'s existing MinIO instance
+- **TechDocs storage**: reuse `mgmt`'s existing MinIO instance
   (`40-observability/minio/`, already running for Thanos/Loki/Tempo) — add a fourth
   `techdocs` bucket rather than standing up separate object storage.
 
@@ -185,18 +183,18 @@ both:**
 - **GitHub org discovery** of `catalog-info.yaml` across tenant repos (`checkout-api`,
   `order-api`, `search-api`, `process-api`, ...) — hand-authored, developer-owned,
   standard Backstage pattern. Not yet built.
-- **Kubernetes Ingestor** — **built, live, 2026-08-27** (Phase 1: `kind-man` only).
+- **Kubernetes Ingestor** — **built, live, 2026-08-27** (Phase 1: `mgmt` only).
   Correction from the first pass: the real, current package is TeraSky-originated
   (`@terasky/backstage-plugin-kubernetes-ingestor` +
   `@terasky/backstage-plugin-scaffolder-backend-module-terasky-utils`), not
   `backstage-community/plugin-kubernetes-ingestor` — confirmed against the plugin's own
   source at implementation time, per this doc's own "verify exact name" flag on every
   plugin-table row. Generates `Component`/`API` catalog entities and scaffolder
-  Templates directly from `idp-service-catalog`'s live XRDs on `kind-man` (which already
-  runs the real service catalog, same as `kind-dev`/`kind-prod`) — no cross-cluster
+  Templates directly from `idp-service-catalog`'s live XRDs on `mgmt` (which already
+  runs the real service catalog, same as `dev`/`prod`) — no cross-cluster
   credential work needed for this first slice, since Backstage reads its own cluster's
   API server via a dedicated `backstage-ingestor` ServiceAccount (RBAC:
-  `gitops-cluster-kind-man/60-backstage/backstage/rbac.yaml`) using the kubelet-
+  `gitops-cluster-mgmt/60-backstage/backstage/rbac.yaml`) using the kubelet-
   projected, auto-rotating token — no ESO/Infisical hop, no long-lived Secret.
   Only the 5 "Bootstrap-tier" XRDs a developer actually creates directly
   (`NodeJSApplication`/`SpringBootApplication`/`PythonApplication`/`GoApplication`/
@@ -207,8 +205,8 @@ both:**
   `RolloutWatch`) are auto-derived by other XRDs' Compositions, so they're left
   unannotated (no template) but still surface as `Component` entities from their live
   instances, since that ingestion path isn't gated by the annotation. Extending to
-  `kind-dev`/`kind-prod` is a deferred Phase 2, still gated on the cross-cluster
-  NodePort/podman-IP reachability problem ([[platform_cicd_infisical_hardcoded_ip_todo]])
+  `dev`/`prod` is a deferred Phase 2, still gated on the cross-cluster
+  NodePort/host-IP reachability problem
   exactly as this doc originally flagged.
 - **Crossplane plugin** (`backstage-community/plugin-crossplane`) — shows live
   XR/Claim status and its own resource graph on a catalog entity page. This is a real,
@@ -251,19 +249,19 @@ never read from it. So instead:
   which mutates matching `catalog.idp.io` kinds on every Create/Update admission
   review. Needed a supplemental read-only `ClusterRole` in the same file (Kyverno ships
   RBAC for built-in kinds only — same gap already hit for `testworkflows.testkube.io`,
-  see `testkube-rbac.yaml` in the same directory). Kyverno only runs on `kiac-dev`
+  see `testkube-rbac.yaml` in the same directory). Kyverno only runs on `dev`
   today, which is fine — these 8 XRDs only exist there.
 - **`RolloutWatch`** is the one exception: its instances come from `idp-application`'s
   own Helm chart (`charts/idp-application/templates/attached/rolloutwatch.yaml`), not a
   GitOps `xr-requests` commit, and it's the only one of the 9 that also needs to work on
-  `kiac-prod`, which has no Kyverno installed. Set directly in that chart template
+  `prod`, which has no Kyverno installed. Set directly in that chart template
   instead (`terasky.backstage.io/component-type: platform`), shipped as
   `idp-service-catalog@v0.3.52`.
 
 No manual backfill of already-live XRs was needed: Crossplane's own Composition
 reconcile loop updates every XR's `status` constantly, and each of those updates is
 itself an admission event Kyverno's mutate rule fires on — every pre-existing XR on
-`kiac-dev` picked up the annotation within seconds of the policy going `Ready`, live-
+`dev` picked up the annotation within seconds of the policy going `Ready`, live-
 verified across all 8 kinds (`NodeJSApplication`/`PythonApplication`/`GoApplication`/
 `SpringBootApplication`/`ApplicationEnvironment`/`TektonCICD`/`SecretStore`/`SLO`).
 
@@ -277,15 +275,15 @@ is a first slice, not final.
 
 | # | Plugin | Package (verify exact name at implementation time) | New credential needed? |
 |---|---|---|---|
-| 1 | ArgoCD | **Code done 2026-09-04** (`@backstage-community/plugin-redhat-argocd` + `-backend` - switched from `@roadiehq/backstage-plugin-argo-cd` the same day, user's call, wanting the fuller read feature set: multi-app-per-entity, multi-instance display, Argo Rollouts visualization) | read-only API token per ArgoCD instance - **kiac-dev's and kiac-prod's `argocd-apps` instance only**, not `argocd` (platform) or kiac-man's own two - see below |
+| 1 | ArgoCD | **Code done 2026-09-04** (`@backstage-community/plugin-redhat-argocd` + `-backend` - switched from `@roadiehq/backstage-plugin-argo-cd` the same day, user's call, wanting the fuller read feature set: multi-app-per-entity, multi-instance display, Argo Rollouts visualization) | read-only API token per ArgoCD instance - **the dev cluster's and the prod cluster's `argocd-apps` instance only**, not `argocd` (platform) or the mgmt cluster's own two - see below |
 | 2 | Kubernetes topology | `@backstage/plugin-kubernetes` + `@backstage-community/plugin-topology` | read-only K8s creds per cluster (already decided) |
 | 3 | GitHub pull requests | official `@backstage/plugin-github-pull-requests-board`-family | existing GitHub App (below) |
 | 4 | GitHub Actions | official `@backstage/plugin-github-actions` | existing GitHub App — low first-pass value here (platform-cicd/Tekton is this fleet's real CI, not GH Actions; keep it, but don't prioritize) |
 | 5 | Crossplane | `backstage-community/plugin-crossplane` | read-only K8s creds per cluster (already decided) — see Catalog ingestion above |
-| 6 | Tekton pipelines | `backstage-community/plugin-tekton` | read-only K8s creds on kind-dev (where platform-cicd's control plane runs) |
+| 6 | Tekton pipelines | `backstage-community/plugin-tekton` | read-only K8s creds on the dev cluster (where platform-cicd's control plane runs) |
 | 7 | GitOps Manifest Updater | RHDH-originated scaffolder plugin, upstream availability TBD — **verify it isn't RHDH-only before committing to it**, this is exactly the mistake the RHDH-vs-upstream correction was about | none new — if it works upstream, it authenticates through the same `token-review-interceptor` GitHub token, not a standing credential |
-| 8 | Kubernetes Ingestor | **DONE 2026-08-27** (Phase 1, `kind-man` only) — `@terasky/backstage-plugin-kubernetes-ingestor` (not `backstage-community/...`, corrected at implementation time) | read-only K8s creds per cluster — `kind-man` done via in-cluster ServiceAccount, `kind-dev`/`kind-prod` still deferred — see Catalog ingestion above |
-| 9 | Grafana | `backstage-community/plugin-grafana` | **new**: Grafana read-only API key/service account token, against kind-man's own `kube-prometheus-stack-grafana` |
+| 8 | Kubernetes Ingestor | **DONE 2026-08-27** (Phase 1, `mgmt` only) — `@terasky/backstage-plugin-kubernetes-ingestor` (not `backstage-community/...`, corrected at implementation time) | read-only K8s creds per cluster — `mgmt` done via in-cluster ServiceAccount, `dev`/`prod` still deferred — see Catalog ingestion above |
+| 9 | Grafana | `backstage-community/plugin-grafana` | **new**: Grafana read-only API key/service account token, against the mgmt cluster's own `kube-prometheus-stack-grafana` |
 
 **Flag on #7 specifically**: "GitOps Manifest Updater" is a Red Hat/Janus-IDP-originated
 scaffolder action for committing manifest changes as part of a template run — check at
@@ -332,17 +330,17 @@ bare layout gap instead.
 **Argo Rollouts visualization** needed two more additions beyond what Roadie's
 plugin needed: `kubernetes.customResources` in `app-config.yaml` (the `rollouts`/
 `analysisruns` CRD kinds) and a new explicit `backstage-argo-rollouts-viewer`
-ClusterRole + binding on kiac-dev/kiac-prod's own `backstage-ingestor-rbac`
+ClusterRole + binding on the dev/prod clusters' own `backstage-ingestor-rbac`
 (`view` doesn't cover `argoproj.io` CRDs, same reasoning as the existing CRD-viewer
-and `crossplane-browse` grants) - not needed on kiac-man, which runs no Rollouts.
+and `crossplane-browse` grants) - not needed on the mgmt cluster, which runs no Rollouts.
 
 Also enabled `argocd.fullDeploymentHistory: true` (off/deduped by this plugin's
 own default) per "full feature set."
 
-**Scoped to `argocd-apps` only, kiac-dev + kiac-prod only** (user's explicit call,
+**Scoped to `argocd-apps` only, the dev + prod clusters only** (user's explicit call,
 not the default the plugin table above originally implied) - `argocd-apps` is the
 instance that actually deploys each tenant's `Application` (gitops-strategy.md §2),
-matching catalog Components 1:1; the `argocd` platform instance and kiac-man's own
+matching catalog Components 1:1; the `argocd` platform instance and the mgmt cluster's own
 two instances have no catalog entity to attach a card to.
 
 **No per-entity annotation work needed** - `kubernetes-ingestor`'s `argoIntegration`
@@ -350,21 +348,21 @@ config defaults to `true` and already emits the exact `argocd/app-name` annotati
 this plugin reads (confirmed by grepping the installed package's own compiled
 source, not assumed from either plugin's docs), onto every entity it generates from
 a resource owned by an ArgoCD Application. Once `kubernetesIngestor` catalog
-ingestion is live against kiac-dev/kiac-prod (Phase 5, see "Rollout phases" below -
-worth re-confirming this is actually still working post-kiac-migration, given the
+ingestion is live against the dev/prod clusters (Phase 5, see "Rollout phases" below -
+worth re-confirming this is actually still working after the cluster migration, given the
 IP-churn note next), the ArgoCD cards populate automatically.
 
 **Reachability fixed via Gateway hostnames, not raw IPs** (user's explicit call,
 over matching the existing `kubernetes.clusterLocatorMethods` fragile-IP pattern) -
 `app-config.yaml`'s `argocd.appLocatorMethods` instance URLs are the stable
-`argocd-apps.{dev,prod}.kiac.local` hostnames and never need editing again; only
-`gitops-cluster-kind-man/60-backstage/backstage/deployment.yaml`'s `hostAliases`
+`argocd-apps.{dev,prod}.example.internal` hostnames and never need editing again; only
+`gitops-cluster-mgmt/60-backstage/backstage/deployment.yaml`'s `hostAliases`
 (the Backstage pod's own DNS resolution for those two hostnames) needs re-pointing
-at the clusters' current VM IPs after a kiac-dev/kiac-prod restart - same
-live-reverify discipline as everything else kiac's no-static-IP limitation
-touches (`idp/docs/local-clusters.md`). `refresh-kiac-hosts.sh` now also rewrites
-`hostAliases` in the local `gitops-cluster-kind-man` checkout when it heals
-`/etc/hosts` - one command, one source of truth (`container list`) for both. It
+at the clusters' current IPs after a dev or prod cluster restart - same
+live-reverify discipline as everything else the lab's lack of static IPs
+touches (`idp/docs/local-clusters.md`). The host-refresh script now also rewrites
+`hostAliases` in the local `gitops-cluster-mgmt` checkout when it heals
+`/etc/hosts` - one command, one source of truth for both. It
 deliberately does NOT `kubectl patch` the live Deployment: that Application runs
 `selfHeal: true`, so a live patch would just get reverted on ArgoCD's next
 reconcile (confirmed by reading that Application's own sync policy) - the durable
@@ -374,7 +372,7 @@ script stops at rewriting the file; committing/pushing is still a manual step.
 **Credentials**: a dedicated `backstage` ArgoCD account (`apiKey` capability only,
 bound to the built-in `role:readonly`) added to each cluster's `argocd-apps-install/
 application.yaml` (`configs.cm`/`configs.rbac`). Token itself is manual-by-design,
-same posture as every other credential here - see `gitops-cluster-kind-man/
+same posture as every other credential here - see `gitops-cluster-mgmt/
 60-backstage/backstage/argocd-{dev,prod}-apps-token-external-secret.yaml`'s own
 header comments for the exact `argocd login`/`account generate-token` steps and
 which Infisical key each one plants into.
@@ -408,8 +406,8 @@ Neither was config - both needed a code fix in the `backstage` repo:
 
 ### A third, bigger bug: `argocd/app-name` was wrong, and single-app anyway
 
-User tested with real data (checkout-api: 3 Applications on kiac-dev, 4 on
-kiac-prod, all legitimately part of the same app) and only 2 showed - one per
+User tested with real data (checkout-api: 3 Applications on the dev cluster, 4 on
+prod, all legitimately part of the same app) and only 2 showed - one per
 cluster. Traced live via a direct query against the catalog's own postgres DB
 (`backstage_plugin_catalog.final_entities`, read through the pod's own
 `POSTGRES_PASSWORD_FILE` so no credential was ever seen or transmitted): the
@@ -468,19 +466,19 @@ explicit that it's now part of the cost of this decision.
 
 ## Rollout phases
 
-1. Bootstrap `kind-man` for real (it's registered but not live) — Calico, ArgoCD,
+1. Bootstrap `mgmt` for real (it's registered but not live) — Calico, ArgoCD,
    root app-of-apps, same sequence every other cluster in the fleet already followed.
 2. Stand up the Backstage source repo (`@backstage/create-app`, core plugins only:
    Catalog/Scaffolder/TechDocs/Search) and onboard it onto `platform-cicd` as an
    `appType: infra` app so it has a real build/publish pipeline from day one.
 3. Land `60-backstage/` in `gitops-cluster-template` (+ the `components.backstage`
-   toggle), instantiate on `gitops-cluster-kind-man` pointing at that image. Postgres +
+   toggle), instantiate on `gitops-cluster-mgmt` pointing at that image. Postgres +
    core plugins only — get one clean install healthy before adding cross-cluster
    surface area.
 4. Wire GitHub auth + catalog discovery against real tenant repos.
 5. Address cross-cluster reachability structurally (or explicitly accept the
    known-fragile NodePort pattern with live-verification discipline), then add
-   read-only creds for `kind-dev`/`kind-prod` and integrate the Kubernetes + ArgoCD
+   read-only creds for `dev`/`prod` and integrate the Kubernetes + ArgoCD
    plugins (each its own commit + rebuild).
 6. Layer in the rest of the plugin set incrementally, one integration+rebuild cycle
    at a time.
