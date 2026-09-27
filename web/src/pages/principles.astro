@@ -1,0 +1,48 @@
+---
+import Base from '../layouts/Base.astro';
+import Diagram from '../components/Diagram.astro';
+import Evidence from '../components/Evidence.astro';
+import Frame from '../components/Frame.astro';
+import { principles } from '../data/principles';
+import { u } from '../lib/url';
+---
+<Base title="Principles" description="The seven ideas Hangar is built around, from treating the platform as a product to being honest about what is built." section="principles">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Principles</p>
+      <h1>What I believe about platforms</h1>
+      <p class="lede">
+        These are the ideas I keep coming back to. None of them is new, and I didn't invent any of them. What I care
+        about is holding to all of them at once, in a platform that actually runs. Each one says why it matters to me,
+        where Hangar does it, and how far along that is.
+      </p>
+      <ol class="toc">
+        {principles.map((p) => <li><a href={`#${p.slug}`}>{p.name}</a></li>)}
+      </ol>
+    </section>
+
+    {principles.map((p) => (
+      <section id={p.slug} class="principle-section">
+        <p class="eyebrow">Principle {p.n}</p>
+        <h2>{p.name}</h2>
+        <p class="principle">{p.claim}</p>
+        <div class="prose">{p.body.map((b) => <p set:html={b} />)}</div>
+        <Evidence items={p.evidence} />
+        {p.slug === 'interfaces' && (
+          <>
+            <Frame path="brand/tower-release-matrix.html" title="Tower's release matrix: which release is live where, along the real promotion order" eyebrow="Tower · UI design" />
+            <Frame path="brand/hangar-brand-system.html" title="The Hangar brand system" eyebrow="Brand" />
+          </>
+        )}
+        {p.diagrams.map((id) => <Diagram id={id} />)}
+        {p.link && <p><a href={u(p.link.href)}>{p.link.label} →</a></p>}
+      </section>
+    ))}
+  </div>
+</Base>
+<style>
+  .toc { columns: 2 16rem; padding-left: 1.2rem; margin-top: 1.5rem; }
+  .toc li { margin: 0.3rem 0; }
+  .principle-section { padding-top: 2rem; scroll-margin-top: 70px; }
+  .principle-section h2 { margin-top: 0.4rem; }
+</style>

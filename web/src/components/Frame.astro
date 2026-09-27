@@ -1,0 +1,25 @@
+---
+// A whole HTML page from elsewhere in the repo (for example a brand page), embedded like a diagram.
+import { u } from '../lib/url';
+interface Props { path: string; title: string; eyebrow: string }
+const { path, title, eyebrow } = Astro.props;
+const src = u(path);
+---
+<figure class="frame">
+  <iframe src={src} title={title} loading="lazy" data-autosize height="720"></iframe>
+  <figcaption>
+    <span class="eyebrow">{eyebrow}</span>
+    <span class="t">{title}</span>
+    <a href={src} target="_blank" rel="noopener">Open full page ↗</a>
+  </figcaption>
+</figure>
+<script>
+  import '../lib/autosize';
+</script>
+<style>
+  .frame { margin: 2rem 0; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  iframe { display: block; width: 100%; border: 0; }
+  figcaption { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 1rem; padding: 0.7rem 1rem; border-top: 1px solid var(--rule); background: var(--raised); font-size: 0.9rem; }
+  figcaption .t { flex: 1 1 30ch; color: var(--muted); }
+  figcaption a { font-size: 0.85rem; white-space: nowrap; }
+</style>

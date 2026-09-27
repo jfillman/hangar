@@ -1,0 +1,138 @@
+---
+import '../styles/global.css';
+import { u } from '../lib/url';
+
+interface Props {
+  title: string;
+  description: string;
+  section?: string;
+}
+const { title, description, section } = Astro.props;
+const fullTitle = title === 'Hangar' ? 'Hangar · Platform engineering by James Fillman' : `${title} · Hangar`;
+const nav = [
+  { href: 'principles/', label: 'Principles', key: 'principles' },
+  { href: 'platform/', label: 'Platform', key: 'platform' },
+  { href: 'sdlc/', label: 'SDLC', key: 'sdlc' },
+  { href: 'cicd/', label: 'CI/CD', key: 'cicd' },
+  { href: 'autopilot/', label: 'AI workloads', key: 'autopilot' },
+  { href: 'diagrams/', label: 'Diagrams', key: 'diagrams' },
+  { href: 'log/', label: 'Log', key: 'log' },
+  { href: 'about/', label: 'About', key: 'about' },
+];
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={u('marks/hangar-tile.svg')} />
+    <link rel="mask-icon" href={u('marks/hangar-mask-icon.svg')} color="#E8A33D" />
+    <meta name="theme-color" content="#f2efe9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131619" media="(prefers-color-scheme: dark)" />
+    <script is:inline>
+      // Apply a saved theme before first paint. No saved choice means: follow the system.
+      try {
+        const t = localStorage.getItem('hangar-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(u('social-preview.png'), Astro.site)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site">
+      <div class="wrap bar">
+        <a class="brand" href={u('')} aria-label="Hangar home">
+          <img src={u('marks/hangar-tile.svg')} width="30" height="30" alt="" />
+          <span>Hangar</span>
+        </a>
+        <nav aria-label="Main">
+          {nav.map((n) => (
+            <a href={u(n.href)} aria-current={section === n.key ? 'page' : undefined}>{n.label}</a>
+          ))}
+        </nav>
+        <button class="theme" type="button" aria-label="Switch between light and dark" title="Light or dark">
+          <svg class="sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <script>
+      const root = document.documentElement;
+      const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      document.querySelector('button.theme')?.addEventListener('click', () => {
+        const next = isDark() ? 'light' : 'dark';
+        root.dataset.theme = next;
+        try { localStorage.setItem('hangar-theme', next); } catch {}
+        document.dispatchEvent(new Event('themechange'));
+      });
+    </script>
+    <footer class="site">
+      <div class="wrap foot">
+        <p>
+          Thanks for stopping by. <strong>Hangar</strong> is my platform, built in the open, and all of its code is on
+          <a href="https://github.com/jfillman/hangar">GitHub</a>. Questions and ideas are always welcome at
+          <a href="mailto:jamesfillman@gmail.com">jamesfillman@gmail.com</a>.
+        </p>
+        <p class="muted small">
+          Claims are labelled <span class="chip built">Built</span>, <span class="chip draft">Draft</span> or
+          <span class="chip proposal">Proposal</span>, the same way the design docs label them.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .skip { position: absolute; left: -999px; }
+  .skip:focus { left: 1rem; top: 1rem; background: var(--raised); padding: 0.5rem 0.8rem; z-index: 10; }
+  header.site { border-bottom: 1px solid var(--rule); background: var(--paper); position: sticky; top: 0; z-index: 5; }
+  .bar { display: flex; align-items: center; gap: 1.5rem; min-height: 60px; }
+  .brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--ink); flex-shrink: 0; }
+  .brand img { border-radius: 7px; box-shadow: 0 0 0 1px var(--rule); }
+  .brand span { font-family: var(--font-serif); font-size: 1.5rem; letter-spacing: -0.01em; }
+  nav { display: flex; gap: 0.2rem; overflow-x: auto; scrollbar-width: none; margin-left: auto; }
+  nav::-webkit-scrollbar { display: none; }
+  nav a {
+    font-size: 0.9rem; color: var(--muted); text-decoration: none; padding: 0.4rem 0.6rem; border-radius: 4px; white-space: nowrap;
+  }
+  nav a:hover { color: var(--ink); background: var(--paper-2); }
+  nav a[aria-current='page'] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); border-radius: 0; }
+  .theme {
+    flex-shrink: 0; display: grid; place-items: center; width: 34px; height: 34px; padding: 0;
+    border: 1px solid var(--rule); border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer;
+  }
+  .theme:hover { color: var(--ink); border-color: var(--rule-strong); }
+  .theme .moon { display: none; }
+  :global(:root[data-theme='dark']) .theme .sun { display: none; }
+  :global(:root[data-theme='dark']) .theme .moon { display: block; }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .theme .sun { display: none; }
+    :global(:root:not([data-theme='light'])) .theme .moon { display: block; }
+  }
+  @media (max-width: 720px) {
+    .bar { flex-wrap: wrap; gap: 0.3rem; padding-top: 0.6rem; padding-bottom: 0.3rem; }
+    .theme { margin-left: auto; }
+    nav { order: 3; margin-left: 0; width: 100%; margin-inline: -0.6rem; }
+  }
+  footer.site { border-top: 1px solid var(--rule); margin-top: 6rem; padding: 2rem 0 3rem; }
+  .foot p { max-width: var(--prose); }
+</style>

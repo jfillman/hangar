@@ -1,0 +1,80 @@
+---
+import Base from '../layouts/Base.astro';
+import Diagram from '../components/Diagram.astro';
+import StageRail from '../components/StageRail.astro';
+import { principles } from '../data/principles';
+import { products } from '../data/products';
+import { u } from '../lib/url';
+---
+<Base title="Hangar" description="Platform engineering from James Fillman's point of view, with Hangar, an internal developer platform built in the open, as the working implementation." section="home">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Platform engineering · James Fillman</p>
+      <h1>Good platforms give people their time back. <em>Hangar</em> is how I build one.</h1>
+      <p class="lede">
+        Hi, I'm James. I've spent a long career helping software get from a developer's head to production with
+        less friction and fewer surprises. This site is where I share how I think about that work, and Hangar is
+        where I put it into practice: an internal developer platform I build in the open, for container apps and
+        AI agents alike. It's never finished, and neither are my opinions.
+      </p>
+    </section>
+
+    <Diagram id="plan/01-hangar-family" />
+
+    <h2>What I believe</h2>
+    <p class="lede">Seven ideas shape almost every decision in Hangar, roughly in order of how much they matter to me.</p>
+    <div class="grid principles">
+      {principles.map((p) => (
+        <a class="card" href={u(`principles/#${p.slug}`)}>
+          <span class="eyebrow">{p.n}</span>
+          <h3>{p.name}</h3>
+          <p>{p.claim}</p>
+        </a>
+      ))}
+    </div>
+
+    <h2>The whole SDLC, from the platform side</h2>
+    <p class="lede">
+      Follow a change from the first design conversation to the day you measure whether it worked. Each stage
+      pairs what I believe with the part of Hangar that does it, and what's different when the author of the change
+      is an AI agent.
+    </p>
+    <StageRail />
+
+    <h2>Six products, one Hangar</h2>
+    <div class="grid">
+      {products.map((p) => (
+        <a class="card" href={p.repo}>
+          <span class="eyebrow"><img class="mark" src={u(`marks/${p.key}-tile.svg`)} alt="" width="28" height="28" />{p.name}</span>
+          <h3>{p.tag}</h3>
+          <p>{p.role}</p>
+        </a>
+      ))}
+    </div>
+
+    <h2>Start here</h2>
+    <div class="grid">
+      <a class="card" href={u('cicd/')}><span class="eyebrow">CI/CD</span><h3>Seventeen practices, one worked example</h3><p>What I believe about CI/CD, told through Glidepath's architecture decision records.</p></a>
+      <a class="card" href={u('autopilot/')}><span class="eyebrow">AI workloads</span><h3>Agents on a platform, bounded and audited</h3><p>Autopilot, in nineteen diagrams: how Hangar runs any AI agent workload.</p></a>
+      <a class="card" href={u('platform/')}><span class="eyebrow">Architecture</span><h3>How the platform fits together</h3><p>The control plane, the delivery path and the pane of glass, for containers and agents.</p></a>
+      <a class="card" href={u('log/')}><span class="eyebrow">Log</span><h3>What changed, and why</h3><p>Hangar is never finished. This is its history, one dated entry at a time.</p></a>
+    </div>
+
+    <section class="hello">
+      <div>
+        <p class="eyebrow">Away from the keyboard</p>
+        <p>
+          I live in Squamish, BC, with my dog Riley. When I'm not building platforms I'm usually on a rock face, a trail
+          or a chessboard. If any of this is useful to you, or you'd like to talk platforms, I'd love to hear from you.
+        </p>
+        <p><a href={u('about/')}>More about me →</a></p>
+      </div>
+    </section>
+  </div>
+</Base>
+<style>
+  .principles .card h3 { font-size: 1.25rem; }
+  .hello { margin-top: 4rem; padding: 1.6rem 1.8rem; border-radius: 12px; background: var(--accent-soft); max-width: 46rem; }
+  .hello p { margin: 0.5rem 0; font-size: 1.05rem; }
+  .hello .eyebrow { font-size: 0.7rem; margin: 0; }
+</style>

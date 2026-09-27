@@ -1,0 +1,199 @@
+/* The Hangar diagram profile (tools/diagrams/lib.py): warm paper, ink, amber, sky links,
+   Instrument Serif for display, Geist for text, Geist Mono for labels. Dark mode uses the same
+   values as the generator's dark theme (lib.DARK), so the diagrams and the page always match.
+   Theme: follows the system unless <html data-theme="light|dark"> is set by the toggle. */
+:root {
+  color-scheme: light;
+  --paper: #f2efe9;
+  --paper-2: #e8e3da;
+  --raised: #fbfaf7;
+  --ink: #1b1f24;
+  --muted: #5b6570;
+  --soft: #838b93;
+  --accent: #b9791f;
+  --accent-soft: #f4e6c9;
+  --sky: #2e7ba6;
+  --sky-soft: #dcebf4;
+  --good: #2e8b57;
+  --rule: rgba(27, 31, 36, 0.12);
+  --rule-strong: rgba(27, 31, 36, 0.22);
+  --cockpit: #0b0d10;
+  --font-sans: 'Geist', system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --wide: 1160px;
+  --prose: 68ch;
+  --gutter: clamp(16px, 4vw, 40px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --paper: #131619;
+    --paper-2: #1b1f24;
+    --raised: #1a1e23;
+    --ink: #e8e4dc;
+    --muted: #a1aab3;
+    --soft: #7f8891;
+    --accent: #e8a33d;
+    --accent-soft: #3a2c15;
+    --sky: #6fb2d9;
+    --sky-soft: #16262f;
+    --good: #5fae84;
+    --rule: rgba(232, 228, 220, 0.14);
+    --rule-strong: rgba(232, 228, 220, 0.26);
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #131619;
+  --paper-2: #1b1f24;
+  --raised: #1a1e23;
+  --ink: #e8e4dc;
+  --muted: #a1aab3;
+  --soft: #7f8891;
+  --accent: #e8a33d;
+  --accent-soft: #3a2c15;
+  --sky: #6fb2d9;
+  --sky-soft: #16262f;
+  --good: #5fae84;
+  --rule: rgba(232, 228, 220, 0.14);
+  --rule-strong: rgba(232, 228, 220, 0.26);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+img, svg { max-width: 100%; }
+a { color: var(--sky); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: var(--ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+h1, h2, h3 { font-family: var(--font-serif); font-weight: 400; letter-spacing: -0.015em; line-height: 1.12; margin: 0; }
+h1 { font-size: clamp(2.3rem, 4.5vw + 1rem, 4rem); }
+h2 { font-size: clamp(1.7rem, 2vw + 1rem, 2.4rem); margin-top: 3.5rem; }
+h3 { font-size: 1.45rem; margin-top: 2rem; }
+p { margin: 0.9rem 0; }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--paper-2); padding: 0.1em 0.35em; border-radius: 3px; }
+strong { font-weight: 600; }
+
+.wrap { max-width: var(--wide); margin: 0 auto; padding: 0 var(--gutter); }
+.prose { max-width: var(--prose); }
+.prose ul { padding-left: 1.2rem; }
+.prose li { margin: 0.35rem 0; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lede { font-size: 1.2rem; color: var(--muted); max-width: 62ch; line-height: 1.5; }
+
+.hero { padding: clamp(3rem, 8vw, 6rem) 0 2rem; }
+.hero h1 { margin: 0.6rem 0 1rem; max-width: 22ch; }
+.hero h1 em { font-style: italic; color: var(--accent); }
+
+.rule { border: 0; border-top: 1px solid var(--rule); margin: 3rem 0; }
+
+/* Cards and grids */
+.grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.card {
+  display: block;
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 1.1rem 1.2rem 1.2rem;
+  color: inherit;
+  text-decoration: none;
+}
+a.card:hover { border-color: var(--accent); color: inherit; }
+.card h3 { margin: 0.35rem 0 0.4rem; font-size: 1.3rem; }
+.card p { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+.card .eyebrow { display: flex; align-items: center; gap: 0.5rem; }
+.card img.mark { width: 28px; height: 28px; border-radius: 6px; box-shadow: 0 0 0 1px var(--rule); }
+
+/* Principle callout: the one-sentence opinion a page argues for */
+.principle {
+  border-left: 3px solid var(--accent);
+  padding: 0.3rem 0 0.3rem 1.2rem;
+  margin: 2rem 0;
+  font-family: var(--font-serif);
+  font-size: clamp(1.35rem, 1.2vw + 1rem, 1.75rem);
+  line-height: 1.3;
+  max-width: 40ch;
+}
+
+/* "And for agents" panel */
+.agents {
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 1.2rem 1.4rem;
+  margin: 2.5rem 0;
+}
+.agents h3 { margin-top: 0.4rem; }
+
+/* Status chips: every claim says whether it is built */
+.chip {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  vertical-align: 0.15em;
+  white-space: nowrap;
+}
+.chip.built { color: var(--good); }
+.chip.draft { color: var(--accent); }
+.chip.proposal { color: var(--sky); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.8rem; border-bottom: 1px solid var(--rule); }
+th { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+/* Numbered practice list (CI/CD page) */
+main { counter-reset: p; }
+.practices { list-style: none; padding: 0; margin: 1.5rem 0; }
+.practices > li { counter-increment: p; position: relative; padding: 1.2rem 0 1.2rem 3.4rem; border-top: 1px solid var(--rule); }
+.practices > li::before {
+  content: counter(p, decimal-leading-zero);
+  position: absolute; left: 0; top: 1.35rem;
+  font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent);
+}
+.practices h3 { margin: 0 0 0.35rem; font-size: 1.35rem; }
+.practices p { margin: 0.4rem 0; max-width: var(--prose); }
+.practices .src { font-family: var(--font-mono); font-size: 0.75rem; color: var(--soft); }
+.practices .src a { color: var(--muted); }
+
+/* SDLC stage rail */
+.rail { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 0.5rem; margin: 2rem 0; }
+.rail a {
+  display: block; padding: 0.75rem 0.8rem; border-radius: 6px; text-decoration: none; color: var(--ink);
+  background: var(--raised); border: 1px solid var(--rule); font-size: 0.92rem; line-height: 1.3;
+}
+.rail a span { display: block; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 0.2rem; }
+.rail a[aria-current='page'] { border-color: var(--accent); background: var(--accent-soft); }
+.rail a:hover { border-color: var(--accent); }
+
+.pager { display: flex; justify-content: space-between; gap: 1rem; margin: 4rem 0 0; flex-wrap: wrap; }
+.pager a { text-decoration: none; }
+.pager .eyebrow { display: block; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.9rem; }

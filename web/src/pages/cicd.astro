@@ -1,0 +1,100 @@
+---
+import Base from '../layouts/Base.astro';
+import Diagram from '../components/Diagram.astro';
+import { gh } from '../lib/url';
+
+type Practice = { title: string; body: string; adr: string; file: string };
+const adr = (n: string, file: string) => gh('glidepath', `docs/admin/adr/${n}-${file}.md`);
+
+const groups: { name: string; practices: Practice[]; diagrams?: string[] }[] = [
+  {
+    name: 'The contract and the engine',
+    diagrams: ['glidepath/02-pipeline-flow', 'glidepath/03-cicd-yaml-mapping', 'glidepath/04-onboarding-sequence', 'glidepath/05-chaining-sequence'],
+    practices: [
+      { title: 'Give developers one file, and own everything behind it', body: 'Developers configure their pipeline through <code>cicd.yaml</code>, read fresh from the triggering commit and validated against a JSON Schema with readable errors. They never write Tekton YAML. The engine is a fixed superset DAG with stages switched on by config, not a compiler for arbitrary graphs, which keeps every pipeline supportable.', adr: '0001', file: 'tekton-pipelines-as-code' },
+      { title: 'Scaffold the config instead of documenting it', body: 'A new app gets a real, minimal <code>cicd.yaml</code> committed at onboarding, so its first push runs a pipeline. Building this surfaced a schema that had silently fallen behind the app stacks, which is exactly the kind of drift a scaffold catches and a docs page does not.', adr: '0017', file: 'cicd-yaml-scaffolded-not-hand-authored' },
+      { title: 'Chain stages with events, not with one giant pipeline', body: 'Build, test and deploy are separate PipelineRuns. A shared broker relays CDEvents between them, and each tenant\'s next stage runs under that tenant\'s own least-privilege identity, never the broker\'s.', adr: '0002', file: 'cdevents-broker-tokenreview' },
+      { title: 'Version the shared catalog, and upgrade tenants by moving a pin', body: 'The shared Tekton catalog is a Helm release pinned by git tag. Moving a tenant to a new catalog is a reviewed change, and a canary tenant can run a catalog branch first. The better end state (an OCI bundle referenced by digest) is written down as not built yet, rather than rejected.', adr: '0013', file: 'catalog-git-tag-pinned-distribution' },
+    ],
+  },
+  {
+    name: 'Build and test',
+    practices: [
+      { title: 'Build images without privilege', body: 'Kaniko under Pod Security Standards <code>restricted</code>: no privileged daemon, no host namespaces, on any conformant cluster. It was validated against the target cluster before any app depended on it, with rootless buildah as a real fallback.', adr: '0010', file: 'kaniko-rootless-builds' },
+      { title: 'Read the source when the docs disagree', body: 'Testkube\'s documented multi-namespace mode crashed the API server: the source code gates it to a paid edition. The shipped design runs every tenant\'s tests in one shared namespace and moves each app\'s secrets in only for the duration of a run.', adr: '0007', file: 'testkube-shared-namespace' },
+      { title: 'Close with policy what RBAC cannot express', body: 'RBAC controls who can edit a Secret, not which Secret a pod may mount. An admission policy (Kyverno ValidatingPolicy, CEL) closes that gap at the one point where the real tenant identity is still visible.', adr: '0008', file: 'kyverno-testkube-secret-policy' },
+      { title: 'Preview environments ride the production chart', body: 'Per-PR environments deploy through the same chart every other tier uses, tag images by commit sha only (so a force-push can never serve a stale image under a reused tag), and are cleaned up by a TTL sweep, a trade-off chosen on purpose.', adr: '0012', file: 'ephemeral-environments-airframe-application' },
+    ],
+  },
+  {
+    name: 'Security and supply chain',
+    practices: [
+      { title: 'Make unfinished gates loud', body: 'SAST, image scanning, policy and SBOM exist as explicit extension points from the start. A stub is marked as a stub in its result and on the dashboard, and is never reported as a real check, because a gate that silently passes is worse than none.', adr: '0003', file: 'governance-stubs' },
+      { title: 'Sign keylessly, with the trust root that fits the identity', body: 'Commits are signed against public Sigstore, which already trusts a human\'s GitHub or Google identity. Images and provenance are signed against a self-hosted Fulcio that trusts the cluster\'s own service-account issuer, with a self-hosted transparency log beside it.', adr: '0014', file: 'keyless-signing-two-trust-roots' },
+      { title: 'Verify what the build did, not only who signed it', body: 'Release policy evaluates the SLSA provenance attestation itself (which tasks really ran for this image), in addition to the commit signature. The two checks answer different questions, and both are required.', adr: '0015', file: 'provenance-policy-validates-attestation-input' },
+      { title: 'Keep pipeline permissions and running workloads apart', body: 'Every app gets a CI namespace and one namespace per environment, as peers. Pipelines execute in one; the service runs in the others; they never share a blast radius or fight over names.', adr: '0011', file: 'two-namespace-tenancy-model' },
+      { title: 'Store no credentials you could avoid storing', body: 'Every chart gets secrets through External Secrets from Infisical, authenticated with the cluster\'s own TokenReview. App-owned secrets are referenced where they live, not mirrored: the mirror turned out to be wider than the original, a real least-privilege regression.', adr: '0009', file: 'eso-infisical-secrets-backend' },
+    ],
+  },
+  {
+    name: 'Release and multi-cluster',
+    diagrams: ['glidepath/06-deploy-vs-release', 'glidepath/07-multi-cluster-topology'],
+    practices: [
+      { title: 'Release is a pull request, and ArgoCD is the only writer', body: 'The release stage never touches a cluster. It opens a PR against the app\'s GitOps repo with the exact digest that passed test and deploy, never rebuilt. Gates are required checks, a human reviews, and ArgoCD\'s sync is the only thing that changes the target.', adr: '0004', file: 'gitops-only-release' },
+      { title: 'One ArgoCD per cluster, outcomes back as events', body: 'A single ArgoCD holding credentials for every cluster is a path from dev into prod. Each cluster runs its own, and reports back through sync hooks that fire only when a release really converges. ArgoCD Notifications was tried first and dropped after live testing showed it fired on drift correction too.', adr: '0005', file: 'multicluster-per-cluster-argocd' },
+      { title: 'Keep cluster state out of the platform\'s repo', body: 'Per-cluster trust roots and identity are generated per cluster and written into that cluster\'s own repo, never shared and never committed to the platform\'s. The platform stays installable on clusters that do not exist yet.', adr: '0006', file: 'cluster-agnostic-bootstrap' },
+    ],
+  },
+  {
+    name: 'Operations',
+    practices: [
+      { title: 'Keep the history, not just the metrics', body: 'Metrics say how long runs took; they do not say what a run did. Tekton Results archives the full runs and logs, and becomes the main cleanup path, with the pruner left as a safety net.', adr: '0016', file: 'tekton-results-archival' },
+    ],
+  },
+];
+---
+<Base title="CI/CD" description="CI/CD best practices from a platform engineer's side, told through Glidepath's seventeen architecture decision records." section="cicd">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">CI/CD · Glidepath as the worked example</p>
+      <h1>The guarded descent from a merged commit to a verified release</h1>
+      <p class="lede">
+        The best CI/CD is the kind developers hardly think about. Glidepath, Hangar's CI/CD platform, runs on Tekton
+        and Pipelines-as-Code on plain Kubernetes. Developers write one file, and the platform takes care of the rest:
+        triggering, chaining, tracing, governance and promotion. Each practice below comes from a decision record I
+        wrote at the time, so you can see the reasoning, including the parts that didn't work the first time.
+      </p>
+    </section>
+
+    <Diagram id="glidepath/01-architecture-overview" />
+
+    <p class="principle">A developer's pipeline should be one file, and nothing in it should ever reach a production cluster except a reviewed commit.</p>
+
+    {groups.map((g) => (
+      <section>
+        <h2>{g.name}</h2>
+        <ol class="practices">
+          {g.practices.map((p) => (
+            <li>
+              <h3>{p.title}</h3>
+              <p set:html={p.body} />
+              <p class="src"><a href={adr(p.adr, p.file)}>ADR-{p.adr}</a></p>
+            </li>
+          ))}
+        </ol>
+        {g.diagrams?.map((id) => <Diagram id={id} />)}
+      </section>
+    ))}
+
+    <h2>What is still rough</h2>
+    <div class="prose">
+      <p>
+        A CI/CD platform that claims to have no gaps is not being used. Glidepath keeps a
+        <a href={gh('glidepath', 'docs/admin/known-gaps.md')}>known-gaps list</a> of problems found building real apps
+        on it, each with its evidence and a direction: webhook delivery that once failed for hours without an
+        alert, required checks that assume every PR is a release PR, and unsigned agent commits failing the provenance
+        gate. Those are the next things to fix, and they are listed in public on purpose.
+      </p>
+    </div>
+  </div>
+</Base>

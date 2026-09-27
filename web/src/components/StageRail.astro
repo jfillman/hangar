@@ -1,0 +1,13 @@
+---
+import { stages } from '../data/sdlc';
+import { u } from '../lib/url';
+interface Props { current?: string }
+const { current } = Astro.props;
+---
+<nav class="rail" aria-label="SDLC stages">
+  {stages.map((s) => (
+    <a href={u(`sdlc/${s.slug}/`)} aria-current={s.slug === current ? 'page' : undefined}>
+      <span>{s.n}</span>{s.name}
+    </a>
+  ))}
+</nav>

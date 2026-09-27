@@ -1,0 +1,115 @@
+---
+import Base from '../layouts/Base.astro';
+import Diagram from '../components/Diagram.astro';
+import Evidence from '../components/Evidence.astro';
+import { gh, u } from '../lib/url';
+
+const chapters = [
+  {
+    name: 'Where it fits',
+    text: 'Hangar already had a rule: no component holds a live write credential, and every change is a git commit. Autopilot keeps that rule for anything durable and adds exactly one new kind of thing beside the existing platform.',
+    ids: ['autopilot/01-hangar-plus-autopilot', 'autopilot/02-two-planes', 'autopilot/03-write-path-spine'],
+  },
+  {
+    name: 'What an agent workload is',
+    text: 'Any agent workload is one of six shapes (task, session, service, scheduled, event, team), built from a durable, reviewed definition and a disposable run. A run gets a sandbox, a budget and a deadline, and it always ends, whether or not anyone is watching. A team is a tree in which every child is narrower than its parent.',
+    ids: ['autopilot/04-workload-shapes', 'autopilot/05-definition-to-run', 'autopilot/06-run-anatomy', 'autopilot/07-run-lifecycle', 'autopilot/08-agent-teams'],
+  },
+  {
+    name: 'Where it runs',
+    text: 'Backends are managed the Hangar way: three fleet classes behind one contract, and two gates out of every sandbox, one for tools and one for models. Dev clusters get the write path and the runs; upper clusters get neither.',
+    ids: ['autopilot/09-backend-fleets', 'autopilot/10-model-and-tool-egress', 'autopilot/18-fleet-placement'],
+  },
+  {
+    name: 'Identity and authority',
+    text: 'An agent proves who it is on every call and gets a scoped token that is never kept. What it may do depends on its tool tier, and its effective authority is the minimum of five inputs, which runtime can only lower. Its pull requests meet every gate a human\'s do, plus two about agents.',
+    ids: ['autopilot/11-identity-and-token', 'autopilot/12-tool-tiers', 'autopilot/13-effective-authority', 'autopilot/14-pr-guardrails'],
+  },
+  {
+    name: 'Knowing what it did',
+    text: 'The flight recorder reuses the telemetry Hangar already has and adds one tamper-evident hash chain. Preflight scores every agent change against incidents that have already been solved. The existing AI triage moves behind Clearance, so it gets the same bounds as everything else.',
+    ids: ['autopilot/15-flight-recorder', 'autopilot/16-preflight', 'autopilot/17-triage-before-after'],
+  },
+  {
+    name: 'Getting there',
+    text: 'Four rollout phases, each closed by a live check before the next begins, inside a plan of six milestones measured by one number: how operable Airframe is by agents.',
+    ids: ['autopilot/19-rollout-plan', 'plan/02-roadmap', 'plan/03-dependencies'],
+  },
+  {
+    name: 'The demo: Skyport',
+    text: 'Skyport, Hangar\'s reference airline system, gains six AI workloads, one per shape. The event-shaped one turns a delayed flight into one draft, a team, and a human decision.',
+    ids: ['plan/07-skyport-ai-workloads', 'plan/08-skyport-event-to-team'],
+  },
+];
+---
+<Base title="AI workloads" description="Autopilot: how Hangar runs any AI agent workload, bounded and audited, on the same platform as container apps." section="autopilot">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow"><img src={u('marks/autopilot-tile.svg')} width="22" height="22" alt="" style="vertical-align:-5px;margin-right:6px" />AI workloads · Autopilot</p>
+      <h1>Any AI agent workload, bounded and audited</h1>
+      <p class="lede">
+        I think AI agents are going to become real teammates for platform teams, and they deserve the same
+        paved road as people: the same contracts, the same checks, the same audit trail, just with less authority by
+        default. Autopilot is Hangar's sixth product. It runs any agent workload on the platform that already runs the
+        container apps, and it all comes back to one idea.
+      </p>
+    </section>
+
+    <p class="principle">Durable changes are git commits. Ephemeral runs are claims to Crossplane.</p>
+
+    <div class="prose">
+      <p>
+        Committing every agent session to git would be slow, noisy and impossible to review. So a run may skip git
+        only if all five of these hold; if any fails, it goes through a pull request like everything else.
+      </p>
+      <ol>
+        <li>It has a hard deadline that needs nothing else to enforce it.</li>
+        <li>It holds no durable state, and reaches the durable plane only as a pull request.</li>
+        <li>One narrowly scoped identity creates it, in one reserved namespace.</li>
+        <li>It can only narrow what git grants, never widen it.</li>
+        <li>It can be rebuilt from git plus the task spec.</li>
+      </ol>
+    </div>
+
+    <Evidence
+      heading="Where it stands"
+      items={[
+        { text: 'Clearance core: tool tiers, path scope, narrow-only limits, sessions and run trees, CEL policy, hash-chained audit, gateway (255 tests, no cluster needed)', status: 'built', href: gh('autopilot') },
+        { text: 'The AppSpec planner: one sentence to a reviewed change set, checked against the real schemas', status: 'built', href: gh('autopilot') },
+        { text: 'Nine Skyport agent definitions and six Preflight cases', status: 'built', href: gh('hangar', 'docs/autopilot/skyport-ai-workloads.md') },
+        { text: 'The AgentRun XRD, its composition and function', status: 'draft', href: gh('hangar', 'docs/autopilot/design.md') },
+        { text: 'Real adapters, authentication, the model proxy forwarder and the CI gates', status: 'proposal', href: gh('hangar', 'docs/autopilot/roadmap.md') },
+      ]}
+    />
+
+    <nav class="chapters" aria-label="Chapters">
+      {chapters.map((c, i) => <a href={`#ch-${i + 1}`}><span>{String(i + 1).padStart(2, '0')}</span>{c.name}</a>)}
+    </nav>
+
+    {chapters.map((c, i) => (
+      <section id={`ch-${i + 1}`} class="chapter">
+        <p class="eyebrow">Chapter {String(i + 1).padStart(2, '0')}</p>
+        <h2>{c.name}</h2>
+        <p class="prose">{c.text}</p>
+        {c.ids.map((id) => <Diagram id={id} />)}
+      </section>
+    ))}
+
+    <h2>Further reading</h2>
+    <div class="prose">
+      <p>
+        The reference set of ten diagrams (agent substrate, tool gateway, autonomy ladder, eval harness and more) is in the
+        <a href={u('diagrams/#reference')}>diagram gallery</a>. The full design, with every claim labelled
+        Built, Draft or Proposal, is in <a href={gh('hangar', 'docs/autopilot/design.md')}>docs/autopilot/design.md</a>.
+      </p>
+    </div>
+  </div>
+</Base>
+<style>
+  .chapters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 0.5rem; margin: 2.5rem 0 1rem; }
+  .chapters a { display: block; padding: 0.7rem 0.8rem; border: 1px solid var(--rule); border-radius: 6px; background: var(--raised); color: var(--ink); text-decoration: none; font-size: 0.92rem; line-height: 1.3; }
+  .chapters a:hover { border-color: var(--accent); }
+  .chapters span { display: block; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; color: var(--accent); }
+  .chapter { scroll-margin-top: 70px; }
+  .chapter > p.prose { font-size: 1.05rem; }
+</style>

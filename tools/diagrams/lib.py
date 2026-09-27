@@ -1,4 +1,4 @@
-import math, html
+import math, html, re
 
 PAPER='#f2efe9'; INK='#1b1f24'; MUTED='#5b6570'; SOFT='#838b93'; ACC='#b9791f'; LINK='#2e7ba6'
 RULE='rgba(27,31,36,0.12)'
@@ -121,7 +121,7 @@ def defs():
 CSS = f"""
 *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
 :root{{--paper:{PAPER};--paper-2:#e8e3da;--ink:{INK};--muted:{MUTED};--soft:{SOFT};--accent:{ACC};--link:{LINK};--rule:{RULE};
---font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace}}
+--card:#fff;--font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace}}
 body{{font-family:var(--font-sans);background:var(--paper);color:var(--ink);padding:2.5rem 2rem 2rem}}
 .frame{{max-width:1120px;margin:0 auto}}
 .eyebrow{{font-family:var(--font-mono);font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}}
@@ -130,7 +130,7 @@ h1{{font-family:var(--font-serif);font-size:clamp(1.5rem,2.4vw + .75rem,2rem);fo
 .fig{{overflow-x:auto}}
 svg{{width:100%;min-width:900px;display:block}}
 .cards{{display:grid;grid-template-columns:1.15fr 1fr 1.05fr;gap:.75rem;margin-top:1.25rem}}
-.card{{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:1rem 1.1rem}}
+.card{{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:1rem 1.1rem}}
 .card .eyebrow{{margin-bottom:.35rem}}
 .card p,.card li{{font-size:.8rem;line-height:1.5;color:var(--ink)}}
 .card ul{{padding-left:1rem}}
@@ -144,6 +144,47 @@ svg{{width:100%;min-width:900px;display:block}}
 
 FOOTER = 'Hangar · Autopilot'
 
+# Dark theme. The SVG uses presentation attributes (fill="#5b6570"), and a CSS rule beats a
+# presentation attribute, so each page maps the colours it actually uses to their dark
+# equivalents. Applies under prefers-color-scheme: dark unless the page (or its embedder)
+# sets data-theme="light", and always under data-theme="dark".
+DARK = {
+    PAPER: '#131619', '#e8e3da': '#1b1f24', '#ffffff': '#1c2127', INK: '#e8e4dc',
+    MUTED: '#a1aab3', SOFT: '#7f8891', ACC: '#e8a33d', LINK: '#6fb2d9',
+}
+_RGBA_DARK = {  # light rgb -> (dark rgb, alpha boost)
+    (27, 31, 36): ((232, 228, 220), 1.0),
+    (185, 121, 31): ((232, 163, 61), 1.3),
+    (91, 101, 112): ((161, 170, 179), 1.0),
+    (46, 123, 166): ((111, 178, 217), 1.3),
+}
+DARK_VARS = (f"--paper:{DARK[PAPER]};--paper-2:#1b1f24;--ink:{DARK[INK]};--muted:{DARK[MUTED]};--soft:{DARK[SOFT]};"
+             f"--accent:{DARK[ACC]};--link:{DARK[LINK]};--rule:rgba(232,228,220,0.14);--card:#1a1e23")
+
+def dark_colour(c):
+    if c in DARK:
+        return DARK[c]
+    m = re.fullmatch(r'rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)', c)
+    if m:
+        rgb = tuple(int(v) for v in m.groups()[:3])
+        if rgb in _RGBA_DARK:
+            (r, g, b), k = _RGBA_DARK[rgb]
+            return f'rgba({r},{g},{b},{min(1.0, float(m.group(4)) * k):.3g})'
+    return None
+
+def dark_css(svg):
+    rules = []
+    for attr, val in sorted(set(re.findall(r'\b(fill|stroke)="([^"]+)"', svg))):
+        d = dark_colour(val)
+        if d:
+            rules.append(f'svg [{attr}="{val}"]{{{attr}:{d}}}')
+    body = f'{{{DARK_VARS}}}'
+    sel = '\n'.join(rules)
+    return (f"@media (prefers-color-scheme:dark){{:root:not([data-theme=light]){body}\n"
+            + '\n'.join(f':root:not([data-theme=light]) {r}' for r in rules) + "}\n"
+            + f":root[data-theme=dark]{body}\n"
+            + '\n'.join(f':root[data-theme=dark] {r}' for r in rules) + "\n")
+
 def page(slug, eyebrow, title, desc, svg_body, W, H, lede='', cards=(), nav='', y0=0):
     cs = ''
     for (eb, dot, body) in cards:
@@ -155,7 +196,7 @@ def page(slug, eyebrow, title, desc, svg_body, W, H, lede='', cards=(), nav='', 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{esc(title)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>{CSS}</style>
+<style>{CSS}{dark_css(defs() + svg_body + f'<rect fill="{PAPER}"/>')}</style>
 </head>
 <body>
 <div class="frame">
