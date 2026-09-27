@@ -51,7 +51,7 @@ export const principles: Principle[] = [
       { text: 'DORA exporter: a stateless consumer of the same CDEvents', status: 'built', href: ghTree('glidepath', 'platform/dora-exporter') },
       { text: 'Event-triggered agent workloads in Autopilot', status: 'proposal', href: gh('hangar', 'docs/autopilot/skyport-ai-workloads.md') },
     ],
-    diagrams: ['glidepath/chaining-sequence', 'plan/08-skyport-event-to-team'],
+    diagrams: ['glidepath/05-chaining-sequence', 'plan/08-skyport-event-to-team'],
     link: { href: 'sdlc/operate/', label: 'Events as the source for observability' },
   },
   {
@@ -87,7 +87,7 @@ export const principles: Principle[] = [
       { text: 'Self-service onboarding through Tower, as git commits', status: 'built', href: gh('tower') },
       { text: 'Known gaps, each with evidence and a direction', status: 'built', href: gh('glidepath', 'docs/admin/known-gaps.md') },
     ],
-    diagrams: ['glidepath/pipeline-flow', 'glidepath/cicd-yaml-mapping'],
+    diagrams: ['glidepath/02-pipeline-flow', 'glidepath/03-cicd-yaml-mapping'],
     link: { href: 'cicd/', label: 'CI/CD as a product: the Glidepath practices' },
   },
   {

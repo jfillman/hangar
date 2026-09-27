@@ -7,7 +7,6 @@ export type Diagram = {
   title: string;
   eyebrow: string;
   path: string;
-  kind: 'html' | 'svg';
 };
 
 export const diagrams = all as Diagram[];

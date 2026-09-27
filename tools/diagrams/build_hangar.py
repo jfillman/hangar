@@ -7,9 +7,12 @@ Three sets: plan (8), autopilot (19), reference (10). Needs only the Python stan
 import sys, os, re, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib
-import e_a, e_b, e_c, e_d, e_e, e_f, e_g, d123, d456, d789, d1011
+import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, d123, d456, d789, d1011
 
-OUT = sys.argv[1] if len(sys.argv) > 1 else '/Users/jerf/tech/hangar/docs/autopilot/diagrams'
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '../../docs/autopilot/diagrams')
+# The Glidepath set lives beside it, in docs/glidepath/diagrams (a sibling of OUT's parent).
+OUT_GLIDEPATH = os.path.join(OUT, '../../glidepath/diagrams')
 
 PLAN = [e_g.p_family, e_g.p_roadmap, e_g.p_deps, e_g.p_scorecard, e_g.p_contract, e_g.p_plan_seq, e_g.p_skyport_matrix, e_g.p_skyport_seq]
 AUTOPILOT = [
@@ -20,6 +23,8 @@ AUTOPILOT = [
     e_f.w_placement, e_f.w_rollout,
 ]
 # The reference set: the general architecture. The 90-day plan is job-specific and is not part of it.
+# Glidepath (CI/CD), redrawn from glidepath/docs in this grammar.
+GLIDEPATH = [e_h.g_overview, e_h.g_pipeline, e_h.g_mapping, e_h.g_onboarding, e_h.g_chaining, e_h.g_deploy_release, e_h.g_multicluster]
 REFERENCE = [d123.d1, d123.d2, d123.d3, d456.d4, d456.d5, d456.d6, d789.d7, d789.d8, d789.d9, d1011.d10]
 
 FIXES = [
@@ -28,9 +33,9 @@ FIXES = [
     ("Honest gap: Hangar ran on kind and Apple container, not AWS or OCI.", "Gap: Hangar runs on kind and Apple container, not AWS or OCI."),
 ]
 
-def build(group, fns, subdir, footer):
+def build(group, fns, subdir, footer, root=None):
     lib.FOOTER = footer
-    d = os.path.join(OUT, subdir)
+    d = os.path.join(root or OUT, subdir)
     os.makedirs(d, exist_ok=True)
     for f in glob.glob(os.path.join(d, '[0-9][0-9]-*.html')):
         os.remove(f)
@@ -51,6 +56,7 @@ def build(group, fns, subdir, footer):
 plan = build('plan', PLAN, 'plan', 'Hangar · Autopilot · plan')
 auto = build('autopilot', AUTOPILOT, 'autopilot', 'Hangar · Autopilot')
 ref = build('reference', REFERENCE, 'reference', 'Hangar · reference architecture')
+glide = build('glidepath', GLIDEPATH, '.', 'Hangar · Glidepath', root=OUT_GLIDEPATH)
 
 def tiles(rows):
     return ''.join(f'<a class="tile" href="{h}"><p class="eb">{e}</p><h2>{t}</h2><p>{l}</p></a>' for h, e, t, l in rows)

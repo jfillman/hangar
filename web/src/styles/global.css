@@ -1,6 +1,7 @@
 /* The Hangar diagram profile (tools/diagrams/lib.py): warm paper, ink, amber, sky links,
-   Instrument Serif for display, Geist for text, Geist Mono for labels. Light only, like the
-   diagrams themselves; a dark pass belongs in the generator first. */
+   Instrument Serif for display, Geist for text, Geist Mono for labels. Dark mode uses the same
+   values as the generator's dark theme (lib.DARK), so the diagrams and the page always match.
+   Theme: follows the system unless <html data-theme="light|dark"> is set by the toggle. */
 :root {
   color-scheme: light;
   --paper: #f2efe9;
@@ -23,6 +24,40 @@
   --wide: 1160px;
   --prose: 68ch;
   --gutter: clamp(16px, 4vw, 40px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --paper: #131619;
+    --paper-2: #1b1f24;
+    --raised: #1a1e23;
+    --ink: #e8e4dc;
+    --muted: #a1aab3;
+    --soft: #7f8891;
+    --accent: #e8a33d;
+    --accent-soft: #3a2c15;
+    --sky: #6fb2d9;
+    --sky-soft: #16262f;
+    --good: #5fae84;
+    --rule: rgba(232, 228, 220, 0.14);
+    --rule-strong: rgba(232, 228, 220, 0.26);
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #131619;
+  --paper-2: #1b1f24;
+  --raised: #1a1e23;
+  --ink: #e8e4dc;
+  --muted: #a1aab3;
+  --soft: #7f8891;
+  --accent: #e8a33d;
+  --accent-soft: #3a2c15;
+  --sky: #6fb2d9;
+  --sky-soft: #16262f;
+  --good: #5fae84;
+  --rule: rgba(232, 228, 220, 0.14);
+  --rule-strong: rgba(232, 228, 220, 0.26);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -85,7 +120,7 @@ a.card:hover { border-color: var(--accent); color: inherit; }
 .card h3 { margin: 0.35rem 0 0.4rem; font-size: 1.3rem; }
 .card p { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
 .card .eyebrow { display: flex; align-items: center; gap: 0.5rem; }
-.card img.mark { width: 28px; height: 28px; }
+.card img.mark { width: 28px; height: 28px; border-radius: 6px; box-shadow: 0 0 0 1px var(--rule); }
 
 /* Principle callout: the one-sentence opinion a page argues for */
 .principle {

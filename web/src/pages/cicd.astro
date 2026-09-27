@@ -6,9 +6,10 @@ import { gh } from '../lib/url';
 type Practice = { title: string; body: string; adr: string; file: string };
 const adr = (n: string, file: string) => gh('glidepath', `docs/admin/adr/${n}-${file}.md`);
 
-const groups: { name: string; practices: Practice[] }[] = [
+const groups: { name: string; practices: Practice[]; diagrams?: string[] }[] = [
   {
     name: 'The contract and the engine',
+    diagrams: ['glidepath/02-pipeline-flow', 'glidepath/03-cicd-yaml-mapping', 'glidepath/04-onboarding-sequence', 'glidepath/05-chaining-sequence'],
     practices: [
       { title: 'Give developers one file, and own everything behind it', body: 'Developers configure their pipeline through <code>cicd.yaml</code>, read fresh from the triggering commit and validated against a JSON Schema with readable errors. They never write Tekton YAML. The engine is a fixed superset DAG with stages switched on by config, not a compiler for arbitrary graphs, which keeps every pipeline supportable.', adr: '0001', file: 'tekton-pipelines-as-code' },
       { title: 'Scaffold the config instead of documenting it', body: 'A new app gets a real, minimal <code>cicd.yaml</code> committed at onboarding, so its first push runs a pipeline. Building this surfaced a schema that had silently fallen behind the app stacks, which is exactly the kind of drift a scaffold catches and a docs page does not.', adr: '0017', file: 'cicd-yaml-scaffolded-not-hand-authored' },
@@ -37,6 +38,7 @@ const groups: { name: string; practices: Practice[] }[] = [
   },
   {
     name: 'Release and multi-cluster',
+    diagrams: ['glidepath/06-deploy-vs-release', 'glidepath/07-multi-cluster-topology'],
     practices: [
       { title: 'Release is a pull request, and ArgoCD is the only writer', body: 'The release stage never touches a cluster. It opens a PR against the app\'s GitOps repo with the exact digest that passed test and deploy, never rebuilt. Gates are required checks, a human reviews, and ArgoCD\'s sync is the only thing that changes the target.', adr: '0004', file: 'gitops-only-release' },
       { title: 'One ArgoCD per cluster, outcomes back as events', body: 'A single ArgoCD holding credentials for every cluster is a path from dev into prod. Each cluster runs its own, and reports back through sync hooks that fire only when a release really converges. ArgoCD Notifications was tried first and dropped after live testing showed it fired on drift correction too.', adr: '0005', file: 'multicluster-per-cluster-argocd' },
@@ -64,7 +66,7 @@ const groups: { name: string; practices: Practice[] }[] = [
       </p>
     </section>
 
-    <Diagram id="glidepath/architecture-overview" caption="Glidepath system overview: git sources through Pipelines-as-Code and the shared catalog, chained through CDEvents, observed through OpenTelemetry, released through GitOps (drawn before the rename, so it says platform-cicd)" />
+    <Diagram id="glidepath/01-architecture-overview" />
 
     <p class="principle">A developer's pipeline should be one file, and nothing in it should ever reach a production cluster except a reviewed commit.</p>
 
@@ -80,10 +82,9 @@ const groups: { name: string; practices: Practice[] }[] = [
             </li>
           ))}
         </ol>
+        {g.diagrams?.map((id) => <Diagram id={id} />)}
       </section>
     ))}
-
-    <Diagram id="glidepath/deploy-vs-release" />
 
     <h2>What is still rough</h2>
     <div class="prose">

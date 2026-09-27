@@ -61,8 +61,8 @@ export const stages: Stage[] = [
       { text: 'Apron: a template for a new cluster repo, one config file and one script', status: 'built', href: gh('apron') },
     ],
     diagrams: [
-      { id: 'glidepath/onboarding-sequence', caption: 'Getting a new app onto the platform (drawn before the Glidepath rename, so it says platform-cicd)' },
-      { id: 'glidepath/cicd-yaml-mapping' },
+      { id: 'glidepath/04-onboarding-sequence' },
+      { id: 'glidepath/03-cicd-yaml-mapping' },
     ],
     agents: {
       title: 'From one sentence to a reviewed change set',
@@ -91,7 +91,7 @@ export const stages: Stage[] = [
       { text: 'Testkube in one shared namespace (ADR-0007)', status: 'built', href: adr('0007', 'testkube-shared-namespace') },
       { text: 'PR preview environments on the same chart, sha-only tags, TTL cleanup (ADR-0012)', status: 'built', href: adr('0012', 'ephemeral-environments-airframe-application') },
     ],
-    diagrams: [{ id: 'glidepath/pipeline-flow' }, { id: 'glidepath/chaining-sequence' }],
+    diagrams: [{ id: 'glidepath/02-pipeline-flow' }, { id: 'glidepath/05-chaining-sequence' }],
     agents: {
       title: 'CI is the loop an agent retries against',
       body: [
@@ -147,8 +147,8 @@ export const stages: Stage[] = [
       { text: 'Lower and upper environments as an enforced security boundary', status: 'built', href: gh('hangar', 'docs/gitops-strategy.md') },
     ],
     diagrams: [
-      { id: 'glidepath/deploy-vs-release' },
-      { id: 'glidepath/multi-cluster-topology', caption: 'Multi-cluster topology (drawn before outcome reporting moved from ArgoCD Notifications to sync hooks)' },
+      { id: 'glidepath/06-deploy-vs-release' },
+      { id: 'glidepath/07-multi-cluster-topology' },
       { id: 'reference/05-multicloud-gitops' },
     ],
     agents: {
@@ -177,7 +177,7 @@ export const stages: Stage[] = [
       { text: 'Tekton Results archival (ADR-0016)', status: 'built', href: adr('0016', 'tekton-results-archival') },
       { text: 'Tower: SLOs, topology, Fleet Grid, Ops Wall', status: 'built', href: gh('tower') },
     ],
-    diagrams: [{ id: 'glidepath/architecture-overview', caption: 'Glidepath system overview (drawn before the rename, so it says platform-cicd)' }],
+    diagrams: [{ id: 'glidepath/01-architecture-overview' }],
     agents: {
       title: 'A flight recorder for agents, and alerts that arrive with a tested hypothesis',
       body: [
