@@ -20,7 +20,9 @@ npm run build    # writes dist/
   `mkdocs.yml` nav (the same files Backstage TechDocs uses), points links at the site or at GitHub, and writes the
   pages to `src/docs.generated/` for `/docs/`. Hangar's own docs come from this repo; the others come from
   `DOCS_REPOS_DIR` (the workflow checks them out there) or, locally, from sibling checkouts next to this repo. A repo
-  that isn't found is skipped. Fix a page in its own repo; the nightly build picks it up. `docs/archive`,
+  that isn't found is skipped. Images and standalone HTML pages a doc links to (the illustrated Airframe
+  quickstarts in `airframe/docs/user/html/`) are copied to `public/docs-assets/` as they are. Fix a page in its own
+  repo; the nightly build picks it up. `docs/archive`,
   `drafts`, `brand` and the three home-lab runbooks in `hangar/docs` are never published.
 - **Themes.** The site follows the system light or dark setting, and the header button overrides it (saved in
   `localStorage`). Diagrams carry their own dark theme from the generator, and the page keeps each embedded diagram
