@@ -113,9 +113,30 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
   answered correctly from the bundle, cross-checked against source. **Not done:** the
   `add-to-catalog` Backstage-template review (a real product decision, left for the user) and wiring
   the 10-question proof into the separate `autopilot` repo's own Preflight harness.
-- **Not yet started for M1:** AF-6a (status helper/reason codes), SP-3 (MongoDB, born A+). XRD-level
-  descriptions/CEL rules are still at the M0 baseline in most XRDs (AF-1b's own summaries don't count
-  as the per-field description sweep AF-2 originally scoped there).
+- **AF-6a (`jfillman/airframe#11`), done, stacked on #9.** Redis/PostgreSQL/RabbitMQ each set a custom
+  `ComponentReady` condition (deliberately not named `Ready` - that's Crossplane's own core-managed
+  type) with a closed reason set, computed from the composed child resource's own real status. Live
+  copy-composition-verified for every branch on all 3 components, both RabbitMQ modes - including a
+  real transient `PostgreSQLDegraded` state caught mid-bootstrap, not simulated.
+- **SP-3 (`jfillman/airframe#12`), the MongoDB component built and live-verified, born A+ - stacked on
+  #11.** DEDICATED mode, wrapping MongoDB Controllers for Kubernetes' `MongoDBCommunity` CRD (the
+  design's originally-named operator is archived; its unified successor preserves the same CRD,
+  verified against the real repo, not memory). Outputs, verify checks, sidecar meta and a
+  `ComponentReady` condition all shipped in the same PR, not retrofitted. Getting one real replica set
+  running on kiac-dev surfaced three non-obvious cluster-infra gaps in `gitops-cluster-dev`, each fixed
+  with the user's explicit confirmation before the more sensitive RBAC grants: the operator needed
+  `watchNamespace: "*"` (app namespaces, not its own), its database pods needed two ServiceAccounts +
+  a narrow Role/RoleBinding replicated per app namespace (the chart only creates them in its own
+  namespace), and Crossplane itself needed two new RBAC grants for that - the second
+  (`pods: get/patch/delete` cluster-wide) required by Kubernetes' own RBAC-escalation check before
+  Crossplane could delegate that permission via the Role it creates. End-to-end proof: a real replica
+  set reached phase `Running`, the pod went `2/2 Running`, and the output Secret's credentials were
+  read and confirmed correct, not just checked for existence. **Not done:** migrating `baggage-api`'s
+  own application code onto it (real Node.js changes in a separate repo, replacing its current
+  single-replica in-memory state) - the component itself is the whole scope of this PR; the app
+  migration is real follow-on work, not started.
+- XRD-level descriptions/CEL rules are still at the M0 baseline in most XRDs (AF-1b's own summaries
+  don't count as the per-field description sweep AF-2 originally scoped there).
 - **`boarding-api`'s `fromComponent` migration merged** (`jfillman/boarding-api#9`). Merging it exposed
   a real gap: the chart's `lower-envs`/`tenant-onboarding`/`tenant-identity` ApplicationSet pins - a
   **third**, easy-to-miss pin location for `airframe-application` beyond Glidepath's `chartVersion` and
@@ -126,8 +147,10 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
   actual pod going healthy and its logs showing it consuming events normally. See
   [[feedback_airframe_chart_three_pin_locations]] (memory) and the handoff's live-incident block for
   the full timeline - this is now a standing checklist item for the next chart-behavior release.
-- **Immediate next steps:** decide on `add-to-catalog` for the 7 newly-annotated XRDs (a real product
-  decision, not blocking); continue M1 with AF-6a (status/reason codes) and SP-3 (MongoDB).
+- **Immediate next steps:** merge `#11` and `#12` (each stacked on the last); decide on `add-to-catalog`
+  for the 7 newly-annotated XRDs (a real product decision, not blocking); migrate `baggage-api` onto
+  the new MongoDB component (real app-code work, not started); M1's remaining item after that is just
+  the XRD-level description/CEL sweep.
 
 ### M2 Safe write (weeks 7-10), target 75
 | Task | Notes |
