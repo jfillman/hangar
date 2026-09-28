@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { u } from '../lib/url';
+import Glossary from '../components/Glossary.astro';
 
 interface Props {
   title: string;
@@ -79,6 +80,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <main id="main">
       <slot />
     </main>
+    <Glossary />
     <script>
       const root = document.documentElement;
       const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -99,6 +101,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         <p class="muted small">
           Claims are labelled <span class="chip built">Built</span>, <span class="chip draft">Draft</span> or
           <span class="chip proposal">Proposal</span>, the same way the design docs label them.
+          Unfamiliar term? The <a href={u('glossary/')}>glossary</a> has them in plain words.
         </p>
       </div>
     </footer>

@@ -1,0 +1,99 @@
+---
+// Marks the first mention of each glossary term in a page's main content with a small explainer: what it is, and
+// why it matters in Hangar. Hover or focus on desktop, tap on a phone. Done in the browser so every page (including
+// ones whose words live in data files as HTML strings) gets it without hand-marking each mention.
+import { glossary } from '../data/glossary';
+import { u } from '../lib/url';
+
+const data = glossary.filter((t) => t.match.length).map(({ term, match, what, why }) => ({ term, match, what, why }));
+---
+<div class="gl-pop" id="gl-pop" role="tooltip" hidden>
+  <p class="gl-name"></p>
+  <p class="gl-what"></p>
+  <p class="gl-why"></p>
+  <a class="gl-all" href={u('glossary/')}>All terms →</a>
+</div>
+<script is:inline define:vars={{ data }}>
+  (() => {
+    const main = document.getElementById('main');
+    if (!main || /\/(docs|glossary)\//.test(location.pathname)) return;
+    const byWord = new Map();
+    for (const t of data) for (const m of t.match) byWord.set(m, t);
+    const words = [...byWord.keys()].sort((a, b) => b.length - a.length);
+    const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`(?<![\\w-])(${words.map(esc).join('|')})(?![\\w-])`);
+    const skip = 'a, button, code, pre, h1, h2, h3, h4, nav, figure, svg, script, style, .chip, .fp-tool, .gl-pop, .eyebrow, [data-no-glossary]';
+    const seen = new Set();
+    const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => (n.parentElement && !n.parentElement.closest(skip) && re.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (let node of nodes) {
+      let m;
+      while (node && (m = node.nodeValue.match(re))) {
+        const t = byWord.get(m[1]);
+        if (seen.has(t.term)) {
+          // Already explained on this page; look for other terms in the rest of this text node.
+          const rest = node.splitText(m.index + m[1].length);
+          node = rest;
+          continue;
+        }
+        seen.add(t.term);
+        const after = node.splitText(m.index);
+        const rest = after.splitText(m[1].length);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'gl-term';
+        b.textContent = m[1];
+        b.dataset.term = t.term;
+        b.setAttribute('aria-describedby', 'gl-pop');
+        after.replaceWith(b);
+        node = rest;
+      }
+    }
+    const pop = document.getElementById('gl-pop');
+    const byTerm = new Map(data.map((t) => [t.term, t]));
+    let current = null;
+    const show = (b) => {
+      const t = byTerm.get(b.dataset.term);
+      pop.querySelector('.gl-name').textContent = t.term;
+      pop.querySelector('.gl-what').textContent = t.what;
+      pop.querySelector('.gl-why').textContent = t.why;
+      pop.hidden = false;
+      const r = b.getBoundingClientRect();
+      const w = Math.min(340, innerWidth - 32);
+      pop.style.width = `${w}px`;
+      pop.style.left = `${Math.max(16, Math.min(r.left + scrollX, scrollX + innerWidth - w - 16))}px`;
+      const below = r.bottom + scrollY + 8;
+      pop.style.top = `${below}px`;
+      if (r.bottom + pop.offsetHeight + 16 > innerHeight && r.top > pop.offsetHeight + 16) pop.style.top = `${r.top + scrollY - pop.offsetHeight - 8}px`;
+      current = b;
+    };
+    const hide = () => { pop.hidden = true; current = null; };
+    main.addEventListener('mouseover', (e) => { const b = e.target.closest('.gl-term'); if (b && matchMedia('(hover: hover)').matches) show(b); });
+    main.addEventListener('mouseout', (e) => { const b = e.target.closest('.gl-term'); if (b && !pop.contains(e.relatedTarget) && matchMedia('(hover: hover)').matches) hide(); });
+    pop.addEventListener('mouseleave', () => { if (matchMedia('(hover: hover)').matches) hide(); });
+    main.addEventListener('focusin', (e) => { const b = e.target.closest('.gl-term'); if (b) show(b); });
+    main.addEventListener('click', (e) => { const b = e.target.closest('.gl-term'); if (b) { e.preventDefault(); current === b && !pop.hidden ? hide() : show(b); } });
+    document.addEventListener('click', (e) => { if (!e.target.closest('.gl-term, .gl-pop')) hide(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+  })();
+</script>
+<style is:global>
+  .gl-term {
+    font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help;
+    text-decoration: underline dotted var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 3px;
+  }
+  .gl-term:hover, .gl-term:focus-visible { color: var(--accent); }
+  .gl-pop {
+    position: absolute; z-index: 20; background: var(--raised); color: var(--ink);
+    border: 1px solid var(--rule-strong); border-top: 3px solid var(--accent); border-radius: 8px;
+    padding: 0.8rem 1rem; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18); font-size: 0.92rem; line-height: 1.45;
+  }
+  .gl-pop[hidden] { display: none; }
+  .gl-pop p { margin: 0 0 0.45rem; }
+  .gl-pop .gl-name { font-family: var(--font-serif); font-size: 1.25rem; }
+  .gl-pop .gl-why { color: var(--muted); }
+  .gl-pop .gl-all { font-size: 0.85rem; }
+</style>

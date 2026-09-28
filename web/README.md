@@ -29,8 +29,9 @@ npm run build    # writes dist/
 - **Themes.** The site follows the system light or dark setting, and the header button overrides it (saved in
   `localStorage`). Diagrams carry their own dark theme from the generator, and the page keeps each embedded diagram
   in step with its own theme.
-- **Words** live in `src/data/` (`principles.ts`, `sdlc.ts`, `products.ts`, and `stack.ts`, which feeds `/stack/` and the
-  homepage's flight path) and in the pages under `src/pages/`.
+- **Words** live in `src/data/` (`principles.ts`, `sdlc.ts`, `products.ts`, `stack.ts`, which feeds `/stack/` and the
+  homepage's flight path, `glossary.ts` for the first-mention explainers and `/glossary/`, and `essays.ts` for
+  `/architecture/`) and in the pages under `src/pages/`.
   Every claim carries a status (Built, Draft, Proposal); keep it honest when the platform changes.
 - **The log** is `src/pages/log.astro`; add new entries at the top.
 

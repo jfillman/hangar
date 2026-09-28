@@ -77,7 +77,7 @@ import { u } from '../lib/url';
     <div class="grid">
       {products.map((p) => (
         <a class="card" href={p.repo}>
-          <span class="eyebrow"><img class="mark" src={u(`marks/${p.key}-tile.svg`)} alt="" width="28" height="28" />{p.name}</span>
+          <span class="eyebrow"><img class="mark" src={u(`marks/${p.key}-tile.svg`)} alt="" width="28" height="28" />{p.name}<span class={`chip ${p.status} state`}>{p.state}</span></span>
           <h3>{p.tag}</h3>
           <p>{p.role}</p>
         </a>

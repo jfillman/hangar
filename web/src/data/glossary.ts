@@ -1,0 +1,40 @@
+// Plain-language explainers for the jargon the site uses. Each entry is what the thing is, then why it matters in
+// Hangar. The first mention of a term on a page gets a small explainer (components/Glossary.astro); /glossary/
+// lists them all. `match` holds the spellings to look for, longest first; matching is whole-word and case-sensitive.
+export type Term = { term: string; match: string[]; what: string; why: string };
+
+export const glossary: Term[] = [
+  { term: 'Crossplane', match: ['Crossplane'], what: 'A Kubernetes add-on that lets you define your own APIs and turns requests against them into real resources.', why: "It's Hangar's platform API: people, portals, pipelines and agents all ask for things the same way." },
+  { term: 'XRD', match: ['XRDs', 'XRD'], what: 'A CompositeResourceDefinition: the schema for a new Crossplane API, such as "a Node.js application".', why: 'It is the contract for what a compliant service is, defined once and checked on every request.' },
+  { term: 'Claim', match: [] /* too common in plain English to mark automatically; listed on /glossary/ only */, what: 'A small request against a Crossplane API: "I want a PostgreSQL database, size small".', why: 'Developers ask for outcomes in a few lines; the platform fills in the rest and keeps it that way.' },
+  { term: 'Composition', match: ['Compositions', 'Composition'], what: 'The recipe that turns a claim into the actual resources behind it.', why: 'Changing a Composition changes every service built from it, which is powerful and needs care.' },
+  { term: 'Composition Function', match: ['Composition Functions', 'Composition Function'], what: 'A small program Crossplane runs while composing, for logic a template cannot express.', why: 'Hangar uses them for things like watching a rollout and dispatching an AI diagnosis.' },
+  { term: 'Reconciliation', match: ['reconciliation', 'reconciles', 'reconcile'], what: 'A controller repeatedly comparing what exists with what was asked for, and fixing the difference.', why: 'Great for things that should stay a certain way; the wrong tool for things that should happen once.' },
+  { term: 'GitOps', match: ['GitOps'], what: 'Running systems from a git repository: the repo says what should be deployed, and an agent makes the cluster match.', why: 'Every change is a reviewed commit, and rolling back is a revert.' },
+  { term: 'ArgoCD', match: ['ArgoCD'], what: 'The tool that watches a git repo and applies what it describes to a Kubernetes cluster.', why: 'In Hangar it is the only thing that writes to a cluster, and each cluster runs its own.' },
+  { term: 'ApplicationSet', match: ['ApplicationSets', 'ApplicationSet'], what: 'An ArgoCD feature that generates many applications from one template, for example one per folder in git.', why: 'Onboarding a service is adding a file, not running a command.' },
+  { term: 'AppProject', match: ['AppProjects', 'AppProject'], what: 'An ArgoCD boundary that limits which repos, clusters and namespaces an application may touch.', why: 'It is what keeps a lower environment from writing into an upper one.' },
+  { term: 'Argo Rollouts', match: ['Argo Rollouts'], what: 'A Kubernetes controller for canary and blue/green releases.', why: 'A new version gets a slice of traffic first, and moves on only when it looks healthy.' },
+  { term: 'Canary', match: ['canaries', 'canary'], what: 'Releasing a new version to a small share of traffic before everyone gets it.', why: 'Problems show up on a few requests instead of all of them.' },
+  { term: 'Tekton', match: ['Tekton'], what: 'A CI/CD engine that runs pipelines as Kubernetes resources.', why: 'It runs anywhere Kubernetes does, and developers never have to write its YAML.' },
+  { term: 'Pipelines-as-Code', match: ['Pipelines-as-Code'], what: 'A Tekton add-on that starts pipelines from git events: pushes, pull requests, comments.', why: 'It handles webhook signatures and PR status checks, which are easy to get wrong by hand.' },
+  { term: 'CDEvents', match: ['CDEvents', 'CDEvent'], what: 'A standard format for software-delivery events, such as "build finished" or "service deployed".', why: 'Hangar chains pipeline stages with them, and counts DORA metrics from the same stream.' },
+  { term: 'DORA metrics', match: ['DORA metrics', 'DORA'], what: 'Four measures of delivery performance: how often you deploy, how long a change takes, how often it fails, and how fast you recover.', why: 'They say whether the platform is actually saving anyone time.' },
+  { term: 'SLSA', match: ['SLSA'], what: 'Supply-chain Levels for Software Artifacts: a framework for proving how a piece of software was built.', why: 'A release gate can check what the build really did, not just that it finished.' },
+  { term: 'Provenance', match: ['provenance'], what: 'A signed record of how an artifact was built: from which source, by which pipeline, with which steps.', why: 'It is the evidence a release gate reads before anything reaches production.' },
+  { term: 'SBOM', match: ['SBOMs', 'SBOM'], what: 'A software bill of materials: the list of everything inside an image.', why: 'When a new vulnerability lands, you can tell in minutes which services contain it.' },
+  { term: 'Sigstore', match: ['Sigstore'], what: 'An open-source project for signing software with short-lived certificates instead of long-lived keys.', why: 'Nothing secret to leak, and every signature can be looked up later.' },
+  { term: 'Fulcio', match: ['Fulcio'], what: "Sigstore's certificate authority: it issues a short-lived signing certificate to a proven identity.", why: 'Hangar runs its own so in-cluster build identities can sign.' },
+  { term: 'Rekor', match: ['Rekor'], what: "Sigstore's transparency log: a tamper-evident public record of signatures.", why: "A signature you can't look up later is a claim, not evidence." },
+  { term: 'gitsign', match: ['gitsign'], what: 'A tool that signs git commits with Sigstore, using your normal login instead of a key.', why: 'Release gates can check that a real, allowed person authorized the code.' },
+  { term: 'Kaniko', match: ['Kaniko', 'kaniko'], what: 'A tool that builds container images without needing a privileged Docker daemon.', why: "Builds run under Kubernetes' strictest pod security, on any cluster." },
+  { term: 'TokenReview', match: ['TokenReview'], what: 'A Kubernetes API that confirms who a pod is from the token the cluster gave it.', why: 'Services can trust a caller without Hangar handing out any keys.' },
+  { term: 'External Secrets', match: ['External Secrets'], what: 'An operator that copies secrets from a store like Infisical into Kubernetes, and keeps them in sync.', why: 'Nobody applies a raw Secret by hand, and nothing secret lives in git.' },
+  { term: 'Infisical', match: ['Infisical'], what: 'An open-source secrets manager with an API.', why: "It is Hangar's single source for secret values." },
+  { term: 'Kyverno', match: ['Kyverno'], what: 'A Kubernetes policy engine that can allow, reject or change resources as they are created.', why: 'Hangar uses it where plain RBAC cannot express a rule.' },
+  { term: 'CEL', match: ['CEL'], what: 'Common Expression Language: a small, safe language for writing rules.', why: 'Autopilot and Kyverno both write policy in it, so there is one policy idiom.' },
+  { term: 'Backstage', match: ['Backstage'], what: "Spotify's open-source framework for internal developer portals.", why: 'Tower is a Backstage plugin, so Hangar lives where developers already look.' },
+  { term: 'MCP', match: ['MCP'], what: 'The Model Context Protocol: a standard way for AI agents to call tools.', why: 'Any agent runtime can use Hangar through it without a custom client.' },
+  { term: 'Helm', match: ['Helm'], what: 'A package manager for Kubernetes: a chart is a template, values fill it in.', why: 'Every Hangar service deploys through one chart, so good defaults live in one place.' },
+  { term: 'SLO', match: ['SLOs', 'SLO'], what: 'A service level objective: a target like "99.5% of requests succeed over 30 days".', why: 'It turns "is it healthy?" into a number you can alert and decide on.' },
+];

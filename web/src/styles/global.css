@@ -120,6 +120,8 @@ a.card:hover { border-color: var(--accent); color: inherit; }
 .card h3 { margin: 0.35rem 0 0.4rem; font-size: 1.3rem; }
 .card p { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
 .card .eyebrow { display: flex; align-items: center; gap: 0.5rem; }
+.card .eyebrow:has(.chip.state) { flex-wrap: wrap; row-gap: 0.4rem; }
+.card .chip.state { margin-left: auto; letter-spacing: 0.06em; white-space: normal; text-align: right; }
 .card img.mark { width: 28px; height: 28px; border-radius: 6px; box-shadow: 0 0 0 1px var(--rule); }
 
 /* Principle callout: the one-sentence opinion a page argues for */
