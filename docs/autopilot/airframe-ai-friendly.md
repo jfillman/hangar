@@ -212,6 +212,11 @@ Seed rules, each with a seeded failing fixture (the dead-ends list becomes lint)
 - **Effort:** 2 weeks with migration.
 
 ### AF-6 Observe and verify (21 → A+)
+**AF-6a done: `jfillman/airframe#11` (2026-09-27).** Redis/PostgreSQL/RabbitMQ each set a custom
+`ComponentReady` condition (a closed reason set, not Crossplane's own `Ready`) computed from the
+composed child's real status - live-verified via copy-composition on every branch. **Still open:**
+verify contracts (`x-hangar-verify`) beyond the `verify:` list already in each `xrds/<type>.meta.yaml`,
+and `airframe.describe`.
 - A shared status helper: conditions `Ready`, `Synced` plus a closed list of reason codes, each with a hint string, and `observedGeneration`, on every XRD.
 - Verify contracts per component and per app (`x-hangar-verify`): XR ready, Secret exists, port open, Rollout healthy, SLO not burning.
 - `airframe.describe`: effective config (defaults merged), XR conditions, Argo health, last release, recent failures. Tower's backend already assembles most of this.
