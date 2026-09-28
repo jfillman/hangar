@@ -1,0 +1,129 @@
+---
+import Base from '../layouts/Base.astro';
+import { gh, u } from '../lib/url';
+
+// Two real runs, recorded 2026-09-27/28. Chapter times are seconds into each video; update them if a video is re-cut.
+const runs = [
+  {
+    id: 'terminal',
+    title: 'gate-api, in the terminal',
+    lede: 'A small NodeJS service, from one claim to a canary on the prod cluster, with every command and every line of output shown as it really came back.',
+    video: 'media/zero-to-running-terminal',
+    chapters: [[0, 'Ask'], [19, 'Compose'], [59, 'Environments'], [89, 'Build'], [139, 'Dev'], [149, 'Staging'], [169, 'A real bug'], [209, 'Signed release'], [239, 'More bugs'], [279, 'Canary'], [325, 'The canary in Tower']] as [number, string][],
+  },
+  {
+    id: 'tower',
+    title: 'checkin-api, in Tower',
+    lede: 'A small Python service, the same path again through Tower: the create form, a staging environment, a crash loop of my own making, the App Configuration tab, and the release.',
+    video: 'media/zero-to-running-tower',
+    chapters: [[0, 'Create'], [70, 'Onboarded'], [114, 'Staging environment'], [183, 'A crash loop'], [218, 'Configure staging'], [274, 'Release'], [301, 'Live on staging']] as [number, string][],
+  },
+];
+
+const bugs = [
+  {
+    title: 'Four release gates ignored the new release file',
+    text: "Since the release-file split, a release lands in <code>release.yaml</code>, but <code>sast</code>, <code>image-scan</code>, <code>sbom</code> and <code>provenance</code> still only looked at <code>values.yaml</code>. Every new app's first release would have failed.",
+    href: gh('glidepath', 'docs/admin/known-gaps.md'),
+  },
+  {
+    title: 'Image promotion waited forever',
+    text: "<code>image-promotion</code> waits for every gate, including the values check, and the values check never ran on a PR that only changed <code>release.yaml</code>.",
+    href: gh('glidepath', 'docs/admin/known-gaps.md'),
+  },
+  {
+    title: 'The release relay address was wrong for a second machine',
+    text: "Every release wrote the dev node's own address for the prod cluster to call back on, which it can't reach. I'd been fixing it by hand. It's now a per-cluster setting in the cluster registry.",
+    href: gh('glidepath', 'docs/admin/known-gaps.md'),
+  },
+  {
+    title: "A new app's release hung before it started",
+    text: "The release hooks run as a ServiceAccount that only exists when <code>releaseTracking</code> is set, and the ApplicationSet that creates it never read <code>release.yaml</code>. Every sync waited on a hook that couldn't start.",
+    href: gh('glidepath', 'docs/admin/known-gaps.md'),
+  },
+];
+---
+<Base title="Zero to running" description="Two real runs on Hangar, recorded: a new service from nothing to a canary in production, once in the terminal and once in Tower." section="platform">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Hangar, running · Two real runs</p>
+      <h1>From nothing to <em>production</em>, for real</h1>
+      <p class="lede">
+        It's easy to draw a platform. These are two recordings of mine actually doing the work: a brand new service,
+        from the first request to a canary on the prod cluster. Nothing is mocked. Waits are cut, cluster names are
+        shown as dev and prod, and where something broke, it's left in.
+      </p>
+    </section>
+
+    {runs.map((r) => (
+      <section class="run" id={r.id}>
+        <h2>{r.title}</h2>
+        <p class="lede">{r.lede}</p>
+        <figure class="video">
+          <video controls playsinline muted preload="none" poster={u(`${r.video}-poster.jpg`)} width="1440" height="900">
+            <source src={u(`${r.video}.webm`)} type="video/webm" />
+            <source src={u(`${r.video}.mp4`)} type="video/mp4" />
+            Your browser can't play this video. <a href={u(`${r.video}.mp4`)}>Download it instead</a>.
+          </video>
+        </figure>
+        {r.chapters.length > 0 && (
+          <nav class="chapters" aria-label={`${r.title} chapters`}>
+            {r.chapters.map(([t, label]) => (
+              <button type="button" data-t={t}><span class="t">{`${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`}</span>{label}</button>
+            ))}
+          </nav>
+        )}
+      </section>
+    ))}
+
+    <p class="principle">A demo that never breaks is a demo of the slides. The useful part is what the platform does when something is wrong.</p>
+
+    <div class="prose">
+      <h2>What broke along the way</h2>
+      <p>
+        Running the whole path end to end, twice, found four real platform bugs that the individual tests hadn't. All
+        four are fixed and written up in Glidepath's known gaps, and both videos end on the fixed path.
+      </p>
+    </div>
+    <div class="grid">
+      {bugs.map((b) => (
+        <a class="card" href={b.href}><span class="eyebrow"><span class="chip built">Fixed</span></span><h3>{b.title}</h3><p set:html={b.text} /></a>
+      ))}
+    </div>
+    <div class="prose">
+      <p>
+        Two smaller things are still open. The <code>/retest</code> hint in the gate comments doesn't re-run a gate,
+        and Tower showed my crash-looping pods as "Progressing" instead of saying why. Both are on the list.
+      </p>
+      <p>
+        Want the design behind what you just watched? <a href={u('stack/')}>The stack</a> explains each tool, and
+        <a href={u('cicd/')}>CI/CD</a> covers the delivery path in depth.
+      </p>
+    </div>
+  </div>
+</Base>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.run').forEach((run) => {
+    const video = run.querySelector('video');
+    run.querySelectorAll<HTMLButtonElement>('.chapters button').forEach((b) =>
+      b.addEventListener('click', () => {
+        if (!video) return;
+        video.currentTime = Number(b.dataset.t);
+        video.play();
+      }),
+    );
+  });
+</script>
+
+<style>
+  .run { margin-top: 3rem; }
+  .run h2 { margin-top: 0; }
+  .video { margin: 1rem 0 0; }
+  .video video { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--rule-strong); background: var(--cockpit); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18); }
+  .chapters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0 0; }
+  .chapters button { font: inherit; font-size: 0.88rem; color: var(--ink); background: var(--raised); border: 1px solid var(--rule); border-radius: 999px; padding: 0.35rem 0.8rem; cursor: pointer; }
+  .chapters button:hover { border-color: var(--accent); }
+  .chapters .t { font-family: var(--font-mono); color: var(--accent); margin-right: 0.45rem; font-size: 0.8rem; }
+  .card .chip { font-size: 0.6rem; }
+</style>
