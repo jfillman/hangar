@@ -1,0 +1,4 @@
+# Raw run logs keep the home lab's real names; only the scrubbed player and the encoded video are published.
+runs/
+node_modules/
+out/

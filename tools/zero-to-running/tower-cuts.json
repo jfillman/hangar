@@ -1,0 +1,69 @@
+{
+  "_comment": "Which parts of each recorded Tower segment make the final videos: [file, start, end] in seconds. Cuts remove sign-in screens, dead waits, a transient 503 banner, and one caption that claimed more than Tower showed.",
+  "tower": [
+    [
+      "seg1-create",
+      4,
+      74.5
+    ],
+    [
+      "seg2-onboarded",
+      10,
+      26
+    ],
+    [
+      "seg2-onboarded",
+      60,
+      87.3
+    ],
+    [
+      "seg3-env",
+      70,
+      139.6
+    ],
+    [
+      "seg4-crashloop",
+      34,
+      54
+    ],
+    [
+      "seg4-crashloop",
+      74,
+      88.5
+    ],
+    [
+      "seg5-configure",
+      24,
+      80
+    ],
+    [
+      "seg7-release-pr",
+      20,
+      47
+    ],
+    [
+      "seg8-staging",
+      29,
+      81
+    ]
+  ],
+  "terminal-tail": [
+    [
+      "seg6-gate-canary",
+      96,
+      112
+    ],
+    [
+      "seg6-gate-canary",
+      679,
+      709
+    ],
+    [
+      "seg6-gate-canary",
+      739,
+      839.5
+    ]
+  ],
+  "terminal-poster": 20,
+  "tower-poster": 30
+}

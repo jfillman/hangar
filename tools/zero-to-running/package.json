@@ -1,0 +1,12 @@
+{
+  "name": "zero-to-running",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "record-terminal": "node record-terminal.mjs",
+    "record-tower": "node record-tower.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}

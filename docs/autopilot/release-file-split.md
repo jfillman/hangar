@@ -183,3 +183,12 @@ files here never conflict on a key). The reasons to go further are not about pre
 | 4. Rename `platform/` to `airframe/` with a dual-path window | Not done. |
 
 **Finding:** an unsigned commit fails the `provenance` gate on an upper-environment release (`baggage-api`'s commits made by Claude Code carry no gitsign signature). That is decision D1 (agent commits signed through a self-hosted Fulcio) showing up early; until it is built, a release of an app whose latest commit came from an agent needs a signed commit from a person.
+
+## First real runs (2026-09-27/28)
+Two new apps (`gate-api`, `checkin-api`) were taken from nothing to a Flight release with `deploy.releaseFile` set by default. The opt-in branch now runs for real, and the end-to-end path found three gaps the per-step checks had missed, all fixed and in Glidepath's known gaps:
+
+- **#18** `extract-promoted-image` and `verify-image-provenance` only diffed `*/values.yaml`, so `sast`, `image-scan`, `sbom` and `provenance` failed on every `release.yaml`-only release PR. Fixed: prefer `*/release.yaml`, fall back to `*/values.yaml` (glidepath `85a1c07`).
+- **#19** The `values` gate only triggered on `values.yaml`, so `image-promotion` waited forever for it. Fixed: it also triggers on `release.yaml` and passes with a note (glidepath `effceac`); existing gitops repos pick it up at their next onboarding resync.
+- **#22** The `tenant-identity` ApplicationSet only read `values.yaml`, so `airframe-identity` never saw `releaseTracking` and never rendered `platform-outcome-hook`; release syncs hung at PreSync. Fixed: it reads `release.yaml` too, in the prod cluster's repo and the Apron template.
+
+The same runs also fixed the long-parked `relayHostAliasIP` bug (Glidepath known-gaps #12): the cluster registry now carries a per-cluster address. Verified live on `checkin-api` staging, 2026-09-28: PreSync and PostSync hooks both completed first time and reported back to dev.

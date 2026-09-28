@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zero to running</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Plays back a real run log (out/<run>.json) as a captioned terminal session, for recording to video.
+   ?run=gate picks the log; ?speed=2 plays faster for a dry run. Sized for a 1440x900 recording. */
+*,*::before,*::after{box-sizing:border-box}
+:root{--paper:#131619;--panel:#1a1e23;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--sky:#6fb2d9;--good:#5fae84;--bad:#e07a6e;--rule:rgba(232,228,220,.14);--cockpit:#0b0d10}
+html,body{margin:0;height:100%;background:var(--paper);color:var(--ink);font-family:'Geist',system-ui,sans-serif;overflow:hidden}
+.app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:64px 1fr;height:100vh}
+header{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 28px;border-bottom:1px solid var(--rule)}
+header .t{font-family:'Instrument Serif',serif;font-size:26px}
+header .s{color:var(--muted);font-size:14px}
+header .clock{margin-left:auto;font-family:'Geist Mono',monospace;font-size:13px;color:var(--muted);letter-spacing:.06em}
+header .clock b{color:var(--accent);font-weight:500}
+nav{border-right:1px solid var(--rule);padding:22px 0}
+nav div{font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);padding:9px 24px;border-left:2px solid transparent;transition:color .3s,border-color .3s}
+nav div.on{color:var(--ink);border-left-color:var(--accent)}
+nav div.done{color:var(--muted)}
+main{position:relative;padding:28px 36px 30px;display:flex;flex-direction:column;gap:18px;min-height:0}
+.cap{font-family:'Instrument Serif',serif;font-size:34px;line-height:1.18;max-width:1000px;min-height:82px;transition:opacity .35s}
+.term{flex:1;min-height:0;background:var(--cockpit);border:1px solid var(--rule);border-radius:10px;padding:18px 22px;font-family:'Geist Mono',monospace;font-size:15px;line-height:1.55;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.term .line{white-space:pre;overflow:hidden;text-overflow:ellipsis}
+.term .cmd{color:#fff}
+.term .cmd .p{color:var(--good)}
+.term .cmd .where{display:inline-block;margin-left:10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sky);border:1px solid var(--sky);border-radius:999px;padding:0 8px;vertical-align:2px}
+.term .out{color:#c9c4ba}
+.term .rc{color:var(--bad)}
+.term .gap{height:12px}
+.caret{display:inline-block;width:9px;height:17px;background:var(--accent);vertical-align:-3px;animation:b 1s steps(1) infinite}
+@keyframes b{50%{opacity:0}}
+.note{position:absolute;inset:28px 36px 30px;display:flex;align-items:center;justify-content:center;background:var(--paper);opacity:0;pointer-events:none;transition:opacity .4s}
+.note.show{opacity:1}
+.note div{max-width:900px;font-family:'Instrument Serif',serif;font-size:44px;line-height:1.2;text-align:center}
+.note small{display:block;margin-top:22px;font-family:'Geist Mono',monospace;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.foot{font-family:'Geist Mono',monospace;font-size:12px;color:var(--soft);letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><img src="../../brand/marks/hangar-tile.svg" width="30" height="30" alt=""><span class="t" id="title"></span><span class="s" id="sub"></span><span class="clock">real time <b id="clock">T+0m</b></span></header>
+  <nav id="nav"></nav>
+  <main>
+    <div class="cap" id="cap"></div>
+    <div class="term" id="term"></div>
+    <div class="foot" id="foot">Every command below really ran, and every line of output is real. Cluster names are shown as dev and prod; waits are cut.</div>
+    <div class="note" id="note"><div><span id="notetext"></span><small id="notewhen"></small></div></div>
+  </main>
+</div>
+<script>
+const q = new URLSearchParams(location.search);
+const SPEED = Number(q.get('speed') || 1);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms / SPEED));
+const $ = (id) => document.getElementById(id);
+const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const MAX_LINES = 26;
+
+function mins(s) { return s < 90 ? `${s}s` : `${Math.round(s / 60)}m`; }
+
+async function play(cast) {
+  $('title').textContent = cast.title;
+  $('sub').textContent = cast.subtitle;
+  $('nav').innerHTML = cast.chapters.map((c) => `<div data-c="${esc(c)}">${esc(c)}</div>`).join('');
+  const term = $('term');
+  const push = (html, cls) => {
+    const d = document.createElement('div');
+    d.className = 'line ' + (cls || '');
+    d.innerHTML = html;
+    term.appendChild(d);
+    while (term.children.length > MAX_LINES) term.removeChild(term.firstChild);
+    return d;
+  };
+  let lastAt = 0;
+  for (const s of cast.steps) {
+    const idx = cast.chapters.indexOf(s.chapter);
+    document.querySelectorAll('#nav div').forEach((d, i) => { d.className = i === idx ? 'on' : i < idx ? 'done' : ''; });
+    $('clock').textContent = 'T+' + mins(s.at);
+    const gap = s.at - lastAt;
+    lastAt = s.at;
+    if (s.note) {
+      $('notetext').textContent = s.caption;
+      $('notewhen').textContent = gap > 120 ? `${mins(gap)} later` : '';
+      $('note').classList.add('show');
+      await wait(Math.min(7000, 2600 + s.caption.length * 38));
+      $('note').classList.remove('show');
+      await wait(500);
+      continue;
+    }
+    $('cap').style.opacity = 0;
+    await wait(250);
+    $('cap').textContent = s.caption;
+    $('cap').style.opacity = 1;
+    await wait(900);
+    if (term.children.length) push('', 'gap');
+    const line = push('<span class="p">$</span> <span class="c"></span><span class="caret"></span>', 'cmd');
+    const c = line.querySelector('.c');
+    const cmd = s.cmd.length > 150 ? s.cmd.slice(0, 147) + '...' : s.cmd;
+    for (let i = 0; i < cmd.length; i += 2) { c.textContent = cmd.slice(0, i + 2); await wait(22); }
+    line.querySelector('.caret').remove();
+    if (s.where) line.insertAdjacentHTML('beforeend', `<span class="where">${esc(s.where)}</span>`);
+    await wait(350);
+    const out = s.out.slice(0, 40);
+    for (const o of out) { push(esc(o), 'out'); await wait(out.length > 12 ? 30 : 60); }
+    if (s.out.length > out.length) push(esc(`... ${s.out.length - out.length} more lines`), 'out');
+    if (s.rc) push(`exit ${s.rc}`, 'rc');
+    await wait(Math.min(7500, 2600 + out.length * 110 + s.caption.length * 18));
+  }
+  $('clock').textContent = 'T+' + mins(cast.total);
+  await wait(2500);
+  window.__done = true;
+}
+fetch(`out/${q.get('run') || 'gate'}.json`).then((r) => r.json()).then(play);
+</script>
+</body>
+</html>
