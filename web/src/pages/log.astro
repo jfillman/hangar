@@ -5,6 +5,7 @@ import { gh, u } from '../lib/url';
 // Dated milestones, taken from the repos' own status notes and commit history.
 // Add new entries at the top.
 const entries = [
+  { date: '2026-09-28', title: 'An Architecture section', text: 'A home for pointed opinions, argued from what Hangar does and what it has cost. The first essay is about the bill for running this platform, and where Crossplane should stop.', href: u('architecture/') },
   { date: '2026-09-28', title: 'Zero to running, twice, for real', text: 'Two new services taken from nothing to production and recorded: gate-api in the terminal, checkin-api in Tower. Running the whole path end to end found four real platform bugs the unit tests had missed, three of them from the release-file split. All four are fixed.', href: u('run/') },
   { date: '2026-09-27', title: 'The stack, as decisions', text: 'Every tool in Hangar on one page, each with what I chose it over and why, and the same tools on the homepage in the order a change meets them.', href: u('stack/') },
   { date: '2026-09-27', title: 'An architecture review', text: 'A staff-architect review of the whole platform: a conditional approval, ten findings with evidence, and five gates before production. The biggest are prod\'s dependency on the dev cluster, identity on a personal GitHub account, and no restore plan.', href: u('review/') },
