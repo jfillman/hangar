@@ -1,0 +1,166 @@
+---
+import Base from '../../layouts/Base.astro';
+import Evidence from '../../components/Evidence.astro';
+import { essays } from '../../data/essays';
+import { gh, u } from '../../lib/url';
+
+const essay = essays.find((e) => e.slug === 'cost-of-the-platform')!;
+
+const keep = [
+  ['One ArgoCD per cluster, pulling from git', "It's the security boundary, and it costs almost nothing extra. It's the last thing I'd give up."],
+  ['One application chart and one cicd.yaml', 'This is the contract developers actually touch. Small, stable, and schema-checked, it pays for itself on the first app.'],
+  ['External Secrets and a real secrets store', "Hand-applied Secrets are how teams get breached. Any store with a proper API will do; it doesn't have to be the one I chose."],
+  ['Tekton, but with fewer stages', 'Chaining stages through an event broker is lovely, and it is also a service of its own. One pipeline with build, test and release will carry a small team a long way.'],
+];
+const defer = [
+  ['Self-hosted Fulcio and Rekor', "I run my own because my build identities are Kubernetes service accounts. Until you need that, sign with cosign and the public instance, and spend the time elsewhere."],
+  ['Thanos, Tempo and a full tracing story', 'Prometheus and Loki answer most of the questions a team of five will ask. Long-term metrics and traces earn their keep later.'],
+  ['Testkube and the DORA exporter', 'Useful, but each is another controller to upgrade. Run tests in the pipeline and count deployments from git until someone asks for more.'],
+  ['Autopilot', "The agent design is the most interesting thing in Hangar and the least necessary. It belongs after the paved road is boring, not before."],
+];
+const evidence = [
+  { text: 'Architecture review, 27 September: "Operating surface is large for the team behind it"', status: 'built' as const, href: u('review/') },
+  { text: 'Crossplane writing files to GitHub: the rate-limit incidents and the patched provider fork', status: 'built' as const, href: gh('airframe') },
+  { text: 'Four bugs from one refactor, found only by running the whole path end to end', status: 'built' as const, href: u('run/') },
+  { text: 'Scaffold repository files once, from an onboarding task, instead of reconciling them forever', status: 'proposal' as const },
+  { text: 'A shared baseline chart so each cluster repo is a thin diff instead of a full copy', status: 'proposal' as const, href: gh('hangar', 'docs/gitops-strategy.md') },
+];
+---
+<Base title={essay.title} description={essay.dek} section="architecture">
+  <div class="wrap">
+    <article class="essay">
+      <header class="hero">
+        <p class="eyebrow"><a href={u('architecture/')}>Architecture</a> · {essay.minutes} min read</p>
+        <h1>What Hangar costs, and where <em>Crossplane</em> stops</h1>
+        <p class="lede">{essay.dek}</p>
+      </header>
+
+      <div class="prose">
+        <p>
+          When I asked two AI models to review this site, they agreed on a lot, and the sharpest thing either of them
+          said was a warning: operational complexity will become Hangar's limit long before conceptual complexity does.
+          They're right, and I'd rather say it here myself than have you notice it on the
+          <a href={u('stack/')}>stack page</a> and wonder whether I had.
+        </p>
+        <p>
+          So this is the bill. What the platform costs to run, where I think the cost is worth it, what I'd cut if I
+          were starting a team tomorrow, and the one architectural line I've learned to draw the hard way.
+        </p>
+
+        <h2>The bill</h2>
+        <p>
+          Count the tools on the stack page and you get forty-seven. Each cluster runs two ArgoCD instances, Crossplane
+          with several providers, Tekton and Pipelines-as-Code, an event broker, External Secrets, Kyverno, Argo
+          Rollouts, a gateway, a full observability stack and an AI triage function. Every app gets a source repo, a
+          GitOps repo and an entry in each cluster's tenants repo. And there's custom code that needs an owner: the
+          broker and its interceptor, the DORA exporter, the Tekton Results relay, the rollout watcher, a Crossplane
+          provider for Infisical, Tower itself and Clearance.
+        </p>
+        <p>
+          None of that shows up on a developer's screen, which is the point. But it shows up somewhere. The week I wrote
+          this, I took two brand new services from nothing to production, <a href={u('run/')}>on camera</a>, and the
+          path found four real bugs. Three came from a single, careful refactor that every individual check had passed.
+          That's what seams cost: each piece was right, and the gaps were between them.
+        </p>
+
+        <p class="pull">A platform isn't finished when it works. It's finished when the team that owns it can afford to keep it working.</p>
+
+        <h2>Where Crossplane stops</h2>
+        <p>
+          I use Crossplane as Hangar's API, and I'd do it again. A claim says what you want, and reconciliation keeps it
+          true afterwards: a database that should exist, a secret store that should be wired to the right project, an
+          environment that should have its namespace and identity. When something drifts, it gets put back. That's
+          exactly what you want for things that are supposed to <em>stay</em> a certain way.
+        </p>
+        <p>
+          It's the wrong tool for things that are supposed to <em>happen once</em>. My clearest example is also my most
+          expensive one. Creating a new app writes starter files into its GitHub repository, and I built that as
+          Crossplane resources, so those files are reconciled forever. That design has produced an annotation fight
+          burning about 280 API calls a minute, a retry loop burning about 16,000 an hour against a budget of 5,000
+          shared with Backstage, a lost external name that turned into repeated create attempts, and a patched fork of
+          the GitHub provider. Every one of those is fixed now. None of them needed to exist.
+        </p>
+        <p>The rule I use now is short enough to remember in a design review:</p>
+        <p class="rule-line">If you'd be upset that it changed back, it's a claim. If you'd be upset that it ran twice, it isn't.</p>
+        <p>
+          A database is a claim. A repository scaffold is a one-time action. A pipeline is a sequence, so it lives in
+          Tekton. A release is a decision, so it's a pull request. An interactive agent session needs to react in
+          milliseconds, and Crossplane on my installation re-renders every sixty seconds, so Autopilot's draft
+          <code>AgentRun</code> claim only describes the sandbox and its scope. The hard stop at expiry comes from the
+          sandbox controller, not from a reconcile loop.
+        </p>
+
+        <h2>What I'd keep, and what I'd cut</h2>
+        <p>
+          If you're a small platform team and you like the shape of Hangar, this is the version I'd actually recommend
+          you start with.
+        </p>
+      </div>
+
+      <div class="columns">
+        <section>
+          <h3>Keep from day one</h3>
+          <dl>{keep.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+        </section>
+        <section>
+          <h3>Defer until it hurts</h3>
+          <dl>{defer.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+        </section>
+      </div>
+
+      <div class="prose">
+        <p>
+          And one thing I'd replace outright: scaffold new repositories with a one-shot action, from Backstage or an
+          onboarding task, and let Crossplane own only what should stay true afterwards.
+        </p>
+
+        <h2>What I'm changing in Hangar</h2>
+        <p>
+          Hangar is a reference platform, so I'll keep more of it than I'd recommend to you. But the review and this
+          week's runs changed my mind on a few things, and those are now on the list below with honest labels. The
+          biggest one is the repository scaffold. The second is a shared baseline chart, so a new cluster repo is a
+          thin diff instead of a full copy of the template, which is how the first two clusters drifted apart.
+        </p>
+      </div>
+
+      <Evidence items={evidence} heading="The evidence, and what's next" />
+
+      <div class="prose">
+        <h2>What "the platform disappears" means</h2>
+        <p>
+          People say a good platform disappears. I think that's half true. It should disappear for the people using it:
+          a developer should see one file and one place to look. It should never disappear for the people running it.
+          The bill above is exactly what a platform team should be able to recite, defend and shrink. If I can't
+          explain why a component is there, it's the first thing I'll take out.
+        </p>
+        <p class="sign">James</p>
+        <p class="more"><a href={u('architecture/')}>← All architecture essays</a></p>
+      </div>
+    </article>
+  </div>
+</Base>
+<style>
+  .essay .hero .eyebrow a { color: inherit; }
+  .essay .hero h1 { max-width: 20ch; }
+  .prose h2 { margin-top: 3rem; }
+  .pull {
+    font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem; margin: 2.5rem 0; max-width: 34ch;
+  }
+  .rule-line {
+    background: var(--raised); border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.2rem;
+    font-family: var(--font-serif); font-size: 1.35rem; line-height: 1.35;
+  }
+  .columns { display: grid; grid-template-columns: 1fr; gap: 1rem; margin: 1.5rem 0 1rem; max-width: 60rem; }
+  @media (min-width: 800px) { .columns { grid-template-columns: 1fr 1fr; } }
+  .columns section { background: var(--raised); border: 1px solid var(--rule); border-radius: 10px; padding: 1.1rem 1.3rem; }
+  .columns section:first-child { border-top: 3px solid var(--good); }
+  .columns section:last-child { border-top: 3px solid var(--accent); }
+  .columns h3 { margin: 0 0 0.6rem; font-size: 1.35rem; }
+  .columns dl { margin: 0; }
+  .columns dl div { padding: 0.6rem 0; border-top: 1px solid var(--rule); }
+  .columns dt { font-weight: 600; }
+  .columns dd { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+  .sign { font-family: var(--font-serif); font-size: 1.4rem; margin-top: 2rem; }
+  .more { margin-top: 2rem; }
+</style>

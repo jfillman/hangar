@@ -1,0 +1,40 @@
+---
+import Base from '../../layouts/Base.astro';
+import { essays } from '../../data/essays';
+import { u } from '../../lib/url';
+
+const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<Base title="Architecture" description="Pointed opinions on platform architecture, argued from what Hangar actually does and what it has cost." section="architecture">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Architecture · Opinions, with receipts</p>
+      <h1>Where I <em>stand</em>, and why</h1>
+      <p class="lede">
+        The principles say what I believe in general. These essays are narrower and sharper: one question each, the
+        answer I'd give if you asked me across a table, and the evidence from Hangar behind it, including the parts
+        that didn't go well.
+      </p>
+    </section>
+
+    <ol class="essays">
+      {essays.map((e) => (
+        <li>
+          <a href={u(`architecture/${e.slug}/`)}>
+            <span class="eyebrow">{fmt(e.date)} · {e.minutes} min read</span>
+            <h2>{e.title}</h2>
+            <p>{e.dek}</p>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Base>
+<style>
+  .essays { list-style: none; padding: 0; margin: 1rem 0 0; max-width: 52rem; }
+  .essays li { border-top: 1px solid var(--rule); }
+  .essays a { display: block; padding: 1.6rem 0; color: inherit; text-decoration: none; }
+  .essays a:hover h2 { color: var(--accent); }
+  .essays h2 { margin: 0.5rem 0 0.6rem; font-size: clamp(1.6rem, 1.5vw + 1rem, 2.2rem); }
+  .essays p { margin: 0; color: var(--muted); font-size: 1.05rem; max-width: 62ch; }
+</style>
