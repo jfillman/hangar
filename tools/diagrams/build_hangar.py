@@ -22,16 +22,11 @@ AUTOPILOT = [
     e_a.e03, e_f.w_tiers, e_f.w_authority, e_b.e06, e_b.e07, e_b.e08, e_c.e09,
     e_f.w_placement, e_f.w_rollout,
 ]
-# The reference set: the general architecture. The 90-day plan is job-specific and is not part of it.
+# The reference set: the general architecture.
 # Glidepath (CI/CD), redrawn from glidepath/docs in this grammar.
 GLIDEPATH = [e_h.g_overview, e_h.g_pipeline, e_h.g_mapping, e_h.g_onboarding, e_h.g_chaining, e_h.g_deploy_release, e_h.g_multicluster]
 REFERENCE = [d123.d1, d123.d2, d123.d3, d456.d4, d456.d5, d456.d6, d789.d7, d789.d8, d789.d9, d1011.d10]
 
-FIXES = [
-    (" Say so, then give the 30/60/90.", ""),
-    ("Say plainly that this is the design you would build first, not something you have run.", "This is the design to build first; none of it is built."),
-    ("Honest gap: Hangar ran on kind and Apple container, not AWS or OCI.", "Gap: Hangar runs on kind and Apple container, not AWS or OCI."),
-]
 
 def build(group, fns, subdir, footer, root=None):
     lib.FOOTER = footer
@@ -45,8 +40,6 @@ def build(group, fns, subdir, footer, root=None):
         r = fn()
         eb = re.sub(r'\d\d of \d\d', f'{i:02d} of {n:02d}', r['eyebrow'])
         html = lib.page(r['slug'], eb, r['title'], r['desc'], r['body'], r['W'], r['H'], r.get('lede', ''), r.get('cards', ()), '', r.get('y0', 0))
-        for a, b in FIXES:
-            html = html.replace(a, b)
         name = f'{i:02d}-{r["slug"]}.html'
         open(os.path.join(d, name), 'w').write(html)
         rows.append((f'{subdir}/{name}', eb, r['title'], r.get('lede', '')))

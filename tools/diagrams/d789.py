@@ -37,7 +37,7 @@ def d7():
       desc='Timeline of one agent task over ten minutes, from recorded intent through tool calls, a pull request, a failed and a passing gate, merge, sync, and a final SLO check, with one task_id carried by every record.',
       lede='One task_id is stamped on the intent, the tool calls, the commits, the pipeline runs and the deploy. The last event is not a green build: it is the service confirming the change did what it was meant to.',
       body=''.join(b), W=1000, H=456, y0=88,
-      cards=[('Requirement','', P('Observability has to answer a new question. Not just "is the service healthy" but "did the agent do the right thing, and how do we know."')),
+      cards=[('Problem','', P('Observability has to answer a new question. Not just "is the service healthy" but "did the agent do the right thing, and how do we know."')),
              ('Design choices','accent', UL(['task_id propagates through commits, PR labels, gateway audit rows, Argo annotations and traces.','Outcome metrics: first-attempt gate pass rate, retries per task, human override rate, rollback rate against a human baseline.','The closing event is a service-level check, not a pipeline status.'])),
              ('Evidence and gap','link', P('Built in Hangar: release-outcome-span tracing, the Tower Release Record with compare view, and a HolmesGPT triage prototype. Proposal only: task_id as a first-class field across the gateway and Argo.'))])
 
@@ -69,9 +69,9 @@ def d8():
       desc='State machine with four states: shadow, approve to run, auto-run and frozen. Promotion needs measured evidence at each step, rollbacks and human overrides demote, and a policy violation freezes the class until it is reviewed and re-earned.',
       lede='Each alert class climbs one rung at a time on measured evidence. Any regression steps it back down, and a policy violation trips a breaker that has to be reviewed before it can climb again.',
       body=''.join(b), W=1000, H=556, y0=160,
-      cards=[('Requirement','', P('Push autonomous remediation into the paths that page people today: alerts that resolve themselves, and a first responder that is an agent with a hypothesis already tested.')),
+      cards=[('Problem','', P('Push autonomous remediation into the paths that page people today: alerts that resolve themselves, and a first responder that is an agent with a hypothesis already tested.')),
              ('Promotion criteria (proposed)','accent', UL(['Shadow to approve: proposals match what the human actually did, at least 95% over a fixed window.','Approve to auto: a run of clean executions with zero rollbacks.','Demotion is automatic; promotion is a reviewed decision.'])),
-             ('Evidence and gap','link', P('Built in Hangar: HolmesGPT AI-triage on alerts. Your own burns: an order-api prod wipe and a provider restart that caused real data loss are exactly why this ladder has a breaker and a "never" tier. Proposal only: the promotion tracker.'))])
+             ('Evidence and gap','link', P('Built in Hangar: HolmesGPT AI-triage on alerts. Lessons from Hangar itself: an order-api prod wipe and a provider restart that caused real data loss are exactly why this ladder has a breaker and a "never" tier. Proposal only: the promotion tracker.'))])
 
 def d9():
     b=[]
@@ -103,6 +103,6 @@ def d9():
       desc='Swimlane across monitoring, a triage agent, the gateway and verifier, and an on-call human: an alert triggers read-only triage and a sandbox-tested hypothesis, a matching runbook executes a scoped fix that is verified and auto-closed, and any miss or failed verification pages a human with the evidence attached.',
       lede='The agent never acts on a hunch. It tests the hypothesis on a copy first, and when it cannot fix the problem the human still starts ahead: the page arrives with the hypothesis and the evidence.',
       body=''.join(b), W=1000, H=488, y0=36,
-      cards=[('Requirement','', P('Incidents where the first responder is an agent arriving with a hypothesis already tested, and alerts that resolve themselves.')),
+      cards=[('Problem','', P('Incidents where the first responder is an agent arriving with a hypothesis already tested, and alerts that resolve themselves.')),
              ('Design choices','accent', UL(['Triage is read-only (T0) and cheap, so it can run on every page.','Fixes run only through pre-approved runbooks and the gateway; a failed verify escalates, it does not retry blindly.','Auto-close requires the verify contract, not the absence of an alert.'])),
              ('Evidence and gap','link', P('Built in Hangar: HolmesGPT triage and Sloth-based SLOs. Proposal only: sandboxed hypothesis replay and runbook execution through the gateway.'))])

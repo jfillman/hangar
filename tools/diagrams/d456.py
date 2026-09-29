@@ -36,7 +36,7 @@ def d4():
       desc='Flowchart of an agent-authored pull request passing static and supply-chain gates and an ephemeral environment verify step; a failure returns a structured rule id and fix hint for up to three retries, while a pass routes by risk tier to auto-merge or human approval, then to a progressive rollout with automatic rollback.',
       lede='Every probabilistic step has a deterministic gate behind it. The gates are fast and return structured failures, so the agent can converge without a human, and humans sit on the loop at the risk tiers that need them.',
       body=''.join(b), W=1000, H=656,
-      cards=[('Requirement','', P('Turn CI/CD into a validation loop: fast deterministic gates an agent can retry against until it passes, with humans on the loop rather than in it.')),
+      cards=[('Problem','', P('Turn CI/CD into a validation loop: fast deterministic gates an agent can retry against until it passes, with humans on the loop rather than in it.')),
              ('Design choices','accent', UL(['Failures are structured (rule id, file, line, fix hint), never a log wall.','Retry budget of three, then a page with the evidence attached.','Promotion is tier-aware; provenance is checked at admission, not only in CI.'])),
              ('Evidence and gap','link', P('Built in Hangar: Tekton and Pipelines-as-Code, a releaseGuardrails registry, tier-aware promotion in Glidepath, cosign plus Rekor verification. Real bugs found: a fail-open sast check and an index-lag race. Proposal only: the agent-facing failure schema.'))])
 
@@ -44,11 +44,11 @@ def d5():
     b=[]
     X0, W0, H0, Y0 = 112, 848, 72, 76
     layers = [
-      ('L5','Business lines','Mogo lending · Carta payments · Intelligent Investing',['Mogo','Carta','Intelligent Investing'],'backend'),
+      ('L5','Product teams','every team claims the same APIs',['Team A','Team B','Team C'],'backend'),
       ('L4','Golden-path API','one typed abstraction per capability',['Application','PostgreSQL','Queue','Secrets'],'backend'),
-      ('L3','Compositions','cloud specifics live here and nowhere else',['AWS','OCI'],'focal'),
+      ('L3','Compositions','cloud specifics live here and nowhere else',['AWS','Azure','Google Cloud'],'focal'),
       ('L2','GitOps delivery','per-cluster repos · lower/upper AppProject boundary',['ArgoCD','Kyverno','per-cluster repo'],'backend'),
-      ('L1','Foundations','accounts · networks · clusters · IAM roots',['Terraform','EKS','OKE'],'store'),
+      ('L1','Foundations','accounts · networks · clusters · IAM roots',['Terraform','EKS','AKS','GKE'],'store'),
     ]
     for i,(idx,name,sub,chips,kind) in enumerate(layers):
         y = Y0 + i*H0
@@ -76,20 +76,20 @@ def d5():
     b.append(text(24,Y0+5*H0+16,'CONCRETE',8,500,MUTED,mono=True,ls='0.14em'))
     b.append(legend(Y0+5*H0+52,[('focal','Where clouds differ'),('backend','Shared across clouds'),('store','Provisioned once'),('accent-dash','Tooling boundary')]))
     return dict(slug='multicloud-gitops', eyebrow='Layer stack · 05 of 11 · Multi-cloud platform',
-      title='One platform surface across AWS and OCI',
-      desc='Layer stack from foundations at the bottom through GitOps delivery, cloud-specific Crossplane compositions, the golden-path API and business lines at the top, marking Terraform below and Crossplane plus ArgoCD above, with cloud differences confined to the compositions layer.',
-      lede='Teams claim a capability once. Only the compositions layer knows whether that is AWS or OCI, so business lines converge on one surface and differ only where regulation or workload genuinely requires it.',
+      title='One platform surface across every cloud',
+      desc='Layer stack from foundations at the bottom through GitOps delivery, cloud-specific Crossplane compositions, the golden-path API and product teams at the top, marking Terraform below and Crossplane plus ArgoCD above, with cloud differences confined to the compositions layer.',
+      lede='Teams claim a capability once. Only the compositions layer knows whether that is AWS, Azure or Google Cloud, so product teams converge on one surface and differ only where regulation or workload genuinely requires it.',
       body=''.join(b), W=1000, H=Y0+5*H0+52+40, y0=40,
-      cards=[('Requirement','', P('Multi-cloud Kubernetes, IaC, GitOps. Serve every product line without a separate platform for each one; converge where they drifted for no reason.')),
-             ('Design choices','accent', UL(['Terraform for foundations; Crossplane and Argo for everything above the cluster. State the boundary out loud.','PostgreSQL becomes RDS on AWS or OCI Database with the same claim.','Convergence is a queue: inventory drift, score justified vs accidental, converge the accidental.'])),
-             ('Evidence and gap','link', P('Built in Hangar: the per-cluster repo decision, two ArgoCD instances per cluster, lower/upper AppProject boundary, generator-driven cluster bootstrap, a PostgreSQL component on CNPG. Honest gap: Hangar ran on kind and Apple container, not AWS or OCI. Say so, then give the 30/60/90.'))])
+      cards=[('Problem','', P('Multi-cloud Kubernetes, IaC, GitOps. Serve every product team without a separate platform for each one; converge where they drifted for no reason.')),
+             ('Design choices','accent', UL(['Terraform for foundations; Crossplane and Argo for everything above the cluster. State the boundary out loud.','PostgreSQL becomes RDS, Azure Database or Cloud SQL from the same claim.','Convergence is a queue: inventory drift, score justified vs accidental, converge the accidental.'])),
+             ('Evidence and gap','link', P('Built in Hangar: the per-cluster repo decision, two ArgoCD instances per cluster, lower/upper AppProject boundary, generator-driven cluster bootstrap, a PostgreSQL component on CNPG. Gap: Hangar runs on kind and Apple container, not on a public cloud.'))])
 
 def d6():
     b=[]
     rings = [
-      (24,24,952,392,'L1 · organization','Organization guardrails','SCPs · admission policy · audit retention'),
-      (56,72,888,316,'L2 · business line','Business line: lending (Mogo)','own accounts · own policy set · no cross-line reach'),
-      (88,120,824,240,'L3 · environment','Environment: lending-dev','namespace RBAC · quota · network segmentation'),
+      (24,24,952,392,'L1 · organization','Organization guardrails','org policies · admission policy · audit retention'),
+      (56,72,888,316,'L2 · team','Team: checkout','own accounts · own policy set · no cross-team reach'),
+      (88,120,824,240,'L3 · environment','Environment: checkout-dev','namespace RBAC · quota · network segmentation'),
       (120,168,760,164,'L4 · agent session','Agent session','identity TTL 30 min · task-scoped role · token budget'),
     ]
     for i,(x,y,w,h,lbl,cap,ctl) in enumerate(rings):
@@ -101,13 +101,13 @@ def d6():
         b.append(text(x+16,y+32,cap,12,600,INK))
         b.append(text(x+w-16,y+32,ctl,8,400,MUTED,'end',mono=True))
     b.append(node(152,216,696,88,'One tool call','one short-lived token · one verb · one resource · one audit row','focal'))
-    b.append(callout(24,456,'A compromised agent reaches exactly what its session was scoped to, and nothing in another business line.'))
+    b.append(callout(24,456,'A compromised agent reaches exactly what its session was scoped to, and nothing that belongs to another team.'))
     b.append(legend(488,[('focal','Unit of authority'),('external','Scope ring (each narrower than the last)')]))
     return dict(slug='identity-blast-radius', eyebrow='Nested · 06 of 11 · Agent identity',
       title='Agents are identities: each ring narrows the blast radius',
-      desc='Nested containment from organization guardrails through a business line, an environment and an agent session down to a single tool call, where each ring narrows what an agent identity can reach.',
+      desc='Nested containment from organization guardrails through a team, an environment and an agent session down to a single tool call, where each ring narrows what an agent identity can reach.',
       lede='Authority only narrows as it moves inward. The unit an agent actually holds is one token, for one verb, on one resource, and that is also the unit that gets audited.',
       body=''.join(b), W=1000, H=536, y0=8,
-      cards=[('Requirement','', P('Agents are identities. They need scoped credentials, bounded blast radius, and audit trails that hold up across lending, payments, and securities regulation.')),
-             ('Design choices','accent', UL(['Workload identity first (IRSA on EKS, the OCI equivalent); secrets only where federation cannot reach.','Dynamic, short-lived database credentials delivered by External Secrets.','Cross-line reach is denied by policy, not by convention.'])),
-             ('Evidence and gap','link', P('Built in Hangar: provider-infisical with declarative, Delete-protected projects adopted in place, ESO delivery, and a standing preference for never-persisted credentials. Honest gap: IRSA and the OCI equivalent were not exercised in Hangar.'))])
+      cards=[('Problem','', P('Agents are identities. They need scoped credentials, bounded blast radius, and audit trails that hold up in front of a regulator.')),
+             ('Design choices','accent', UL(['Workload identity first (IRSA on EKS or its Azure and Google equivalents); secrets only where federation cannot reach.','Dynamic, short-lived database credentials delivered by External Secrets.','Cross-team reach is denied by policy, not by convention.'])),
+             ('Evidence and gap','link', P('Built in Hangar: provider-infisical with declarative, Delete-protected projects adopted in place, ESO delivery, and a standing preference for never-persisted credentials. Gap: cloud workload identity was not exercised in Hangar.'))])
