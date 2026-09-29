@@ -112,6 +112,8 @@ def collect(tech: Path) -> dict:
     x = dict(count=0, nodes=0, desc=0, cel=0, status_conditions=0, status_reason=0, summary=0, catalog=0)
     kinds = []
     for f in sorted(glob.glob(str(af / "xrds" / "*.yaml"))):
+        if f.endswith(".meta.yaml"):
+            continue  # AF-3's per-component output-declaration sidecar, not an XRD itself
         d = load_yaml(f)
         x["count"] += 1
         kinds.append(d["spec"]["names"]["kind"])
