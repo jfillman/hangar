@@ -1,6 +1,6 @@
 // The SDLC, seen from the platform side. Each stage: the opinion, how Hangar carries it,
 // the diagrams that show it, and what changes when the author is an AI agent.
-import { gh, ghTree } from '../lib/url';
+import { gh, ghTree, u } from '../lib/url';
 import type { Evidence } from './principles';
 
 export type Stage = {
@@ -201,11 +201,11 @@ export const stages: Stage[] = [
     themes: ['honest', 'platform-as-product'],
     body: [
       'Platforms get better when their weaknesses are easy to see. I\'d much rather publish an honest number and move it than claim a finished platform nobody can check.',
-      'A platform improves when its weaknesses are visible. Hangar measures how operable Airframe is by agents with a scorecard (ten dimensions, a committed baseline of 27 out of 100, and an A+ bar at 97 with all fourteen acceptance checks passing), and publishes the number rather than a feeling.',
+      'A platform improves when its weaknesses are visible. Hangar measures how operable Airframe is by agents with a scorecard (ten dimensions, a committed baseline of 27 out of 100 that every milestone is measured against, and an A+ bar at 97 with all fourteen acceptance checks passing), and publishes the number rather than a feeling.',
       'Gaps found in real use are written down with their reproduction and a direction, not left in someone\'s head: Glidepath\'s known-gaps list is a product backlog in plain sight. Agent changes get the same treatment as code: Preflight scores every change against incidents that have already been solved.',
     ],
     evidence: [
-      { text: 'Airframe scorecard and its committed baseline', status: 'built', href: ghTree('hangar', 'tools/airframe-scorecard') },
+      { text: 'The Airframe scorecard, every committed run on one chart', status: 'built', href: u('scorecard/') },
       { text: 'Glidepath known gaps, found in use, each with evidence', status: 'built', href: gh('glidepath', 'docs/admin/known-gaps.md') },
       { text: 'Preflight evaluation cases', status: 'built', href: gh('autopilot') },
     ],

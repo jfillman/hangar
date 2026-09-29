@@ -114,6 +114,8 @@ def collect(tech: Path) -> dict:
     for f in sorted(glob.glob(str(af / "xrds" / "*.yaml"))):
         if f.endswith(".meta.yaml"):
             continue  # AF-3's per-component output-declaration sidecar, not an XRD itself
+        if f.endswith(".hangar.yaml"):
+            continue  # Tier 2 rename twin (same schema, new API group); counting it would count a kind twice
         d = load_yaml(f)
         x["count"] += 1
         kinds.append(d["spec"]["names"]["kind"])
@@ -130,6 +132,12 @@ def collect(tech: Path) -> dict:
         status = sch.get("properties", {}).get("status", {}).get("properties", {})
         x["status_conditions"] += "conditions" in status
         x["status_reason"] += any("reason" in json.dumps(v) for v in status.values())
+        # AF-6a declares conditions and their closed reason set in the sidecar, not the XRD's status schema
+        meta = load_yaml(f[:-len(".yaml")] + ".meta.yaml") if Path(f[:-len(".yaml")] + ".meta.yaml").exists() else {}
+        conds = (meta or {}).get("conditions") or []
+        if conds and "conditions" not in status:
+            x["status_conditions"] += 1
+            x["status_reason"] += any(c.get("reasons") for c in conds)
     m["xrd"] = x
     m["xrd_kinds"] = kinds
 
@@ -138,12 +146,17 @@ def collect(tech: Path) -> dict:
     m["agents_md_components"] = len(list((af / "compositions").glob("*/AGENTS.md")))
     m["llms_txt"] = (af / "llms.txt").exists() or (af / "docs" / "llms.txt").exists()
     m["contract_bundle"] = (af / "contract" / "airframe-contract.json").exists()
-    m["outputs_meta"] = len(list((af / "contract").glob("*.meta.yaml"))) if (af / "contract").exists() else 0
+    # sidecars live beside their XRD (xrds/<kind>.meta.yaml) since AF-3; contract/ was the original plan
+    metas = [load_yaml(f) or {} for f in list((af / "xrds").glob("*.meta.yaml")) + list((af / "contract").glob("*.meta.yaml"))]
+    m["outputs_meta"] = sum(bool(d.get("outputs")) for d in metas)
     m["validate_cli"] = (af / "validate").exists() or (af / "tools" / "airframe-validate").exists()
     m["appspec_schema"] = (af / "contract" / "appspec.schema.json").exists()
     m["walkthroughs"] = len(list((af / "docs" / "walkthroughs").glob("*.yaml"))) if (af / "docs" / "walkthroughs").exists() else 0
-    m["verify_meta"] = 0 if not (af / "contract").exists() else sum(
-        "verify" in (load_yaml(f) or {}) for f in (af / "contract").glob("*.meta.yaml"))
+    m["verify_meta"] = sum(bool(d.get("verify")) for d in metas)
+    validate = af / "tools" / "airframe-validate"
+    rules = set(re.findall(r"AF-[A-Z]+-\d+", validate.read_text())) if validate.is_file() else set()
+    # dead-end rules encode a known failure mode; the generic schema/render rules don't count
+    m["dead_end_rules"] = len({r for r in rules if not r.startswith(("AF-SCHEMA-", "AF-RENDER-"))})
 
     # chart guards / tests / CI
     fails = 0
@@ -238,7 +251,11 @@ def collect(tech: Path) -> dict:
                 pass
     m["doc_yaml_blocks"], m["doc_yaml_parse"] = blocks, parsed
     m["doc_yaml_validated_in_ci"] = 0 if not (af / "docs" / "walkthroughs").exists() else 1
-    m["mcp_tools"] = len(list((tech / "clearance" / "src" / "clearance").glob("airframe_tools.py")))
+    # Clearance moved into the autopilot repo (DX-0); the loose ~/tech/clearance copy is stale
+    clearance = [tech / "autopilot" / "src" / "clearance", tech / "clearance" / "src" / "clearance"]
+    m["mcp_tools"] = sum(len(list(c.glob("airframe_tools.py"))) for c in clearance)
+    scope = next((c / "scope.py" for c in clearance if (c / "scope.py").exists()), None)
+    m["field_scope_gate"] = bool(scope) and "def field_violations" in scope.read_text()
     return m
 
 
@@ -290,7 +307,7 @@ def score(m: dict) -> dict:
         (4, float(m["validate_cli"]), "an `airframe validate` exists"),
         (3, float(m["ci_chart_workflow"]), "required check on env, gitops and tenants repos"),
         (2, min(1.0, m["helm_guards"] / 25), "chart guards with actionable messages (of 25)"),
-        (2, 0.0, "dead-end lint rules (encoded and seeded)"),
+        (2, min(1.0, m["dead_end_rules"] / 5), "dead-end lint rules (encoded and seeded, of 5)"),
         (2, frac(m["fleet_baseline_ok"], m["fleet_total"]), "live values files that render cleanly")],
         "the deterministic gate an agent can retry against")
     dim("5 Write safety", [
@@ -324,7 +341,7 @@ def score(m: dict) -> dict:
         "how an agent actually asks for a change")
     dim("9 Safety integration", [
         (3, frac(s["risk"], max(1, m["schema_top_keys"])), "risk-classed fields"),
-        (3, 0.0, "field-level agent-scope gate"),
+        (3, float(m["field_scope_gate"]), "field-level agent-scope gate"),
         (2, 1.0, "secrets referenced, never inlined"),
         (2, 0.0, "escape hatches (extraManifests) denied by default")],
         "tiers that reach down to individual fields")

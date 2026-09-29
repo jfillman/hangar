@@ -5,6 +5,7 @@ import { gh, u } from '../lib/url';
 // Dated milestones, taken from the repos' own status notes and commit history.
 // Add new entries at the top.
 const entries = [
+  { date: '2026-09-29', title: 'The Airframe scorecard, over time', text: 'The scorecard gets its own page, with every committed run on one chart: 27 at the baseline, 41 after M0, and 72 now that M1 and M2 are closed, with 7 of the 14 A+ checks passing. The first run today said 58, because the tool was looking for things where they were first planned to live, not where they ended up. I fixed the tool and said so on the page.', href: u('scorecard/') },
   { date: '2026-09-28', title: 'Plain words, and honest labels', text: 'A glossary of the jargon, with a short explainer on the first mention of each term on every page, and a status on each product card, so Autopilot no longer looks as finished as Glidepath.', href: u('glossary/') },
   { date: '2026-09-28', title: 'An Architecture section', text: 'A home for pointed opinions, argued from what Hangar does and what it has cost. The first essay is about the bill for running this platform, and where Crossplane should stop.', href: u('architecture/') },
   { date: '2026-09-28', title: 'Zero to running, twice, for real', text: 'Two new services taken from nothing to production and recorded: gate-api in the terminal, checkin-api in Tower. Running the whole path end to end found four real platform bugs the unit tests had missed, three of them from the release-file split. All four are fixed.', href: u('run/') },

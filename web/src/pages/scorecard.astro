@@ -1,0 +1,234 @@
+---
+import Base from '../layouts/Base.astro';
+import { u } from '../lib/url';
+import { snapshots, latest, first, targets, aPlus, findings, links } from '../data/scorecard';
+
+// Trend chart geometry. Measured snapshots first, then the milestone targets still ahead of the
+// latest score, drawn hollow so a target never reads as a measurement.
+const W = 1000, H = 320, L = 56, R = 52, T = 24, B = 64;
+const ahead = targets.filter((t) => t.score > latest.overall);
+const slots = snapshots.length + ahead.length;
+const x = (i: number) => L + (slots === 1 ? 0 : (i * (W - L - R)) / (slots - 1));
+const y = (v: number) => T + ((100 - v) * (H - T - B)) / 100;
+const path = snapshots.map((s, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(s.overall).toFixed(1)}`).join(' ');
+const last = snapshots.length - 1;
+const plan = [`M${x(last).toFixed(1)},${y(latest.overall).toFixed(1)}`, ...ahead.map((t, j) => `L${x(last + 1 + j).toFixed(1)},${y(t.score).toFixed(1)}`)].join(' ');
+
+const dims = Object.keys(latest.dimensions);
+const checks = Object.keys(latest.acceptance);
+const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
+const gain = latest.overall - first.overall;
+---
+<Base title="Airframe scorecard" description={`How operable Airframe is by AI agents, measured by a re-runnable tool: ${fmt(latest.overall)} out of 100 on ${latest.date}, up from ${fmt(first.overall)}.`} section="autopilot">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Airframe · Scorecard</p>
+      <h1>Airframe, <em>measured</em></h1>
+      <p class="lede">
+        Autopilot only works if an agent can change an app safely without guessing. So I score Airframe, the contract every
+        app is built on, against what an agent needs: ten dimensions, fourteen acceptance checks, all automated. A+ means
+        {aPlus} or better and all fourteen checks. The number starts low on purpose, because it measures the finished
+        contract, and it moves only when the work is real.
+      </p>
+    </section>
+
+    <div class="stats">
+      <div class="stat"><span class="k">Score now</span><span class="v">{fmt(latest.overall)}<small>/100</small></span><span class="s">{latest.date} · grade {latest.grade}</span></div>
+      <div class="stat"><span class="k">Acceptance checks</span><span class="v">{latest.passed}<small>/14</small></span><span class="s">from {first.passed} at the baseline</span></div>
+      <div class="stat"><span class="k">Since the baseline</span><span class="v">+{fmt(gain)}</span><span class="s">{first.date} to {latest.date}</span></div>
+      <div class="stat"><span class="k">A+ bar</span><span class="v">{aPlus}<small> and 14/14</small></span><span class="s">{latest.a_plus ? 'certified' : 'not yet'}</span></div>
+    </div>
+
+    <section class="block">
+      <h2>Progress over time</h2>
+      <p class="prose">Each filled point is a committed run of the tool. The hollow points are the roadmap's milestone targets still ahead, not measurements.</p>
+      <figure class="fig">
+        <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="trend-t trend-d">
+          <title id="trend-t">Airframe scorecard over time</title>
+          <desc id="trend-d">{snapshots.map((s) => `${s.label} ${s.date}: ${fmt(s.overall)} out of 100, ${s.passed} of 14 checks`).join('; ')}. Targets ahead: {ahead.map((t) => `${t.milestone} ${t.score}`).join(', ')}.</desc>
+          {[0, 25, 50, 75, 100].map((g) => (
+            <g>
+              <line class="grid" x1={L} x2={W - R} y1={y(g)} y2={y(g)} />
+              <text class="axis" x={L - 10} y={y(g) + 4} text-anchor="end">{g}</text>
+            </g>
+          ))}
+          <line class="aplus" x1={L} x2={W - R} y1={y(aPlus)} y2={y(aPlus)} />
+          <text class="aplus-t" x={L + 6} y={y(aPlus) - 7} text-anchor="start">A+ at {aPlus}</text>
+          {ahead.length > 0 && <path class="plan" d={plan} />}
+          <path class="line" d={path} />
+          {snapshots.map((s, i) => (
+            <g>
+              <circle class="pt" cx={x(i)} cy={y(s.overall)} r="6" />
+              <text class="val" x={x(i)} y={y(s.overall) - 14} text-anchor="middle">{fmt(s.overall)}</text>
+              <text class="lbl" x={x(i)} y={H - B + 24} text-anchor="middle">{s.label}</text>
+              <text class="sub" x={x(i)} y={H - B + 40} text-anchor="middle">{s.date} · {s.passed}/14</text>
+            </g>
+          ))}
+          {ahead.map((t, j) => (
+            <g>
+              <circle class="tgt" cx={x(last + 1 + j)} cy={y(t.score)} r="5" />
+              <text class="tval" x={x(last + 1 + j)} y={y(t.score) + 22} text-anchor="middle">{t.score}</text>
+              <text class="lbl muted" x={x(last + 1 + j)} y={H - B + 24} text-anchor="middle">{t.milestone} target</text>
+              <text class="sub" x={x(last + 1 + j)} y={H - B + 40} text-anchor="middle">{t.name}</text>
+            </g>
+          ))}
+        </svg>
+      </figure>
+      <ol class="notes">
+        {snapshots.map((s) => (
+          <li><span class="when">{s.label} · {s.date}</span> {s.note}</li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="block">
+      <h2>Ten dimensions, measured {latest.date}</h2>
+      <p class="prose">The bar is the latest score; the thin mark on it is where the baseline stood, and the amber tick is the A+ line.</p>
+      <div class="matrix" role="table" aria-label="Scorecard dimensions">
+        <div class="mrow head" role="row">
+          <span role="columnheader">Dimension</span><span role="columnheader">Score</span><span role="columnheader">History</span>
+          <span role="columnheader">What the measurement found</span><span role="columnheader">What A+ still needs</span>
+        </div>
+        {dims.map((d) => {
+          const now = latest.dimensions[d].score;
+          const was = first.dimensions[d]?.score ?? 0;
+          return (
+            <div class="mrow" role="row">
+              <span class="name" role="cell">{d}</span>
+              <span class="score" role="cell">
+                <b>{Math.round(now)}</b>
+                <span class="bar" aria-hidden="true"><span class="fill" style={`width:${now}%`}></span><span class="was" style={`left:${was}%`}></span><span class="tick" style={`left:${aPlus}%`}></span></span>
+              </span>
+              <span class="hist" role="cell">{snapshots.map((s) => Math.round(s.dimensions[d]?.score ?? 0)).join(' → ')}</span>
+              <span class="found" role="cell">{findings[d]?.found}</span>
+              <span class="next" role="cell">{findings[d]?.next}</span>
+            </div>
+          );
+        })}
+        <div class="mrow total" role="row">
+          <span class="name" role="cell">Overall</span>
+          <span role="cell"><b>{fmt(latest.overall)}</b></span>
+          <span class="hist" role="cell">{snapshots.map((s) => fmt(s.overall)).join(' → ')}</span>
+          <span class="wide" role="cell">{latest.passed} of 14 acceptance checks · A+ needs {aPlus} and 14 of 14</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>The fourteen acceptance checks</h2>
+      <p class="prose">A+ needs every one. A high average cannot hide a missing check.</p>
+      <div class="checks-wrap">
+        <table class="checks">
+          <thead>
+            <tr><th scope="col">Check</th>{snapshots.map((s) => <th scope="col">{s.label}<small>{s.date}</small></th>)}</tr>
+          </thead>
+          <tbody>
+            {checks.map((c) => (
+              <tr>
+                <th scope="row">{c}</th>
+                {snapshots.map((s) => (s.acceptance[c] ? <td class="yes"><span aria-label="passing">✓</span></td> : <td class="no"><span aria-label="not yet">·</span></td>))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">Principle honored</p>
+        <p>Measured, not felt. Every check is automated, so A+ is something the tool prints, not something I claim. Every run that moves the number is committed, so the history on this page is the tool's own output.</p>
+      </div>
+      <div class="card">
+        <p class="eyebrow">A correction to the tool</p>
+        <p>
+          The first run on {latest.date} said 58. The tool was looking for component contracts and for Clearance where
+          they were first planned to live, not where M1 and M2 put them, and two checks were hard-coded to zero. I fixed
+          the paths and turned those two checks into real ones; the fix is in the same commit as the score. Snapshots
+          before it were not re-scored.
+        </p>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Limits</p>
+        <p>The scorecard can't tell whether an agent would actually succeed. The parachute sentence, run as a Preflight case, does. I use both.</p>
+      </div>
+    </div>
+
+    <p class="foot">
+      Re-run it yourself: <code>python3 tools/airframe-scorecard/scorecard.py --json out.json</code>.
+      The <a href={links.tool}>tool</a>, <a href={links.data}>every committed run</a>, the <a href={links.rubric}>rubric</a>
+      and the <a href={links.roadmap}>roadmap</a> are on GitHub. More on Autopilot on the <a href={u('autopilot/')}>AI workloads</a> page.
+    </p>
+  </div>
+</Base>
+<style>
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1.5rem 0 0; }
+  .stat { background: var(--raised); border: 1px solid var(--rule); border-radius: 8px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+  .stat .k { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .stat .v { font-family: var(--font-serif); font-size: 2.3rem; line-height: 1.05; color: var(--ink); }
+  .stat .v small { font-family: var(--font-sans); font-size: 0.85rem; color: var(--muted); margin-left: 0.15rem; }
+  .stat .s { font-size: 0.8rem; color: var(--soft); }
+
+  .block { margin-top: 3rem; }
+  .block h2 { margin-top: 0; }
+  .fig { margin: 1rem 0 0; background: var(--raised); border: 1px solid var(--rule); border-radius: 8px; padding: 0.5rem; overflow-x: auto; }
+  .fig svg { display: block; width: 100%; min-width: 640px; height: auto; font-family: var(--font-sans); }
+  .grid { stroke: var(--rule); stroke-width: 1; }
+  .axis { fill: var(--soft); font-family: var(--font-mono); font-size: 11px; }
+  .aplus { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 5 4; }
+  .aplus-t { fill: var(--accent); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; }
+  .line { fill: none; stroke: var(--sky); stroke-width: 2.5; stroke-linejoin: round; }
+  .plan { fill: none; stroke: var(--soft); stroke-width: 1.5; stroke-dasharray: 3 5; }
+  .pt { fill: var(--sky); stroke: var(--raised); stroke-width: 2; }
+  .tgt { fill: var(--raised); stroke: var(--soft); stroke-width: 1.5; }
+  .val { fill: var(--ink); font-size: 15px; font-weight: 600; }
+  .tval { fill: var(--soft); font-family: var(--font-mono); font-size: 11px; }
+  .lbl { fill: var(--ink); font-size: 13px; font-weight: 500; }
+  .lbl.muted { fill: var(--muted); font-weight: 400; }
+  .sub { fill: var(--soft); font-family: var(--font-mono); font-size: 10.5px; }
+  .notes { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.4rem; max-width: var(--prose); }
+  .notes li { color: var(--muted); font-size: 0.92rem; }
+  .notes .when { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); margin-right: 0.4rem; }
+
+  .matrix { margin-top: 1rem; border-top: 1px solid var(--rule); }
+  .mrow { display: grid; grid-template-columns: 12rem 9rem 8.5rem 1fr 1fr; gap: 0.9rem; align-items: center; padding: 0.7rem 0; border-bottom: 1px solid var(--rule); font-size: 0.9rem; }
+  .mrow.head span { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .mrow .name { font-weight: 600; }
+  .score { display: flex; align-items: center; gap: 0.6rem; }
+  .score b { width: 2rem; font-variant-numeric: tabular-nums; }
+  .bar { position: relative; flex: 1; height: 7px; border-radius: 4px; background: var(--paper-2); }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--sky); }
+  .bar .was { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: 0.55; }
+  .bar .tick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--accent); }
+  .hist { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+  .found { color: var(--muted); }
+  .next { color: var(--ink); }
+  .mrow.total { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 6px; padding: 0.7rem 0.8rem; margin-top: 0.6rem; }
+  .mrow.total .wide { grid-column: span 2; font-weight: 500; }
+
+  .checks-wrap { overflow-x: auto; margin-top: 1rem; }
+  .checks { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  .checks th, .checks td { border-bottom: 1px solid var(--rule); padding: 0.5rem 0.6rem; text-align: left; }
+  .checks thead th { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 500; white-space: nowrap; text-align: center; }
+  .checks thead th:first-child { text-align: left; }
+  .checks thead small { display: block; letter-spacing: 0; text-transform: none; color: var(--soft); }
+  .checks tbody th { font-family: var(--font-sans); font-size: 0.9rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--ink); }
+  .checks td { text-align: center; width: 7rem; }
+  .checks td.yes { color: var(--good); font-weight: 600; }
+  .checks td.no { color: var(--soft); }
+
+  .cards { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 0.75rem; margin-top: 3rem; }
+  .card { background: var(--raised); border: 1px solid var(--rule); border-radius: 8px; padding: 1rem 1.1rem; }
+  .card .eyebrow { margin-bottom: 0.35rem; }
+  .card p { font-size: 0.9rem; line-height: 1.55; margin: 0; }
+  .foot { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.9rem; max-width: var(--prose); }
+
+  @media (max-width: 900px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .cards { grid-template-columns: 1fr; }
+    .mrow { grid-template-columns: 1fr 9rem; }
+    .mrow.head span:nth-child(n + 3) { display: none; }
+    .mrow .hist, .mrow .found, .mrow .next { grid-column: 1 / -1; }
+    .mrow.total .wide { grid-column: 1 / -1; }
+  }
+</style>

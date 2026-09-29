@@ -1,6 +1,6 @@
 // The seven principles the site is organised around, in order of how much they shape the work.
 // Each one says what I believe, why, and where Hangar does it today, with an honest status.
-import { gh, ghTree } from '../lib/url';
+import { gh, ghTree, u } from '../lib/url';
 
 export type Status = 'built' | 'draft' | 'proposal';
 export type Evidence = { text: string; status: Status; href?: string };
@@ -118,7 +118,7 @@ export const principles: Principle[] = [
     evidence: [
       { text: 'Governance gates that are loud about being stubs (ADR-0003)', status: 'built', href: gh('glidepath', 'docs/admin/adr/0003-governance-stubs.md') },
       { text: 'Glidepath known gaps, found in real use, each with its evidence', status: 'built', href: gh('glidepath', 'docs/admin/known-gaps.md') },
-      { text: 'The Airframe scorecard: a published number (27 out of 100) rather than a feeling', status: 'built', href: ghTree('hangar', 'tools/airframe-scorecard') },
+      { text: 'The Airframe scorecard: a published number, tracked over time, rather than a feeling', status: 'built', href: u('scorecard/') },
     ],
     diagrams: ['plan/04-scorecard'],
     link: { href: 'sdlc/improve/', label: 'Measuring and improving' },
