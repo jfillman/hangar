@@ -44,11 +44,11 @@ def d5():
     b=[]
     X0, W0, H0, Y0 = 112, 848, 72, 76
     layers = [
-      ('L5','Business lines','Mogo lending · Carta payments · Intelligent Investing',['Mogo','Carta','Intelligent Investing'],'backend'),
+      ('L5','Business lines','lending · payments · wealth management',['Lending','Payments','Wealth'],'backend'),
       ('L4','Golden-path API','one typed abstraction per capability',['Application','PostgreSQL','Queue','Secrets'],'backend'),
-      ('L3','Compositions','cloud specifics live here and nowhere else',['AWS','OCI'],'focal'),
+      ('L3','Compositions','cloud specifics live here and nowhere else',['Cloud A','Cloud B'],'focal'),
       ('L2','GitOps delivery','per-cluster repos · lower/upper AppProject boundary',['ArgoCD','Kyverno','per-cluster repo'],'backend'),
-      ('L1','Foundations','accounts · networks · clusters · IAM roots',['Terraform','EKS','OKE'],'store'),
+      ('L1','Foundations','accounts · networks · clusters · IAM roots',['Terraform','Cloud A K8s','Cloud B K8s'],'store'),
     ]
     for i,(idx,name,sub,chips,kind) in enumerate(layers):
         y = Y0 + i*H0
@@ -76,19 +76,19 @@ def d5():
     b.append(text(24,Y0+5*H0+16,'CONCRETE',8,500,MUTED,mono=True,ls='0.14em'))
     b.append(legend(Y0+5*H0+52,[('focal','Where clouds differ'),('backend','Shared across clouds'),('store','Provisioned once'),('accent-dash','Tooling boundary')]))
     return dict(slug='multicloud-gitops', eyebrow='Layer stack · 05 of 11 · Multi-cloud platform',
-      title='One platform surface across AWS and OCI',
+      title='One platform surface across multiple clouds',
       desc='Layer stack from foundations at the bottom through GitOps delivery, cloud-specific Crossplane compositions, the golden-path API and business lines at the top, marking Terraform below and Crossplane plus ArgoCD above, with cloud differences confined to the compositions layer.',
-      lede='Teams claim a capability once. Only the compositions layer knows whether that is AWS or OCI, so business lines converge on one surface and differ only where regulation or workload genuinely requires it.',
+      lede='Teams claim a capability once. Only the compositions layer knows which cloud it is, so business lines converge on one surface and differ only where regulation or workload genuinely requires it.',
       body=''.join(b), W=1000, H=Y0+5*H0+52+40, y0=40,
       cards=[('Requirement','', P('Multi-cloud Kubernetes, IaC, GitOps. Serve every product line without a separate platform for each one; converge where they drifted for no reason.')),
-             ('Design choices','accent', UL(['Terraform for foundations; Crossplane and Argo for everything above the cluster. State the boundary out loud.','PostgreSQL becomes RDS on AWS or OCI Database with the same claim.','Convergence is a queue: inventory drift, score justified vs accidental, converge the accidental.'])),
-             ('Evidence and gap','link', P('Built in Hangar: the per-cluster repo decision, two ArgoCD instances per cluster, lower/upper AppProject boundary, generator-driven cluster bootstrap, a PostgreSQL component on CNPG. Honest gap: Hangar ran on kind and Apple container, not AWS or OCI. Say so, then give the 30/60/90.'))])
+             ('Design choices','accent', UL(['Terraform for foundations; Crossplane and Argo for everything above the cluster. State the boundary out loud.','PostgreSQL becomes the managed database service on whichever cloud, with the same claim.','Convergence is a queue: inventory drift, score justified vs accidental, converge the accidental.'])),
+             ('Evidence and gap','link', P('Built in Hangar: the per-cluster repo decision, two ArgoCD instances per cluster, lower/upper AppProject boundary, generator-driven cluster bootstrap, a PostgreSQL component on CNPG. Honest gap: Hangar ran on kind and Apple container, not a hyperscaler cloud. Say so, then give the 30/60/90.'))])
 
 def d6():
     b=[]
     rings = [
       (24,24,952,392,'L1 · organization','Organization guardrails','SCPs · admission policy · audit retention'),
-      (56,72,888,316,'L2 · business line','Business line: lending (Mogo)','own accounts · own policy set · no cross-line reach'),
+      (56,72,888,316,'L2 · business line','Business line: lending','own accounts · own policy set · no cross-line reach'),
       (88,120,824,240,'L3 · environment','Environment: lending-dev','namespace RBAC · quota · network segmentation'),
       (120,168,760,164,'L4 · agent session','Agent session','identity TTL 30 min · task-scoped role · token budget'),
     ]
@@ -109,5 +109,5 @@ def d6():
       lede='Authority only narrows as it moves inward. The unit an agent actually holds is one token, for one verb, on one resource, and that is also the unit that gets audited.',
       body=''.join(b), W=1000, H=536, y0=8,
       cards=[('Requirement','', P('Agents are identities. They need scoped credentials, bounded blast radius, and audit trails that hold up across lending, payments, and securities regulation.')),
-             ('Design choices','accent', UL(['Workload identity first (IRSA on EKS, the OCI equivalent); secrets only where federation cannot reach.','Dynamic, short-lived database credentials delivered by External Secrets.','Cross-line reach is denied by policy, not by convention.'])),
-             ('Evidence and gap','link', P('Built in Hangar: provider-infisical with declarative, Delete-protected projects adopted in place, ESO delivery, and a standing preference for never-persisted credentials. Honest gap: IRSA and the OCI equivalent were not exercised in Hangar.'))])
+             ('Design choices','accent', UL(['Workload identity first (each cloud\'s own pod-to-IAM binding); secrets only where federation cannot reach.','Dynamic, short-lived database credentials delivered by External Secrets.','Cross-line reach is denied by policy, not by convention.'])),
+             ('Evidence and gap','link', P('Built in Hangar: provider-infisical with declarative, Delete-protected projects adopted in place, ESO delivery, and a standing preference for never-persisted credentials. Honest gap: cloud workload identity federation was not exercised in Hangar.'))])

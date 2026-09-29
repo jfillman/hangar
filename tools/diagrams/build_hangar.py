@@ -30,7 +30,7 @@ REFERENCE = [d123.d1, d123.d2, d123.d3, d456.d4, d456.d5, d456.d6, d789.d7, d789
 FIXES = [
     (" Say so, then give the 30/60/90.", ""),
     ("Say plainly that this is the design you would build first, not something you have run.", "This is the design to build first; none of it is built."),
-    ("Honest gap: Hangar ran on kind and Apple container, not AWS or OCI.", "Gap: Hangar runs on kind and Apple container, not AWS or OCI."),
+    ("Honest gap: Hangar ran on kind and Apple container, not a hyperscaler cloud.", "Gap: Hangar runs on kind and Apple container, not a hyperscaler cloud."),
 ]
 
 def build(group, fns, subdir, footer, root=None):
