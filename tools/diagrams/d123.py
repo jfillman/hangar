@@ -28,7 +28,7 @@ def d1():
       desc='Architecture showing an agent task becoming a per-session Crossplane claim that provisions an ephemeral namespace with a sandbox pod, a short-lived identity and default-deny egress, whose only route out is the MCP gateway, with a reaper deleting the namespace on TTL expiry.',
       lede='Every agent task gets its own disposable environment. The broker decides scope, the claim creates it, and the only way out of the sandbox is the governed gateway.',
       body=''.join(b), W=1000, H=512, y0=76,
-      cards=[('Requirement','', P('Design and run the execution environments agents work in: sandboxed, reproducible, permissioned, disposable.')),
+      cards=[('Problem','', P('Agents need somewhere to work that is sandboxed, reproducible, permissioned and disposable.')),
              ('Design choices','accent', UL(['Identity per session, not per agent type: 30 minute TTL, scope derived from the task.','No route out except the gateway; no standing secrets inside the sandbox.','Namespace carries a TTL and finalizer; rebuildable from an image digest plus the task spec.'])),
              ('Evidence and gap','link', P('Built in Hangar: the claim-a-thing, get-a-governed-environment pattern (Crossplane XRs) and the Tower policy of no standing pod exec. Proposal only: gVisor or Kata runtime and per-session identity minting.'))])
 
@@ -60,7 +60,7 @@ def d2():
       desc='Architecture with three trust zones: an untrusted agent sandbox, a governed gateway zone containing policy decision, audit and credential broker, and protected infrastructure and secrets, showing permitted MCP calls through the gateway and two direct routes that are denied at the boundary.',
       lede='Agents never hold infrastructure credentials. The gateway validates the call, asks policy, mints a scoped token for that one call, and records it. Direct routes stop at the boundary.',
       body=''.join(b), W=1000, H=512, y0=40,
-      cards=[('Requirement','', P('Stand up and own the MCP and tool-gateway layer so agents reach infrastructure through governed interfaces instead of ad hoc credentials.')),
+      cards=[('Problem','', P('Agents have to reach infrastructure through governed interfaces, never through ad hoc credentials.')),
              ('Risk tiers, enforced here','accent', UL(['T0 read-only: auto-approved.','T1 reversible writes (PRs, dev sync): auto-approved, audited.','T2 prod-affecting: human approval or pre-approved runbook.','T3 (secret reads, IAM, pod exec): never exposed.'])),
              ('Evidence and gap','link', P('Built in Hangar: Tower write-action policy (delegated vs interactive, lower-env only, authz required for prod RBAC) and never-persisted credentials. Proposal only: a general MCP gateway with OPA or Cedar policy.'))])
 
@@ -98,6 +98,6 @@ def d3():
       desc='Sequence diagram of an agent discovering a golden path in the catalog, invoking it with typed inputs on the platform API, then calling the verifier, which either returns a rule id and fix hint for a retry or returns signed evidence of success.',
       lede='The agent never grades its own work. The path ships its own verifier, and a failure comes back as a rule id and a fix hint the agent can act on.',
       body=''.join(b), W=1000, H=580,
-      cards=[('Requirement','', P('Golden paths become machine-executable contracts, not wiki pages. An agent has to be able to discover them, invoke them, and verify the result.')),
+      cards=[('Problem','', P('Golden paths become machine-executable contracts, not wiki pages. An agent has to be able to discover them, invoke them, and verify the result.')),
              ('Design choices','accent', UL(['One catalog feeds Backstage for humans and MCP for agents.','Every path declares preconditions and a verify contract: XR Ready, Argo Healthy, signature checks out, SLO burn under threshold.','Retry budget of three, then a human is paged with the evidence.'])),
              ('Evidence and gap','link', P('Built in Hangar: typed airframe XRDs, the Backstage scaffolder, release verification with cosign and Rekor. Proposal only: an MCP discovery endpoint over the same catalog.'))])

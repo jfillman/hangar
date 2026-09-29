@@ -64,7 +64,7 @@ def e11():
             ('C · evidence and evaluation',[
                ('Flight recorder task_id',8,11,0),('Preflight v0, 2 then 6 cases',8,12,0),('Holmes via Clearance',10,12,0)]),
             ('D · widen',[
-               ('Autonomy tracker, shadow',12,15,0),('Conformance on EKS or OKE',13,16,0)])]
+               ('Autonomy tracker, shadow',12,15,0),('Conformance on a public cloud',13,16,0)])]
     for w in range(NW):
         b.append(text(GX0+w*PITCH+PITCH/2,56,f'W{w+1}',8,400,SOFT,'middle',mono=True))
     b.append(f'<line x1="{GX0}" y1="64" x2="{GX0+NW*PITCH}" y2="64" stroke="{RULE}" stroke-width="0.8"/>')
