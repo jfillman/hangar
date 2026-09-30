@@ -3,6 +3,13 @@ export type Essay = { slug: string; title: string; dek: string; date: string; mi
 
 export const essays: Essay[] = [
   {
+    slug: 'why-airframe',
+    title: 'Why a platform still needs a service catalog',
+    dek: "People and AI agents are going to be building software side by side for a long time. The service catalog is where the platform writes down what it offers, precisely enough for both. Why I think it matters more now than ever, where I'd push back on the usual version, and how I'd build one, starting with the developers.",
+    date: '2026-09-30',
+    minutes: 12,
+  },
+  {
     slug: 'building-airframe',
     title: 'Building Airframe: the start of my Crossplane journey',
     dek: "I'd wanted to try Crossplane on one small secret store. Instead I built a whole service catalog on it. What six weeks of Airframe taught me about readiness, API budgets, and what a composition means when it renders nothing.",

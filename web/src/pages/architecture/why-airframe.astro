@@ -1,0 +1,295 @@
+---
+import Base from '../../layouts/Base.astro';
+import Diagram from '../../components/Diagram.astro';
+import Evidence from '../../components/Evidence.astro';
+import { essays } from '../../data/essays';
+import { gh, u } from '../../lib/url';
+
+const essay = essays.find((e) => e.slug === 'why-airframe')!;
+
+const questions = [
+  'Walk me through the last time you started a new service. Where did you wait?',
+  'What did you copy from another repo, and what did you have to change afterwards?',
+  "What's the thing you ask the platform team for most often?",
+  'How do you find out your app is healthy in staging? How sure are you?',
+  "What have you built yourself because the platform didn't have it?",
+  'If you could stop doing one thing every sprint, what would it be?',
+];
+
+const buildBuy = [
+  ['Build', 'The opinions', "Your APIs, their names, defaults and guardrails, the compositions behind them, and the contract that describes them. This is the part that's actually about your company, so nobody can sell it to you."],
+  ['Adopt', 'The engines', "The reconciler, the portal, GitOps delivery, the secrets store. Crossplane, Backstage, ArgoCD and a real secrets manager are better than anything you'd write, and thousands of people are already fixing their bugs."],
+  ['Buy', 'The undifferentiated hours', "When the team is small, a managed control plane or a hosted portal is often cheaper than the weekends you'd spend upgrading them. Buying the hosting doesn't mean you have to give up the opinions."],
+];
+
+const evidence = [
+  { text: 'Fifteen Airframe APIs, with one GitOps write path and nothing applied with kubectl', status: 'built' as const, href: gh('airframe', 'llms.txt') },
+  { text: "PostgreSQL's contract: outputs, closed ComponentReady reasons and verify checks", status: 'built' as const, href: gh('airframe', 'xrds/postgresql.meta.yaml') },
+  { text: 'A generated contract bundle, checked in CI, and a CLI that answers from it', status: 'built' as const, href: gh('airframe', 'contract/airframe-contract.json') },
+  { text: "Backstage entities and templates generated from Airframe's live XRDs (management cluster so far)", status: 'built' as const, href: gh('hangar', 'docs/backstage-design.md') },
+  { text: 'The AppSpec planner: one sentence of intent to an ordered, validated change set', status: 'built' as const, href: gh('autopilot', 'README.md') },
+  { text: 'The Airframe A+ program: a service catalog an agent can operate, measured by the scorecard', status: 'draft' as const, href: u('scorecard/') },
+  { text: "Autopilot's runtime: agents reach the catalog through Clearance, with bounded, audited authority", status: 'proposal' as const, href: gh('autopilot', 'README.md') },
+  { text: 'Measuring developer outcomes (time to first deploy, adoption per API), not only API quality', status: 'proposal' as const },
+];
+---
+<Base title={essay.title} description={essay.dek} section="architecture">
+  <div class="wrap">
+    <article class="essay">
+      <header class="hero">
+        <p class="eyebrow"><a href={u('architecture/')}>Architecture</a> · {essay.minutes} min read</p>
+        <h1>Why a platform still needs a <em>service catalog</em></h1>
+        <p class="lede">{essay.dek}</p>
+      </header>
+
+      <div class="prose">
+        <h2>A fair question</h2>
+        <p>
+          Every so often someone asks me whether the service catalog is still a thing. It's a fair question. A lot of
+          teams stood up a developer portal a few years ago, filled it with hand-written YAML, and watched it go stale
+          within a year. And now there's a newer version of the question: if an AI agent can read the code, write the
+          Terraform and open the pull request, why does anyone need a catalog at all? Can't you just ask?
+        </p>
+        <p>
+          My answer is that the service catalog matters more now than it did five years ago, but for a different reason.
+          It used to be a nicer way for people to find things. Now it's the API that everyone, people and agents alike,
+          uses to change things. That's why Airframe sits at the centre of Hangar, and why I built it before almost
+          anything else.
+        </p>
+
+        <h2>Two ways of building software, at the same time</h2>
+        <p>
+          Here's how I see where platform engineering is heading. We're going to be supporting the human software
+          lifecycle for a long time yet: people writing code, reviewing it, merging it, getting paged at 3am. That
+          isn't going away, and a platform that forgets it will lose the developers it's meant to serve. At the same
+          time, AI is arriving at every level at once. It writes code beside us, reviews pull requests, diagnoses a
+          failed rollout, and increasingly runs as a workload of its own that needs a database and a secret like any
+          other service.
+        </p>
+        <p>
+          So the platform has to serve both, through the same front door. I think of it as an IDP that can speak AI,
+          in a manner of speaking. That's why Hangar includes <a href={u('autopilot/')}>Autopilot</a>, and it's why
+          the service catalog has become the most important piece of the design: it's where we decide what the
+          platform actually offers, in a form that both a person and a machine can read.
+        </p>
+      </div>
+
+      <Diagram id="catalog/01-one-api-many-callers" />
+
+      <div class="prose">
+        <h2>"Service catalog" means two things</h2>
+        <p>
+          Part of the confusion is that we use one phrase for two different ideas. The first is an
+          <strong>inventory</strong>: everything that's running, who owns it, where its docs are, and what it depends
+          on. That's what most people picture when they hear "Backstage". The second is a <strong>menu</strong>: the
+          things you're allowed to ask the platform for, what you'll get back, and how you'll know it worked.
+        </p>
+        <p>
+          Both matter. An agent about to change a service needs to know who owns it, and it needs to know what it can
+          ask for. So does a new hire in their first week. But the inventory is the one that goes stale, because
+          somebody has to keep it up to date by hand, and nobody's job is to do that. The trick I've come to believe in
+          is to generate the inventory from the menu. In Hangar, Backstage's entities and its scaffolder templates are
+          both generated from Airframe's live XRDs and the resources they create. Nobody types them in, so they can't
+          drift from what's actually there. That's on the management cluster so far, with dev and prod next.
+        </p>
+      </div>
+
+      <Diagram id="catalog/02-menu-and-inventory" />
+
+      <div class="prose">
+        <h2>The catalog is the API</h2>
+        <p>
+          Once you see the menu as the thing that matters, a service catalog stops being a portal feature and becomes
+          the platform's API. In Hangar, that's literal. Airframe has fifteen APIs, from app stacks and environments to
+          PostgreSQL, Redis, RabbitMQ and a secret store, and there's exactly one way to use them: a git commit.
+          Backstage can't write to a cluster at all; its templates open pull requests. Glidepath's pipelines commit.
+          And when Autopilot's runtime is built, an agent will go through the same door too, with narrower authority
+          and every action on the record.
+        </p>
+        <p>
+          That's the part I care about most. If people, pipelines and agents each had their own way in, I'd have three
+          platforms to keep honest: three places to enforce policy, three audit trails, three sets of names for the same
+          database. With one API, a new kind of caller, including ones we haven't thought of yet, gets all of that for
+          free.
+        </p>
+
+        <h2>A list isn't enough. It needs a contract</h2>
+        <p>
+          Here's where I'd push back on a lot of catalogs I've seen, including early versions of my own. A name and a
+          form is a wish list. What turns it into an API is the contract: what you can ask for, what you get back, how
+          you'll know it's working, and who's allowed to change it.
+        </p>
+        <p>
+          I learned this the hard way. When I first measured how ready Airframe was for an agent, 22 of the 25 live
+          environment entries had a hand-typed name for something the platform had created, like a Secret or a
+          Service. Every one of those was a guess that happened to be right. A person can live with that. An agent will
+          copy the guess, confidently, into the next app. So components now declare their outputs by name, a closed
+          list of reasons for their health, and the checks that say what "working" means. Five do so far, and the
+          live environment files are still catching up: 33 of 45 entries hard-code a name today, which is exactly why
+          the scorecard counts them. The contract is generated from those sources into one bundle, CI fails if it
+          drifts, and there's an <code>llms.txt</code> at the root of the repo so an agent knows where to start.
+        </p>
+      </div>
+
+      <Diagram id="catalog/03-anatomy-of-an-entry" />
+
+      <div class="prose">
+        <p>
+          The payoff is that an agent can plan. Autopilot has a small planner that takes one sentence, "provision a
+          new Python application named parachute, with a dev and test environment and a canary step", and turns it
+          into an ordered set of changes that's checked against the real XRD schemas and a real
+          <code>helm template</code> before anything is committed. That only works because the catalog says exactly
+          what's allowed. Without it, the agent would be guessing, and so would everyone reviewing its pull request.
+        </p>
+        <p class="pull">Agents don't make the catalog obsolete. They make a vague one dangerous.</p>
+
+        <h2>Is this where the industry is going?</h2>
+        <p>
+          I think so, mostly. The ideas Hangar leans on aren't mine alone. Treating the platform as a product, offering
+          APIs instead of tickets, building on a Kubernetes-style control plane that people can extend, and giving
+          agents a small, typed set of tools rather than a shell are all where the thoughtful platform teams I follow
+          are heading. Crossplane's move towards intelligent control planes, and the way MCP has become the ordinary
+          way for an agent to discover tools, both point the same way: the platform as a well-described API that
+          people and machines share.
+        </p>
+        <p>
+          Where I'd be more careful is the portal-first version of this. Buying a portal and hoping a catalog grows
+          inside it is how a lot of teams ended up with a very pretty, very stale inventory. The API has to come first,
+          and the portal is one of its readers.
+        </p>
+        <p>
+          And I'll be honest about where Hangar falls short. The <a href={u('scorecard/')}>scorecard</a> grades the
+          API: its schemas, its contracts, how safely it can be written to. It doesn't yet measure the thing that
+          matters most, which is whether developers are better off. How long does a new service take to reach
+          production? Which APIs do teams actually use? "Platform as a product" is the first of my
+          <a href={u('principles/')}>principles</a>, and a product without usage numbers is mostly an opinion. That's
+          the next thing I want to add.
+        </p>
+
+        <h2>Build or buy, now that AI writes code</h2>
+        <p>
+          This is the question I get asked most, and the answer has changed less than people expect. AI has made
+          writing code much cheaper. I build with AI tools beside me every day now, and a lot of Hangar's typing wasn't
+          mine. But it hasn't made owning code any cheaper. Someone still upgrades it, gets paged for it and explains
+          it to the next person. When you can generate a whole reconciler in an afternoon, the temptation is to build
+          everything yourself because it feels free.
+        </p>
+        <p>It's a trap. Here's how I split it instead:</p>
+      </div>
+
+      <dl class="split">{buildBuy.map(([k, t, v]) => <div><dt><span>{k}</span> {t}</dt><dd>{v}</dd></div>)}</dl>
+
+      <div class="prose">
+        <p>
+          Even adopting has a cost. I run my own fork of the GitHub provider because the release I was on read a
+          rate-limit error as "this file was deleted" and recreated it. I wrote about that in
+          <a href={u('architecture/building-airframe/')}>Building Airframe</a>. Open source didn't mean free; it meant
+          I could fix it. AI collaborators make that kind of fix much faster, which is a real reason to choose open
+          engines you can read over closed ones you can't. They don't change what's worth owning.
+        </p>
+
+        <h2>How I'd build one, if you handed me the job</h2>
+        <p>
+          Say I joined a platform team tomorrow and was asked to build the company's service catalog. I wouldn't start
+          with Crossplane, or Backstage, or a schema. I'd start with the people who are going to use it.
+        </p>
+        <p>
+          <strong>Discovery comes first.</strong> Developers are the customer, and they already know what hurts. I'd
+          spend the first few weeks interviewing them, fifteen or twenty across different teams and seniorities,
+          shadowing a couple of real onboardings end to end, and taking an honest inventory of what's already running.
+          Nobody asks for an XRD. They say "it took three weeks to get a database" or "I copy the last repo and hope".
+          Each of those is a job the platform could do for them, and the job is what you design around.
+        </p>
+      </div>
+
+      <section class="rules">
+        <h3>Questions I'd ask in every interview</h3>
+        <ol>{questions.map((q) => <li>{q}</li>)}</ol>
+      </section>
+
+      <div class="prose">
+        <p>
+          <strong>Then I'd turn what I heard into nouns.</strong> A good API is a noun a developer already uses: a
+          database, an application, a secret store. If you have to explain the name, it isn't one yet. I'd draft three
+          to five of them, no more, and take the draft schemas back to the people who asked. "Would this have saved you
+          the three weeks?" is the cheapest design review you'll ever run. Just as important is writing down what we
+          won't build yet, so nobody's waiting on it.
+        </p>
+      </div>
+
+      <Diagram id="catalog/04-from-interview-to-api" />
+
+      <div class="prose">
+        <p>
+          <strong>Then one slice, for one team.</strong> Take the most painful journey and make it self-service end to
+          end with a pilot team, with git as the only way in from day one. One API that one team loves beats fifteen
+          that nobody asked for. Airframe has fifteen because Hangar is my lab and I'm its only customer; at a company
+          I'd grow into that number, not start there.
+        </p>
+        <p>
+          <strong>Then make it readable.</strong> Before anything else can build on the API, give it outputs, honest
+          conditions and generated portal pages, and let CI catch drift. This is the step most teams skip, and it's the
+          one agents depend on.
+        </p>
+        <p>
+          <strong>Then open it to agents.</strong> Same API, narrower authority. Expose the contract as tools, keep
+          every write a pull request, and audit everything. I put this after readability on purpose. An agent working
+          against a vague API just makes mistakes faster.
+        </p>
+        <p>
+          <strong>And measure the whole time.</strong> Take a baseline during discovery, then track time to first
+          deploy and how much each API is actually used. Retire what nobody calls. And keep going back to discovery,
+          because the first catalog you ship is really a draft of the second one.
+        </p>
+      </div>
+
+      <Diagram id="catalog/05-roadmap-discovery-first" />
+
+      <div class="prose">
+        <h2>Why Airframe</h2>
+        <p>
+          Airframe is my version of all this, built in a home lab rather than a company, so the interviews were mostly
+          with myself and the apps I wanted to run. It's the part of Hangar that defines what a compliant service is,
+          once, for everyone who asks. Glidepath builds and ships what it describes, Tower and Backstage show it, and
+          Autopilot will let agents use it within limits I can explain.
+        </p>
+        <p>
+          If I had to keep just one piece of Hangar, it would be this one. Portals come and go, pipelines get
+          rewritten, and the tools agents use will look different next year. What the platform promises, written down
+          precisely enough that a person and a machine read it the same way, is the part that lasts.
+        </p>
+        <p class="sign">James</p>
+        <p class="more"><a href={u('architecture/')}>← All architecture essays</a></p>
+      </div>
+
+      <Evidence items={evidence} heading="Where Hangar does this, and where it doesn't yet" />
+    </article>
+  </div>
+</Base>
+<style>
+  .essay .hero .eyebrow a { color: inherit; }
+  .essay .hero h1 { max-width: 22ch; }
+  .prose h2 { margin-top: 3rem; }
+  .pull {
+    font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem; margin: 2.5rem 0; max-width: 34ch;
+  }
+  .rules {
+    background: var(--raised); border: 1px solid var(--rule); border-top: 3px solid var(--accent); border-radius: 10px;
+    padding: 1.1rem 1.3rem; margin: 2rem 0 1rem; max-width: var(--prose);
+  }
+  .rules h3 { margin: 0 0 0.6rem; font-size: 1.35rem; }
+  .rules ol { margin: 0; padding-left: 1.3rem; }
+  .rules li { padding: 0.35rem 0; line-height: 1.5; }
+  .split { display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin: 1.2rem 0 1rem; max-width: 60rem; }
+  @media (min-width: 800px) { .split { grid-template-columns: 1fr 1fr 1fr; } }
+  .split div { background: var(--raised); border: 1px solid var(--rule); border-radius: 8px; padding: 0.9rem 1.1rem; }
+  .split dt { font-weight: 600; }
+  .split dt span {
+    display: block; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 0.2rem;
+  }
+  .split dd { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+  .sign { font-family: var(--font-serif); font-size: 1.4rem; margin-top: 2rem; }
+  .more { margin-top: 2rem; }
+</style>

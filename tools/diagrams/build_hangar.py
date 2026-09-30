@@ -2,12 +2,12 @@
 
     python3 build_hangar.py [OUT_DIR]
 
-Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7) and Crossplane (4) beside them. Needs only the Python standard library.
+Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossplane (4) and Service catalog (5) beside them. Needs only the Python standard library.
 """
 import sys, os, re, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib
-import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, d123, d456, d789, d1011
+import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, d123, d456, d789, d1011
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '../../docs/autopilot/diagrams')
@@ -15,6 +15,8 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '../../docs/autop
 OUT_GLIDEPATH = os.path.join(OUT, '../../glidepath/diagrams')
 # The Crossplane set (pictures for the Building Airframe essays) lives in docs/crossplane/diagrams.
 OUT_CROSSPLANE = os.path.join(OUT, '../../crossplane/diagrams')
+# The Service catalog set (pictures for the Why Airframe essay) lives in docs/catalog/diagrams.
+OUT_CATALOG = os.path.join(OUT, '../../catalog/diagrams')
 
 PLAN = [e_g.p_family, e_g.p_roadmap, e_g.p_deps, e_g.p_scorecard, e_g.p_contract, e_g.p_plan_seq, e_g.p_skyport_matrix, e_g.p_skyport_seq]
 AUTOPILOT = [
@@ -28,6 +30,7 @@ AUTOPILOT = [
 # Glidepath (CI/CD), redrawn from glidepath/docs in this grammar.
 GLIDEPATH = [e_h.g_overview, e_h.g_pipeline, e_h.g_mapping, e_h.g_onboarding, e_h.g_chaining, e_h.g_deploy_release, e_h.g_multicluster]
 CROSSPLANE = [e_i.x_secretstore, e_i.x_readiness, e_i.x_budget, e_i.x_timeline]
+CATALOG = [e_j.c_one_api, e_j.c_menu_inventory, e_j.c_anatomy, e_j.c_discovery, e_j.c_roadmap]
 REFERENCE = [d123.d1, d123.d2, d123.d3, d456.d4, d456.d5, d456.d6, d789.d7, d789.d8, d789.d9, d1011.d10]
 
 
@@ -54,6 +57,7 @@ auto = build('autopilot', AUTOPILOT, 'autopilot', 'Hangar · Autopilot')
 ref = build('reference', REFERENCE, 'reference', 'Hangar · reference architecture')
 glide = build('glidepath', GLIDEPATH, '.', 'Hangar · Glidepath', root=OUT_GLIDEPATH)
 xp = build('crossplane', CROSSPLANE, '.', 'Hangar · Airframe · Crossplane', root=OUT_CROSSPLANE)
+cat = build('catalog', CATALOG, '.', 'Hangar · Airframe · Service catalog', root=OUT_CATALOG)
 
 def tiles(rows):
     return ''.join(f'<a class="tile" href="{h}"><p class="eb">{e}</p><h2>{t}</h2><p>{l}</p></a>' for h, e, t, l in rows)
