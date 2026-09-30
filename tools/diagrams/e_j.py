@@ -62,7 +62,7 @@ def c_menu_inventory():
       body=''.join(b), W=1000, H=600, y0=76,
       cards=[('The inventory', '', P('Ownership, docs and dependencies for everything that runs. Useful, and famously hard to keep true when people maintain it by hand.')),
              ('The menu', 'accent', P('Typed APIs with a schema, defaults, outputs and an honest status. This is the part that defines the platform, and the part I built first.')),
-             ('Generated, not typed', 'link', P('In Hangar, Backstage\'s entities and its templates are both generated from Airframe\'s live XRDs and XRs, so the inventory stays true to what the menu created. Today that\'s on the management cluster; dev and prod are next.'))])
+             ('Generated, not typed', 'link', P('In Hangar, Backstage\'s entities and its templates are both generated from Airframe\'s live XRDs and XRs, so the inventory stays true to what the menu created.'))])
 
 
 def c_discovery():
