@@ -1,0 +1,39 @@
+---
+import Base from '../../layouts/Base.astro';
+import { notes } from '../../data/notes';
+import { u } from '../../lib/url';
+
+const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<Base title="Field notes" description="Shorter notes from James Fillman: tools I like, things I've learned, and work outside Hangar." section="notes">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Field notes · Shorter, and looser</p>
+      <h1>Notes from the <em>field</em></h1>
+      <p class="lede">
+        Not everything I want to say is an architecture essay. These are the smaller things: tools I've fallen for,
+        people doing good work, and what I've learned along the way, in and out of Hangar.
+      </p>
+    </section>
+
+    <ol class="notes">
+      {notes.map((n) => (
+        <li>
+          <a href={u(`notes/${n.slug}/`)}>
+            <span class="eyebrow">{fmt(n.date)}{n.tags && ` · ${n.tags.join(' · ')}`} · {n.minutes} min read</span>
+            <h2>{n.title}</h2>
+            <p>{n.dek}</p>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Base>
+<style>
+  .notes { list-style: none; padding: 0; margin: 1rem 0 0; max-width: 52rem; }
+  .notes li { border-top: 1px solid var(--rule); }
+  .notes a { display: block; padding: 1.6rem 0; color: inherit; text-decoration: none; }
+  .notes a:hover h2 { color: var(--accent); }
+  .notes h2 { margin: 0.5rem 0 0.6rem; font-size: clamp(1.6rem, 1.5vw + 1rem, 2.2rem); }
+  .notes p { margin: 0; color: var(--muted); font-size: 1.05rem; max-width: 62ch; }
+</style>
