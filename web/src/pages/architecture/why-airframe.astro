@@ -26,7 +26,7 @@ const evidence = [
   { text: 'Fifteen Airframe APIs, with one GitOps write path and nothing applied with kubectl', status: 'built' as const, href: gh('airframe', 'llms.txt') },
   { text: "PostgreSQL's contract: outputs, closed ComponentReady reasons and verify checks", status: 'built' as const, href: gh('airframe', 'xrds/postgresql.meta.yaml') },
   { text: 'A generated contract bundle, checked in CI, and a CLI that answers from it', status: 'built' as const, href: gh('airframe', 'contract/airframe-contract.json') },
-  { text: "Backstage entities and templates generated from Airframe's live XRDs (management cluster so far)", status: 'built' as const, href: gh('hangar', 'docs/backstage-design.md') },
+  { text: "Backstage entities and templates generated from Airframe's live XRDs", status: 'built' as const, href: gh('hangar', 'docs/backstage-design.md') },
   { text: 'The AppSpec planner: one sentence of intent to an ordered, validated change set', status: 'built' as const, href: gh('autopilot', 'README.md') },
   { text: 'The Airframe A+ program: a service catalog an agent can operate, measured by the scorecard', status: 'draft' as const, href: u('scorecard/') },
   { text: "Autopilot's runtime: agents reach the catalog through Clearance, with bounded, audited authority", status: 'proposal' as const, href: gh('autopilot', 'README.md') },
@@ -90,7 +90,7 @@ const evidence = [
           somebody has to keep it up to date by hand, and nobody's job is to do that. The trick I've come to believe in
           is to generate the inventory from the menu. In Hangar, Backstage's entities and its scaffolder templates are
           both generated from Airframe's live XRDs and the resources they create. Nobody types them in, so they can't
-          drift from what's actually there. That's on the management cluster so far, with dev and prod next.
+          drift from what's actually there.
         </p>
       </div>
 
