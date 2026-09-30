@@ -1,6 +1,9 @@
 ---
-import Base from '../layouts/Base.astro';
-import { u } from '../lib/url';
+import Base from '../../layouts/Base.astro';
+import { notes } from '../../data/notes';
+import { u } from '../../lib/url';
+
+const note = notes.find((n) => n.slug === 'radar')!;
 
 const pr = (n: number) => `https://github.com/skyhook-io/radar/pull/${n}`;
 
@@ -73,16 +76,14 @@ const contributions = [
 ];
 const chip = { merged: ['built', 'Merged'], review: ['draft', 'In review'] } as const;
 ---
-<Base title="Open source" description="Open source projects I use, love and contribute to, starting with Radar, the Kubernetes UI from Skyhook." section="open-source">
+<Base title={note.title} description={note.dek} section="notes">
   <div class="wrap">
-    <section class="hero">
-      <p class="eyebrow">Open source · Other people's projects</p>
-      <h1>Tools I <em>love</em>, and help build</h1>
-      <p class="lede">
-        Hangar is mine, but most of what it stands on belongs to other people. This page is for the projects I use and
-        like enough to contribute to. The first one is Radar.
-      </p>
-    </section>
+    <article>
+    <header class="hero">
+      <p class="eyebrow"><a href={u('notes/')}>Field notes</a> · {note.minutes} min read</p>
+      <h1>A shout-out to <em>Radar</em></h1>
+      <p class="lede">{note.dek}</p>
+    </header>
 
     <div class="prose">
       <h2>Radar, from Skyhook</h2>
@@ -148,6 +149,7 @@ const chip = { merged: ['built', 'Merged'], review: ['draft', 'In review'] } as 
         Radar also supported Argo Rollouts before I arrived; my part was building on what was there.
       </p>
     </div>
+    </article>
   </div>
 </Base>
 <style>
