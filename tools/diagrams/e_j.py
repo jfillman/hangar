@@ -41,7 +41,7 @@ def c_menu_inventory():
     b += [path([(256, 196), (256, 236)], 'open'), path([(744, 196), (744, 236)], 'open'),
           path([(256, 292), (256, 332)], 'open'), path([(744, 292), (744, 332)], 'open'),
           path([(536, 356), (464, 356)], 'accent'), hlab(464, 536, 356, 'FEEDS', ACC)]
-    b += [node(48, 140, 416, 56, 'Who owns checkout-api?', 'what is running, and whose is it', 'input'),
+    b += [node(48, 140, 416, 56, 'Who owns baggage-api?', 'what is running, and whose is it', 'input'),
           node(48, 236, 128, 56, 'Component', 'a running service'),
           node(192, 236, 128, 56, 'Owner', 'team · on-call'),
           node(336, 236, 128, 56, 'Docs', 'TechDocs · APIs'),
@@ -57,7 +57,7 @@ def c_menu_inventory():
     b.append(legend(572, [('input', 'The question'), ('focal', 'The menu'), ('store', 'The inventory'), ('propose', 'The reader'), ('accent', 'Generates'), ('open', 'Answers')]))
     return dict(slug='menu-and-inventory', eyebrow='Service catalog · 02 of 05 · Two catalogs',
       title='The menu and the inventory',
-      desc='Two panels. The inventory answers "who owns checkout-api?": what is running and whose it is, through components, owners with team and on-call, and docs, collected in the Backstage catalog, which is generated from what the control plane reports. The menu answers "can I have a database?": what you can ask for and what you get, through APIs such as PostgreSQL, Redis and SecretStore, defined in Airframe as XRDs with outputs, conditions and reasons. Airframe feeds the Backstage catalog. Below, an agent or a new hire reads both and needs both answers before acting.',
+      desc='Two panels. The inventory answers "who owns baggage-api?": what is running and whose it is, through components, owners with team and on-call, and docs, collected in the Backstage catalog, which is generated from what the control plane reports. The menu answers "can I have a database?": what you can ask for and what you get, through APIs such as PostgreSQL, Redis and SecretStore, defined in Airframe as XRDs with outputs, conditions and reasons. Airframe feeds the Backstage catalog. Below, an agent or a new hire reads both and needs both answers before acting.',
       lede='"Service catalog" means two different things. One is a list of what exists. The other is a list of what you\'re allowed to ask for. A platform needs both, and it works best when the first is generated from the second.',
       body=''.join(b), W=1000, H=600, y0=76,
       cards=[('The inventory', '', P('Ownership, docs and dependencies for everything that runs. Useful, and famously hard to keep true when people maintain it by hand.')),
