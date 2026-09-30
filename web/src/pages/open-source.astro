@@ -1,0 +1,162 @@
+---
+import Base from '../layouts/Base.astro';
+import { u } from '../lib/url';
+
+const pr = (n: number) => `https://github.com/skyhook-io/radar/pull/${n}`;
+
+// Every PR here is mine (author jfillman) in skyhook-io/radar. Dates are when a maintainer merged it.
+const contributions = [
+  {
+    area: 'Tekton',
+    title: 'Pipelines, PipelineRuns and TaskRuns, with a live DAG and a CI/CD tab',
+    number: 1627,
+    state: 'review' as const,
+    when: 'Opened 3 September 2026',
+    text: 'Detail views for each Tekton kind, a live task graph that follows a run as it goes (finally tasks, skipped tasks and matrix runs included), combined step logs, and a CI/CD tab that lists every PipelineRun across the cluster. This is the big one, and it is still in review.',
+  },
+  {
+    area: 'Argo Rollouts',
+    title: 'Deeper Rollout views',
+    number: 1625,
+    state: 'merged' as const,
+    when: 'Merged 15 September 2026',
+    text: 'Radar could already show a Rollout. This added what I actually watch while one runs: a step timeline for canary and blue-green, ReplicaSet progression with live pods, the full AnalysisRun history, and detail views for AnalysisTemplates and Experiments.',
+  },
+  {
+    area: 'Argo Rollouts',
+    title: 'Canary and blue-green traffic in the resource graph',
+    number: 1626,
+    state: 'merged' as const,
+    when: 'Merged 18 September 2026',
+    text: 'The topology view now shows which pods are canary and which are stable, and how the traffic splits between them. It also fixed an existing bug where Service to Rollout edges never rendered.',
+  },
+  {
+    area: 'Argo CD',
+    title: 'Why a Degraded app is actually Degraded',
+    number: 1624,
+    state: 'merged' as const,
+    when: 'Merged 13 September 2026',
+    text: 'The cause (a crash loop, an OOM kill, an image pull failure) now shows up on the headline, and apps on Argo CD 3.0 that went Degraded without raising any issue now get one.',
+  },
+  {
+    area: 'Argo CD',
+    title: 'Resource diffs with manifest tabs and Monaco views',
+    number: 1622,
+    state: 'merged' as const,
+    when: 'Merged 21 September 2026',
+    text: 'The drift view for an out-of-sync resource now uses Radar\'s Monaco diff editor, with tabs for the full desired and live manifests you can search and copy.',
+  },
+  {
+    area: 'Argo CD',
+    title: 'ApplicationSets in the fleet view',
+    number: 1609,
+    state: 'merged' as const,
+    when: 'Merged 4 September 2026',
+    text: 'My first merged change. ApplicationSets are how I roll apps out across clusters, so I wanted to see them.',
+  },
+  {
+    area: 'Argo CD',
+    title: "Open the resource drawer from an app's own root node",
+    number: 1610,
+    state: 'merged' as const,
+    when: 'Merged 4 September 2026',
+    text: 'A small one: clicking the root of an app now opens its details instead of doing nothing.',
+  },
+  {
+    area: 'Argo CD',
+    title: 'Enough time for the reachability probe on .local DNS',
+    number: 1623,
+    state: 'merged' as const,
+    when: 'Merged 14 September 2026',
+    text: 'On macOS a .local hostname can spend five seconds in DNS alone, which used up the whole probe budget and marked a healthy Argo CD server as unreachable. A small timeout bump fixed it.',
+  },
+];
+const chip = { merged: ['built', 'Merged'], review: ['draft', 'In review'] } as const;
+---
+<Base title="Open source" description="Open source projects I use, love and contribute to, starting with Radar, the Kubernetes UI from Skyhook." section="open-source">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Open source · Other people's projects</p>
+      <h1>Tools I <em>love</em>, and help build</h1>
+      <p class="lede">
+        Hangar is mine, but most of what it stands on belongs to other people. This page is for the projects I use and
+        like enough to contribute to. The first one is Radar.
+      </p>
+    </section>
+
+    <div class="prose">
+      <h2>Radar, from Skyhook</h2>
+      <p>
+        <a href="https://radarhq.io">Radar</a> calls itself "the missing open source Kubernetes UI", and I think it's
+        earned the name. It's a single binary you can run on your laptop against whatever cluster you're pointed at, or
+        deploy in-cluster, and it needs no account and no cloud backend. You get a live topology graph, an event timeline,
+        Helm releases, Argo CD and Flux, a best-practice audit and a built-in MCP server for AI tools. It keeps your
+        cluster data local, and it's Apache 2.0.
+      </p>
+      <p>
+        I'd just started digging into Hangar when I saw Radar announced, on LinkedIn I think. I was living in
+        Kubernetes at the time, and I love things that are pretty and functional in equal measure, so I gave it a try.
+        I liked it straight away. It's the kind of interface I keep arguing platforms should have: calm, fast, and
+        honest about what the cluster is doing.
+      </p>
+
+      <h2>The people behind it</h2>
+      <p>
+        Radar is built by <a href="https://www.ycombinator.com/companies/skyhook">Skyhook</a>, a Y Combinator company
+        (W23) founded by Oded Regev, its CEO, and Nadav Erell, its CTO. Nadav is also, by a wide margin, Radar's most
+        prolific committer. What stood out to me as a contributor was how open they are: the maintainers reviewed my
+        work carefully, merged it, and polished a few edges themselves on the way in.
+      </p>
+      <p>
+        Radar is their gift to the community. Their product is <a href="https://skyhook.io">Skyhook</a> itself, an
+        internal developer platform out of the box: a PaaS-like experience on Kubernetes, running in your own cloud, so
+        a team can ship production-ready services without first hiring a platform team to build one. That's the same
+        problem Hangar is my answer to, and it's good to see it offered as a product people can simply pick up.
+      </p>
+
+      <h2>What I added, and why</h2>
+      <p>
+        My day-to-day was full of <a href={u('cicd/')}>Tekton</a> pipelines and Argo Rollouts, and Radar didn't have
+        much for either yet. At the same time I was sharpening my skills with AI coding tools, so I set myself a
+        question: how hard would it be to add the features I wanted to someone else's codebase, one I'd never seen
+        before, to a standard its maintainers would merge?
+      </p>
+      <p>
+        Not as hard as I'd feared, and more fun than I'd expected. The AI did a lot of the typing. Knowing what a
+        PipelineRun or an AnalysisRun should look like when things go wrong, testing against real clusters, and
+        deciding what was worth a maintainer's time was still on me. Seven of my changes are merged so far, and the
+        Tekton work is in review.
+      </p>
+    </div>
+
+    <ul class="contrib">
+      {contributions.map((c) => (
+        <li>
+          <p class="eyebrow">
+            <span class:list={['chip', chip[c.state][0]]}>{chip[c.state][1]}</span>
+            <span>{c.area} · {c.when}</span>
+          </p>
+          <h3><a href={pr(c.number)}>{c.title}</a> <span class="num">#{c.number}</span></h3>
+          <p>{c.text}</p>
+        </li>
+      ))}
+    </ul>
+
+    <div class="prose">
+      <p class="muted small">
+        All of these live in <a href="https://github.com/skyhook-io/radar/pulls?q=is%3Apr+author%3Ajfillman">skyhook-io/radar</a>.
+        Radar also supported Argo Rollouts before I arrived; my part was building on what was there.
+      </p>
+    </div>
+  </div>
+</Base>
+<style>
+  .contrib { list-style: none; padding: 0; margin: 2rem 0; max-width: 52rem; }
+  .contrib li { border-top: 1px solid var(--rule); padding: 1.2rem 0; }
+  .contrib .eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.8rem; margin: 0; }
+  .contrib h3 { margin: 0.5rem 0 0.4rem; font-size: 1.3rem; }
+  .contrib h3 a { color: inherit; }
+  .contrib h3 a:hover { color: var(--accent); }
+  .contrib .num { font-family: var(--font-mono); font-size: 0.8rem; color: var(--soft); font-weight: 400; }
+  .contrib p:not(.eyebrow) { margin: 0; color: var(--muted); max-width: 62ch; line-height: 1.5; }
+</style>
