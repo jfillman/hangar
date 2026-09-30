@@ -1,0 +1,270 @@
+---
+import Base from '../../layouts/Base.astro';
+import Diagram from '../../components/Diagram.astro';
+import Evidence from '../../components/Evidence.astro';
+import { essays } from '../../data/essays';
+import { gh, u } from '../../lib/url';
+
+const essay = essays.find((e) => e.slug === 'building-airframe')!;
+const commit = (repo: string, sha: string) => `https://github.com/jfillman/${repo}/commit/${sha}`;
+
+const smallPrint = [
+  ['A namespaced XR can\'t compose a cluster-scoped resource', "Crossplane v2 refuses it. I use the providers' namespaced API groups where they exist, and wrap anything cluster-wide, like a ClusterSecretStore, in a provider-kubernetes Object."],
+  ['stringData breaks provider-kubernetes', 'The API server turns stringData into data and never stores it, so the provider can\'t find its own field and fails with "unable to convert managed fields". Write data, base64-encoded.'],
+  ['One package, one Function object', 'A second Function pointing at the same package didn\'t just fail on its own. It broke the dependency lock for every other function, and auto-ready quietly lost its Deployment. I inline templates now instead.'],
+  ['Template delimiters inside YAML comments still count', 'The templating engine scans for its delimiters before YAML ever sees the comment, so a comment that merely mentions one breaks the whole render.'],
+  ['Crossplane needs RBAC for native kinds', "Compose a PrometheusServiceLevel or any other non-provider kind directly and Crossplane's own service account needs permission for it. Nothing tells you until it fails."],
+  ["Look for the primitive before you build one", "I nearly wrote my own deletion-ordering check. Crossplane already ships Usage, which blocks deleting an app while an environment still needs it, enforced by a webhook that was already installed."],
+];
+
+const rules = [
+  "Never call your own condition Ready. Give it a name and a closed list of reasons.",
+  "If a resource can't report its own health, say so explicitly, or the XR never goes green.",
+  'Know what one reconcile costs, times the number of objects, times how often it runs.',
+  'When the provider owns a field, render back exactly what it wrote.',
+  'A missing object is a delete. Anything a person owns gets no Delete policy.',
+  'Changing a template for objects that already exist is a migration, not a default.',
+];
+
+const evidence = [
+  { text: 'Custom conditions instead of patching the reserved Ready (the first Bootstrap XRD, August)', status: 'built' as const, href: gh('airframe', 'README.md') },
+  { text: 'ComponentReady with closed reason codes for Redis, PostgreSQL and RabbitMQ', status: 'built' as const, href: commit('airframe', '8819a9a') },
+  { text: "Dex: mark resources that can't report readiness, so the XR stops sitting at Creating", status: 'built' as const, href: commit('airframe', '2846304') },
+  { text: 'My provider-upjet-github fork: a deterministic external name for RepositoryFile, and the unreleased 403 fix published', status: 'built' as const, href: commit('provider-upjet-github', 'ea893ce') },
+  { text: 'Apron: every new cluster polls GitHub hourly, with a capped reconcile rate', status: 'built' as const, href: commit('apron', '217eef3') },
+  { text: 'External names follow the observed object, ending the 280-calls-a-minute fight', status: 'built' as const, href: commit('airframe', '54f5c1c') },
+  { text: 'Scaffold files never delete, overwrite or change identity, ending the 16,000-an-hour retry loop', status: 'built' as const, href: commit('airframe', '302374c') },
+  { text: 'No Delete on any tenant-owned file, after the gate flap that cost two apps their secrets', status: 'built' as const, href: commit('airframe', '40983c1') },
+  { text: 'SecretStore never deletes the Infisical project or its environments', status: 'built' as const, href: commit('airframe', 'e5eaa8d') },
+  { text: 'Contract bundle, agent summaries and llms.txt, so an agent can read the catalog', status: 'built' as const, href: commit('airframe', '8a6a86f') },
+  { text: 'Every API moved to the catalog.hangar.io group (twins added, migration under way)', status: 'draft' as const, href: commit('airframe', 'ba9c25b') },
+  { text: 'Scaffold new repositories with a one-time action instead of a reconciled resource', status: 'proposal' as const, href: u('architecture/cost-of-the-platform/') },
+];
+---
+<Base title={essay.title} description={essay.dek} section="architecture">
+  <div class="wrap">
+    <article class="essay">
+      <header class="hero">
+        <p class="eyebrow"><a href={u('architecture/')}>Architecture</a> · {essay.series} · {essay.minutes} min read</p>
+        <h1>Building Airframe: the start of my <em>Crossplane</em> journey</h1>
+        <p class="lede">{essay.dek}</p>
+      </header>
+
+      <div class="prose">
+        <h2>The proof of concept I never got to run</h2>
+        <p>
+          In my previous role I had a Crossplane proof of concept all picked out. It was a secret store: one claim that
+          would create an Azure Key Vault for an app, plus an External Secrets SecretStore pointing at it. It was small
+          enough to finish, real enough to matter, and a nice way to show a team what a platform API feels like. It
+          never happened.
+        </p>
+        <p>
+          So when I started building Hangar in August, I skipped the gentle introduction. Airframe, Hangar's service
+          catalog, is Crossplane from the ground up, and it's meant to be used by AI agents as well as by people. That's
+          diving in head first, and I knew it when I started.
+        </p>
+
+        <h2>Why Crossplane</h2>
+        <p>
+          I like where Upbound is taking Crossplane with intelligent control planes: the control plane as an API that
+          people, pipelines and agents can all reason about and act through, not just a loop that applies YAML. I believe
+          an agent should be able to ask for a database the same way a developer does, and get an honest answer about
+          whether it's ready. If that's the goal, I want the API to be declarative, Kubernetes-shaped and able to
+          describe itself. It's the third of my <a href={u('principles/')}>principles</a>, and choosing Crossplane for
+          it was easy.
+        </p>
+        <p>
+          Six weeks in, Airframe has fifteen APIs, from app stacks and environments to PostgreSQL, Redis, RabbitMQ,
+          MongoDB and Dex, plus three Composition Functions. And the secret store I'd wanted to prototype was one of the
+          first things I built. It went live on 17 August, on Infisical rather than Azure Key Vault.
+        </p>
+      </div>
+
+      <Diagram id="crossplane/01-secretstore-then-and-now" />
+
+      <div class="prose">
+        <p>
+          This is the first in a series. I'll keep writing these as Airframe grows, and I'm starting with what went
+          wrong, because that's where I learned the most. Each story links to the commit that fixed it.
+        </p>
+      </div>
+
+      <Diagram id="crossplane/04-six-weeks-of-lessons" />
+
+      <div class="prose">
+        <h2>Lesson one: "ready" has to be earned</h2>
+        <p>
+          My first app XRD taught me this. I wanted a new Node.js app to say "everything worked except CI/CD
+          onboarding, which isn't possible yet", so I tried to set Ready to false with a reason. You can't.
+          <code>function-go-templating</code> reserves Ready, Healthy and Synced, and it errors if a Composition sets
+          them. Custom conditions like <code>CicdOnboarded</code> are the supported way to say "done, except this".
+        </p>
+        <p>
+          The components made it harder. PostgreSQL, running on CloudNativePG, has a Ready condition. A RabbitMQ cluster
+          has <code>ClusterAvailable</code> and no Ready at all. Redis is a Helm release with a state string. Crossplane's
+          own Ready tells you the objects exist and the provider is happy. It doesn't tell you whether you can connect.
+          So each component now sets <code>ComponentReady</code>, worked out from the real resource's own status, with a
+          closed list of reasons like <code>PostgreSQLDegraded</code> or <code>RedisReleaseFailed</code>. I kept the name
+          away from Ready on purpose, so it can't race the auto-ready step that owns Ready. And I kept the reasons closed
+          because something is going to switch on them, and increasingly that something is an agent. When I tested it
+          live, a new PostgreSQL went from Provisioning to Degraded to Ready. That was a real transient state, not a
+          simulated one.
+        </p>
+        <p>
+          Then the opposite trap. The new Dex component had its pod running and <code>ComponentReady</code> true, and the
+          XR still said "Creating" and stayed there. The auto-ready function decides by reading each composed resource's
+          conditions, and a Service, a PVC or a ConfigMap doesn't have any. The fix was to have the function mark those
+          resources ready itself.
+        </p>
+        <p>
+          And one readiness bug wasn't mine at all. A GitHub <code>RepositoryFile</code> interrupted mid-create, say by a
+          provider restart, stayed <code>Ready: False</code> forever. The fix belonged in the provider: a deterministic
+          external name, which I patched into my fork of the GitHub provider along with a script that reapplies it every
+          time the code is regenerated.
+        </p>
+        <p class="pull">Green is a promise to whoever reads it next. More and more often, that reader will act on it without asking.</p>
+      </div>
+
+      <Diagram id="crossplane/02-readiness" />
+
+      <div class="prose">
+        <h2>Lesson two: every reconcile spends someone's budget</h2>
+        <p>
+          Airframe writes to GitHub a lot. Creating an app commits a source repo, its boilerplate, a GitOps repo and
+          entries in each cluster's tenants repo. GitHub gives an account 5,000 API calls an hour, and my account shares
+          that with Backstage. I emptied it three different ways.
+        </p>
+        <p>
+          <strong>Polling.</strong> The GitHub provider checks every managed resource every ten minutes by default,
+          forever, whether or not anything changed. Multiply that by every repository and it was a steady drain, and it
+          helped break Backstage plugin testing. Every new cluster from the Apron template now starts with
+          <code>--poll=1h</code> and <code>--max-reconcile-rate=50</code>, so nobody has to find this out again.
+        </p>
+        <p>
+          <strong>A fight.</strong> The provider rewrites a new file's external name to its own id,
+          <code>repo:file:main</code>. My templates rendered <code>repo:file:</code>. The two overwrote each other about
+          every two seconds, and every flip triggered an immediate reconcile. Five objects burned roughly 280 calls a
+          minute and emptied the hour's budget in about fifteen. The fix was to render the live object's name when it
+          exists, and compute one only for new objects. When the provider owns a field, render back exactly what it
+          wrote.
+        </p>
+        <p>
+          <strong>A retry loop.</strong> I renamed the scaffolded <code>Dockerfile</code> to <code>Containerfile</code>,
+          and assumed that without an Update policy, apps already onboarded wouldn't be touched. They were. Changing a
+          template changes every object it already composed. The file path is a force-replace field, so the provider
+          could neither update nor settle, and it retried at a sixty-second backoff that ignores the poll interval
+          entirely. Seven objects, about 16,000 calls an hour. Now a scaffold file's path and name are pinned to what the
+          provider reports it's managing, so changing a default only affects files that don't exist yet.
+        </p>
+        <p>
+          The worst one came from the provider release I was running. It read a rate-limit 403 as "this file has been
+          deleted" and helpfully re-created it, overwriting real <code>values.yaml</code> content more than once. Someone
+          upstream had already fixed it, but the fix hadn't been released, so I built and published my fork's main
+          branch and moved on.
+        </p>
+      </div>
+
+      <Diagram id="crossplane/03-rate-limit-budget" />
+
+      <div class="prose">
+        <h2>Lesson three: rendering nothing is a delete</h2>
+        <p>
+          This is the one that cost real data, and it came from the secret store, the resource I'd once picked as the
+          safe, gentle place to start.
+        </p>
+        <p>
+          On 16 September a gate in one environment's template briefly evaluated to false. For that one reconcile, the
+          template didn't render the file that asks for an app's secret store. To Crossplane, a resource that's no longer
+          rendered is one you want gone, so it deleted the file from git. ArgoCD saw the file disappear and pruned the
+          SecretStore it described, and the SecretStore took its Infisical project and secrets with it. Two apps lost
+          their production secrets. In a home lab that's a lesson. At a company it's an incident.
+        </p>
+        <p>
+          The fixes were plain once I saw it. Every file a tenant owns is now managed without Delete, including files
+          with a single owner, because "only one thing uses it" protected nothing here. The SecretStore never deletes an
+          Infisical project or its environments, though identities and credentials still clean up. And I learned the
+          provider's <code>RepositoryFile</code> had no <code>deletionPolicy: Orphan</code> at all; management policies
+          are the only lever.
+        </p>
+        <p>
+          A week later I met the mirror image. I tried to "retire" scaffold files by rendering nothing once they'd been
+          created. But a missing object is indistinguishable from a new one, so the next reconcile created it again, then
+          garbage-collected it, then created it again. Absence can't mean "delete" and "leave it alone" at the same time.
+          In a composition, it always means delete.
+        </p>
+      </div>
+
+      <section class="rules">
+        <h3>The rules I keep now</h3>
+        <ol>{rules.map((r) => <li>{r}</li>)}</ol>
+      </section>
+
+      <div class="prose">
+        <h2>The small print</h2>
+        <p>Smaller things, each found the hard way, each worth a line in someone else's notes:</p>
+      </div>
+
+      <dl class="smallprint">{smallPrint.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+
+      <div class="prose">
+        <h2>Building for agents, not only for people</h2>
+        <p>
+          The part I'm proudest of is the least dramatic. Every XRD now carries a one-line summary written for an agent.
+          A generated contract bundle describes every chart field, every API and every component's outputs in one file,
+          and CI fails if it drifts from the source. There's an <code>llms.txt</code> at the root of the repo, and a
+          small CLI that answers questions like "how do I read the Redis password without guessing a Secret name?" from
+          the contract alone. A cold-start test asks it ten real questions and checks every answer against the source
+          files. All ten pass.
+        </p>
+        <p>
+          That's what an intelligent control plane means to me in practice. It isn't a chatbot bolted onto Kubernetes.
+          It's an API that explains itself, with conditions and reasons a machine can trust. I track this on the
+          <a href={u('scorecard/')}>Airframe scorecard</a>, which has gone from 27 out of 100 at its baseline to 72 today,
+          with half of its fourteen checks passing and plenty still to do.
+        </p>
+
+        <h2>What's next</h2>
+        <p>
+          I'm moving every API into the <code>catalog.hangar.io</code> group. The twins are in and the migration is
+          under way, one app and cluster at a time. The next change I'd most like to make is taking repository
+          scaffolding out of Crossplane altogether: a one-time action from onboarding, not a resource that's reconciled
+          forever. I argued for that in <a href={u('architecture/cost-of-the-platform/')}>the last essay</a>, and the
+          storms above are most of the reason why. I'll write about both when they're done.
+        </p>
+        <p>
+          Would I choose Crossplane again? Yes, without hesitating. Almost every bug here was mine, not Crossplane's,
+          and the fixes were usually primitives it already had, like custom conditions, management policies and Usage,
+          once I knew where to look. The secret store I never got to prototype turned out to be a better teacher than
+          any proof of concept would have been.
+        </p>
+        <p class="sign">James</p>
+        <p class="more"><a href={u('architecture/')}>← All architecture essays</a></p>
+      </div>
+
+      <Evidence items={evidence} heading="The commits behind each lesson" />
+    </article>
+  </div>
+</Base>
+<style>
+  .essay .hero .eyebrow a { color: inherit; }
+  .essay .hero h1 { max-width: 22ch; }
+  .prose h2 { margin-top: 3rem; }
+  .pull {
+    font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem; margin: 2.5rem 0; max-width: 34ch;
+  }
+  .rules {
+    background: var(--raised); border: 1px solid var(--rule); border-top: 3px solid var(--accent); border-radius: 10px;
+    padding: 1.1rem 1.3rem; margin: 2.5rem 0 1rem; max-width: var(--prose);
+  }
+  .rules h3 { margin: 0 0 0.6rem; font-size: 1.35rem; }
+  .rules ol { margin: 0; padding-left: 1.3rem; }
+  .rules li { padding: 0.35rem 0; line-height: 1.5; }
+  .smallprint { display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin: 1.2rem 0 1rem; max-width: 60rem; }
+  @media (min-width: 800px) { .smallprint { grid-template-columns: 1fr 1fr; } }
+  .smallprint div { background: var(--raised); border: 1px solid var(--rule); border-radius: 8px; padding: 0.9rem 1.1rem; }
+  .smallprint dt { font-weight: 600; }
+  .smallprint dd { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+  .sign { font-family: var(--font-serif); font-size: 1.4rem; margin-top: 2rem; }
+  .more { margin-top: 2rem; }
+</style>

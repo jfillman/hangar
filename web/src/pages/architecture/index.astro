@@ -21,7 +21,7 @@ const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-CA'
       {essays.map((e) => (
         <li>
           <a href={u(`architecture/${e.slug}/`)}>
-            <span class="eyebrow">{fmt(e.date)} · {e.minutes} min read</span>
+            <span class="eyebrow">{fmt(e.date)}{e.series && ` · ${e.series}`} · {e.minutes} min read</span>
             <h2>{e.title}</h2>
             <p>{e.dek}</p>
           </a>

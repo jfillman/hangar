@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Six weeks building Airframe, one lesson at a time</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#f2efe9;--paper-2:#e8e3da;--ink:#1b1f24;--muted:#5b6570;--soft:#838b93;--accent:#b9791f;--link:#2e7ba6;--rule:rgba(27,31,36,0.12);
+--card:#fff;--font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace}
+body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);padding:2.5rem 2rem 2rem}
+.frame{max-width:1120px;margin:0 auto}
+.eyebrow{font-family:var(--font-mono);font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+h1{font-family:var(--font-serif);font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.15;margin-bottom:.5rem}
+.lede{color:var(--muted);font-size:.9rem;line-height:1.5;max-width:70ch;margin-bottom:1.25rem}
+.fig{overflow-x:auto}
+svg{width:100%;min-width:900px;display:block}
+.cards{display:grid;grid-template-columns:1.15fr 1fr 1.05fr;gap:.75rem;margin-top:1.25rem}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:1rem 1.1rem}
+.card .eyebrow{margin-bottom:.35rem}
+.card p,.card li{font-size:.8rem;line-height:1.5;color:var(--ink)}
+.card ul{padding-left:1rem}
+.card .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:.4rem;background:var(--muted)}
+.card .dot.accent{background:var(--accent)} .card .dot.link{background:var(--link)}
+.foot{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.06em;color:var(--soft);border-top:1px solid var(--rule);margin-top:1.25rem;padding-top:.6rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.foot a{color:var(--link);text-decoration:none}
+@media (max-width:900px){.cards{grid-template-columns:1fr}}
+@media print{@page{size:landscape;margin:10mm}body{padding:0}.cards{margin-top:.75rem}}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--paper:#131619;--paper-2:#1b1f24;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,0.14);--card:#1a1e23}
+:root:not([data-theme=light]) svg [fill="#1b1f24"]{fill:#e8e4dc}
+:root:not([data-theme=light]) svg [fill="#2e7ba6"]{fill:#6fb2d9}
+:root:not([data-theme=light]) svg [fill="#5b6570"]{fill:#a1aab3}
+:root:not([data-theme=light]) svg [fill="#b9791f"]{fill:#e8a33d}
+:root:not([data-theme=light]) svg [fill="#f2efe9"]{fill:#131619}
+:root:not([data-theme=light]) svg [fill="#ffffff"]{fill:#1c2127}
+:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}
+:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}
+:root:not([data-theme=light]) svg [stroke="#1b1f24"]{stroke:#e8e4dc}
+:root:not([data-theme=light]) svg [stroke="#5b6570"]{stroke:#a1aab3}
+:root:not([data-theme=light]) svg [stroke="#b9791f"]{stroke:#e8a33d}
+:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}
+:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}}
+:root[data-theme=dark]{--paper:#131619;--paper-2:#1b1f24;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,0.14);--card:#1a1e23}
+:root[data-theme=dark] svg [fill="#1b1f24"]{fill:#e8e4dc}
+:root[data-theme=dark] svg [fill="#2e7ba6"]{fill:#6fb2d9}
+:root[data-theme=dark] svg [fill="#5b6570"]{fill:#a1aab3}
+:root[data-theme=dark] svg [fill="#b9791f"]{fill:#e8a33d}
+:root[data-theme=dark] svg [fill="#f2efe9"]{fill:#131619}
+:root[data-theme=dark] svg [fill="#ffffff"]{fill:#1c2127}
+:root[data-theme=dark] svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}
+:root[data-theme=dark] svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}
+:root[data-theme=dark] svg [stroke="#1b1f24"]{stroke:#e8e4dc}
+:root[data-theme=dark] svg [stroke="#5b6570"]{stroke:#a1aab3}
+:root[data-theme=dark] svg [stroke="#b9791f"]{stroke:#e8a33d}
+:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}
+:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">Crossplane · 04 of 04 · The journey so far</p>
+<h1>Six weeks building Airframe, one lesson at a time</h1>
+<p class="lede">Not to scale. Each stop is a real commit in Airframe, Apron or my fork of the GitHub provider, and each left a rule behind.</p>
+<div class="fig">
+<svg viewBox="0 76 1000 432" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="six-weeks-of-lessons-title six-weeks-of-lessons-desc">
+<title id="six-weeks-of-lessons-title">Six weeks building Airframe, one lesson at a time</title>
+<desc id="six-weeks-of-lessons-desc">A timeline from 12 August to 29 September 2026 with eight lessons. 13 August, first XRDs: Ready is reserved, use your own condition. 17 August, SecretStore goes live: composing a cluster-scoped resource needs an Object wrapper. 25 August, TektonCICD split out: an XR can compose another XR. 7 September, the polling budget: poll hourly and cap the reconcile rate. 16 September, highlighted, a file vanished: rendering nothing is a delete. 17 September, forking the provider: a 403 is not a 404. 23 September, two API storms: render what the provider observed. 27 September, ComponentReady: reasons an agent can read.</desc>
+<defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs>
+<rect width="100%" height="100%" fill="#f2efe9"/>
+<rect x="24" y="100" width="952" height="300" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="104" width="212" height="12" rx="2" fill="#f2efe9"/><text x="142.0" y="113" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">AIRFRAME · 2026-08-12 TO 2026-09-29</text><line x1="56" y1="250" x2="944" y2="250" stroke="#5b6570" stroke-width="1.2"/><line x1="140" y1="196" x2="140" y2="250" stroke="rgba(27,31,36,0.12)" stroke-width="1"/><rect x="44" y="140" width="192" height="56" rx="6" fill="#f2efe9"/><rect x="44" y="140" width="192" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="140.0" y="166.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">First XRDs</text><text x="140.0" y="182.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">Ready is reserved; use your own</text><circle cx="140" cy="250" r="4" fill="#1b1f24"/><text x="140" y="272" fill="#5b6570" font-size="9" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">08-13</text><line x1="243" y1="250" x2="243" y2="300" stroke="rgba(27,31,36,0.12)" stroke-width="1"/><rect x="147" y="300" width="192" height="56" rx="6" fill="#f2efe9"/><rect x="147" y="300" width="192" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="243.0" y="326.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">SecretStore goes live</text><text x="243.0" y="342.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">cluster-scoped needs an Object</text><circle cx="243" cy="250" r="4" fill="#1b1f24"/><text x="243" y="236" fill="#5b6570" font-size="9" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">08-17</text><line x1="346" y1="196" x2="346" y2="250" stroke="rgba(27,31,36,0.12)" stroke-width="1"/><rect x="250" y="140" width="192" height="56" rx="6" fill="#f2efe9"/><rect x="250" y="140" width="192" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="346.0" y="166.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">TektonCICD split out</text><text x="346.0" y="182.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">an XR can compose another XR</text><circle cx="346" cy="250" r="4" fill="#1b1f24"/><text x="346" y="272" fill="#5b6570" font-size="9" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">08-25</text><line x1="449" y1="250" x2="449" y2="300" stroke="rgba(27,31,36,0.12)" stroke-width="1"/><rect x="353" y="300" width="192" height="56" rx="6" fill="#f2efe9"/><rect x="353" y="300" width="192" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="449.0" y="326.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">The polling budget</text><text x="449.0" y="342.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">poll hourly, cap reconcile rate</text><circle cx="449" cy="250" r="4" fill="#1b1f24"/><text x="449" y="236" fill="#5b6570" font-size="9" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">09-07</text><line x1="552" y1="196" x2="552" y2="250" stroke="rgba(27,31,36,0.12)" stroke-width="1"/><rect x="456" y="140" width="192" height="56" rx="6" fill="#f2efe9"/><rect x="456" y="140" width="192" height="56" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="552.0" y="166.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">A file vanished</text><text x="552.0" y="182.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">rendering nothing is a delete</text><circle cx="552" cy="250" r="6" fill="#b9791f"/><text x="552" y="272" fill="#5b6570" font-size="9" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">09-16</text><line x1="655" y1="250" x2="655" y2="300" stroke="rgba(27,31,36,0.12)" stroke-width="1"/><rect x="559" y="300" width="192" height="56" rx="6" fill="#f2efe9"/><rect x="559" y="300" width="192" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="655.0" y="326.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Forking the provider</text><text x="655.0" y="342.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">a 403 is not a 404</text><circle cx="655" cy="250" r="4" fill="#1b1f24"/><text x="655" y="236" fill="#5b6570" font-size="9" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">09-17</text><line x1="758" y1="196" x2="758" y2="250" stroke="rgba(27,31,36,0.12)" stroke-width="1"/><rect x="662" y="140" width="192" height="56" rx="6" fill="#f2efe9"/><rect x="662" y="140" width="192" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="758.0" y="166.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Two API storms</text><text x="758.0" y="182.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">render what the provider observed</text><circle cx="758" cy="250" r="4" fill="#1b1f24"/><text x="758" y="272" fill="#5b6570" font-size="9" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">09-23</text><line x1="861" y1="250" x2="861" y2="300" stroke="rgba(27,31,36,0.12)" stroke-width="1"/><rect x="765" y="300" width="192" height="56" rx="6" fill="#f2efe9"/><rect x="765" y="300" width="192" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="861.0" y="326.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">ComponentReady</text><text x="861.0" y="342.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">reasons an agent can read</text><circle cx="861" cy="250" r="4" fill="#1b1f24"/><text x="861" y="236" fill="#5b6570" font-size="9" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">09-27</text><text x="24" y="444" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">Almost every lesson here was found on a running cluster, not in a render.</text><line x1="24" y1="464" x2="976" y2="464" stroke="rgba(27,31,36,0.12)" stroke-width="0.8"/><text x="24" y="484" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text><rect x="96" y="476" width="16" height="12" rx="3" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="120" y="485" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">A lesson</text><rect x="180" y="476" width="16" height="12" rx="3" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="204" y="485" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">The one that cost data</text><circle cx="340" cy="482" r="4" fill="#1b1f24"/><text x="354" y="485" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">When it landed</text>
+</svg>
+</div>
+<div class="cards"><div class="card"><p class="eyebrow"><span class="dot "></span>Built</p><p>Fifteen APIs, from app stacks and environments to PostgreSQL, Redis, RabbitMQ, MongoDB and Dex, plus three Composition Functions.</p></div><div class="card"><p class="eyebrow"><span class="dot accent"></span>The one that hurt</p><p>A transient false in a template gate rendered a file away. Crossplane deleted it, ArgoCD pruned the SecretStore it described, and two apps lost their Infisical projects and secrets.</p></div><div class="card"><p class="eyebrow"><span class="dot link"></span>Next in the series</p><p>Moving every API to the catalog.hangar.io group, scaffolding repos as a one-time action instead of a reconciled resource, and the rest of the A+ scorecard.</p></div></div>
+<div class="foot"><span>Hangar · Airframe · Crossplane</span><span></span></div>
+</div>
+</body>
+</html>
