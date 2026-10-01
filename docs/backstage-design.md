@@ -1,4 +1,10 @@
-# Backstage design (upstream, mgmt cluster)
+# Backstage design (upstream)
+
+> **Current state (2026-09-30):** there is no management cluster any more. The home lab
+> runs two clusters, `dev` and `prod`, and Backstage runs on `prod`. This design was
+> written when Backstage was planned for a separate `mgmt` cluster (`kiac-man`), so every
+> `mgmt` and `gitops-cluster-mgmt` reference below is historical: read it as "the cluster
+> Backstage runs on", which is now `prod`.
 
 **Status: DRAFT — plan, not yet built. Revised once already** (first pass targeted
 Red Hat Developer Hub; corrected to plain upstream Backstage after the user flagged
