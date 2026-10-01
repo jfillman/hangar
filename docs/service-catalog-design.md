@@ -80,7 +80,7 @@ this build (`range .Values.env` failed with "can't iterate over dev") - named
 `envName` instead. Two things stayed genuinely unresolved, not implementation
 gaps but real open questions this pass didn't answer: the actual Crossplane
 API group for `components:`/`slos:` XRs (none of those XRDs exist yet - the
-chart uses a placeholder, `catalog.idp.io/v1alpha1`) and the platform's
+chart uses a placeholder, `catalog.hangar.io/v1alpha1`) and the platform's
 default canary step sequence (§ "Still open" item 3, below - the chart renders
 a deliberately inert single-step placeholder, not a real default).
 
@@ -1605,7 +1605,7 @@ four `Repository` resources across both apps (`checkout-api`, `nodejs-demo-app`)
    the leaning.)
 3. **The actual Crossplane API group for `components:`/`slos:` XRs** — not fixed
    anywhere yet (none of those XRDs exist). The chart uses a placeholder,
-   `catalog.idp.io/v1alpha1`, one value to update once this is decided.
+   `catalog.hangar.io/v1alpha1`, one value to update once this is decided.
 4. **The real namespace/labels that identify the ingress controller** (§3's
    `networkPolicy.allowIngressFromIngressController`) — no ingress controller has been
    installed or named anywhere in idp's docs yet. The chart defaults to the

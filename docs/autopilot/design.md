@@ -50,7 +50,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata: { name: clearance-agentruns, namespace: autopilot-runs }
 rules:
-  - apiGroups: ["catalog.idp.io"]
+  - apiGroups: ["catalog.hangar.io"]
     resources: ["agentruns"]
     verbs: ["create", "get", "list", "watch", "patch", "delete"]   # patch sets spec.frozen
 ```

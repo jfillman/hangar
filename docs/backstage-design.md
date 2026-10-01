@@ -246,7 +246,7 @@ never read from it. So instead:
 - **8 of the 9 XRDs** (everything above except `RolloutWatch`) get the annotation from
   a Kyverno `ClusterPolicy`
   (`gitops-cluster-dev/30-policy/kyverno-policies/backstage-component-type-annotations.yaml`),
-  which mutates matching `catalog.idp.io` kinds on every Create/Update admission
+  which mutates matching `catalog.hangar.io` kinds on every Create/Update admission
   review. Needed a supplemental read-only `ClusterRole` in the same file (Kyverno ships
   RBAC for built-in kinds only — same gap already hit for `testworkflows.testkube.io`,
   see `testkube-rbac.yaml` in the same directory). Kyverno only runs on `dev`
