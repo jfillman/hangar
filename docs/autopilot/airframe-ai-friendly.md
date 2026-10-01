@@ -10,6 +10,9 @@ The test we are building toward is one sentence typed into a Claude Code session
 > a staging and prod flight environment. and configure it with 1 100% weight canary step, an
 > URL=http://myendpoint.io env var.
 
+This is **the parachute sentence**, named after the app it asks for. The rest of the Autopilot docs
+and diagrams use that name for it, and "the parachute test" means running it end to end.
+
 Status labels used here: **Built**, **Draft** (written, not applied), **Proposal**, **Unverified**.
 
 **Progress (2026-09-26, end of M0): 41.3/100, 2 of 14 acceptance checks.** Shipped in Airframe v0.3.91: the rollout guard (AF-10a), render tests and chart CI (AF-10b), `AGENTS.md` (AF-1a), `tools/airframe-validate` v0 (AF-4a). Validation moved 22 -> 76 and hygiene 46 -> 92. The scorecard's new baseline is `tools/airframe-scorecard/baseline-2026-09-26b.json`. One dimension went down: component contracts 4.0 -> 3.4, because `baggage-api`'s env file added four hand-written derived names (`bag-mq-connection`, `bag-mq-user-credentials`), which is the gap AF-3 (`fromComponent`) closes. Note: the values schema still accepts unknown keys; strictness lives in `airframe-validate` until AF-2 generates a strict schema. Unknown fields in an XR are silently pruned by ArgoCD (U1), so XR files need the same check.
