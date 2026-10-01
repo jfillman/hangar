@@ -8,14 +8,11 @@ into a [Sloth](https://sloth.dev) resource, Sloth generates the burn-rate rules 
 and two things read those rules: Tower, which shows them, and a Backstage backend poller, which
 sends a notification when one of three signals changes.
 
-| Page | What it shows |
-|---|---|
-| [1. From a values file to a burn rate](diagrams/01-slo-pipeline.html) | The path from `slos:` to Prometheus rules, and who reads them. |
-| [2. Three signals, three questions](diagrams/02-slo-thresholds.html) | Thresholds, clear levels and the hold band for each signal. |
-| [3. One signal, two states, and a first sighting](diagrams/03-slo-state.html) | The stored state machine and what gets announced. |
-| [4. What happens in one poll tick](diagrams/04-slo-tick.html) | The poller, step by step, and where it can fail. |
+Four diagrams below show the path from a values file to a notification. The interactive pages
+behind them follow your light or dark setting and live in the
+[diagram gallery on hangarplatform.dev](https://hangarplatform.dev/diagrams/).
 
-Open the diagram pages in a browser. They follow the system light or dark setting.
+![From a values file to a burn rate: an slos entry is rendered by the airframe-application chart into an SLO XR, composed by Crossplane into a Sloth PrometheusServiceLevel and a Grafana dashboard, and Sloth's recording rules in Prometheus are read by the Backstage poller and by Tower.](diagrams/01-slo-pipeline.png)
 
 ## Declaring an SLO
 
@@ -99,7 +96,7 @@ Sloth's own ratio rules with many-to-many matching.
 
 A backend module in Backstage (`sloTransitionPoll.ts`, scheduled from `recentActivity.ts`)
 checks every SLO every 120 seconds and sends a notification when a **signal** changes state.
-Each SLO has three independent signals ([page 2](diagrams/02-slo-thresholds.html)):
+Each SLO has three independent signals:
 
 | Signal | Fires when | Clears when | Titles |
 |---|---|---|---|
@@ -110,6 +107,8 @@ Each SLO has three independent signals ([page 2](diagrams/02-slo-thresholds.html
 Titles read `<app> · <title> (<slo>)`. The bad states are severity `high` and the recoveries
 `normal`.
 
+![Three signals on their own scales. Budget exhausted: healthy below 0.9 times, a hold band from 0.9 to 1.0, burning above 1.0. Burning fast: healthy below 13 times, a hold band to 14.4, burning above 14.4. No data: fifteen consecutive empty 120 second checks, fires on the fifteenth.](diagrams/02-slo-thresholds.png)
+
 **Why two burn signals.** The period burn rate is a lagging "budget already spent" signal. An
 outage that ended an hour ago can leave it red for days, and a fresh outage on a healthy SLO can
 take a long time to push it over 1. The fast-burn pair is the "something is wrong right now" signal.
@@ -119,7 +118,7 @@ one-minute spike and lets the alert end quickly. Neither is a replacement for th
 **The hold band.** Between the clear and fire levels the stored state holds. An SLO sitting near
 the line used to flip between burning and recovered every 10 to 30 minutes. It now stays put.
 
-**State and first sighting** ([page 3](diagrams/03-slo-state.html)). Each signal is one row,
+**State and first sighting.** Each signal is one row,
 `slo_transition_state`, in the recent-activity plugin database (Postgres on kind-prod). Keys are
 `<cluster>/<namespace>/<slo>` for the budget signal, with `#fast` and `#nodata` appended for the
 others. An SLO first seen **burning is announced**, and one first seen healthy is recorded
@@ -127,7 +126,9 @@ silently. A restart therefore neither replays old alerts nor loses a transition.
 counter is the one thing kept in memory, so a restart can delay a no-data alert by at most 15
 checks, and can never cause a wrong or duplicate one.
 
-**One tick** ([page 4](diagrams/04-slo-tick.html)):
+![The state of one signal. With no stored row, a first sighting is recorded silently as healthy or announced as burning. Healthy moves to burning above the fire level and back below the clear level, and each move announces once.](diagrams/03-slo-state.png)
+
+**One tick:**
 
 1. The scheduler runs the task on one replica at a time (global scope).
 2. For each cluster with a service-account token in `kubernetes.clusterLocatorMethods`, it lists
@@ -140,6 +141,8 @@ checks, and can never cause a wrong or duplicate one.
 4. It classifies each signal, applying the hold band.
 5. For a changed signal it **claims** the row with a compare-and-set, announces, and keeps the
    claim. If the send fails the claim is undone, so the next tick retries.
+
+![One poll tick: a scheduler task lists SLOs, queries Prometheus and classifies each signal. A changed state is claimed with a compare-and-set in Postgres, announced through Backstage notifications and shown in Tower. A failed send restores the claim.](diagrams/04-slo-tick.png)
 
 Three behaviors worth knowing:
 
