@@ -40,7 +40,7 @@ export const principles: Principle[] = [
     name: 'Every change is a reviewed commit',
     claim: 'If it changes a cluster, it went through git and someone could have said no.',
     body: [
-      'This is the thread that runs through my whole career. At Best Buy Canada it meant moving roughly 500 applications across 9 clusters from hand-run <code>kubectl apply</code> to a declarative, git-driven model. In Hangar it goes further: no cluster holds credentials for another cluster, no component calls across a cluster boundary, and the only thing that ever crosses one is a merged pull request.',
+      'This is the thread that runs through my whole career. At Best Buy Canada it meant moving roughly 450 applications across 7 clusters from hand-run <code>kubectl apply</code> to a declarative, git-driven model. In Hangar it goes further: no cluster holds credentials for another cluster, no component calls across a cluster boundary, and the only thing that ever crosses one is a merged pull request.',
       'It sounds strict, and it is, but it buys a lot. Every change has an author, a reviewer and a history. Rolling back is a revert. Backstage holds no Kubernetes credentials at all, so even "create me a new service" is a commit someone can read. And when AI agents arrive, they fit straight in: an agent is just one more author of pull requests.',
     ],
     evidence: [
