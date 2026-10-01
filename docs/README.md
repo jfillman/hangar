@@ -28,6 +28,14 @@ created — not batched up later.
 | [local-clusters.md](local-clusters.md) | You're running clusters locally and want the operational notes. |
 | [backstage-design.md](backstage-design.md) | You want Tower's own design rationale — self-service flows, the terasky ingestor, catalog structure. |
 
+## SLOs
+
+Added 2026-10-01. How an SLO is declared, measured, shown in Tower, and announced, with four diagrams under [`slo/diagrams/`](slo/diagrams/01-slo-pipeline.html).
+
+| Doc | Read this when... |
+|---|---|
+| [slo/README.md](slo/README.md) | You want to declare an SLO, understand its three notification signals (budget exhausted, burning fast, no data), or work out why one did or didn't fire. |
+
 ## Architecture reviews
 
 Added 2026-09-27. Point-in-time reviews of the whole platform, each a standalone illustrated page under [`reviews/`](reviews/README.md).
