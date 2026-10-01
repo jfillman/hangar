@@ -1,7 +1,11 @@
 # Local clusters: kiac, not podman+kind
 
-**Status: policy set 2026-09-03; `kiac-prod` decommissioned 2026-09-22.** Two of this
-project's three local clusters (`kiac-dev`, `kiac-man`) still run on **kiac**
+> **Current state (2026-09-30):** the home lab runs two clusters, `dev` (`kiac-dev`) and
+> `prod` (`kind-prod`). Backstage runs on `prod`. There is no management cluster:
+> `kiac-man` no longer exists, so its rows and notes below are historical.
+
+**Status: policy set 2026-09-03; `kiac-prod` decommissioned 2026-09-22.** When this was
+written, two of this project's three local clusters (`kiac-dev`, `kiac-man`) ran on **kiac**
 (`saiyam1814/tap/kiac`, brew, currently v0.5.1) — "kind, but each node is its own Apple
 `container` VM" — on top of Apple's native `container` runtime (`apple/container`), not
 Docker or Podman. The third, `kiac-prod`, was shut down entirely on 2026-09-22 (not
@@ -42,7 +46,7 @@ podman+kind here.
 | Cluster | Context | Role | Bootstrap script | `--cpus` / `--cp-memory` |
 |---|---|---|---|---|
 | `kiac-dev` | `kiac-dev` | Fleet's one `dev` cluster: Infisical, `platform-cicd` control plane (Tekton/PaC), Bootstrap-tier XRDs, every app's `-dev`/`-cicd` namespace pair | `gitops-cluster-dev/hack/start-kiac-dev.sh` | 5 / 20G |
-| `kiac-man` | `kiac-man` | Backstage's hand-managed deploy target (`gitops-cluster-template`'s `60-backstage/` tier) | `gitops-cluster-kind-man/hack/start-kiac-man.yaml` (a bash script despite the extension) | 2 / 10G |
+| ~~`kiac-man`~~ | ~~`kiac-man`~~ | **GONE** (confirmed 2026-09-30) — was Backstage's hand-managed deploy target; Backstage now runs on `kind-prod`. Was (`gitops-cluster-template`'s `60-backstage/` tier) | `gitops-cluster-kind-man/hack/start-kiac-man.yaml` (a bash script despite the extension) | 2 / 10G |
 | ~~`kiac-prod`~~ | ~~`kiac-prod`~~ | **DECOMMISSIONED 2026-09-22** — was fleet's `upper`-type cluster | `gitops-cluster-kind-prod/hack/start-kiac-prod.yaml` (historical only — targets a cluster that no longer exists) | 2 / 10G |
 | `kind-prod` | `kind-prod` | Replaces `kiac-prod` as fleet's `upper`-type cluster (2026-09-22) — same role, same `gitops-cluster-kind-prod` gitops repo, same two-ArgoCD-instance/Backstage-hosting topology confirmed live | **not yet documented** — provisioning/recreate mechanism unconfirmed, do not assume it's kiac or plain `kind` | unconfirmed |
 
