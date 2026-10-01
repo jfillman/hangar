@@ -32,7 +32,7 @@ agents (measured by [`tools/airframe-scorecard`](tools/airframe-scorecard/): bas
 **durable changes are git commits; ephemeral runs are claims to Crossplane.** Start at
 [`docs/autopilot/README.md`](docs/autopilot/README.md); the plan is [`docs/autopilot/roadmap.md`](docs/autopilot/roadmap.md).
 Built so far, with 255 passing tests and no cluster: the Clearance core, the AppSpec planner (the
-"parachute" acceptance test), nine Skyport agent definitions and six Preflight cases. Drafted, never
+"parachute" acceptance test: one plain-language request to provision a Python app named parachute, end to end), nine Skyport agent definitions and six Preflight cases. Drafted, never
 applied: the `AgentRun` XRD and its composition function. Nothing is committed yet.
 
 ## Repos

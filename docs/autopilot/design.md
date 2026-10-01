@@ -9,7 +9,7 @@ Names, checked against the Hangar Brand System on 2026-09-26. **Autopilot** (a s
 | Piece | Status |
 |---|---|
 | Clearance core: tiers, path scope, narrow-only limits, definitions, sessions and the run tree, 19 CEL rules, hash-chained audit, gateway, model-proxy decisions, triggers, artifacts, the MCP surface | **Built**, 255 tests, no cluster needed |
-| AppSpec, and the planner that compiles it to a change set (the parachute test) | **Built** and tested, including against the real XRD schemas, Glidepath's `cicd.schema.json` and a real `helm template` |
+| AppSpec, and the planner that compiles it to a change set (the parachute test: one plain-language request, a new Python app named parachute with four environments, compiled to the exact change set; see [the parachute sentence](airframe-ai-friendly.md)) | **Built** and tested, including against the real XRD schemas, Glidepath's `cicd.schema.json` and a real `helm template` |
 | Nine Skyport agent definitions and six Preflight cases | **Built** ([skyport-ai-workloads.md](skyport-ai-workloads.md)) |
 | `AgentRun` XRD, composition, `function-agentrun` | **Draft**, never applied |
 | Real adapters (GitHub, ArgoCD, Kubernetes, Backstage), authentication, HTTP transports, the model proxy forwarder, the CI gates, the interceptor route | **Proposal** |

@@ -23,7 +23,9 @@ Diagrams: `diagrams/plan/01-hangar-family.html`, `02-roadmap.html`, `03-dependen
    strictness. Ship the contract foundation first and they are born A+.
 2. **Ownership before agents.** An agent that can edit a file mixing human and machine-owned keys is a
    risk that path-level scope cannot contain. Split the files (AF-5) before granting Clearance write tools.
-3. **The planner is the acceptance test.** The parachute sentence needs AF-1 to AF-6 and the Autopilot
+3. **The planner is the acceptance test.** The parachute sentence (the one-line
+   request to an agent in [airframe-ai-friendly.md](airframe-ai-friendly.md): a new Python app named
+   parachute, with dev, test, staging and prod environments, a canary step and one env var) needs AF-1 to AF-6 and the Autopilot
    core. Everything before it is a prerequisite; everything after it (Skyport AI) is a consumer.
 
 **What changed from the 2026-09-25 plan:**

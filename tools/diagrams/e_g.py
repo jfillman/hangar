@@ -75,7 +75,7 @@ def p_roadmap():
     return dict(slug='roadmap', eyebrow='Gantt · 02 of 08 · Roadmap',
       title='Twenty-eight weeks, six milestones, one score to move',
       desc='Gantt chart of twelve workstreams across six milestones over twenty-eight weeks: stabilize and baseline, contract, safe write, autopilot core with the airframe tools and planner as the acceptance test, Skyport AI workloads, and evidence and widening, with the Airframe scorecard target at the end of each milestone.',
-      lede='Durations are estimates for one person; the order is the point. The contract comes before the next components, ownership comes before agent write tools, and the planner (the parachute sentence) is the acceptance test that everything before it exists to enable.',
+      lede='Durations are estimates for one person; the order is the point. The contract comes before the next components, ownership comes before agent write tools, and the planner is the acceptance test that everything before it exists to enable. That test is the parachute sentence: one plain-language request to an agent, "provision a new python application named parachute", with dev and test, staging and prod, a canary step and one env var, which must come out as a correct, reviewed change set.',
       body=''.join(b), W=1000, H=cur+16+52, y0=24,
       cards=[('M0 to M2, before any agent writes','', UL(['Chart guard, strict schema, validate, outputs.','MongoDB and OAuth built already A+.','Ownership split and a base layer.'])),
              ('M3, the acceptance test','accent', UL(['Clearance, AgentRun, model proxy, real adapters.','airframe.* tools and the planner.','The parachute sentence passes live; a seeded bad run fails; killing Clearance still ends every run.'])),
@@ -144,7 +144,7 @@ def p_scorecard():
       body=''.join(b), W=1000, H=y+72+52, y0=64,
       cards=C3(P('Measured, not felt. Every check is automated, so "A+" is a result the scorecard prints, not an opinion.'),
                UL(['The biggest gaps are also the cheapest: AGENTS.md, a contract bundle, validate, outputs.','Two real bugs found by running the chart: typos pass silently, and configuring before an image renders image ":".','Baseline committed: tools/airframe-scorecard/baseline-2026-09-26.json.']),
-               P('The scorecard cannot judge whether an agent would actually succeed; the parachute sentence, run as a Preflight case, does. Use both.'), 'Limits'))
+               P('The scorecard cannot judge whether an agent would actually succeed; the parachute sentence (one request asking an agent to set up a new Python app named parachute, end to end), run as a Preflight case, does. Use both.'), 'Limits'))
 
 def p_contract():
     b=[]
@@ -201,7 +201,7 @@ def p_plan_seq():
     return dict(slug='plan-apply-sequence', eyebrow='Sequence · 06 of 08 · One sentence',
       title='The parachute sentence, end to end',
       desc='Sequence diagram of an agent handling the request to provision a Python application named parachute: the agent asks for capabilities, sends an app spec to plan, Clearance calls the planner and returns a change set with assumptions, the agent applies it, Clearance opens a tenants PR that a human merges, waits for the repos, opens the app and gitops PRs, then returns a verified result.',
-      lede='The agent never edits a file. It describes what it wants, reviews a plan with the assumptions stated, and applies it. Clearance opens PRs, humans merge the flight ones, and verify is a check against the running system, not a green pipeline.',
+      lede='The parachute sentence is the request this platform is built to pass, typed into an agent session: "provision a new python application named parachute. give it a dev and test ground environment. a staging and prod flight environment. and configure it with 1 100% weight canary step, an URL=http://myendpoint.io env var." The agent never edits a file. It describes what it wants, reviews a plan with the assumptions stated, and applies it. Clearance opens PRs, humans merge the flight ones, and verify is a check against the running system, not a green pipeline.',
       body=''.join(b), W=1000, H=612,
       cards=C3(P('Plan before apply, and ambiguity is a question, not a guess: with two upper clusters and no choice, plan returns a question instead of picking one.'),
                UL(['plan is idempotent: the same spec gives the same change set, and a converged app is a no-op.','State lives on the task_id, PR labels and the audit log, so a session can end and resume.','Human gates: the tenants PR and the gitops PR. Ground changes auto-merge.']),

@@ -28,7 +28,8 @@ Diagram: `diagrams/plan/07-skyport-ai-workloads.html`. The event and team flow:
 They are business-domain agents, so the demo shows agents *operating a system*, not only agents
 operating the platform. The platform-facing agents already exist or are planned: HolmesGPT is the
 event and service shape for triage (`diagrams/autopilot/17-triage-before-after.html`), and the coding
-agent is the delegated task shape for platform work (the parachute test).
+agent is the delegated task shape for platform work (the parachute test: one request to provision a
+new Python app named parachute, end to end; see [airframe-ai-friendly.md](airframe-ai-friendly.md)).
 
 ### A deliberate rule: nothing here applies a change
 No Skyport agent has a write tool. They read, they draft, they store artifacts, they ask a human, and

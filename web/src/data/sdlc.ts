@@ -69,7 +69,8 @@ export const stages: Stage[] = [
     agents: {
       title: 'From one sentence to a reviewed change set',
       body: [
-        'The AppSpec planner compiles a plain-language request ("the parachute sentence") into the exact change set a human would have written, checked against the real XRD schemas, Glidepath\'s schema and a real <code>helm template</code>. The agent proposes a pull request; onboarding is still a reviewed commit.',
+        'The test I hold it to is the parachute sentence, typed into an agent session: <em>"provision a new python application named parachute. give it a dev and test ground environment. a staging and prod flight environment. and configure it with 1 100% weight canary step, an URL=http://myendpoint.io env var."</em>',
+        'The AppSpec planner compiles a plain-language request into the exact change set a human would have written, checked against the real XRD schemas, Glidepath\'s schema and a real <code>helm template</code>. The agent proposes a pull request; onboarding is still a reviewed commit.',
       ],
       diagrams: ['plan/06-plan-apply-sequence'],
     },
