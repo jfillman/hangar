@@ -6,7 +6,7 @@ the Airframe A+ program that makes the service catalog operable by agents.
 > **One idea:** an agent is one more author of git commits. **Durable changes are commits. Ephemeral
 > runs are claims to Crossplane.** Everything else follows from keeping those two planes apart.
 
-**Brand:** the mark is Option A, Hold, chosen 2026-09-26; the five options considered are in [`docs/brand/autopilot-logo-options.html`](../brand/autopilot-logo-options.html) (open in a browser), and the files are in [`brand/marks/`](../../brand/marks/).
+**Brand:** the mark is Option A, Hold, chosen 2026-09-26; the five options considered are in `docs/brand/autopilot-logo-options.html` in the repo (open the file in a browser; TechDocs cannot link to standalone HTML), and the files are in [`brand/marks/`](../../brand/marks/).
 
 **Code:** [github.com/jfillman/autopilot](https://github.com/jfillman/autopilot) (public; the `clearance` Python package, agent definitions, Preflight cases, the AppSpec planner, `AgentRun` drafts). **Status (2026-09-26):** M0 is nearly done; see the [roadmap](roadmap.md) status block. New: [release-file-split.md](release-file-split.md) (designed and proven), [briefings-d6-d10.md](briefings-d6-d10.md) (two decisions for you).
 
@@ -20,7 +20,7 @@ the Airframe A+ program that makes the service catalog operable by agents.
 | [design.md](design.md) | You want the Autopilot design: two planes, the workload model, tiers, policy, backends, failure modes. |
 | [skyport-ai-workloads.md](skyport-ai-workloads.md) | You want the six demo agents, one per workload shape, and their tests. |
 | [glossary.md](glossary.md) | A term is unfamiliar. |
-| [diagrams/index.html](diagrams/index.html) | You want pictures: 8 plan diagrams, 19 for Autopilot, 10 reference. |
+| [Diagram gallery](https://hangarplatform.dev/diagrams/) | You want pictures: 8 plan diagrams, 19 for Autopilot, 10 reference. |
 
 ## Where things are
 | What | Where |
