@@ -30,7 +30,7 @@ created — not batched up later.
 
 ## SLOs
 
-Added 2026-10-01. How an SLO is declared, measured, shown in Tower, and announced, with four diagrams under [`slo/diagrams/`](slo/diagrams/01-slo-pipeline.html).
+Added 2026-10-01. How an SLO is declared, measured, shown in Tower, and announced, with four diagrams, also in the [diagram gallery](https://hangarplatform.dev/diagrams/#slo).
 
 | Doc | Read this when... |
 |---|---|
