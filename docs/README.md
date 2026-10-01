@@ -42,7 +42,7 @@ Added 2026-09-27. Point-in-time reviews of the whole platform, each a standalone
 
 | Doc | Read this when... |
 |---|---|
-| [reviews/2026-09-27-architecture-review.html](reviews/2026-09-27-architecture-review.html) | You want a staff architect's verdict on Hangar as the company platform: conditional approval, ten findings with evidence, what to add, change and remove, and the five gates for production. Open the file in a browser. |
+| [Architecture review, 2026-09-27](https://hangarplatform.dev/review/) | You want a staff architect's verdict on Hangar as the company platform: conditional approval, ten findings with evidence, what to add, change and remove, and the five gates for production. The full review is a standalone page on the website. |
 
 ## Autopilot — AI agent workloads
 
@@ -56,7 +56,7 @@ Added 2026-09-26. Design, plan and diagrams live in this repo under [`autopilot/
 | [autopilot/design.md](autopilot/design.md) | You want the Autopilot design: two planes, the workload model, tiers, policy, backends, failure modes. |
 | [autopilot/skyport-ai-workloads.md](autopilot/skyport-ai-workloads.md) | You want the six Skyport agents, one per workload shape, and how each is tested. |
 | [autopilot/glossary.md](autopilot/glossary.md) | A term is unfamiliar. |
-| [autopilot/diagrams/index.html](autopilot/diagrams/index.html) | You want pictures: 37 one-page diagrams in three sets (open the file directly; TechDocs serves it as a static asset). |
+| [Diagram gallery](https://hangarplatform.dev/diagrams/) | You want pictures: 37 one-page diagrams in three sets, on the website. |
 
 ## Airframe — the service catalog
 

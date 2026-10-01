@@ -161,6 +161,27 @@ catalog entity's `spec.owner`, normalized to a full entity ref. An app with no o
 broadcasts, so a notification is never dropped for lack of one. Tower reads the per-user
 notification API, so with `owner` set, only owners (and members of an owning group) see the row.
 
+### Tuning the thresholds
+
+The defaults above are right for a 30-day window. To change them, set any of these in the
+Backstage app config (all optional; unset keys keep the default):
+
+```yaml
+recentActivity:
+  slo:
+    recipients: owner          # broadcast (default) | owner
+    budgetBurningAbove: 1.0    # period burn rate that fires Budget Exhausted
+    budgetRecoveredBelow: 0.9  # clears below this; must be lower than the line above
+    fastBurnThreshold: 14.4    # 5m AND 1h burn rate that fires Burning Fast (clears at 0.9x)
+    noDataTicks: 15            # consecutive empty 120s checks before No Data
+```
+
+Values must be positive, `noDataTicks` must be a whole number, and `budgetRecoveredBelow` must be
+lower than `budgetBurningAbove` (equal values would remove the hold band and let the signal flap).
+An invalid value makes the poll fail with a clear error in the backend log instead of quietly
+alerting wrongly. A change needs a Backstage restart. This deployment runs with
+`recipients: owner`.
+
 ## Operating it
 
 **Find out why nothing fired.** Poller success is not logged. Only registration and failures
@@ -197,8 +218,7 @@ kubelet's own `prober_probe_total`. Verified on 2026-10-01: lowering the objecti
   `services/proxy`, which `backstage-ingestor` already has.
 - There is no deduplication across different SLOs. If two SLOs on one app both burn, you get
   two notifications.
-- The notification text is fixed. The thresholds (1.0, 0.9, 14.4, 15 checks) are constants in
-  `sloTransitionPoll.ts`, not configuration.
+- The notification text is fixed. The thresholds are configurable (see below).
 
 ## Where the code is
 
