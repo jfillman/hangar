@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From a values file to a burn rate</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#f2efe9;--paper-2:#e8e3da;--ink:#1b1f24;--muted:#5b6570;--soft:#838b93;--accent:#b9791f;--link:#2e7ba6;--rule:rgba(27,31,36,0.12);
+--card:#fff;--font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace}
+body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);padding:2.5rem 2rem 2rem}
+.frame{max-width:1120px;margin:0 auto}
+.eyebrow{font-family:var(--font-mono);font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+h1{font-family:var(--font-serif);font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.15;margin-bottom:.5rem}
+.lede{color:var(--muted);font-size:.9rem;line-height:1.5;max-width:70ch;margin-bottom:1.25rem}
+.fig{overflow-x:auto}
+svg{width:100%;min-width:900px;display:block}
+.cards{display:grid;grid-template-columns:1.15fr 1fr 1.05fr;gap:.75rem;margin-top:1.25rem}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:1rem 1.1rem}
+.card .eyebrow{margin-bottom:.35rem}
+.card p,.card li{font-size:.8rem;line-height:1.5;color:var(--ink)}
+.card ul{padding-left:1rem}
+.card .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:.4rem;background:var(--muted)}
+.card .dot.accent{background:var(--accent)} .card .dot.link{background:var(--link)}
+.foot{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.06em;color:var(--soft);border-top:1px solid var(--rule);margin-top:1.25rem;padding-top:.6rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.foot a{color:var(--link);text-decoration:none}
+@media (max-width:900px){.cards{grid-template-columns:1fr}}
+@media print{@page{size:landscape;margin:10mm}body{padding:0}.cards{margin-top:.75rem}}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--paper:#131619;--paper-2:#1b1f24;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,0.14);--card:#1a1e23}
+:root:not([data-theme=light]) svg [fill="#1b1f24"]{fill:#e8e4dc}
+:root:not([data-theme=light]) svg [fill="#2e7ba6"]{fill:#6fb2d9}
+:root:not([data-theme=light]) svg [fill="#5b6570"]{fill:#a1aab3}
+:root:not([data-theme=light]) svg [fill="#b9791f"]{fill:#e8a33d}
+:root:not([data-theme=light]) svg [fill="#f2efe9"]{fill:#131619}
+:root:not([data-theme=light]) svg [fill="#ffffff"]{fill:#1c2127}
+:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}
+:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}
+:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}
+:root:not([data-theme=light]) svg [fill="rgba(91,101,112,0.10)"]{fill:rgba(161,170,179,0.1)}
+:root:not([data-theme=light]) svg [stroke="#1b1f24"]{stroke:#e8e4dc}
+:root:not([data-theme=light]) svg [stroke="#5b6570"]{stroke:#a1aab3}
+:root:not([data-theme=light]) svg [stroke="#838b93"]{stroke:#7f8891}
+:root:not([data-theme=light]) svg [stroke="#b9791f"]{stroke:#e8a33d}
+:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}
+:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}}
+:root[data-theme=dark]{--paper:#131619;--paper-2:#1b1f24;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,0.14);--card:#1a1e23}
+:root[data-theme=dark] svg [fill="#1b1f24"]{fill:#e8e4dc}
+:root[data-theme=dark] svg [fill="#2e7ba6"]{fill:#6fb2d9}
+:root[data-theme=dark] svg [fill="#5b6570"]{fill:#a1aab3}
+:root[data-theme=dark] svg [fill="#b9791f"]{fill:#e8a33d}
+:root[data-theme=dark] svg [fill="#f2efe9"]{fill:#131619}
+:root[data-theme=dark] svg [fill="#ffffff"]{fill:#1c2127}
+:root[data-theme=dark] svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}
+:root[data-theme=dark] svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}
+:root[data-theme=dark] svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}
+:root[data-theme=dark] svg [fill="rgba(91,101,112,0.10)"]{fill:rgba(161,170,179,0.1)}
+:root[data-theme=dark] svg [stroke="#1b1f24"]{stroke:#e8e4dc}
+:root[data-theme=dark] svg [stroke="#5b6570"]{stroke:#a1aab3}
+:root[data-theme=dark] svg [stroke="#838b93"]{stroke:#7f8891}
+:root[data-theme=dark] svg [stroke="#b9791f"]{stroke:#e8a33d}
+:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}
+:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">SLOs · 01 of 04 · From values file to burn rate</p>
+<h1>From a values file to a burn rate</h1>
+<p class="lede">An SLO is declared once, in an application's environment values. Crossplane composes it into a Sloth resource, Sloth generates the burn-rate rules, and the same series feed both what Tower shows and what the poller announces.</p>
+<div class="fig">
+<svg viewBox="0 76 1000 572" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="slo-pipeline-title slo-pipeline-desc">
+<title id="slo-pipeline-title">From a values file to a burn rate</title>
+<desc id="slo-pipeline-desc">Left to right across the top: an slos entry in an environment values file is rendered by the airframe-application chart into an SLO XR in the catalog.hangar.io group, which a go-templating composition turns into a Sloth PrometheusServiceLevel and a Grafana dashboard ConfigMap. Sloth generates slo recording rules in Prometheus. Below, Prometheus is read by the Backstage poller, which sends notifications on transitions, and by Tower, which shows the SLOs tab and the fleet dashboards.</desc>
+<defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs>
+<rect width="100%" height="100%" fill="#f2efe9"/>
+<rect x="24" y="100" width="432" height="132" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="104" width="176" height="12" rx="2" fill="#f2efe9"/><text x="124.0" y="113" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">DECLARE · APP REPO AND CHART</text><rect x="472" y="100" width="488" height="296" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="484" y="104" width="124" height="12" rx="2" fill="#f2efe9"/><text x="546.0" y="113" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">RENDER · CROSSPLANE</text><rect x="24" y="412" width="936" height="140" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="416" width="220" height="12" rx="2" fill="#f2efe9"/><text x="146.0" y="425" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">OBSERVE · PROMETHEUS AND ITS READERS</text><path d="M224,172 L264,172" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M440,172 L480,172" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M656,172 L696,172" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M812,212 L812,300" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><path d="M730,212 L730,260 Q730,268 722,268 L576,268 Q568,268 568,276 L568,300" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M780,364 L780,422 Q780,430 772,430 L576,430 Q568,430 568,438 L568,460" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><path d="M480,492 L440,492" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M656,492 L696,492" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="48" y="140" width="176" height="64" rx="6" fill="#f2efe9"/><rect x="48" y="140" width="176" height="64" rx="6" fill="rgba(91,101,112,0.10)" stroke="#838b93" stroke-width="1"/><text x="136.0" y="170.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">slos: entry</text><text x="136.0" y="186.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">platform/envs/&lt;env&gt;.yaml</text><rect x="264" y="140" width="176" height="64" rx="6" fill="#f2efe9"/><rect x="264" y="140" width="176" height="64" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="352.0" y="170.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">airframe-application</text><text x="352.0" y="186.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">attached/slos.yaml</text><rect x="480" y="140" width="176" height="64" rx="6" fill="#f2efe9"/><rect x="480" y="140" width="176" height="64" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="568.0" y="170.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">SLO XR</text><text x="568.0" y="186.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">slos.catalog.hangar.io</text><rect x="696" y="140" width="232" height="64" rx="6" fill="#f2efe9"/><rect x="696" y="140" width="232" height="64" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="812.0" y="170.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Composition</text><text x="812.0" y="186.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">function-go-templating</text><rect x="696" y="300" width="232" height="64" rx="6" fill="#f2efe9"/><rect x="696" y="300" width="232" height="64" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="812.0" y="330.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">PrometheusServiceLevel</text><text x="812.0" y="346.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">sloth.slok.dev/v1 · Sloth</text><rect x="480" y="300" width="176" height="64" rx="6" fill="#f2efe9"/><rect x="480" y="300" width="176" height="64" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="568.0" y="330.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Grafana dashboard</text><text x="568.0" y="346.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">ConfigMap · sidecar-loaded</text><rect x="480" y="460" width="176" height="64" rx="6" fill="#f2efe9"/><rect x="480" y="460" width="176" height="64" rx="6" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="568.0" y="490.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Prometheus</text><text x="568.0" y="506.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">slo:* recording rules</text><rect x="264" y="460" width="176" height="64" rx="6" fill="#f2efe9"/><rect x="264" y="460" width="176" height="64" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="352.0" y="490.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Backstage poller</text><text x="352.0" y="506.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">notifies on transitions</text><rect x="696" y="460" width="232" height="64" rx="6" fill="#f2efe9"/><rect x="696" y="460" width="232" height="64" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="812.0" y="490.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Tower</text><text x="812.0" y="506.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">SLOs tab · fleet dashboards</text><text x="24" y="588" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">You write an objective and an indicator. Sloth writes the rules, and everything downstream reads them.</text><line x1="24" y1="608" x2="976" y2="608" stroke="rgba(27,31,36,0.12)" stroke-width="0.8"/><text x="24" y="628" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text><rect x="96" y="620" width="16" height="12" rx="3" fill="rgba(91,101,112,0.10)" stroke="#838b93" stroke-width="1"/><text x="120" y="629" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Declared in git</text><rect x="215" y="620" width="16" height="12" rx="3" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="239" y="629" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">The SLO API</text><rect x="314" y="620" width="16" height="12" rx="3" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="338" y="629" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Rendered or running</text><rect x="453" y="620" width="16" height="12" rx="3" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="477" y="629" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Metrics</text><line x1="532" y1="626" x2="552" y2="626" stroke="#b9791f" stroke-width="1.2"/><text x="560" y="629" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Rules flow</text>
+</svg>
+</div>
+<div class="cards"><div class="card"><p class="eyebrow"><span class="dot "></span>Declared</p><p>One slos: entry per SLO: a service, an objective such as 99.9, and an indicator (availability or latency). There is no window and no burn-rate list; Sloth owns both.</p></div><div class="card"><p class="eyebrow"><span class="dot accent"></span>Rendered</p><p>The XR is composed into a PrometheusServiceLevel and a Grafana dashboard. Sloth then generates the recording rules and the multi-window alerts for it.</p></div><div class="card"><p class="eyebrow"><span class="dot link"></span>Read</p><p>Tower and the poller read the same series, among them slo:period_burn_rate:ratio, selected by sloth_service and by sloth_slo, which is &lt;name&gt;_&lt;namespace&gt;.</p></div></div>
+<div class="foot"><span>Hangar · SLOs</span><span></span></div>
+</div>
+</body>
+</html>
