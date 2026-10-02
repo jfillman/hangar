@@ -1,0 +1,235 @@
+---
+import Base from '../../layouts/Base.astro';
+import { notes } from '../../data/notes';
+import { gh, u } from '../../lib/url';
+
+const note = notes.find((n) => n.slug === 'origin')!;
+const img = (f: string) => u(`media/notes/origin/${f}`);
+
+// Every date here comes from a commit or a dated design note, mostly in the Backstage app's history.
+const timeline = [
+  ['12 Aug', 'The first commit to the dev cluster\'s GitOps repo captures the cluster I already had, so ArgoCD can own it from then on.'],
+  ['24 Aug', 'Radar is already on my laptop. Claude uses its MCP server to draw me a map of the dev cluster.'],
+  ['26 Aug', 'Backstage goes in. The same evening, its first theme is "modeled on radarhq.io".'],
+  ['3–4 Sep', 'Installing other people\'s plugins: Argo CD, Kubernetes, Tekton.'],
+  ['5 Sep, 4:59 pm', 'The first plugin of my own, a release command centre called Glidepath.'],
+  ['5 Sep, 5:43 pm', 'Glidepath is live in Backstage, after one fix to make it show up at all.'],
+  ['7 Sep', 'The Hangar brand proposal. Tower takes over as the console the same night.'],
+  ['8 Sep', 'The Hangar logo across the whole app. The Glidepath name moves to the CI/CD engine.'],
+  ['27 Sep', 'hangarplatform.dev goes live.'],
+];
+---
+<Base title={note.title} description={note.dek} section="notes">
+  <div class="wrap">
+    <article>
+    <header class="hero">
+      <p class="eyebrow"><a href={u('notes/')}>Field notes</a> · {note.minutes} min read</p>
+      <h1>How Hangar <em>started</em></h1>
+      <p class="lede">{note.dek}</p>
+    </header>
+
+    <div class="prose">
+      <h2>Two projects, one subscription</h2>
+      <p>
+        I started two things at once this summer. I wanted to rebuild my home lab and grow my own internal developer
+        platform on it, and I wanted to level up my AI skills. It made sense to do the second by doing the first.
+      </p>
+      <p>
+        I'd tried GitHub Copilot in my previous role. The models today are so much better that it
+        hardly feels like the same kind of tool. So I signed up for Claude Pro, installed the Claude Code extension for VS Code, and away I went. I had Claude
+        read everything I already had, gave it a first spec, and we got going. Honestly, it was mostly vibe coding in
+        the beginning. I'd feed it new requirements as they came to me, and every so often one of them would expose a
+        crack in the architecture or the implementation. Then we'd back up and head off in a slightly different
+        direction. When I took the time to write a more pointed spec, things went noticeably better.
+      </p>
+
+      <h2>Finishing the job</h2>
+      <p>
+        In my previous role I'd assembled a lot of the pieces of my dream platform, and I wanted to finish the job. I
+        bought a Mac mini, stood up two Kubernetes clusters (dev and prod), and started installing the essentials. The
+        very first commit, on 12 August, simply captures the cluster I already had into Git so that ArgoCD could own it
+        from then on. Within a few weeks I was close to where I'd left things before, with a lot of improvements along
+        the way.
+      </p>
+      <p>
+        The one piece I'd never had the chance to build was the single pane of glass. So once GitOps and CI/CD were
+        working, that's where I turned next.
+      </p>
+
+      <h2>Where I started to see the magic</h2>
+      <p>
+        I put Backstage in on 26 August. At first I made a list of existing plugins I wanted, and had Claude install and
+        configure them: Argo CD, Kubernetes, Tekton. It didn't take long for my ambitions to outgrow that list.
+      </p>
+      <p>
+        I know what I like. I know what looks cool and what works. I don't know the first thing about actually
+        designing a UI. It turns out I didn't need to. So I asked something like this: "Given what you know about my
+        platform so far, and the brief spec I'm about to give you, create some mockups of a new Backstage plugin for
+        application release management." A few minutes later I was looking at something I thought were pretty awesome.
+      </p>
+      <p>
+        I picked one. The commit that added it landed at 4:59 on a Saturday afternoon, 5 September, as "a release
+        command-center tab", and it was running in my own Backstage within the hour. That night I remember thinking,
+        <em>it's like having your own Star Trek replicator.</em> Describe the thing, and there it is. A lot of the time
+        since, I've caught myself sitting back with the popcorn, just watching my screen while Claude works his magic.
+      </p>
+    </div>
+
+    <figure class="shot">
+      <img src={img('five-options.webp')} alt="A mockup page titled Making release gates and supply-chain proof first-class, showing Option A Gate Wall and Option B Twin Rail, two of five layouts." width="1600" height="1913" loading="lazy" />
+      <figcaption>
+        The habit that stuck: never one design, always several. This one, from 13 September, offered five layouts for
+        Tower's active-delivery panel. I picked Option B, Twin Rail, and it shipped the same day. The app name has been
+        swapped for one of the Skyport demo apps.
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>
+        That became the pattern for every decision after it. Five layouts for a delivery panel. Three ways to show release gates.
+        Four ways to draw a logo. Choosing between things I can see is so much easier than describing
+        something I can't, and it's cheap enough now that there's no reason not to.
+      </p>
+    </div>
+
+    <figure class="shot">
+      <img src={img('ground-control.webp')} alt="A mockup of Tower's CI/CD tab, labelled Approved direction, with a list of pipeline runs and their mini task graphs above a delivery rail for staging." width="1600" height="1420" loading="lazy" />
+      <figcaption>
+        "Ground Control", the CI/CD tab, as an approved mockup. It went into Tower on 11 September and has been refined
+        many times since.
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2>Radar had more than a little influence</h2>
+      <p>
+        Around the same time I came across <a href={u('notes/radar/')}>Radar</a>, the new open source Kubernetes UI. I
+        downloaded the desktop app, started using it, and started loving it. Before long I had Claude helping me add
+        Tekton and Argo Rollouts features to it.
+      </p>
+      <p>
+        When I went back through the history to write this, I found it ran deeper than I remembered. Radar was already
+        drawing maps of my dev cluster on 24 August, two days before Backstage existed. The very first theme I gave
+        Backstage, that same evening, is described in the commit as "blue theme modeled on radarhq.io". A week later
+        there's another: "Overhaul theme to match Radar's design system". And one of the four logo concepts Claude drew
+        for me is literally called <em>Radar Squircle</em>. I'd always suspected Radar planted a seed. The receipts say
+        it planted a whole garden.
+      </p>
+
+      <h2>From Glidepath to Hangar</h2>
+      <p>
+        Somewhere in there I asked Claude to give our plugin a name. It came up with <em>Glidepath</em>, and I thought
+        that was pretty cool. I didn't draw any connection to Radar yet.
+      </p>
+      <p>
+        I was having so much fun with the mockups that I thought it might be fun to brand the whole platform. I gave
+        Claude some direction: a name and a look that stay professional and don't wander into cheesy or campy. It came
+        back with a proposal on 7 September: <em>Hangar</em> for the platform, and a family of names around it. That's
+        when the aviation language finally clicked for me, and it's the moment I thought, "ahh, maybe Radar had a little
+        influence?"
+      </p>
+      <p>
+        Full disclosure: I don't have a thing for planes, no more than the average guy. But the vocabulary is apt, and I
+        liked it right away. The names teach you what each piece does instead of decorating it, which was exactly what
+        I'd asked for.
+      </p>
+    </div>
+
+    <figure class="shot">
+      <img src={img('brand-proposal.webp')} alt="The Hangar brand system proposal, version 1: Hangar the platform, Glidepath the CI/CD engine, and Tower the release command centre, each with a one-line motto." width="1600" height="1100" loading="lazy" />
+      <figcaption>
+        Proposal v1 of the brand, 7 September. "Three names, one hangar door."
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <p>
+        One twist I'd forgotten until the history reminded me: the proposal moved the names around. The Backstage
+        plugin became <a href={u('tower/')}>Tower</a>, one console instead of a tab on every app's page, and I built it
+        that same night. <em>Glidepath</em> went to the CI/CD engine, which until then had been called, rather
+        less poetically, <code>platform-cicd</code>. By the next day my clusters were pointing at the new name. So the
+        first name Claude ever gave me is still here. It just found a better job.
+      </p>
+      <p>
+        Then came the logo, the colours and the icons. We refined them the same way, with lots of options side by side,
+        and I adopted <a href={u('notes/diagram-design/')}>the diagram-design skill</a> for every diagram.
+      </p>
+    </div>
+
+    <figure class="shot">
+      <img src={img('logo-concepts.webp')} alt="Logo concepts for review: four ways to draw a hangar door, with Instrument Dial marked as decided, alongside Hangar Arch, Wordmark plus Glyph, and Radar Squircle." width="1600" height="1475" loading="lazy" />
+      <figcaption>
+        Four ways to draw a hangar door. The Instrument Dial won and became the <a href={gh('hangar', 'brand/README.md')}>mark
+        family</a> you see across this site. Concept D tells you who else was on my mind.
+      </figcaption>
+    </figure>
+
+    <div class="prose">
+      <h2>Lessons learned</h2>
+      <h3>The big one: managing sessions</h3>
+      <p>
+        If I could only pass on one lesson, it's this one, and I learned it the hard way. In the first week I kept a
+        single Claude session alive for four or five days. That's a terrible idea. A session that long gets slower,
+        costs more with every message, and starts to lose track of what it decided at the beginning. I was blowing
+        through my hourly <em>and</em> weekly limits all the time.
+      </p>
+      <p>
+        What fixed it was a handoff. When a piece of work reaches a natural break, or the session starts to feel
+        heavy, I have Claude write a handoff document: what we're building, what's been decided and why, what's done,
+        what's next, and the traps we've already fallen into. Then I close the session, open a fresh one, and its first
+        job is to read the handoff. A new session that starts from a good handoff is sharper than an old one that
+        remembers everything. I use a handoff skill for this all the time now, and the habit started early: Tower's
+        code still cites eight different handoff files from its first few weeks.
+      </p>
+      <p>
+        And they really get you with the extra usage. It's the continue screen on an arcade machine all over again:
+        you're deep into the game, the countdown starts, and all it would take is one more quarter. When you're on a
+        roll at midnight and the limit hits, it's very tempting to pull out the card and top up just to keep going. Short
+        sessions and good handoffs are the best defence I've found, because they make every token count.
+      </p>
+
+      <h3>The rest of what I'd tell myself on day one</h3>
+      <ul>
+        <li><strong>Vibe coding is great for discovery and poor for architecture.</strong> Once a decision will be
+          expensive to undo, write the spec first. Pointed specs saved me more backtracking than anything else.</li>
+        <li><strong>Have it write everything down.</strong> Decisions, dates and reasons belong in the repo, not in a
+          chat. Those notes are how I could check this story against what really happened.</li>
+        <li><strong>Ask for five, not one.</strong> Mockups cost minutes now. Picking from options beats describing
+          what's in your head, especially if, like me, you can't design.</li>
+        <li><strong>Taste is still your job.</strong> Claude drew every screen, but knowing what's worth building,
+          testing it against real clusters, and saying "no, not that" was still on me.</li>
+        <li><strong>Decide what you'll spend before the limit hits</strong>, not at midnight when it does.</li>
+      </ul>
+    </div>
+
+    <ol class="timeline">
+      {timeline.map(([d, t]) => (
+        <li><time>{d}</time><span>{t}</span></li>
+      ))}
+    </ol>
+
+    <div class="prose">
+      <h2>And then a website</h2>
+      <p>
+        Eventually I got ambitious enough to buy a domain and put all of this on the web. I'm quite proud of it. At the
+        very least it's a record of my work. Maybe no one sees it, or maybe I'll find the courage to share some of
+        these essays on LinkedIn. We'll see. Either way, the <a href={u('log/')}>Log</a> will keep growing.
+      </p>
+      <p class="muted small">
+        Dates come from the commit history of the Hangar repos and my Backstage app. The mockups are the real design
+        pages Claude made for me at the time, captured as images.
+      </p>
+    </div>
+    </article>
+  </div>
+</Base>
+<style>
+  .shot { margin: 2rem 0; max-width: 60rem; }
+  .shot img { display: block; width: 100%; height: auto; border: 1px solid var(--rule-strong); border-radius: 8px; }
+  .shot figcaption { margin-top: 0.6rem; color: var(--muted); font-size: 0.9rem; max-width: 62ch; line-height: 1.5; }
+  .timeline { list-style: none; padding: 0; margin: 2rem 0; max-width: 52rem; }
+  .timeline li { display: grid; grid-template-columns: 9rem 1fr; gap: 0.8rem; padding: 0.6rem 0; border-top: 1px solid var(--rule); line-height: 1.45; }
+  .timeline time { font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent); padding-top: 0.15rem; }
+  .timeline span { color: var(--muted); }
+  @media (max-width: 560px) { .timeline li { grid-template-columns: 1fr; gap: 0.2rem; } }
+</style>

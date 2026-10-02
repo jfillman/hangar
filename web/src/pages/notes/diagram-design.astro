@@ -1,0 +1,82 @@
+---
+import Base from '../../layouts/Base.astro';
+import Diagram from '../../components/Diagram.astro';
+import { notes } from '../../data/notes';
+import { diagrams } from '../../data/diagrams';
+import { gh, u } from '../../lib/url';
+
+const note = notes.find((n) => n.slug === 'diagram-design')!;
+const repo = 'https://github.com/cathrynlavery/diagram-design';
+---
+<Base title={note.title} description={note.dek} section="notes">
+  <div class="wrap">
+    <article>
+    <header class="hero">
+      <p class="eyebrow"><a href={u('notes/')}>Field notes</a> · {note.minutes} min read</p>
+      <h1>A shout-out to <em>diagram-design</em></h1>
+      <p class="lede">{note.dek}</p>
+    </header>
+
+    <div class="prose">
+      <p>
+        Every diagram on this site was drawn with one tool, and it isn't a drawing tool. It's
+        <a href={repo}>diagram-design</a>, a skill you add to an AI coding agent like Claude Code. You describe what you
+        want to show, and the agent produces a self-contained HTML page with an SVG diagram in it: no build step, no
+        external images, nothing to install to open it.
+      </p>
+
+      <h2>Who made it</h2>
+      <p>
+        diagram-design is by <a href="https://littlemight.com">Cathryn Lavery</a>, the founder of BestSelf, and it's
+        open source under the MIT licence. You can tell it was made by someone who cares about design, because most of
+        the skill isn't about drawing boxes. It's about restraint.
+      </p>
+
+      <h2>Why I like it</h2>
+      <p>
+        A lot of AI-made diagrams look like AI-made diagrams: too many boxes, too many colours,
+        arrows everywhere, and a sense that everything mattered equally. diagram-design starts from the opposite end.
+        Its own guide says "the highest-quality move is usually deletion", and it means it.
+      </p>
+      <ul>
+        <li><strong>One accent, used sparingly.</strong> Only one or two things in a diagram get the accent colour, so
+          your eye goes where it should.</li>
+        <li><strong>A strict 4-pixel grid.</strong> Its author calls this the thing that keeps the diagrams from feeling
+          AI-generated, and I agree.</li>
+        <li><strong>Three typefaces with three jobs.</strong> Instrument Serif for titles and callouts, Geist for labels,
+          Geist Mono for anything technical. I liked them so much that they became this site's fonts too.</li>
+        <li><strong>A self-check.</strong> It ships a script that checks a finished diagram's geometry and
+          accessibility, so the agent can catch its own mistakes before I ever see them.</li>
+        <li><strong>Brand profiles.</strong> You can teach it your colours and fonts once and reuse them everywhere.</li>
+        <li><strong>Motion, when it helps.</strong> A diagram can play through once to show a sequence, and anyone who
+          prefers reduced motion just gets the finished picture.</li>
+      </ul>
+    </div>
+
+    <Diagram id="overview/01-change-road" caption="The diagram on Hangar's home page, drawn with diagram-design and the Hangar profile." />
+
+    <div class="prose">
+      <h2>How Hangar uses it</h2>
+      <p>
+        Hangar has its own profile for the skill: the amber and sky from the <a href={gh('hangar', 'brand/README.md')}>Hangar
+        brand</a>, on a warm paper background, with a dark version of every colour. A small Python generator in the
+        Hangar repo builds every page from that profile, so all {diagrams.length} diagrams in the
+        <a href={u('diagrams/')}>gallery</a> share one visual language, and each one works in light and dark.
+      </p>
+      <p>
+        I added one rule of my own on top: every diagram separates what's <em>built</em> from what's only a
+        <em>proposal</em>. That fits the skill's whole philosophy. A diagram should tell you the truth, and nothing
+        more than you need.
+      </p>
+      <p>
+        If you write design docs, architecture notes or essays with an AI agent, give it a try. It's the closest I've
+        come to having a designer on the team, and it raised the bar for everything else on this site.
+      </p>
+      <p class="muted small">
+        Install it from <a href={repo}>github.com/cathrynlavery/diagram-design</a>. I have no connection to the project
+        beyond being a happy user.
+      </p>
+    </div>
+    </article>
+  </div>
+</Base>
