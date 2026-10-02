@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Every pass leaves the platform better</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f2efe9;--paper-2:#e8e3da;--card:#ffffff;--ink:#1b1f24;--muted:#5b6570;--soft:#838b93;--accent:#b9791f;--link:#2e7ba6;--rule:rgba(27,31,36,.12);--zone:rgba(27,31,36,.02);--zone-line:rgba(27,31,36,.16);--store:rgba(27,31,36,.05);--ext:rgba(27,31,36,.03);--ext-line:rgba(27,31,36,.30);--acc-tint:rgba(185,121,31,0.080);--acc-soft:rgba(185,121,31,0.050);--link-tint:rgba(46,123,166,0.100);--input:rgba(91,101,112,.10);--font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace;--h1-weight:400;--h1-ls:-.02em;--r:6px;color-scheme:light}
+:root[data-theme=dark]{--paper:#131619;--paper-2:#1b1f24;--card:#1c2127;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,.12);--zone:rgba(232,228,220,.02);--zone-line:rgba(232,228,220,.16);--store:rgba(232,228,220,.05);--ext:rgba(232,228,220,.03);--ext-line:rgba(232,228,220,.30);--acc-tint:rgba(232,163,61,0.104);--acc-soft:rgba(232,163,61,0.065);--link-tint:rgba(111,178,217,0.130);--input:rgba(161,170,179,.10);color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--paper:#131619;--paper-2:#1b1f24;--card:#1c2127;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,.12);--zone:rgba(232,228,220,.02);--zone-line:rgba(232,228,220,.16);--store:rgba(232,228,220,.05);--ext:rgba(232,228,220,.03);--ext-line:rgba(232,228,220,.30);--acc-tint:rgba(232,163,61,0.104);--acc-soft:rgba(232,163,61,0.065);--link-tint:rgba(111,178,217,0.130);--input:rgba(161,170,179,.10);color-scheme:dark}}
+
+*,*::before,*::after{box-sizing:border-box}
+:root{--motion-fast:160ms;--motion-step:480ms;--motion-hold:720ms;--motion-total:3600ms;--motion-ease:cubic-bezier(.2,.8,.2,1)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);padding:2.25rem 1rem 2rem}
+.frame{max-width:1040px;margin:0 auto}
+.eyebrow{margin:0 0 .5rem;color:var(--muted);font:500 11px/1.4 var(--font-mono);letter-spacing:.18em;text-transform:uppercase}
+h1{margin:0 0 .5rem;font-family:var(--font-serif);font-weight:var(--h1-weight);letter-spacing:var(--h1-ls);font-size:clamp(1.5rem,2.4vw + .75rem,2.1rem);line-height:1.15}
+.lede{margin:0 0 1rem;color:var(--muted);font-size:.92rem;line-height:1.5;max-width:72ch}
+.bar{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;align-items:center;margin:0 0 1rem;padding:.55rem .8rem;border:1px dashed var(--zone-line);border-radius:var(--r);font:500 11px/1.4 var(--font-mono);color:var(--muted)}
+.bar fieldset{border:0;margin:0;padding:0;display:flex;gap:.6rem;align-items:center}
+.bar legend{float:left;margin-right:.4rem;color:var(--soft);letter-spacing:.12em;text-transform:uppercase}
+.bar label{display:inline-flex;gap:.25rem;align-items:center;cursor:pointer}
+.bar input{accent-color:var(--accent)}
+.bar .note{margin-left:auto;color:var(--soft)}
+[data-motion-root]{max-width:100%;min-width:0}
+.diagram-container{width:100%;overflow-x:auto}
+.diagram-container>svg{display:block;width:100%}
+.hint{margin:.5rem 0 0;color:var(--soft);font:400 11px/1.4 var(--font-mono)}
+
+.foot{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.06em;color:var(--soft);border-top:1px solid var(--rule);margin-top:1.25rem;padding-top:.6rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.notes{display:grid;grid-template-columns:1.15fr 1fr .95fr;gap:.75rem;margin-top:1.5rem}
+.notes>div{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:.9rem 1rem}
+.notes h2{margin:0 0 .4rem;color:var(--muted);font:500 10px/1.4 var(--font-mono);letter-spacing:.16em;text-transform:uppercase}
+.notes p,.notes li{margin:0 0 .4rem;font-size:.82rem;line-height:1.5}
+.notes ul{margin:0;padding-left:1rem}
+@media (max-width:860px){.notes{grid-template-columns:1fr}}
+a{color:var(--link)}
+
+/* diagram skin */
+.bg{fill:var(--paper)}
+.zone{fill:var(--zone);stroke:var(--zone-line);stroke-width:.8}
+.mask{fill:var(--paper)}
+.zt{fill:var(--muted);font:500 8px var(--font-mono);letter-spacing:.14em}
+.k{stroke-width:1}
+.k-backend{fill:var(--card);stroke:var(--ink)}
+.k-focal{fill:var(--acc-tint);stroke:var(--accent)}
+.k-store{fill:var(--store);stroke:var(--muted)}
+.k-external{fill:var(--ext);stroke:var(--ext-line)}
+.k-input{fill:var(--input);stroke:var(--soft)}
+.k-propose{fill:var(--link-tint);stroke:var(--link)}
+.k-optional{fill:var(--zone);stroke:var(--zone-line);stroke-dasharray:4 3}
+.nm{fill:var(--ink);font:600 12px var(--font-sans)}
+.nm-l{fill:var(--ink);font:600 14px var(--font-sans)}
+.sub{fill:var(--muted);font:400 8px var(--font-mono)}
+.sub-l{fill:var(--muted);font:400 9px var(--font-mono)}
+.why{fill:var(--muted);font:400 11px var(--font-sans)}
+.tagb{fill:none;stroke-width:.8;stroke-opacity:.55}
+.tagt{font:500 8px var(--font-mono);letter-spacing:.08em}
+.t-ink{stroke:var(--ink);fill:var(--muted)} .t-acc{stroke:var(--accent);fill:var(--accent)} .t-link{stroke:var(--link);fill:var(--link)} .t-soft{stroke:var(--soft);fill:var(--soft)}
+text.t-ink,text.t-acc,text.t-link,text.t-soft{stroke:none}
+rect.tagb{fill:none}
+.lbl{fill:var(--soft);font:400 8px var(--font-mono);letter-spacing:.06em}
+.lbl-acc{fill:var(--accent)} .lbl-link{fill:var(--link)}
+.a{fill:none;stroke:var(--muted);stroke-width:1.2}
+.a.acc{stroke:var(--accent)} .a.lnk{stroke:var(--link)} .a.dash{stroke-dasharray:5 4}
+.a.thin{stroke-width:1}
+.mk{fill:var(--muted)} .mk-acc{fill:var(--accent)} .mk-lnk{fill:var(--link)}
+.callout{fill:var(--muted);font:italic 400 15px var(--font-serif)}
+.rule{stroke:var(--rule);stroke-width:.8}
+.badge{fill:var(--paper);stroke:var(--accent);stroke-width:1}
+.badget{fill:var(--accent);font:600 8px var(--font-mono)}
+.go{fill:var(--soft);font:400 9px var(--font-mono)}
+svg a{cursor:pointer}
+svg a:hover .k,svg a:focus-visible .k{stroke:var(--accent);stroke-width:1.6}
+svg a:hover .go,svg a:focus-visible .go{fill:var(--accent)}
+svg a:focus{outline:none}
+svg a:focus-visible .k{stroke-width:2.4}
+
+/* motion (from template-motion.html) */
+.motion-ready [data-motion-item]{opacity:.12;transform:translateY(8px);transform-box:fill-box;transform-origin:center;
+  transition:opacity var(--motion-step) var(--motion-ease),transform var(--motion-step) var(--motion-ease)}
+.motion-ready [data-motion-item].is-visible,.motion-ready[data-frame="end"] [data-motion-item],.motion-ready[data-frame="static"] [data-motion-item]{opacity:1;transform:none}
+.draw-path{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:1;stroke-dashoffset:1;pointer-events:none;opacity:0}
+.motion-ready .draw-path.is-visible{opacity:1;animation:draw-path var(--motion-step) linear forwards}
+.motion-ready[data-frame="end"] .draw-path,.motion-ready[data-frame="static"] .draw-path{opacity:0;animation:none}
+@keyframes draw-path{to{stroke-dashoffset:0}}
+[data-motion-controls]{display:none;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule)}
+.motion-ready [data-motion-controls]{display:flex}
+[data-motion-controls][hidden]{display:none !important}
+[data-motion-controls] button{min-width:44px;min-height:44px;padding:8px 12px;border:1px solid var(--muted);border-radius:4px;color:var(--ink);background:var(--paper);font:600 12px/1 var(--font-sans);cursor:pointer}
+[data-motion-controls] button:hover{border-color:var(--accent)}
+[data-motion-controls] button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[data-motion-controls] button:disabled{cursor:not-allowed;opacity:.45}
+.keyboard-help{color:var(--soft);font:400 11px/1.4 var(--font-mono)}
+[data-motion-status-visible]{margin-left:auto;color:var(--muted);font:500 12px/1.4 var(--font-mono)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+noscript p{margin:12px 0 0;color:var(--muted);font:500 12px/1.4 var(--font-mono)}
+html[data-motion="static"] [data-motion-controls],html[data-motion="static"] [data-motion-decorative]{display:none !important}
+html[data-motion="static"] [data-motion-item]{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
+html[data-motion="step"] [data-motion-controls],html[data-motion="step"] [data-motion-decorative]{display:none !important}
+html[data-motion="step"] [data-motion-item]{animation:none !important;transition:none !important}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;transition-duration:.001ms !important}
+  [data-motion-item]{opacity:1 !important;transform:none !important}
+  [data-motion-decorative]{display:none !important}
+  [data-motion-controls]{display:none !important}
+}
+@media print{
+  .diagram-container{overflow-x:visible} .diagram-container>svg{min-width:0 !important}
+  [data-motion-controls],[data-motion-decorative]{display:none !important}
+  [data-motion-item]{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
+}
+
+:root{--motion-total:5040ms}
+.diagram-container>svg{min-width:720px}
+
+.wheel{display:grid;grid-template-columns:minmax(0,720px) minmax(220px,1fr);gap:1rem;align-items:center}
+@media (max-width:900px){.wheel{grid-template-columns:1fr}}
+.peek{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:1rem 1.1rem;min-height:12rem}
+.peek>div{display:none}.peek>[data-p=intro]{display:block}
+.peek p{margin:0 0 .5rem;font-size:.86rem;line-height:1.5}
+.peek .big{font-family:var(--font-serif);font-size:1.35rem;line-height:1.2}
+main:has(#s-design:hover) .peek>[data-p=intro], main:has(#s-design:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#s-design:hover) .peek>[data-p=design], main:has(#s-design:focus-visible) .peek>[data-p=design]{display:block}
+main:has(#s-onboard:hover) .peek>[data-p=intro], main:has(#s-onboard:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#s-onboard:hover) .peek>[data-p=onboard], main:has(#s-onboard:focus-visible) .peek>[data-p=onboard]{display:block}
+main:has(#s-build:hover) .peek>[data-p=intro], main:has(#s-build:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#s-build:hover) .peek>[data-p=build], main:has(#s-build:focus-visible) .peek>[data-p=build]{display:block}
+main:has(#s-secure:hover) .peek>[data-p=intro], main:has(#s-secure:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#s-secure:hover) .peek>[data-p=secure], main:has(#s-secure:focus-visible) .peek>[data-p=secure]{display:block}
+main:has(#s-release:hover) .peek>[data-p=intro], main:has(#s-release:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#s-release:hover) .peek>[data-p=release], main:has(#s-release:focus-visible) .peek>[data-p=release]{display:block}
+main:has(#s-operate:hover) .peek>[data-p=intro], main:has(#s-operate:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#s-operate:hover) .peek>[data-p=operate], main:has(#s-operate:focus-visible) .peek>[data-p=operate]{display:block}
+main:has(#s-improve:hover) .peek>[data-p=intro], main:has(#s-improve:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#s-improve:hover) .peek>[data-p=improve], main:has(#s-improve:focus-visible) .peek>[data-p=improve]{display:block}
+main:has(#s-hub:hover) .peek>[data-p=intro], main:has(#s-hub:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#s-hub:hover) .peek>[data-p=hub], main:has(#s-hub:focus-visible) .peek>[data-p=hub]{display:block}</style>
+</head>
+<body>
+<div class="frame">
+<main data-motion-root data-motion-mode="step" data-step-count="7" data-step-current="7" data-frame="static" data-static-frame="complete">
+  <p class="eyebrow">Hangar · The lifecycle</p>
+  <h1>Every pass leaves the platform better</h1>
+  <p class="lede">The software lifecycle as Hangar runs it: seven stages in a loop, each owned by part of the platform, and every pass written back to one shared record.</p>
+  <div class="wheel"><div class="diagram-container">
+    <svg viewBox="0 0 720 604" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="hangar-wheel-title hangar-wheel-desc">
+      <title id="hangar-wheel-title">Every pass leaves the platform better</title>
+      <desc id="hangar-wheel-desc">A loop of seven lifecycle stages: plan and design, onboard and code, build and test, secure and govern, release and deploy, operate and observe, and measure and improve, which feeds back into planning. Release and deploy is the boundary where only a merged commit crosses. Four stages write back to the hub, Hangar&#x27;s single record of git history, decisions and release records.</desc>
+      <defs><marker id="hangar-wheel-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="mk" points="0 0, 8 3, 0 6"/></marker><marker id="hangar-wheel-arrow-acc" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="mk-acc" points="0 0, 8 3, 0 6"/></marker><marker id="hangar-wheel-arrow-lnk" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="mk-lnk" points="0 0, 8 3, 0 6"/></marker></defs>
+      <rect class="bg" width="720" height="604"/>
+<path class="a" d="M444.000,85.888 A230,230 0 0 1 507.147,123.230" marker-end="url(#hangar-wheel-arrow)"/>
+<path class="a" d="M560.888,188.000 A230,230 0 0 1 589.230,318.804" marker-end="url(#hangar-wheel-arrow)"/>
+<path class="a" d="M574.112,384.000 A230,230 0 0 1 508.984,475.225" marker-end="url(#hangar-wheel-arrow)"/>
+<path class="a acc" d="M376.000,529.443 A230,230 0 0 1 345.197,529.523" marker-end="url(#hangar-wheel-arrow-acc)"/>
+<path class="a" d="M211.932,476.000 A230,230 0 0 1 146.329,385.116" marker-end="url(#hangar-wheel-arrow)"/>
+<path class="a" d="M130.871,320.000 A230,230 0 0 1 158.530,189.050" marker-end="url(#hangar-wheel-arrow)"/>
+<path class="a" d="M211.932,124.000 A230,230 0 0 1 274.884,86.329" marker-end="url(#hangar-wheel-arrow)"/>
+<path class="a dash thin" d="M360.00,104.00 L360.00,242.00" marker-end="url(#hangar-wheel-arrow)"/>
+<path class="a dash thin" d="M500.00,188.00 L429.69,244.25" marker-end="url(#hangar-wheel-arrow)"/>
+<path class="a dash thin" d="M275.38,476.00 L332.40,357.41" marker-end="url(#hangar-wheel-arrow)"/>
+<path class="a dash thin" d="M220.00,188.00 L290.31,244.25" marker-end="url(#hangar-wheel-arrow)"/>
+<g data-motion-item data-step="1" aria-label="Stage 1: Plan and design. Contracts first, decisions in writing"><a id="s-hub" href="/platform/" target="_top" aria-label="Hangar: open its page"><rect class="mask" x="260" y="248" width="200" height="104" rx="6"/><rect class="k k-store" x="260" y="248" width="200" height="104" rx="6"/><rect class="tagb t-ink" x="268" y="254" width="88" height="12" rx="2"/><text class="tagt t-ink" x="312" y="263" text-anchor="middle">GIT · RELEASES</text><svg x="268" y="291" width="36" height="36" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#E8A33D"/><path d="M32,64 V48 A16,16 0 0 1 64,48 V64" fill="none" stroke="#E8A33D" stroke-width="4" stroke-linecap="round"/><line x1="26" y1="68" x2="70" y2="68" stroke="#262C33" stroke-width="2"/></g></svg><text class="nm" x="382" y="307" text-anchor="middle">Hangar</text><text class="sub" x="382" y="321" text-anchor="middle">one record of every pass</text><text class="go" x="452" y="261" text-anchor="end" aria-hidden="true">↗</text></a><a id="s-design" href="/sdlc/design/" target="_top" aria-label="Plan and design: open its page"><rect class="mask" x="276" y="40" width="168" height="64" rx="6"/><rect class="k k-backend" x="276" y="40" width="168" height="64" rx="6"/><text class="nm" x="360" y="70" text-anchor="middle">Plan and design</text><text class="sub" x="360" y="84" text-anchor="middle">ADRs · contracts</text><text class="go" x="436" y="53" text-anchor="end" aria-hidden="true">↗</text></a><circle class="badge" cx="280" cy="44" r="8"/><text class="badget" x="280" y="47" text-anchor="middle">1</text></g>
+<g data-motion-item data-step="2" aria-label="Stage 2: Onboard and code. One file, scaffolded for you"><a id="s-onboard" href="/sdlc/onboard/" target="_top" aria-label="Onboard and code: open its page"><rect class="mask" x="456" y="124" width="168" height="64" rx="6"/><rect class="k k-backend" x="456" y="124" width="168" height="64" rx="6"/><text class="nm" x="540" y="154" text-anchor="middle">Onboard and code</text><text class="sub" x="540" y="168" text-anchor="middle">Tower · one cicd.yaml</text><text class="go" x="616" y="137" text-anchor="end" aria-hidden="true">↗</text></a><circle class="badge" cx="460" cy="128" r="8"/><text class="badget" x="460" y="131" text-anchor="middle">2</text></g>
+<g data-motion-item data-step="3" aria-label="Stage 3: Build and test. Rootless builds, pinned catalogs, real tests"><a id="s-build" href="/sdlc/build/" target="_top" aria-label="Build and test: open its page"><rect class="mask" x="504" y="320" width="168" height="64" rx="6"/><rect class="k k-backend" x="504" y="320" width="168" height="64" rx="6"/><text class="nm" x="588" y="350" text-anchor="middle">Build and test</text><text class="sub" x="588" y="364" text-anchor="middle">Glidepath · Tekton</text><text class="go" x="664" y="333" text-anchor="end" aria-hidden="true">↗</text></a><circle class="badge" cx="508" cy="324" r="8"/><text class="badget" x="508" y="327" text-anchor="middle">3</text></g>
+<g data-motion-item data-step="4" aria-label="Stage 4: Secure and govern. Honest gates, workload identity, no stored keys"><a id="s-secure" href="/sdlc/secure/" target="_top" aria-label="Secure and govern: open its page"><rect class="mask" x="376" y="476" width="168" height="64" rx="6"/><rect class="k k-backend" x="376" y="476" width="168" height="64" rx="6"/><text class="nm" x="460" y="506" text-anchor="middle">Secure and govern</text><text class="sub" x="460" y="520" text-anchor="middle">Sigstore · Kyverno</text><text class="go" x="536" y="489" text-anchor="end" aria-hidden="true">↗</text></a><circle class="badge" cx="380" cy="480" r="8"/><text class="badget" x="380" y="483" text-anchor="middle">4</text></g>
+<g data-motion-item data-step="5" aria-label="Stage 5: Release and deploy. Only a merged commit crosses a boundary"><a id="s-release" href="/sdlc/release/" target="_top" aria-label="Release and deploy: open its page"><rect class="mask" x="176" y="476" width="168" height="64" rx="6"/><rect class="k k-focal" x="176" y="476" width="168" height="64" rx="6"/><text class="nm" x="260" y="506" text-anchor="middle">Release and deploy</text><text class="sub" x="260" y="520" text-anchor="middle">ArgoCD · Rollouts</text><text class="go" x="336" y="489" text-anchor="end" aria-hidden="true">↗</text></a><circle class="badge" cx="180" cy="480" r="8"/><text class="badget" x="180" y="483" text-anchor="middle">5</text></g>
+<g data-motion-item data-step="6" aria-label="Stage 6: Operate and observe. One trace per change, one pane of glass"><a id="s-operate" href="/sdlc/operate/" target="_top" aria-label="Operate and observe: open its page"><rect class="mask" x="48" y="320" width="168" height="64" rx="6"/><rect class="k k-backend" x="48" y="320" width="168" height="64" rx="6"/><text class="nm" x="132" y="350" text-anchor="middle">Operate and observe</text><text class="sub" x="132" y="364" text-anchor="middle">Tower · OTel · SLOs</text><text class="go" x="208" y="333" text-anchor="end" aria-hidden="true">↗</text></a><circle class="badge" cx="52" cy="324" r="8"/><text class="badget" x="52" y="327" text-anchor="middle">6</text></g>
+<g data-motion-item data-step="7" aria-label="Stage 7: Measure and improve. Scorecards, evals and written-down gaps"><a id="s-improve" href="/sdlc/improve/" target="_top" aria-label="Measure and improve: open its page"><rect class="mask" x="96" y="124" width="168" height="64" rx="6"/><rect class="k k-backend" x="96" y="124" width="168" height="64" rx="6"/><text class="nm" x="180" y="154" text-anchor="middle">Measure and improve</text><text class="sub" x="180" y="168" text-anchor="middle">DORA · scorecard</text><text class="go" x="256" y="137" text-anchor="end" aria-hidden="true">↗</text></a><circle class="badge" cx="100" cy="128" r="8"/><text class="badget" x="100" y="131" text-anchor="middle">7</text></g>
+<line class="rule" x1="24" y1="560" x2="696" y2="560"/><text class="zt" x="24" y="581">LEGEND</text><rect class="k k-backend" x="96" y="572" width="16" height="12" rx="3"/><text class="sub" x="120" y="581">Stage</text><rect class="k k-focal" x="165" y="572" width="16" height="12" rx="3"/><text class="sub" x="189" y="581">The boundary</text><rect class="k k-store" x="269" y="572" width="16" height="12" rx="3"/><text class="sub" x="293" y="581">The record</text><line class="a dash" x1="363" y1="578" x2="383" y2="578"/><text class="sub" x="391" y="581">Writes back</text>
+    </svg>
+  </div>
+  <div class="peek" aria-live="polite"><div data-p="intro"><p class="eyebrow">The whole SDLC</p><p>Seven stages, clockwise from the top, and every pass leaves something in the record at the centre. Point at a stage for the short version; click it for the full page.</p></div><div data-p="hub"><p class="eyebrow">The centre · Hangar</p><p>Git history, ADRs, release records and DORA numbers: the platform remembers every pass, so the next one starts better informed.</p></div><div data-p="design"><p class="eyebrow">Stage 1 · Plan and design</p><p class="big">Contracts first, decisions in writing.</p><p>Every decision that shapes the platform is written down as an ADR, and every service starts as a contract (an Airframe claim) before it is code.</p></div><div data-p="onboard"><p class="eyebrow">Stage 2 · Onboard and code</p><p class="big">One file, scaffolded for you.</p><p>A new service is one form in Tower. It becomes a pull request with a single cicd.yaml; nobody hand-writes pipelines.</p></div><div data-p="build"><p class="eyebrow">Stage 3 · Build and test</p><p class="big">Rootless builds, pinned catalogs, real tests.</p><p>Glidepath builds on Tekton with rootless Kaniko, pinned task catalogs, and real tests through Testkube.</p></div><div data-p="secure"><p class="eyebrow">Stage 4 · Secure and govern</p><p class="big">Honest gates, workload identity, no stored keys.</p><p>Keyless signing, provenance that says what the build really did, and policy that checks both before release.</p></div><div data-p="release"><p class="eyebrow">Stage 5 · Release and deploy</p><p class="big">Only a merged commit crosses a boundary.</p><p>Promotion is a pull request. Each cluster&#x27;s ArgoCD pulls what merged, and Argo Rollouts runs the canary.</p></div><div data-p="operate"><p class="eyebrow">Stage 6 · Operate and observe</p><p class="big">One trace per change, one pane of glass.</p><p>One OpenTelemetry trace per change from commit to canary, with SLOs and release records side by side in Tower.</p></div><div data-p="improve"><p class="eyebrow">Stage 7 · Measure and improve</p><p class="big">Scorecards, evals and written-down gaps.</p><p>DORA metrics, the Airframe scorecard and agent evals turn every pass into the next round of work.</p></div></div></div>
+  
+  <p class="hint">Press Play or use ←/→ to walk the stages. Point at a stage to preview it; click to open its SDLC page.</p>
+  <div data-motion-controls role="group" aria-label="Diagram playback controls">
+      <button type="button" data-motion-action="prev">Previous</button>
+      <button type="button" data-motion-action="play" aria-pressed="false">Play</button>
+      <button type="button" data-motion-action="pause" aria-pressed="true">Pause</button>
+      <button type="button" data-motion-action="next">Next</button>
+      <button type="button" data-motion-action="replay">Replay</button>
+      <span class="keyboard-help">←/→ step · Space play/pause · R replay · Home/End jump</span>
+      <span data-motion-status-visible aria-hidden="true">Step <span data-motion-step-label>7</span> of 7</span>
+    </div>
+    <p class="sr-only" data-motion-status role="status" aria-live="polite" aria-atomic="true"></p>
+    <noscript><p>Animation controls require JavaScript. The complete final diagram is shown above.</p></noscript>
+</main>
+<div class="foot"><span>Hangar · Overview</span><span>Click any box to open its page</span></div>
+</div>
+<script data-diagram-controls>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const staticOverride = params.get('motion') === 'static' || document.documentElement.dataset.motion === 'static';
+      const requestedStep = params.get('step');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+      document.fonts.ready.then(() => { document.documentElement.dataset.fontsReady = 'true'; });
+
+      document.querySelectorAll('[data-motion-root]').forEach((root) => {
+        const count = Number(root.dataset.stepCount);
+        const hold = parseFloat(getComputedStyle(root).getPropertyValue('--motion-hold')) || 720;
+        const parsedStep = requestedStep !== null && /^\d+$/.test(requestedStep) ? Number(requestedStep) : null;
+        const exactStep = params.get('motion') === 'step' && Number.isSafeInteger(parsedStep) && parsedStep >= 0 && parsedStep <= count ? parsedStep : null;
+        const items = [...root.querySelectorAll('[data-motion-item]')];
+        const labels = Array.from({ length: count + 1 }, (_, index) => index === 0
+          ? 'Ready'
+          : items.filter((item) => !item.hasAttribute('data-motion-decorative') && Number(item.dataset.step) === index)
+              .map((item) => item.getAttribute('aria-label')).join('; '));
+        const controls = root.querySelector('[data-motion-controls]');
+        const status = root.querySelector('[data-motion-status]');
+        const visibleStep = root.querySelector('[data-motion-step-label]');
+        let step = count;
+        let timer = 0;
+        let playing = false;
+        let stepBeforeReduce = 0;
+        let resumeAfterReduce = root.dataset.motionMode === 'reveal';
+
+        const buttons = (action) => controls.querySelector(`[data-motion-action="${action}"]`);
+        const clearClock = () => { window.clearTimeout(timer); timer = 0; };
+        const announce = () => { status.textContent = `Step ${step} of ${count}: ${labels[step] || 'Complete'}`; };
+        const setControlsAvailable = (available) => {
+          controls.hidden = !available;
+          controls.setAttribute('aria-hidden', String(!available));
+          controls.dataset.playbackDisabled = String(!available);
+          controls.querySelectorAll('button').forEach((control) => { control.disabled = !available; });
+        };
+
+        function render(next, userInitiated = false) {
+          step = Math.max(0, Math.min(count, next));
+          root.dataset.stepCurrent = String(step);
+          root.dataset.frame = step === count ? 'end' : step === 0 ? 'start' : 'step';
+          items.forEach((item) => {
+            const itemStep = Number(item.dataset.step);
+            item.classList.toggle('is-visible', itemStep <= step);
+            item.classList.toggle('is-current', itemStep === step);
+          });
+          if (visibleStep) visibleStep.textContent = String(step);
+          const unavailable = controls.dataset.playbackDisabled === 'true';
+          buttons('prev').disabled = unavailable || step === 0;
+          buttons('next').disabled = unavailable || step === count;
+          if (userInitiated) announce();
+        }
+
+        function pause(userInitiated = false) {
+          clearClock();
+          playing = false;
+          root.classList.remove('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'false');
+          buttons('pause').setAttribute('aria-pressed', 'true');
+          if (userInitiated) status.textContent = `Paused at step ${step} of ${count}`;
+        }
+
+        function finish() {
+          pause(false);
+          root.dataset.frame = 'end';
+          status.textContent = `Complete · step ${count} of ${count}`;
+        }
+
+        function tick() {
+          if (!playing) return;
+          if (step >= count) { finish(); return; }
+          render(step + 1, false);
+          if (step >= count) { finish(); return; }
+          timer = window.setTimeout(tick, hold);
+        }
+
+        function play(fromStart = false, userInitiated = false) {
+          clearClock();
+          if (fromStart || step >= count) render(0, userInitiated);
+          playing = true;
+          root.classList.add('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'true');
+          buttons('pause').setAttribute('aria-pressed', 'false');
+          timer = window.setTimeout(tick, hold);
+        }
+
+        controls.addEventListener('click', (event) => {
+          const button = event.target.closest('[data-motion-action]');
+          if (!button) return;
+          const action = button.dataset.motionAction;
+          if (action === 'play') play(false, true);
+          if (action === 'pause') pause(true);
+          if (action === 'replay') play(true, true);
+          if (action === 'prev') { pause(false); render(step - 1, true); }
+          if (action === 'next') { pause(false); render(step + 1, true); }
+        });
+
+        root.addEventListener('keydown', (event) => {
+          if (event.target.matches('input, textarea, select, a[href]')) return;
+          const keys = { ArrowLeft: step - 1, ArrowRight: step + 1, Home: 0, End: count };
+          if (event.code === 'Space' && !event.target.closest('button')) {
+            event.preventDefault();
+            playing ? pause(true) : play(false, true);
+            return;
+          }
+          if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'r') {
+            event.preventDefault();
+            play(true, true);
+            return;
+          }
+          if (!(event.key in keys)) return;
+          event.preventDefault();
+          pause(false);
+          render(keys[event.key], true);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden' && playing) pause(false);
+        });
+        reduce.addEventListener('change', (event) => {
+          if (event.matches && root.dataset.motionState !== 'reduced') {
+            stepBeforeReduce = step;
+            resumeAfterReduce = playing;
+          }
+          pause(false);
+          if (event.matches) {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'reduced';
+            status.textContent = 'Reduced motion · complete static frame · playback controls unavailable';
+          } else if (staticOverride || root.dataset.motionMode === 'none') {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'static';
+            status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+          } else {
+            delete root.dataset.motionState;
+            if (exactStep !== null) {
+              setControlsAvailable(false);
+              render(exactStep, false);
+              root.dataset.frame = 'step';
+              root.dataset.motionState = 'test';
+              status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+            } else {
+              setControlsAvailable(true);
+              render(stepBeforeReduce, false);
+              status.textContent = `Ready · step ${step} of ${count}`;
+              if (resumeAfterReduce && root.dataset.motionMode === 'reveal') {
+                play(false, false);
+              }
+            }
+            resumeAfterReduce = false;
+          }
+        });
+
+        if (staticOverride) {
+          document.documentElement.dataset.motion = 'static';
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = 'static';
+          status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+        } else if (reduce.matches || root.dataset.motionMode === 'none') {
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = reduce.matches ? 'reduced' : 'static';
+          status.textContent = reduce.matches
+            ? 'Reduced motion · complete static frame · playback controls unavailable'
+            : 'Static frame · complete diagram · playback controls unavailable';
+        } else if (exactStep !== null) {
+          document.documentElement.dataset.motion = 'step';
+          pause(false);
+          setControlsAvailable(false);
+          render(exactStep, false);
+          root.dataset.frame = 'step';
+          root.dataset.motionState = 'test';
+          status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+        } else if (root.dataset.motionMode === 'reveal') {
+          setControlsAvailable(true);
+          render(0, false);
+          play(false, false);
+        } else {
+          pause(false);
+          setControlsAvailable(true);
+          render(0, false);
+          status.textContent = `Ready · step 0 of ${count}`;
+        }
+        root.classList.add('motion-ready');
+      });
+    })();
+  </script>
+</body>
+</html>

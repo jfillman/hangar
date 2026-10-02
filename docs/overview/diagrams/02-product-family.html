@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Five products, one platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f2efe9;--paper-2:#e8e3da;--card:#ffffff;--ink:#1b1f24;--muted:#5b6570;--soft:#838b93;--accent:#b9791f;--link:#2e7ba6;--rule:rgba(27,31,36,.12);--zone:rgba(27,31,36,.02);--zone-line:rgba(27,31,36,.16);--store:rgba(27,31,36,.05);--ext:rgba(27,31,36,.03);--ext-line:rgba(27,31,36,.30);--acc-tint:rgba(185,121,31,0.080);--acc-soft:rgba(185,121,31,0.050);--link-tint:rgba(46,123,166,0.100);--input:rgba(91,101,112,.10);--font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace;--h1-weight:400;--h1-ls:-.02em;--r:6px;color-scheme:light}
+:root[data-theme=dark]{--paper:#131619;--paper-2:#1b1f24;--card:#1c2127;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,.12);--zone:rgba(232,228,220,.02);--zone-line:rgba(232,228,220,.16);--store:rgba(232,228,220,.05);--ext:rgba(232,228,220,.03);--ext-line:rgba(232,228,220,.30);--acc-tint:rgba(232,163,61,0.104);--acc-soft:rgba(232,163,61,0.065);--link-tint:rgba(111,178,217,0.130);--input:rgba(161,170,179,.10);color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--paper:#131619;--paper-2:#1b1f24;--card:#1c2127;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,.12);--zone:rgba(232,228,220,.02);--zone-line:rgba(232,228,220,.16);--store:rgba(232,228,220,.05);--ext:rgba(232,228,220,.03);--ext-line:rgba(232,228,220,.30);--acc-tint:rgba(232,163,61,0.104);--acc-soft:rgba(232,163,61,0.065);--link-tint:rgba(111,178,217,0.130);--input:rgba(161,170,179,.10);color-scheme:dark}}
+
+*,*::before,*::after{box-sizing:border-box}
+:root{--motion-fast:160ms;--motion-step:480ms;--motion-hold:720ms;--motion-total:3600ms;--motion-ease:cubic-bezier(.2,.8,.2,1)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);padding:2.25rem 1rem 2rem}
+.frame{max-width:1040px;margin:0 auto}
+.eyebrow{margin:0 0 .5rem;color:var(--muted);font:500 11px/1.4 var(--font-mono);letter-spacing:.18em;text-transform:uppercase}
+h1{margin:0 0 .5rem;font-family:var(--font-serif);font-weight:var(--h1-weight);letter-spacing:var(--h1-ls);font-size:clamp(1.5rem,2.4vw + .75rem,2.1rem);line-height:1.15}
+.lede{margin:0 0 1rem;color:var(--muted);font-size:.92rem;line-height:1.5;max-width:72ch}
+.bar{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;align-items:center;margin:0 0 1rem;padding:.55rem .8rem;border:1px dashed var(--zone-line);border-radius:var(--r);font:500 11px/1.4 var(--font-mono);color:var(--muted)}
+.bar fieldset{border:0;margin:0;padding:0;display:flex;gap:.6rem;align-items:center}
+.bar legend{float:left;margin-right:.4rem;color:var(--soft);letter-spacing:.12em;text-transform:uppercase}
+.bar label{display:inline-flex;gap:.25rem;align-items:center;cursor:pointer}
+.bar input{accent-color:var(--accent)}
+.bar .note{margin-left:auto;color:var(--soft)}
+[data-motion-root]{max-width:100%;min-width:0}
+.diagram-container{width:100%;overflow-x:auto}
+.diagram-container>svg{display:block;width:100%}
+.hint{margin:.5rem 0 0;color:var(--soft);font:400 11px/1.4 var(--font-mono)}
+
+.foot{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.06em;color:var(--soft);border-top:1px solid var(--rule);margin-top:1.25rem;padding-top:.6rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.notes{display:grid;grid-template-columns:1.15fr 1fr .95fr;gap:.75rem;margin-top:1.5rem}
+.notes>div{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:.9rem 1rem}
+.notes h2{margin:0 0 .4rem;color:var(--muted);font:500 10px/1.4 var(--font-mono);letter-spacing:.16em;text-transform:uppercase}
+.notes p,.notes li{margin:0 0 .4rem;font-size:.82rem;line-height:1.5}
+.notes ul{margin:0;padding-left:1rem}
+@media (max-width:860px){.notes{grid-template-columns:1fr}}
+a{color:var(--link)}
+
+/* diagram skin */
+.bg{fill:var(--paper)}
+.zone{fill:var(--zone);stroke:var(--zone-line);stroke-width:.8}
+.mask{fill:var(--paper)}
+.zt{fill:var(--muted);font:500 8px var(--font-mono);letter-spacing:.14em}
+.k{stroke-width:1}
+.k-backend{fill:var(--card);stroke:var(--ink)}
+.k-focal{fill:var(--acc-tint);stroke:var(--accent)}
+.k-store{fill:var(--store);stroke:var(--muted)}
+.k-external{fill:var(--ext);stroke:var(--ext-line)}
+.k-input{fill:var(--input);stroke:var(--soft)}
+.k-propose{fill:var(--link-tint);stroke:var(--link)}
+.k-optional{fill:var(--zone);stroke:var(--zone-line);stroke-dasharray:4 3}
+.nm{fill:var(--ink);font:600 12px var(--font-sans)}
+.nm-l{fill:var(--ink);font:600 14px var(--font-sans)}
+.sub{fill:var(--muted);font:400 8px var(--font-mono)}
+.sub-l{fill:var(--muted);font:400 9px var(--font-mono)}
+.why{fill:var(--muted);font:400 11px var(--font-sans)}
+.tagb{fill:none;stroke-width:.8;stroke-opacity:.55}
+.tagt{font:500 8px var(--font-mono);letter-spacing:.08em}
+.t-ink{stroke:var(--ink);fill:var(--muted)} .t-acc{stroke:var(--accent);fill:var(--accent)} .t-link{stroke:var(--link);fill:var(--link)} .t-soft{stroke:var(--soft);fill:var(--soft)}
+text.t-ink,text.t-acc,text.t-link,text.t-soft{stroke:none}
+rect.tagb{fill:none}
+.lbl{fill:var(--soft);font:400 8px var(--font-mono);letter-spacing:.06em}
+.lbl-acc{fill:var(--accent)} .lbl-link{fill:var(--link)}
+.a{fill:none;stroke:var(--muted);stroke-width:1.2}
+.a.acc{stroke:var(--accent)} .a.lnk{stroke:var(--link)} .a.dash{stroke-dasharray:5 4}
+.a.thin{stroke-width:1}
+.mk{fill:var(--muted)} .mk-acc{fill:var(--accent)} .mk-lnk{fill:var(--link)}
+.callout{fill:var(--muted);font:italic 400 15px var(--font-serif)}
+.rule{stroke:var(--rule);stroke-width:.8}
+.badge{fill:var(--paper);stroke:var(--accent);stroke-width:1}
+.badget{fill:var(--accent);font:600 8px var(--font-mono)}
+.go{fill:var(--soft);font:400 9px var(--font-mono)}
+svg a{cursor:pointer}
+svg a:hover .k,svg a:focus-visible .k{stroke:var(--accent);stroke-width:1.6}
+svg a:hover .go,svg a:focus-visible .go{fill:var(--accent)}
+svg a:focus{outline:none}
+svg a:focus-visible .k{stroke-width:2.4}
+
+/* motion (from template-motion.html) */
+.motion-ready [data-motion-item]{opacity:.12;transform:translateY(8px);transform-box:fill-box;transform-origin:center;
+  transition:opacity var(--motion-step) var(--motion-ease),transform var(--motion-step) var(--motion-ease)}
+.motion-ready [data-motion-item].is-visible,.motion-ready[data-frame="end"] [data-motion-item],.motion-ready[data-frame="static"] [data-motion-item]{opacity:1;transform:none}
+.draw-path{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:1;stroke-dashoffset:1;pointer-events:none;opacity:0}
+.motion-ready .draw-path.is-visible{opacity:1;animation:draw-path var(--motion-step) linear forwards}
+.motion-ready[data-frame="end"] .draw-path,.motion-ready[data-frame="static"] .draw-path{opacity:0;animation:none}
+@keyframes draw-path{to{stroke-dashoffset:0}}
+[data-motion-controls]{display:none;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule)}
+.motion-ready [data-motion-controls]{display:flex}
+[data-motion-controls][hidden]{display:none !important}
+[data-motion-controls] button{min-width:44px;min-height:44px;padding:8px 12px;border:1px solid var(--muted);border-radius:4px;color:var(--ink);background:var(--paper);font:600 12px/1 var(--font-sans);cursor:pointer}
+[data-motion-controls] button:hover{border-color:var(--accent)}
+[data-motion-controls] button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[data-motion-controls] button:disabled{cursor:not-allowed;opacity:.45}
+.keyboard-help{color:var(--soft);font:400 11px/1.4 var(--font-mono)}
+[data-motion-status-visible]{margin-left:auto;color:var(--muted);font:500 12px/1.4 var(--font-mono)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+noscript p{margin:12px 0 0;color:var(--muted);font:500 12px/1.4 var(--font-mono)}
+html[data-motion="static"] [data-motion-controls],html[data-motion="static"] [data-motion-decorative]{display:none !important}
+html[data-motion="static"] [data-motion-item]{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
+html[data-motion="step"] [data-motion-controls],html[data-motion="step"] [data-motion-decorative]{display:none !important}
+html[data-motion="step"] [data-motion-item]{animation:none !important;transition:none !important}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;transition-duration:.001ms !important}
+  [data-motion-item]{opacity:1 !important;transform:none !important}
+  [data-motion-decorative]{display:none !important}
+  [data-motion-controls]{display:none !important}
+}
+@media print{
+  .diagram-container{overflow-x:visible} .diagram-container>svg{min-width:0 !important}
+  [data-motion-controls],[data-motion-decorative]{display:none !important}
+  [data-motion-item]{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
+}
+
+:root{--motion-total:3600ms}
+.diagram-container>svg{min-width:1000px}
+</style>
+</head>
+<body>
+<div class="frame">
+<main data-motion-root data-motion-mode="reveal" data-step-count="5" data-step-current="5" data-frame="static" data-static-frame="complete">
+  <p class="eyebrow">Hangar · The product family</p>
+  <h1>Five products, one platform</h1>
+  <p class="lede">Hangar is five products that each do one job: ground to stand on, an API that defines a service, a road to production, a safe place for agents, and one front door for people.</p>
+  <div class="diagram-container">
+    <svg viewBox="0 0 1000 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="hangar-family-title hangar-family-desc">
+      <title id="hangar-family-title">Five products, one platform</title>
+      <desc id="hangar-family-desc">The Hangar product family. Apron is the ground every cluster starts from. Glidepath, Airframe and Autopilot sit on it side by side: delivery, the control plane, and AI agent workloads. GitHub sits above them, where every change is a reviewed, merged commit, and Tower sits on top as the front door people use. Events from Glidepath flow back to Tower.</desc>
+      <defs><marker id="hangar-family-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="mk" points="0 0, 8 3, 0 6"/></marker><marker id="hangar-family-arrow-acc" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="mk-acc" points="0 0, 8 3, 0 6"/></marker><marker id="hangar-family-arrow-lnk" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="mk-lnk" points="0 0, 8 3, 0 6"/></marker></defs>
+      <rect class="bg" width="1000" height="512"/>
+<rect class="zone" x="184" y="52" width="808" height="404" rx="8"/><a href="/platform/" target="_top" aria-label="Hangar · the platform: open its page"><rect class="mask" x="196" y="48" width="158" height="20" rx="2"/><svg x="198" y="48" width="20" height="20" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#E8A33D"/><path d="M32,64 V48 A16,16 0 0 1 64,48 V64" fill="none" stroke="#E8A33D" stroke-width="4" stroke-linecap="round"/><line x1="26" y1="68" x2="70" y2="68" stroke="#262C33" stroke-width="2"/></g></svg><text class="zt" x="286" y="61" text-anchor="middle">HANGAR · THE PLATFORM</text></a>
+<path class="a" d="M152,96 L200,96" marker-end="url(#hangar-family-arrow)"/>
+<path class="a acc" d="M588,144 L588,184" marker-end="url(#hangar-family-arrow-acc)"/>
+<rect class="mask" x="596" y="158.0" width="84" height="12" rx="2"/><text class="lbl lbl-acc" x="638" y="167.0" text-anchor="middle">PULL REQUESTS</text>
+<path class="a acc" d="M320,224 L320,264" marker-end="url(#hangar-family-arrow-acc)"/>
+<rect class="mask" x="328" y="238.0" width="48" height="12" rx="2"/><text class="lbl lbl-acc" x="352" y="247.0" text-anchor="middle">WEBHOOK</text>
+<path class="a acc" d="M588,224 L588,264" marker-end="url(#hangar-family-arrow-acc)"/>
+<rect class="mask" x="596" y="238.0" width="44" height="12" rx="2"/><text class="lbl lbl-acc" x="618" y="247.0" text-anchor="middle">CLAIMS</text>
+<path class="a" d="M856,224 L856,264" marker-end="url(#hangar-family-arrow)"/>
+<rect class="mask" x="864" y="238.0" width="64" height="12" rx="2"/><text class="lbl" x="896" y="247.0" text-anchor="middle">AGENT DEFS</text>
+<path class="a lnk dash" d="M200,312 L172,312 Q164,312 164,304 L164,136 Q164,128 172,128 L200,128" marker-end="url(#hangar-family-arrow-lnk)"/>
+<rect class="mask" x="112" y="214.0" width="44" height="12" rx="2"/><text class="lbl lbl-link" x="134" y="223.0" text-anchor="middle">EVENTS</text>
+<g data-motion-item data-step="1" aria-label="Step 1: Apron, the ground every cluster starts from"><a href="/docs/apron/" target="_top" aria-label="Apron: open its page"><rect class="mask" x="200" y="384" width="776" height="56" rx="6"/><rect class="k k-store" x="200" y="384" width="776" height="56" rx="6"/><rect class="tagb t-ink" x="208" y="390" width="44" height="12" rx="2"/><text class="tagt t-ink" x="230" y="399" text-anchor="middle">GROUND</text><svg x="208" y="407" width="28" height="28" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#96A2AC"/><rect x="34" y="34" width="10" height="10" rx="2" fill="none" stroke="#96A2AC" stroke-width="2"/><rect x="52" y="34" width="10" height="10" rx="2" fill="none" stroke="#96A2AC" stroke-width="2"/><rect x="34" y="52" width="10" height="10" rx="2" fill="none" stroke="#96A2AC" stroke-width="2"/><rect x="52" y="52" width="10" height="10" rx="2" fill="none" stroke="#96A2AC" stroke-width="2"/></g></svg><text class="nm" x="606" y="419" text-anchor="middle">Apron</text><text class="sub" x="606" y="433" text-anchor="middle">every cluster from one template · dev and prod today</text><text class="go" x="968" y="397" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="2" aria-label="Step 2: Airframe, the control plane: what a compliant service is, defined once"><a href="/docs/airframe/" target="_top" aria-label="Airframe: open its page"><rect class="mask" x="468" y="264" width="240" height="80" rx="6"/><rect class="k k-backend" x="468" y="264" width="240" height="80" rx="6"/><rect class="tagb t-ink" x="476" y="270" width="84" height="12" rx="2"/><text class="tagt t-ink" x="518" y="279" text-anchor="middle">CONTROL PLANE</text><svg x="476" y="299" width="28" height="28" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#6FB2D9"/><line x1="28" y1="48" x2="68" y2="48" stroke="#6FB2D9" stroke-width="4" stroke-linecap="round"/><line x1="36" y1="44" x2="36" y2="52" stroke="#6FB2D9" stroke-width="2"/><line x1="44" y1="44" x2="44" y2="52" stroke="#6FB2D9" stroke-width="2"/><line x1="52" y1="44" x2="52" y2="52" stroke="#6FB2D9" stroke-width="2"/><line x1="60" y1="44" x2="60" y2="52" stroke="#6FB2D9" stroke-width="2"/></g></svg><text class="nm" x="606" y="311" text-anchor="middle">Airframe</text><text class="sub" x="606" y="325" text-anchor="middle">Crossplane XRDs · one chart</text><text class="go" x="700" y="277" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="2" aria-label="Step 2: Glidepath, the guarded road from a merged commit to a verified release"><a href="/cicd/" target="_top" aria-label="Glidepath: open its page"><rect class="mask" x="200" y="264" width="240" height="80" rx="6"/><rect class="k k-backend" x="200" y="264" width="240" height="80" rx="6"/><rect class="tagb t-ink" x="208" y="270" width="56" height="12" rx="2"/><text class="tagt t-ink" x="236" y="279" text-anchor="middle">DELIVERY</text><svg x="208" y="299" width="28" height="28" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#6FB2D9"/><line x1="32" y1="36" x2="60" y2="60" stroke="#6FB2D9" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="60" r="4" fill="#6FB2D9"/><line x1="28" y1="66" x2="68" y2="66" stroke="#262C33" stroke-width="2"/></g></svg><text class="nm" x="338" y="311" text-anchor="middle">Glidepath</text><text class="sub" x="338" y="325" text-anchor="middle">CI/CD · signing · releases</text><text class="go" x="432" y="277" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="3" aria-label="Step 3: Autopilot, any AI agent workload, bounded and audited (early)"><a href="/autopilot/" target="_top" aria-label="Autopilot: open its page"><rect class="mask" x="736" y="264" width="240" height="80" rx="6"/><rect class="k k-backend" x="736" y="264" width="240" height="80" rx="6"/><rect class="tagb t-ink" x="744" y="270" width="76" height="12" rx="2"/><text class="tagt t-ink" x="782" y="279" text-anchor="middle">AI WORKLOADS</text><svg x="744" y="299" width="28" height="28" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#E8A33D"/><path d="M33,34 H28 V62 H33 M63,34 H68 V62 H63" fill="none" stroke="#E8A33D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polygon points="48,33 57.5,59 48,53.5 38.5,59" fill="#E8A33D" stroke="#E8A33D" stroke-width="1.5" stroke-linejoin="round"/></g></svg><text class="nm" x="874" y="311" text-anchor="middle">Autopilot</text><text class="sub" x="874" y="325" text-anchor="middle">agent workloads · early</text><text class="go" x="968" y="277" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="4" aria-label="Step 4: GitHub, where every change is a reviewed, merged commit"><a href="/principles/#reviewed-commits" target="_top" aria-label="GitHub · every change is a reviewed, merged commit: open its page"><rect class="mask" x="200" y="184" width="776" height="40" rx="6"/><rect class="k k-focal" x="200" y="184" width="776" height="40" rx="6"/><text class="nm" x="588" y="208" text-anchor="middle">GitHub · every change is a reviewed, merged commit</text><text class="go" x="968" y="197" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="5" aria-label="Step 5: Tower, the one place people look, on Backstage"><a href="/tower/" target="_top" aria-label="Tower: open its page"><rect class="mask" x="200" y="72" width="776" height="72" rx="6"/><rect class="k k-backend" x="200" y="72" width="776" height="72" rx="6"/><rect class="tagb t-ink" x="208" y="78" width="64" height="12" rx="2"/><text class="tagt t-ink" x="240" y="87" text-anchor="middle">EXPERIENCE</text><svg x="208" y="103" width="28" height="28" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#E8A33D"/><line x1="48" y1="34" x2="48" y2="64" stroke="#E8A33D" stroke-width="4" stroke-linecap="round"/><rect x="42" y="64" width="12" height="5" rx="1" fill="#E8A33D"/><path d="M40,34 A8,8 0 0 1 56,34" fill="none" stroke="#E8A33D" stroke-width="2"/><path d="M34,34 A14,14 0 0 1 62,34" fill="none" stroke="#E8A33D" stroke-width="2" opacity=".5"/></g></svg><text class="nm-l" x="606" y="115" text-anchor="middle">Tower</text><text class="sub-l" x="606" y="131" text-anchor="middle">Backstage plugin · releases, SLOs and fleet views · self-service</text><text class="go" x="968" y="85" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="5" aria-label="Step 5: developers use Tower"><rect class="mask" x="24" y="72" width="128" height="56" rx="6"/><rect class="k k-input" x="24" y="72" width="128" height="56" rx="6"/><text class="nm" x="88" y="98" text-anchor="middle">Developers</text><text class="sub" x="88" y="112" text-anchor="middle">self-service</text></g>
+<path data-motion-item data-step="4" data-motion-decorative aria-hidden="true" focusable="false" pathLength="1" class="draw-path" d="M588,224 L588,264"/>
+<line class="rule" x1="24" y1="468" x2="976" y2="468"/><text class="zt" x="24" y="489">LEGEND</text><rect class="k k-input" x="96" y="480" width="16" height="12" rx="3"/><text class="sub" x="120" y="489">People</text><rect class="k k-backend" x="170" y="480" width="16" height="12" rx="3"/><text class="sub" x="194" y="489">Hangar product</text><rect class="k k-store" x="284" y="480" width="16" height="12" rx="3"/><text class="sub" x="308" y="489">Ground</text><rect class="k k-focal" x="358" y="480" width="16" height="12" rx="3"/><text class="sub" x="382" y="489">The only crossing</text><line class="a acc" x1="487" y1="486" x2="507" y2="486"/><text class="sub" x="515" y="489">A change</text><line class="a lnk dash" x1="575" y1="486" x2="595" y2="486"/><text class="sub" x="603" y="489">Events back</text>
+    </svg>
+  </div>
+  
+  <p class="hint">Builds from the ground up, once, on load. Click any product to open its page.</p>
+  <div data-motion-controls role="group" aria-label="Diagram playback controls">
+      <button type="button" data-motion-action="prev">Previous</button>
+      <button type="button" data-motion-action="play" aria-pressed="false">Play</button>
+      <button type="button" data-motion-action="pause" aria-pressed="true">Pause</button>
+      <button type="button" data-motion-action="next">Next</button>
+      <button type="button" data-motion-action="replay">Replay</button>
+      <span class="keyboard-help">←/→ step · Space play/pause · R replay · Home/End jump</span>
+      <span data-motion-status-visible aria-hidden="true">Step <span data-motion-step-label>5</span> of 5</span>
+    </div>
+    <p class="sr-only" data-motion-status role="status" aria-live="polite" aria-atomic="true"></p>
+    <noscript><p>Animation controls require JavaScript. The complete final diagram is shown above.</p></noscript>
+</main>
+<div class="foot"><span>Hangar · Overview</span><span>Click any box to open its page</span></div>
+</div>
+<script data-diagram-controls>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const staticOverride = params.get('motion') === 'static' || document.documentElement.dataset.motion === 'static';
+      const requestedStep = params.get('step');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+      document.fonts.ready.then(() => { document.documentElement.dataset.fontsReady = 'true'; });
+
+      document.querySelectorAll('[data-motion-root]').forEach((root) => {
+        const count = Number(root.dataset.stepCount);
+        const hold = parseFloat(getComputedStyle(root).getPropertyValue('--motion-hold')) || 720;
+        const parsedStep = requestedStep !== null && /^\d+$/.test(requestedStep) ? Number(requestedStep) : null;
+        const exactStep = params.get('motion') === 'step' && Number.isSafeInteger(parsedStep) && parsedStep >= 0 && parsedStep <= count ? parsedStep : null;
+        const items = [...root.querySelectorAll('[data-motion-item]')];
+        const labels = Array.from({ length: count + 1 }, (_, index) => index === 0
+          ? 'Ready'
+          : items.filter((item) => !item.hasAttribute('data-motion-decorative') && Number(item.dataset.step) === index)
+              .map((item) => item.getAttribute('aria-label')).join('; '));
+        const controls = root.querySelector('[data-motion-controls]');
+        const status = root.querySelector('[data-motion-status]');
+        const visibleStep = root.querySelector('[data-motion-step-label]');
+        let step = count;
+        let timer = 0;
+        let playing = false;
+        let stepBeforeReduce = 0;
+        let resumeAfterReduce = root.dataset.motionMode === 'reveal';
+
+        const buttons = (action) => controls.querySelector(`[data-motion-action="${action}"]`);
+        const clearClock = () => { window.clearTimeout(timer); timer = 0; };
+        const announce = () => { status.textContent = `Step ${step} of ${count}: ${labels[step] || 'Complete'}`; };
+        const setControlsAvailable = (available) => {
+          controls.hidden = !available;
+          controls.setAttribute('aria-hidden', String(!available));
+          controls.dataset.playbackDisabled = String(!available);
+          controls.querySelectorAll('button').forEach((control) => { control.disabled = !available; });
+        };
+
+        function render(next, userInitiated = false) {
+          step = Math.max(0, Math.min(count, next));
+          root.dataset.stepCurrent = String(step);
+          root.dataset.frame = step === count ? 'end' : step === 0 ? 'start' : 'step';
+          items.forEach((item) => {
+            const itemStep = Number(item.dataset.step);
+            item.classList.toggle('is-visible', itemStep <= step);
+            item.classList.toggle('is-current', itemStep === step);
+          });
+          if (visibleStep) visibleStep.textContent = String(step);
+          const unavailable = controls.dataset.playbackDisabled === 'true';
+          buttons('prev').disabled = unavailable || step === 0;
+          buttons('next').disabled = unavailable || step === count;
+          if (userInitiated) announce();
+        }
+
+        function pause(userInitiated = false) {
+          clearClock();
+          playing = false;
+          root.classList.remove('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'false');
+          buttons('pause').setAttribute('aria-pressed', 'true');
+          if (userInitiated) status.textContent = `Paused at step ${step} of ${count}`;
+        }
+
+        function finish() {
+          pause(false);
+          root.dataset.frame = 'end';
+          status.textContent = `Complete · step ${count} of ${count}`;
+        }
+
+        function tick() {
+          if (!playing) return;
+          if (step >= count) { finish(); return; }
+          render(step + 1, false);
+          if (step >= count) { finish(); return; }
+          timer = window.setTimeout(tick, hold);
+        }
+
+        function play(fromStart = false, userInitiated = false) {
+          clearClock();
+          if (fromStart || step >= count) render(0, userInitiated);
+          playing = true;
+          root.classList.add('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'true');
+          buttons('pause').setAttribute('aria-pressed', 'false');
+          timer = window.setTimeout(tick, hold);
+        }
+
+        controls.addEventListener('click', (event) => {
+          const button = event.target.closest('[data-motion-action]');
+          if (!button) return;
+          const action = button.dataset.motionAction;
+          if (action === 'play') play(false, true);
+          if (action === 'pause') pause(true);
+          if (action === 'replay') play(true, true);
+          if (action === 'prev') { pause(false); render(step - 1, true); }
+          if (action === 'next') { pause(false); render(step + 1, true); }
+        });
+
+        root.addEventListener('keydown', (event) => {
+          if (event.target.matches('input, textarea, select, a[href]')) return;
+          const keys = { ArrowLeft: step - 1, ArrowRight: step + 1, Home: 0, End: count };
+          if (event.code === 'Space' && !event.target.closest('button')) {
+            event.preventDefault();
+            playing ? pause(true) : play(false, true);
+            return;
+          }
+          if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'r') {
+            event.preventDefault();
+            play(true, true);
+            return;
+          }
+          if (!(event.key in keys)) return;
+          event.preventDefault();
+          pause(false);
+          render(keys[event.key], true);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden' && playing) pause(false);
+        });
+        reduce.addEventListener('change', (event) => {
+          if (event.matches && root.dataset.motionState !== 'reduced') {
+            stepBeforeReduce = step;
+            resumeAfterReduce = playing;
+          }
+          pause(false);
+          if (event.matches) {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'reduced';
+            status.textContent = 'Reduced motion · complete static frame · playback controls unavailable';
+          } else if (staticOverride || root.dataset.motionMode === 'none') {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'static';
+            status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+          } else {
+            delete root.dataset.motionState;
+            if (exactStep !== null) {
+              setControlsAvailable(false);
+              render(exactStep, false);
+              root.dataset.frame = 'step';
+              root.dataset.motionState = 'test';
+              status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+            } else {
+              setControlsAvailable(true);
+              render(stepBeforeReduce, false);
+              status.textContent = `Ready · step ${step} of ${count}`;
+              if (resumeAfterReduce && root.dataset.motionMode === 'reveal') {
+                play(false, false);
+              }
+            }
+            resumeAfterReduce = false;
+          }
+        });
+
+        if (staticOverride) {
+          document.documentElement.dataset.motion = 'static';
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = 'static';
+          status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+        } else if (reduce.matches || root.dataset.motionMode === 'none') {
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = reduce.matches ? 'reduced' : 'static';
+          status.textContent = reduce.matches
+            ? 'Reduced motion · complete static frame · playback controls unavailable'
+            : 'Static frame · complete diagram · playback controls unavailable';
+        } else if (exactStep !== null) {
+          document.documentElement.dataset.motion = 'step';
+          pause(false);
+          setControlsAvailable(false);
+          render(exactStep, false);
+          root.dataset.frame = 'step';
+          root.dataset.motionState = 'test';
+          status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+        } else if (root.dataset.motionMode === 'reveal') {
+          setControlsAvailable(true);
+          render(0, false);
+          play(false, false);
+        } else {
+          pause(false);
+          setControlsAvailable(true);
+          render(0, false);
+          status.textContent = `Ready · step 0 of ${count}`;
+        }
+        root.classList.add('motion-ready');
+      });
+    })();
+  </script>
+</body>
+</html>

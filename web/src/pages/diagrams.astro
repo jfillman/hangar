@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import { bySet, diagrams, SET_LABELS, type Diagram } from '../data/diagrams';
 import { u } from '../lib/url';
 const sets: { key: Diagram['set']; blurb: string }[] = [
+  { key: 'overview', blurb: 'Five ways to see the whole platform: how a change moves, the product family, where it runs, the stack and the lifecycle. They move, and every box clicks through.' },
   { key: 'autopilot', blurb: 'How Hangar runs any AI agent workload: planes, shapes, runs, identity, authority, audit and rollout.' },
   { key: 'plan', blurb: 'The Hangar family, the roadmap, the Airframe scorecard, the contract and the Skyport demo.' },
   { key: 'reference', blurb: 'Reference architecture for agents on a platform: substrate, gateway, identity, observability, autonomy, evaluation.' },
