@@ -37,8 +37,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href={u('marks/hangar-tile.svg')} />
     <link rel="mask-icon" href={u('marks/hangar-mask-icon.svg')} color="#E8A33D" />
-    <meta name="theme-color" content="#f2efe9" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#131619" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f1f3f5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0d10" media="(prefers-color-scheme: dark)" />
     <script is:inline>
       // Apply a saved theme before first paint. No saved choice means: follow the system.
       try {
@@ -55,7 +55,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -118,7 +118,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   .bar { display: flex; align-items: center; gap: 1rem; min-height: 60px; }
   .brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--ink); flex-shrink: 0; }
   .brand img { border-radius: 7px; box-shadow: 0 0 0 1px var(--rule); }
-  .brand span { font-family: var(--font-serif); font-size: 1.5rem; letter-spacing: -0.01em; }
+  .brand span { font-family: var(--font-serif); font-weight: 700; font-size: 1.35rem; letter-spacing: 0.06em; text-transform: uppercase; }
   nav { display: flex; gap: 0.1rem; overflow-x: auto; scrollbar-width: none; margin-left: auto; }
   nav::-webkit-scrollbar { display: none; }
   nav a {

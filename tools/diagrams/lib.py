@@ -1,8 +1,8 @@
 import math, html, re
 
-PAPER='#f2efe9'; INK='#1b1f24'; MUTED='#5b6570'; SOFT='#838b93'; ACC='#b9791f'; LINK='#2e7ba6'
+PAPER='#f1f3f5'; INK='#171b1f'; MUTED='#5b6570'; SOFT='#88919a'; ACC='#b9791f'; LINK='#2e7ba6'
 RULE='rgba(27,31,36,0.12)'
-SANS="'Geist', system-ui, sans-serif"; MONO="'Geist Mono', ui-monospace, monospace"; SERIF="'Instrument Serif', serif"
+SANS="'IBM Plex Sans', system-ui, sans-serif"; MONO="'IBM Plex Mono', ui-monospace, monospace"; SERIF="'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif"
 
 KINDS = {
  'propose':  ('rgba(46,123,166,0.10)', LINK, None),
@@ -120,17 +120,17 @@ def defs():
 
 CSS = f"""
 *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
-:root{{--paper:{PAPER};--paper-2:#e8e3da;--ink:{INK};--muted:{MUTED};--soft:{SOFT};--accent:{ACC};--link:{LINK};--rule:{RULE};
---card:#fff;--font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace}}
+:root{{--paper:{PAPER};--paper-2:#e8ecef;--ink:{INK};--muted:{MUTED};--soft:{SOFT};--accent:{ACC};--link:{LINK};--rule:{RULE};
+--card:#fff;--font-sans:'IBM Plex Sans',system-ui,sans-serif;--font-serif:'IBM Plex Sans Condensed','IBM Plex Sans',sans-serif;--font-mono:'IBM Plex Mono',ui-monospace,monospace}}
 body{{font-family:var(--font-sans);background:var(--paper);color:var(--ink);padding:2.5rem 2rem 2rem}}
 .frame{{max-width:1120px;margin:0 auto}}
 .eyebrow{{font-family:var(--font-mono);font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}}
-h1{{font-family:var(--font-serif);font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.15;margin-bottom:.5rem}}
+h1{{font-family:var(--font-serif);font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:700;letter-spacing:.005em;line-height:1.15;margin-bottom:.5rem}}
 .lede{{color:var(--muted);font-size:.9rem;line-height:1.5;max-width:70ch;margin-bottom:1.25rem}}
 .fig{{overflow-x:auto}}
 svg{{width:100%;min-width:900px;display:block}}
 .cards{{display:grid;grid-template-columns:1.15fr 1fr 1.05fr;gap:.75rem;margin-top:1.25rem}}
-.card{{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:1rem 1.1rem}}
+.card{{background:var(--card);border:1px solid var(--rule);border-radius:4px;padding:1rem 1.1rem}}
 .card .eyebrow{{margin-bottom:.35rem}}
 .card p,.card li{{font-size:.8rem;line-height:1.5;color:var(--ink)}}
 .card ul{{padding-left:1rem}}
@@ -149,17 +149,17 @@ FOOTER = 'Hangar · Autopilot'
 # equivalents. Applies under prefers-color-scheme: dark unless the page (or its embedder)
 # sets data-theme="light", and always under data-theme="dark".
 DARK = {
-    PAPER: '#131619', '#e8e3da': '#1b1f24', '#ffffff': '#1c2127', INK: '#e8e4dc',
-    MUTED: '#a1aab3', SOFT: '#7f8891', ACC: '#e8a33d', LINK: '#6fb2d9',
+    PAPER: '#0b0d10', '#e8ecef': '#1a1f26', '#ffffff': '#12161b', INK: '#e9ecef',
+    MUTED: '#96a2ac', SOFT: '#66717b', ACC: '#e8a33d', LINK: '#6fb2d9',
 }
 _RGBA_DARK = {  # light rgb -> (dark rgb, alpha boost)
-    (27, 31, 36): ((232, 228, 220), 1.0),
+    (27, 31, 36): ((233, 236, 239), 1.0),
     (185, 121, 31): ((232, 163, 61), 1.3),
-    (91, 101, 112): ((161, 170, 179), 1.0),
+    (91, 101, 112): ((150, 162, 172), 1.0),
     (46, 123, 166): ((111, 178, 217), 1.3),
 }
-DARK_VARS = (f"--paper:{DARK[PAPER]};--paper-2:#1b1f24;--ink:{DARK[INK]};--muted:{DARK[MUTED]};--soft:{DARK[SOFT]};"
-             f"--accent:{DARK[ACC]};--link:{DARK[LINK]};--rule:rgba(232,228,220,0.14);--card:#1a1e23")
+DARK_VARS = (f"--paper:{DARK[PAPER]};--paper-2:#1a1f26;--ink:{DARK[INK]};--muted:{DARK[MUTED]};--soft:{DARK[SOFT]};"
+             f"--accent:{DARK[ACC]};--link:{DARK[LINK]};--rule:rgba(233,236,239,0.14);--card:#12161b")
 
 def dark_colour(c):
     if c in DARK:
@@ -195,7 +195,7 @@ def page(slug, eyebrow, title, desc, svg_body, W, H, lede='', cards=(), nav='', 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{esc(title)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:ital,wght@0,400;0,600;0,700;1,400;1,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>{CSS}{dark_css(defs() + svg_body + f'<rect fill="{PAPER}"/>')}</style>
 </head>
 <body>

@@ -67,25 +67,25 @@ def tiles(rows):
     return ''.join(f'<a class="tile" href="{h}"><p class="eb">{e}</p><h2>{t}</h2><p>{l}</p></a>' for h, e, t, l in rows)
 
 css = """*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--paper:#f2efe9;--ink:#1b1f24;--muted:#5b6570;--soft:#838b93;--accent:#b9791f;--link:#2e7ba6;--rule:rgba(27,31,36,0.12)}
-body{font-family:'Geist',system-ui,sans-serif;background:var(--paper);color:var(--ink);padding:2.5rem 2rem}
+:root{--paper:#f1f3f5;--ink:#171b1f;--muted:#5b6570;--soft:#88919a;--accent:#b9791f;--link:#2e7ba6;--rule:rgba(27,31,36,0.12)}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--paper);color:var(--ink);padding:2.5rem 2rem}
 .frame{max-width:1120px;margin:0 auto}
-.eyebrow{font-family:'Geist Mono',monospace;font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
-h1{font-family:'Instrument Serif',serif;font-size:2.25rem;font-weight:400;letter-spacing:-.02em;line-height:1.1;margin-bottom:.6rem}
-h3{font-family:'Geist Mono',monospace;font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:1.75rem 0 .6rem}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+h1{font-family:'IBM Plex Sans Condensed',sans-serif;font-size:2.25rem;font-weight:700;letter-spacing:-.02em;line-height:1.1;margin-bottom:.6rem}
+h3{font-family:'IBM Plex Mono',monospace;font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:1.75rem 0 .6rem}
 .lede{color:var(--muted);font-size:.95rem;line-height:1.55;max-width:74ch;margin-bottom:.5rem}
 .grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:.75rem}
 .tile{display:block;background:#fff;border:1px solid var(--rule);border-radius:6px;padding:1rem 1.1rem;text-decoration:none;color:inherit}
 .tile:hover{border-color:var(--accent)}
-.tile .eb{font-family:'Geist Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
-.tile h2{font-family:'Instrument Serif',serif;font-size:1.25rem;font-weight:400;line-height:1.2;margin-bottom:.4rem}
+.tile .eb{font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+.tile h2{font-family:'IBM Plex Sans Condensed',sans-serif;font-size:1.25rem;font-weight:700;line-height:1.2;margin-bottom:.4rem}
 .tile p:last-child{font-size:.78rem;line-height:1.5;color:var(--muted)}
-.foot{font-family:'Geist Mono',monospace;font-size:.62rem;letter-spacing:.06em;color:var(--soft);border-top:1px solid var(--rule);margin-top:1.5rem;padding-top:.6rem}
+.foot{font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.06em;color:var(--soft);border-top:1px solid var(--rule);margin-top:1.5rem;padding-top:.6rem}
 @media (max-width:900px){.grid{grid-template-columns:1fr}}"""
 index = f'''<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Autopilot diagrams</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:ital,wght@0,400;0,600;0,700;1,400;1,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>{css}</style></head><body><div class="frame">
 <p class="eyebrow">Hangar · Autopilot · diagrams</p>
 <h1>Autopilot diagrams: {len(plan)+len(auto)+len(ref)} one-page pictures</h1>

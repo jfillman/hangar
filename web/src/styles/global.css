@@ -1,26 +1,26 @@
-/* The Hangar diagram profile (tools/diagrams/lib.py): warm paper, ink, amber, sky links,
-   Instrument Serif for display, Geist for text, Geist Mono for labels. Dark mode uses the same
+/* The Hangar Brand System (tower src/brand/tokens.ts): cool ground, white panels, amber, sky links,
+   IBM Plex Sans Condensed for display, Plex Sans for text, Plex Mono for labels. Dark mode uses the same
    values as the generator's dark theme (lib.DARK), so the diagrams and the page always match.
    Theme: follows the system unless <html data-theme="light|dark"> is set by the toggle. */
 :root {
   color-scheme: light;
-  --paper: #f2efe9;
-  --paper-2: #e8e3da;
-  --raised: #fbfaf7;
-  --ink: #1b1f24;
+  --paper: #f1f3f5;
+  --paper-2: #e8ecef;
+  --raised: #ffffff;
+  --ink: #171b1f;
   --muted: #5b6570;
-  --soft: #838b93;
+  --soft: #88919a;
   --accent: #b9791f;
   --accent-soft: #f4e6c9;
   --sky: #2e7ba6;
   --sky-soft: #dcebf4;
   --good: #2e8b57;
-  --rule: rgba(27, 31, 36, 0.12);
-  --rule-strong: rgba(27, 31, 36, 0.22);
+  --rule: #d5dbe0;
+  --rule-strong: #bcc4cb;
   --cockpit: #0b0d10;
-  --font-sans: 'Geist', system-ui, sans-serif;
-  --font-serif: 'Instrument Serif', Georgia, serif;
-  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --font-sans: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --wide: 1160px;
   --prose: 68ch;
   --gutter: clamp(16px, 4vw, 40px);
@@ -28,36 +28,36 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --paper: #131619;
-    --paper-2: #1b1f24;
-    --raised: #1a1e23;
-    --ink: #e8e4dc;
-    --muted: #a1aab3;
-    --soft: #7f8891;
+    --paper: #0b0d10;
+    --paper-2: #1a1f26;
+    --raised: #12161b;
+    --ink: #e9ecef;
+    --muted: #96a2ac;
+    --soft: #66717b;
     --accent: #e8a33d;
     --accent-soft: #3a2c15;
     --sky: #6fb2d9;
     --sky-soft: #16262f;
     --good: #5fae84;
-    --rule: rgba(232, 228, 220, 0.14);
-    --rule-strong: rgba(232, 228, 220, 0.26);
+    --rule: #262c33;
+    --rule-strong: #3a424b;
   }
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --paper: #131619;
-  --paper-2: #1b1f24;
-  --raised: #1a1e23;
-  --ink: #e8e4dc;
-  --muted: #a1aab3;
-  --soft: #7f8891;
+  --paper: #0b0d10;
+  --paper-2: #1a1f26;
+  --raised: #12161b;
+  --ink: #e9ecef;
+  --muted: #96a2ac;
+  --soft: #66717b;
   --accent: #e8a33d;
   --accent-soft: #3a2c15;
   --sky: #6fb2d9;
   --sky-soft: #16262f;
   --good: #5fae84;
-  --rule: rgba(232, 228, 220, 0.14);
-  --rule-strong: rgba(232, 228, 220, 0.26);
+  --rule: #262c33;
+  --rule-strong: #3a424b;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -76,7 +76,7 @@ a { color: var(--sky); text-decoration-thickness: 1px; text-underline-offset: 3p
 a:hover { color: var(--ink); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-h1, h2, h3 { font-family: var(--font-serif); font-weight: 400; letter-spacing: -0.015em; line-height: 1.12; margin: 0; }
+h1, h2, h3 { font-family: var(--font-serif); font-weight: 700; letter-spacing: 0.005em; line-height: 1.12; margin: 0; }
 h1 { font-size: clamp(2.3rem, 4.5vw + 1rem, 4rem); }
 h2 { font-size: clamp(1.7rem, 2vw + 1rem, 2.4rem); margin-top: 3.5rem; }
 h3 { font-size: 1.45rem; margin-top: 2rem; }
@@ -101,7 +101,7 @@ strong { font-weight: 600; }
 
 .hero { padding: clamp(3rem, 8vw, 6rem) 0 2rem; }
 .hero h1 { margin: 0.6rem 0 1rem; max-width: 22ch; }
-.hero h1 em { font-style: italic; color: var(--accent); }
+.hero h1 em { font-style: normal; color: var(--accent); }
 
 .rule { border: 0; border-top: 1px solid var(--rule); margin: 3rem 0; }
 
@@ -111,7 +111,7 @@ strong { font-weight: 600; }
   display: block;
   background: var(--raised);
   border: 1px solid var(--rule);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 1.1rem 1.2rem 1.2rem;
   color: inherit;
   text-decoration: none;
@@ -131,6 +131,7 @@ a.card:hover { border-color: var(--accent); color: inherit; }
   margin: 2rem 0;
   font-family: var(--font-serif);
   font-size: clamp(1.35rem, 1.2vw + 1rem, 1.75rem);
+  font-weight: 600;
   line-height: 1.3;
   max-width: 40ch;
 }
@@ -140,7 +141,7 @@ a.card:hover { border-color: var(--accent); color: inherit; }
   background: var(--raised);
   border: 1px solid var(--rule);
   border-top: 3px solid var(--accent);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 1.2rem 1.4rem;
   margin: 2.5rem 0;
 }
@@ -219,7 +220,7 @@ main { counter-reset: p; }
 
 .doc { min-width: 0; max-width: 80ch; padding-bottom: 4rem; overflow-wrap: break-word; }
 .doc .eyebrow a { color: inherit; }
-.doc h1 { font-family: var(--font-serif); font-weight: 400; font-size: clamp(2rem, 4vw, 2.8rem); line-height: 1.1; margin: 0.4rem 0 1.2rem; }
+.doc h1 { font-family: var(--font-serif); font-weight: 700; font-size: clamp(2rem, 4vw, 2.8rem); line-height: 1.1; margin: 0.4rem 0 1.2rem; }
 .doc h2 { margin-top: 2.6rem; }
 .doc h3 { margin-top: 2rem; font-size: 1.15rem; }
 .doc h4 { margin-top: 1.5rem; font-size: 1rem; }
@@ -247,7 +248,7 @@ main { counter-reset: p; }
 
 @media (max-width: 860px) {
   .docs { grid-template-columns: minmax(0, 1fr); gap: 1rem; padding-top: 1.5rem; }
-  .docs-side { position: static; max-height: none; overflow: visible; padding: 0.6rem 0.8rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--raised); }
+  .docs-side { position: static; max-height: none; overflow: visible; padding: 0.6rem 0.8rem; border: 1px solid var(--rule); border-radius: 4px; background: var(--raised); }
   .docs-menu > summary { margin: 0; cursor: pointer; }
   .docs-menu > summary::after { content: '▾'; margin-left: auto; color: var(--soft); }
   .docs-menu[open] > summary { margin-bottom: 0.8rem; }
