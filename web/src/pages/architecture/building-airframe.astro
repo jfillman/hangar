@@ -76,7 +76,7 @@ const evidence = [
         <p>
           Six weeks in, Airframe has fifteen APIs, from app stacks and environments to PostgreSQL, Redis, RabbitMQ,
           MongoDB and Dex, plus three Composition Functions. And the secret store I'd wanted to prototype was one of the
-          first things I built. It went live on 17 August, on Infisical rather than Azure Key Vault.
+          first things I built. It went live on August 17, on Infisical rather than Azure Key Vault.
         </p>
       </div>
 
@@ -173,7 +173,7 @@ const evidence = [
           safe, gentle place to start.
         </p>
         <p>
-          On 16 September a gate in one environment's template briefly evaluated to false. For that one reconcile, the
+          On September 16 a gate in one environment's template briefly evaluated to false. For that one reconcile, the
           template didn't render the file that asks for an app's secret store. To Crossplane, a resource that's no longer
           rendered is one you want gone, so it deleted the file from git. ArgoCD saw the file disappear and pruned the
           SecretStore it described, and the SecretStore took its Infisical project and secrets with it. Two apps lost

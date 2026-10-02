@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro';
 import { notes } from '../../data/notes';
 import { u } from '../../lib/url';
 
-const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' });
+import { longDate } from '../../lib/date';
 ---
 <Base title="Field notes" description="Shorter notes from James Fillman: tools I like, things I've learned, and work outside Hangar." section="notes">
   <div class="wrap">
@@ -20,7 +20,7 @@ const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-CA'
       {notes.map((n) => (
         <li>
           <a href={u(`notes/${n.slug}/`)}>
-            <span class="eyebrow">{fmt(n.date)}{n.tags && ` · ${n.tags.join(' · ')}`} · {n.minutes} min read</span>
+            <span class="eyebrow">{longDate(n.date)}{n.tags && ` · ${n.tags.join(' · ')}`} · {n.minutes} min read</span>
             <h2>{n.title}</h2>
             <p>{n.dek}</p>
           </a>
