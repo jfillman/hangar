@@ -35,7 +35,8 @@ const timeline = [
         platform on it, and I wanted to level up my AI skills. It made sense to do the second by doing the first.
       </p>
       <p>
-        So I signed up for Claude Pro, installed the Claude Code extension for VS Code, and away I went. I had Claude
+        I'd tried GitHub Copilot in my previous role. The models today are so much better that it
+        hardly feels like the same kind of tool. So I signed up for Claude Pro, installed the Claude Code extension for VS Code, and away I went. I had Claude
         read everything I already had, gave it a first spec, and we got going. Honestly, it was mostly vibe coding in
         the beginning. I'd feed it new requirements as they came to me, and every so often one of them would expose a
         crack in the architecture or the implementation. Then we'd back up and head off in a slightly different
@@ -164,31 +165,40 @@ const timeline = [
     </figure>
 
     <div class="prose">
-      <h2>What it cost me to learn</h2>
+      <h2>Lessons learned</h2>
+      <h3>The big one: managing sessions</h3>
       <p>
-        Not everything was magic. I learned a lot about tokens and session size, mostly the hard way. I blew through my
-        hourly and weekly limits often. In the first week I kept a single session alive for four or five days, and I
-        learned quickly what a bad idea that is: a session that long gets slower, costs more with every message, and
-        starts to lose track of what it decided at the beginning.
+        If I could only pass on one lesson, it's this one, and I learned it the hard way. In the first week I kept a
+        single Claude session alive for four or five days. That's a terrible idea. A session that long gets slower,
+        costs more with every message, and starts to lose track of what it decided at the beginning. I was blowing
+        through my hourly <em>and</em> weekly limits all the time.
+      </p>
+      <p>
+        What fixed it was a handoff. When a piece of work reaches a natural break, or the session starts to feel
+        heavy, I have Claude write a handoff document: what we're building, what's been decided and why, what's done,
+        what's next, and the traps we've already fallen into. Then I close the session, open a fresh one, and its first
+        job is to read the handoff. A new session that starts from a good handoff is sharper than an old one that
+        remembers everything. I use a handoff skill for this all the time now, and the habit started early: Tower's
+        code still cites eight different handoff files from its first few weeks.
       </p>
       <p>
         And they really get you with the extra usage. It reminds me of Candy Crush (I've never played it, but it's the
         thing that comes to mind for a game built so you can't help buying the perks). When you're on a roll at
-        midnight and the limit hits, it's very tempting to pull out the card and top up just to keep going.
+        midnight and the limit hits, it's very tempting to pull out the card and top up just to keep going. Short
+        sessions and good handoffs are the best defence I've found, because they make every token count.
       </p>
 
-      <h2>What I'd tell myself on day one</h2>
+      <h3>The rest of what I'd tell myself on day one</h3>
       <ul>
         <li><strong>Vibe coding is great for discovery and poor for architecture.</strong> Once a decision will be
           expensive to undo, write the spec first. Pointed specs saved me more backtracking than anything else.</li>
-        <li><strong>Keep sessions short and the notes long.</strong> Start fresh often, and have the AI write down what
-          it decided, in the repo, with a date. Those notes are how I could check this story against what really
-          happened.</li>
+        <li><strong>Have it write everything down.</strong> Decisions, dates and reasons belong in the repo, not in a
+          chat. Those notes are how I could check this story against what really happened.</li>
         <li><strong>Ask for five, not one.</strong> Mockups cost minutes now. Picking from options beats describing
           what's in your head, especially if, like me, you can't design.</li>
         <li><strong>Taste is still your job.</strong> Claude drew every screen, but knowing what's worth building,
           testing it against real clusters, and saying "no, not that" was still on me.</li>
-        <li><strong>Watch the meter.</strong> Decide what you're willing to spend before the limit hits, not after.</li>
+        <li><strong>Decide what you'll spend before the limit hits</strong>, not at midnight when it does.</li>
       </ul>
     </div>
 
