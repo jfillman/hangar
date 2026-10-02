@@ -8,15 +8,15 @@ const img = (f: string) => u(`media/notes/origin/${f}`);
 
 // Every date here comes from a commit or a dated design note, mostly in the Backstage app's history.
 const timeline = [
-  ['12 Aug', 'The first commit to the dev cluster\'s GitOps repo captures the cluster I already had, so ArgoCD can own it from then on.'],
-  ['24 Aug', 'Radar is already on my laptop. Claude uses its MCP server to draw me a map of the dev cluster.'],
-  ['26 Aug', 'Backstage goes in. The same evening, its first theme is "modeled on radarhq.io".'],
-  ['3–4 Sep', 'Installing other people\'s plugins: Argo CD, Kubernetes, Tekton.'],
-  ['5 Sep, 4:59 pm', 'The first plugin of my own, a release command centre called Glidepath.'],
-  ['5 Sep, 5:43 pm', 'Glidepath is live in Backstage, after one fix to make it show up at all.'],
-  ['7 Sep', 'The Hangar brand proposal. Tower takes over as the console the same night.'],
-  ['8 Sep', 'The Hangar logo across the whole app. The Glidepath name moves to the CI/CD engine.'],
-  ['27 Sep', 'hangarplatform.dev goes live.'],
+  ['Aug 12', 'The first commit to the dev cluster\'s GitOps repo captures the cluster I already had, so ArgoCD can own it from then on.'],
+  ['Aug 24', 'Radar is already on my laptop. Claude uses its MCP server to draw me a map of the dev cluster.'],
+  ['Aug 26', 'Backstage goes in. The same evening, its first theme is "modeled on radarhq.io".'],
+  ['Sep 3–4', 'Installing other people\'s plugins: Argo CD, Kubernetes, Tekton.'],
+  ['Sep 5, 4:59 pm', 'The first plugin of my own, a release command centre called Glidepath.'],
+  ['Sep 5, 5:43 pm', 'Glidepath is live in Backstage, after one fix to make it show up at all.'],
+  ['Sep 7', 'The Hangar brand proposal. Tower takes over as the console the same night.'],
+  ['Sep 8', 'The Hangar logo across the whole app. The Glidepath name moves to the CI/CD engine.'],
+  ['Sep 27', 'hangarplatform.dev goes live.'],
 ];
 ---
 <Base title={note.title} description={note.dek} section="notes">
@@ -47,7 +47,7 @@ const timeline = [
       <p>
         In my previous role I'd assembled a lot of the pieces of my dream platform, and I wanted to finish the job. I
         bought a Mac mini, stood up two Kubernetes clusters (dev and prod), and started installing the essentials. The
-        very first commit, on 12 August, simply captures the cluster I already had into Git so that ArgoCD could own it
+        very first commit, on August 12, simply captures the cluster I already had into Git so that ArgoCD could own it
         from then on. Within a few weeks I was close to where I'd left things before, with a lot of improvements along
         the way.
       </p>
@@ -58,7 +58,7 @@ const timeline = [
 
       <h2>Where I started to see the magic</h2>
       <p>
-        I put Backstage in on 26 August. At first I made a list of existing plugins I wanted, and had Claude install and
+        I put Backstage in on August 26. At first I made a list of existing plugins I wanted, and had Claude install and
         configure them: Argo CD, Kubernetes, Tekton. It didn't take long for my ambitions to outgrow that list.
       </p>
       <p>
@@ -68,7 +68,7 @@ const timeline = [
         application release management." A few minutes later I was looking at something I thought were pretty awesome.
       </p>
       <p>
-        I picked one. The commit that added it landed at 4:59 on a Saturday afternoon, 5 September, as "a release
+        I picked one. The commit that added it landed at 4:59 on a Saturday afternoon, September 5, as "a release
         command-center tab", and it was running in my own Backstage within the hour. That night I remember thinking,
         <em>it's like having your own Star Trek replicator.</em> Describe the thing, and there it is. A lot of the time
         since, I've caught myself sitting back with the popcorn, just watching my screen while Claude works his magic.
@@ -78,7 +78,7 @@ const timeline = [
     <figure class="shot">
       <img src={img('five-options.webp')} alt="A mockup page titled Making release gates and supply-chain proof first-class, showing Option A Gate Wall and Option B Twin Rail, two of five layouts." width="1600" height="1913" loading="lazy" />
       <figcaption>
-        The habit that stuck: never one design, always several. This one, from 13 September, offered five layouts for
+        The habit that stuck: never one design, always several. This one, from September 13, offered five layouts for
         Tower's active-delivery panel. I picked Option B, Twin Rail, and it shipped the same day. The app name has been
         swapped for one of the Skyport demo apps.
       </figcaption>
@@ -95,7 +95,7 @@ const timeline = [
     <figure class="shot">
       <img src={img('ground-control.webp')} alt="A mockup of Tower's CI/CD tab, labelled Approved direction, with a list of pipeline runs and their mini task graphs above a delivery rail for staging." width="1600" height="1420" loading="lazy" />
       <figcaption>
-        "Ground Control", the CI/CD tab, as an approved mockup. It went into Tower on 11 September and has been refined
+        "Ground Control", the CI/CD tab, as an approved mockup. It went into Tower on September 11 and has been refined
         many times since.
       </figcaption>
     </figure>
@@ -109,7 +109,7 @@ const timeline = [
       </p>
       <p>
         When I went back through the history to write this, I found it ran deeper than I remembered. Radar was already
-        drawing maps of my dev cluster on 24 August, two days before Backstage existed. The very first theme I gave
+        drawing maps of my dev cluster on August 24, two days before Backstage existed. The very first theme I gave
         Backstage, that same evening, is described in the commit as "blue theme modeled on radarhq.io". A week later
         there's another: "Overhaul theme to match Radar's design system". And one of the four logo concepts Claude drew
         for me is literally called <em>Radar Squircle</em>. I'd always suspected Radar planted a seed. The receipts say
@@ -124,7 +124,7 @@ const timeline = [
       <p>
         I was having so much fun with the mockups that I thought it might be fun to brand the whole platform. I gave
         Claude some direction: a name and a look that stay professional and don't wander into cheesy or campy. It came
-        back with a proposal on 7 September: <em>Hangar</em> for the platform, and a family of names around it. That's
+        back with a proposal on September 7: <em>Hangar</em> for the platform, and a family of names around it. That's
         when the aviation language finally clicked for me, and it's the moment I thought, "ahh, maybe Radar had a little
         influence?"
       </p>
@@ -138,7 +138,7 @@ const timeline = [
     <figure class="shot">
       <img src={img('brand-proposal.webp')} alt="The Hangar brand system proposal, version 1: Hangar the platform, Glidepath the CI/CD engine, and Tower the release command centre, each with a one-line motto." width="1600" height="1100" loading="lazy" />
       <figcaption>
-        Proposal v1 of the brand, 7 September. "Three names, one hangar door."
+        Proposal v1 of the brand, September 7. "Three names, one hangar door."
       </figcaption>
     </figure>
 

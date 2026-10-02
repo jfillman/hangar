@@ -115,7 +115,7 @@ footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padd
   <h1>Hangar Architecture Review</h1>
   <p class="prose" style="color:var(--ink-2)">An evaluation of Hangar as the company's next-generation application and AI agent platform: its architecture, goals, roadmap and current state, with a decision and the conditions attached to it.</p>
   <div class="meta">
-    <span><b>Reviewed</b> 27 Sep 2026</span>
+    <span><b>Reviewed</b> Sep 27, 2026</span>
     <span><b>Proposed by</b> James (senior platform engineer)</span>
     <span><b>Scope</b> 12 repositories: hangar, airframe, glidepath, tower, backstage, apron, autopilot, three Skyport apps, two providers</span>
   </div>
@@ -135,7 +135,7 @@ footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padd
 <section>
   <h2>What Hangar is</h2>
   <div class="prose">
-    <p>Hangar is an internal developer platform built from six products. <b>Airframe</b> is the service catalog: Crossplane XRDs and compositions plus one Helm chart (<code>airframe-application</code>) that every environment renders through. <b>Glidepath</b> is CI/CD on Tekton and Pipelines-as-Code, driven by a single developer-facing <code>cicd.yaml</code>. <b>Tower</b> is a Backstage plugin for releases, deployments and configuration. <b>Apron</b> is a template that stamps out per-cluster GitOps repos. <b>Autopilot</b>, added on 26 Sep, runs AI agent workloads through a policy gateway called Clearance.</p>
+    <p>Hangar is an internal developer platform built from six products. <b>Airframe</b> is the service catalog: Crossplane XRDs and compositions plus one Helm chart (<code>airframe-application</code>) that every environment renders through. <b>Glidepath</b> is CI/CD on Tekton and Pipelines-as-Code, driven by a single developer-facing <code>cicd.yaml</code>. <b>Tower</b> is a Backstage plugin for releases, deployments and configuration. <b>Apron</b> is a template that stamps out per-cluster GitOps repos. <b>Autopilot</b>, added on Sep 26, runs AI agent workloads through a policy gateway called Clearance.</p>
     <p>One rule holds it together: every durable change is a reviewed git commit, no cluster holds credentials for another, and outcomes flow back as CDEvents rather than API calls. Autopilot extends this with a second plane: ephemeral agent runs are Crossplane claims with hard deadlines that can only narrow what git grants.</p>
   </div>
 </section>
@@ -205,13 +205,13 @@ footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padd
     <div class="finding sev-med">
       <div class="top"><span class="chip c-warn">Medium</span><span class="id">F5</span><h3>Crossplane writing files to GitHub is the most fragile part of the design</h3></div>
       <p>Bootstrap XRDs reconcile <code>RepositoryFile</code> objects through GitHub's Contents API. That produced an annotation flip burning about 280 calls a minute, a retry loop burning about 16,000 calls an hour against a 5,000 budget shared with Backstage, a lost external-name that turned into repeated create attempts, and a Usage/finalizer deadlock that is "suspected resolved, not proven". It also needs a patched fork of provider-upjet-github. The team has hardened it well, but a reconcile loop is the wrong tool for a one-time scaffold.</p>
-      <p class="ev"><b>Evidence</b>Airframe <code>README.md</code> status notes of 23 and 24 Sep; <code>service-catalog-design.md</code> §0 and the 18 Aug incident; fork commits <code>ea893ce</code> and <code>7530c3d</code>.</p>
+      <p class="ev"><b>Evidence</b>Airframe <code>README.md</code> status notes of Sep 23 and 24; <code>service-catalog-design.md</code> §0 and the Aug 18 incident; fork commits <code>ea893ce</code> and <code>7530c3d</code>.</p>
     </div>
 
     <div class="finding sev-med">
       <div class="top"><span class="chip c-warn">Medium</span><span class="id">F6</span><h3>Supply-chain gates are real but not enforced end to end</h3></div>
       <p>An unsigned release PR failed <code>provenance</code> and was merged anyway, so commit signing is not enforced in practice. Signatures are checked at release time, but nothing verifies them at admission, because <code>policy-validation</code> is still a stub and Kyverno carries only Testkube policies. The dev cluster's CNI does not enforce NetworkPolicy, and ground env files are committed straight to <code>main</code> with no validation.</p>
-      <p class="ev"><b>Evidence</b><code>service-catalog-design.md</code> 25 Sep round; Glidepath <code>release-guardrails.md</code>, known gaps #4 and #5; <code>apron/30-policy</code>.</p>
+      <p class="ev"><b>Evidence</b><code>service-catalog-design.md</code> Sep 25 round; Glidepath <code>release-guardrails.md</code>, known gaps #4 and #5; <code>apron/30-policy</code>.</p>
     </div>
 
     <div class="finding sev-med">
@@ -235,7 +235,7 @@ footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padd
     <div class="finding sev-low">
       <div class="top"><span class="chip c-info">Low</span><span class="id">F10</span><h3>Documentation drifts from the code</h3></div>
       <p>The Autopilot docs claim 255 tests; I ran the suite and got <b>218 passed, 4 skipped</b>. The Autopilot README says 15 CEL rules while the design says 19 (the code has R000 to R019). The scorecard defaults to <code>/Users/jerf/tech</code> and needs Helm, so nobody else can reproduce the published 27 and 41 scores. Airframe and Apron still link to <code>jfillman/idp</code> and <code>platform-cicd</code>. Design docs are session logs rather than as-built references.</p>
-      <p class="ev"><b>Evidence</b><code>pytest -q</code> in <code>autopilot</code> on 27 Sep; <code>autopilot/README.md</code>; <code>tools/airframe-scorecard/scorecard.py</code>.</p>
+      <p class="ev"><b>Evidence</b><code>pytest -q</code> in <code>autopilot</code> on Sep 27; <code>autopilot/README.md</code>; <code>tools/airframe-scorecard/scorecard.py</code>.</p>
     </div>
   </div>
 </section>
@@ -313,7 +313,7 @@ footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padd
   </ul>
 </section>
 
-<footer>Hangar Architecture Review · 27 September 2026 · Prepared for the platform approval decision on Hangar as the next-generation application and AI agent platform.</footer>
+<footer>Hangar Architecture Review · September 27, 2026 · Prepared for the platform approval decision on Hangar as the next-generation application and AI agent platform.</footer>
 
 </div>
 </body>

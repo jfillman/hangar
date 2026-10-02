@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro';
 import { essays } from '../../data/essays';
 import { u } from '../../lib/url';
 
-const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' });
+import { longDate } from '../../lib/date';
 ---
 <Base title="Architecture" description="Pointed opinions on platform architecture, argued from what Hangar actually does and what it has cost." section="architecture">
   <div class="wrap">
@@ -21,7 +21,7 @@ const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-CA'
       {essays.map((e) => (
         <li>
           <a href={u(`architecture/${e.slug}/`)}>
-            <span class="eyebrow">{fmt(e.date)}{e.series && ` · ${e.series}`} · {e.minutes} min read</span>
+            <span class="eyebrow">{longDate(e.date)}{e.series && ` · ${e.series}`} · {e.minutes} min read</span>
             <h2>{e.title}</h2>
             <p>{e.dek}</p>
           </a>

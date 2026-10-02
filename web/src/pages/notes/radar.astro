@@ -14,7 +14,7 @@ const contributions = [
     title: 'Pipelines, PipelineRuns and TaskRuns, with a live DAG and a CI/CD tab',
     number: 1627,
     state: 'review' as const,
-    when: 'Opened 3 September 2026',
+    when: 'Opened September 3, 2026',
     text: 'Detail views for each Tekton kind, a live task graph that follows a run as it goes (finally tasks, skipped tasks and matrix runs included), combined step logs, and a CI/CD tab that lists every PipelineRun across the cluster. This is the big one, and it is still in review.',
   },
   {
@@ -22,7 +22,7 @@ const contributions = [
     title: 'Deeper Rollout views',
     number: 1625,
     state: 'merged' as const,
-    when: 'Merged 15 September 2026',
+    when: 'Merged September 15, 2026',
     text: 'Radar could already show a Rollout. This added what I actually watch while one runs: a step timeline for canary and blue-green, ReplicaSet progression with live pods, the full AnalysisRun history, and detail views for AnalysisTemplates and Experiments.',
   },
   {
@@ -30,7 +30,7 @@ const contributions = [
     title: 'Canary and blue-green traffic in the resource graph',
     number: 1626,
     state: 'merged' as const,
-    when: 'Merged 18 September 2026',
+    when: 'Merged September 18, 2026',
     text: 'The topology view now shows which pods are canary and which are stable, and how the traffic splits between them. It also fixed an existing bug where Service to Rollout edges never rendered.',
   },
   {
@@ -38,7 +38,7 @@ const contributions = [
     title: 'Why a Degraded app is actually Degraded',
     number: 1624,
     state: 'merged' as const,
-    when: 'Merged 13 September 2026',
+    when: 'Merged September 13, 2026',
     text: 'The cause (a crash loop, an OOM kill, an image pull failure) now shows up on the headline, and apps on Argo CD 3.0 that went Degraded without raising any issue now get one.',
   },
   {
@@ -46,7 +46,7 @@ const contributions = [
     title: 'Resource diffs with manifest tabs and Monaco views',
     number: 1622,
     state: 'merged' as const,
-    when: 'Merged 21 September 2026',
+    when: 'Merged September 21, 2026',
     text: 'The drift view for an out-of-sync resource now uses Radar\'s Monaco diff editor, with tabs for the full desired and live manifests you can search and copy.',
   },
   {
@@ -54,7 +54,7 @@ const contributions = [
     title: 'ApplicationSets in the fleet view',
     number: 1609,
     state: 'merged' as const,
-    when: 'Merged 4 September 2026',
+    when: 'Merged September 4, 2026',
     text: 'My first merged change. ApplicationSets are how I roll apps out across clusters, so I wanted to see them.',
   },
   {
@@ -62,7 +62,7 @@ const contributions = [
     title: "Open the resource drawer from an app's own root node",
     number: 1610,
     state: 'merged' as const,
-    when: 'Merged 4 September 2026',
+    when: 'Merged September 4, 2026',
     text: 'A small one: clicking the root of an app now opens its details instead of doing nothing.',
   },
   {
@@ -70,7 +70,7 @@ const contributions = [
     title: 'Enough time for the reachability probe on .local DNS',
     number: 1623,
     state: 'merged' as const,
-    when: 'Merged 14 September 2026',
+    when: 'Merged September 14, 2026',
     text: 'On macOS a .local hostname can spend five seconds in DNS alone, which used up the whole probe budget and marked a healthy Argo CD server as unreachable. A small timeout bump fixed it.',
   },
 ];

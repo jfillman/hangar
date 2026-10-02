@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { u } from '../lib/url';
+import { longDate, shortDate } from '../lib/date';
 import { snapshots, latest, first, targets, aPlus, findings, links } from '../data/scorecard';
 
 // Trend chart geometry. Measured snapshots first, then the milestone targets still ahead of the
@@ -19,7 +20,7 @@ const checks = Object.keys(latest.acceptance);
 const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
 const gain = latest.overall - first.overall;
 ---
-<Base title="Airframe scorecard" description={`How operable Airframe is by AI agents, measured by a re-runnable tool: ${fmt(latest.overall)} out of 100 on ${latest.date}, up from ${fmt(first.overall)}.`} section="autopilot">
+<Base title="Airframe scorecard" description={`How operable Airframe is by AI agents, measured by a re-runnable tool: ${fmt(latest.overall)} out of 100 on ${longDate(latest.date)}, up from ${fmt(first.overall)}.`} section="autopilot">
   <div class="wrap">
     <section class="hero">
       <p class="eyebrow">Airframe · Scorecard</p>
@@ -33,9 +34,9 @@ const gain = latest.overall - first.overall;
     </section>
 
     <div class="stats">
-      <div class="stat"><span class="k">Score now</span><span class="v">{fmt(latest.overall)}<small>/100</small></span><span class="s">{latest.date} · grade {latest.grade}</span></div>
+      <div class="stat"><span class="k">Score now</span><span class="v">{fmt(latest.overall)}<small>/100</small></span><span class="s">{shortDate(latest.date)} · grade {latest.grade}</span></div>
       <div class="stat"><span class="k">Acceptance checks</span><span class="v">{latest.passed}<small>/14</small></span><span class="s">from {first.passed} at the baseline</span></div>
-      <div class="stat"><span class="k">Since the baseline</span><span class="v">+{fmt(gain)}</span><span class="s">{first.date} to {latest.date}</span></div>
+      <div class="stat"><span class="k">Since the baseline</span><span class="v">+{fmt(gain)}</span><span class="s">{shortDate(first.date)} to {shortDate(latest.date)}</span></div>
       <div class="stat"><span class="k">A+ bar</span><span class="v">{aPlus}<small> and 14/14</small></span><span class="s">{latest.a_plus ? 'certified' : 'not yet'}</span></div>
     </div>
 
@@ -45,7 +46,7 @@ const gain = latest.overall - first.overall;
       <figure class="fig">
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="trend-t trend-d">
           <title id="trend-t">Airframe scorecard over time</title>
-          <desc id="trend-d">{snapshots.map((s) => `${s.label} ${s.date}: ${fmt(s.overall)} out of 100, ${s.passed} of 14 checks`).join('; ')}. Targets ahead: {ahead.map((t) => `${t.milestone} ${t.score}`).join(', ')}.</desc>
+          <desc id="trend-d">{snapshots.map((s) => `${s.label} ${longDate(s.date)}: ${fmt(s.overall)} out of 100, ${s.passed} of 14 checks`).join('; ')}. Targets ahead: {ahead.map((t) => `${t.milestone} ${t.score}`).join(', ')}.</desc>
           {[0, 25, 50, 75, 100].map((g) => (
             <g>
               <line class="grid" x1={L} x2={W - R} y1={y(g)} y2={y(g)} />
@@ -61,7 +62,7 @@ const gain = latest.overall - first.overall;
               <circle class="pt" cx={x(i)} cy={y(s.overall)} r="6" />
               <text class="val" x={x(i)} y={y(s.overall) - 14} text-anchor="middle">{fmt(s.overall)}</text>
               <text class="lbl" x={x(i)} y={H - B + 24} text-anchor="middle">{s.label}</text>
-              <text class="sub" x={x(i)} y={H - B + 40} text-anchor="middle">{s.date} · {s.passed}/14</text>
+              <text class="sub" x={x(i)} y={H - B + 40} text-anchor="middle">{shortDate(s.date)} · {s.passed}/14</text>
             </g>
           ))}
           {ahead.map((t, j) => (
@@ -76,13 +77,13 @@ const gain = latest.overall - first.overall;
       </figure>
       <ol class="notes">
         {snapshots.map((s) => (
-          <li><span class="when">{s.label} · {s.date}</span> {s.note}</li>
+          <li><span class="when">{s.label} · {shortDate(s.date)}</span> {s.note}</li>
         ))}
       </ol>
     </section>
 
     <section class="block">
-      <h2>Ten dimensions, measured {latest.date}</h2>
+      <h2>Ten dimensions, measured {longDate(latest.date)}</h2>
       <p class="prose">The bar is the latest score; the thin mark on it is where the baseline stood, and the amber tick is the A+ line.</p>
       <div class="matrix" role="table" aria-label="Scorecard dimensions">
         <div class="mrow head" role="row">
@@ -120,7 +121,7 @@ const gain = latest.overall - first.overall;
       <div class="checks-wrap">
         <table class="checks">
           <thead>
-            <tr><th scope="col">Check</th>{snapshots.map((s) => <th scope="col">{s.label}<small>{s.date}</small></th>)}</tr>
+            <tr><th scope="col">Check</th>{snapshots.map((s) => <th scope="col">{s.label}<small>{shortDate(s.date)}</small></th>)}</tr>
           </thead>
           <tbody>
             {checks.map((c) => (
@@ -142,7 +143,7 @@ const gain = latest.overall - first.overall;
       <div class="card">
         <p class="eyebrow">A correction to the tool</p>
         <p>
-          The first run on {latest.date} said 58. The tool was looking for component contracts and for Clearance where
+          The first run on {longDate(latest.date)} said 58. The tool was looking for component contracts and for Clearance where
           they were first planned to live, not where M1 and M2 put them, and two checks were hard-coded to zero. I fixed
           the paths and turned those two checks into real ones; the fix is in the same commit as the score. Snapshots
           before it were not re-scored.
