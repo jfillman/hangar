@@ -2,12 +2,12 @@
 
     python3 build_hangar.py [OUT_DIR]
 
-Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossplane (4), Service catalog (5) and SLO (4) beside them. Needs only the Python standard library.
+Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossplane (4), Service catalog (5), SLO (4) and Overview (5) beside them. Needs only the Python standard library.
 """
 import sys, os, re, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib
-import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, d123, d456, d789, d1011
+import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, d123, d456, d789, d1011
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '../../docs/autopilot/diagrams')
@@ -19,6 +19,9 @@ OUT_CROSSPLANE = os.path.join(OUT, '../../crossplane/diagrams')
 OUT_CATALOG = os.path.join(OUT, '../../catalog/diagrams')
 # The SLO set (pictures for the SLO feature doc) lives in docs/slo/diagrams.
 OUT_SLO = os.path.join(OUT, '../../slo/diagrams')
+# The Overview set (high-level Hangar pictures, the home page's diagram among them) lives in docs/overview/diagrams.
+# It uses its own kit, ov.py, for motion, product marks and click-through, so it is written whole here.
+OUT_OVERVIEW = os.path.join(OUT, '../../overview/diagrams')
 
 PLAN = [e_g.p_family, e_g.p_roadmap, e_g.p_deps, e_g.p_scorecard, e_g.p_contract, e_g.p_plan_seq, e_g.p_skyport_matrix, e_g.p_skyport_seq]
 AUTOPILOT = [
@@ -33,6 +36,8 @@ AUTOPILOT = [
 GLIDEPATH = [e_h.g_overview, e_h.g_pipeline, e_h.g_mapping, e_h.g_onboarding, e_h.g_chaining, e_h.g_deploy_release, e_h.g_multicluster]
 CROSSPLANE = [e_i.x_secretstore, e_i.x_readiness, e_i.x_budget, e_i.x_timeline]
 CATALOG = [e_j.c_one_api, e_j.c_menu_inventory, e_j.c_anatomy, e_j.c_discovery, e_j.c_roadmap]
+OVERVIEW = [('change-road', e_l.o_change), ('product-family', e_l.o_family), ('two-clusters', e_l.o_clusters),
+            ('layer-stack', e_l.o_layers), ('lifecycle-wheel', e_l.o_wheel)]
 SLO = [e_k.s_pipeline, e_k.s_thresholds, e_k.s_state, e_k.s_tick]
 REFERENCE = [d123.d1, d123.d2, d123.d3, d456.d4, d456.d5, d456.d6, d789.d7, d789.d8, d789.d9, d1011.d10]
 
@@ -62,6 +67,13 @@ glide = build('glidepath', GLIDEPATH, '.', 'Hangar · Glidepath', root=OUT_GLIDE
 xp = build('crossplane', CROSSPLANE, '.', 'Hangar · Airframe · Crossplane', root=OUT_CROSSPLANE)
 cat = build('catalog', CATALOG, '.', 'Hangar · Airframe · Service catalog', root=OUT_CATALOG)
 slo = build('slo', SLO, '.', 'Hangar · SLOs', root=OUT_SLO)
+
+os.makedirs(OUT_OVERVIEW, exist_ok=True)
+for f in glob.glob(os.path.join(OUT_OVERVIEW, '[0-9][0-9]-*.html')):
+    os.remove(f)
+for i, (slug, fn) in enumerate(OVERVIEW, 1):
+    open(os.path.join(OUT_OVERVIEW, f'{i:02d}-{slug}.html'), 'w').write(fn())
+print('overview', len(OVERVIEW), 'pages')
 
 def tiles(rows):
     return ''.join(f'<a class="tile" href="{h}"><p class="eb">{e}</p><h2>{t}</h2><p>{l}</p></a>' for h, e, t, l in rows)

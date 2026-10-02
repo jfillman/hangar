@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Five layers, one platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f2efe9;--paper-2:#e8e3da;--card:#ffffff;--ink:#1b1f24;--muted:#5b6570;--soft:#838b93;--accent:#b9791f;--link:#2e7ba6;--rule:rgba(27,31,36,.12);--zone:rgba(27,31,36,.02);--zone-line:rgba(27,31,36,.16);--store:rgba(27,31,36,.05);--ext:rgba(27,31,36,.03);--ext-line:rgba(27,31,36,.30);--acc-tint:rgba(185,121,31,0.080);--acc-soft:rgba(185,121,31,0.050);--link-tint:rgba(46,123,166,0.100);--input:rgba(91,101,112,.10);--font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace;--h1-weight:400;--h1-ls:-.02em;--r:6px;color-scheme:light}
+:root[data-theme=dark]{--paper:#131619;--paper-2:#1b1f24;--card:#1c2127;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,.12);--zone:rgba(232,228,220,.02);--zone-line:rgba(232,228,220,.16);--store:rgba(232,228,220,.05);--ext:rgba(232,228,220,.03);--ext-line:rgba(232,228,220,.30);--acc-tint:rgba(232,163,61,0.104);--acc-soft:rgba(232,163,61,0.065);--link-tint:rgba(111,178,217,0.130);--input:rgba(161,170,179,.10);color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--paper:#131619;--paper-2:#1b1f24;--card:#1c2127;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,.12);--zone:rgba(232,228,220,.02);--zone-line:rgba(232,228,220,.16);--store:rgba(232,228,220,.05);--ext:rgba(232,228,220,.03);--ext-line:rgba(232,228,220,.30);--acc-tint:rgba(232,163,61,0.104);--acc-soft:rgba(232,163,61,0.065);--link-tint:rgba(111,178,217,0.130);--input:rgba(161,170,179,.10);color-scheme:dark}}
+
+*,*::before,*::after{box-sizing:border-box}
+:root{--motion-fast:160ms;--motion-step:480ms;--motion-hold:720ms;--motion-total:3600ms;--motion-ease:cubic-bezier(.2,.8,.2,1)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-sans);padding:2.25rem 1rem 2rem}
+.frame{max-width:1040px;margin:0 auto}
+.eyebrow{margin:0 0 .5rem;color:var(--muted);font:500 11px/1.4 var(--font-mono);letter-spacing:.18em;text-transform:uppercase}
+h1{margin:0 0 .5rem;font-family:var(--font-serif);font-weight:var(--h1-weight);letter-spacing:var(--h1-ls);font-size:clamp(1.5rem,2.4vw + .75rem,2.1rem);line-height:1.15}
+.lede{margin:0 0 1rem;color:var(--muted);font-size:.92rem;line-height:1.5;max-width:72ch}
+.bar{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;align-items:center;margin:0 0 1rem;padding:.55rem .8rem;border:1px dashed var(--zone-line);border-radius:var(--r);font:500 11px/1.4 var(--font-mono);color:var(--muted)}
+.bar fieldset{border:0;margin:0;padding:0;display:flex;gap:.6rem;align-items:center}
+.bar legend{float:left;margin-right:.4rem;color:var(--soft);letter-spacing:.12em;text-transform:uppercase}
+.bar label{display:inline-flex;gap:.25rem;align-items:center;cursor:pointer}
+.bar input{accent-color:var(--accent)}
+.bar .note{margin-left:auto;color:var(--soft)}
+[data-motion-root]{max-width:100%;min-width:0}
+.diagram-container{width:100%;overflow-x:auto}
+.diagram-container>svg{display:block;width:100%}
+.hint{margin:.5rem 0 0;color:var(--soft);font:400 11px/1.4 var(--font-mono)}
+
+.foot{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.06em;color:var(--soft);border-top:1px solid var(--rule);margin-top:1.25rem;padding-top:.6rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.notes{display:grid;grid-template-columns:1.15fr 1fr .95fr;gap:.75rem;margin-top:1.5rem}
+.notes>div{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:.9rem 1rem}
+.notes h2{margin:0 0 .4rem;color:var(--muted);font:500 10px/1.4 var(--font-mono);letter-spacing:.16em;text-transform:uppercase}
+.notes p,.notes li{margin:0 0 .4rem;font-size:.82rem;line-height:1.5}
+.notes ul{margin:0;padding-left:1rem}
+@media (max-width:860px){.notes{grid-template-columns:1fr}}
+a{color:var(--link)}
+
+/* diagram skin */
+.bg{fill:var(--paper)}
+.zone{fill:var(--zone);stroke:var(--zone-line);stroke-width:.8}
+.mask{fill:var(--paper)}
+.zt{fill:var(--muted);font:500 8px var(--font-mono);letter-spacing:.14em}
+.k{stroke-width:1}
+.k-backend{fill:var(--card);stroke:var(--ink)}
+.k-focal{fill:var(--acc-tint);stroke:var(--accent)}
+.k-store{fill:var(--store);stroke:var(--muted)}
+.k-external{fill:var(--ext);stroke:var(--ext-line)}
+.k-input{fill:var(--input);stroke:var(--soft)}
+.k-propose{fill:var(--link-tint);stroke:var(--link)}
+.k-optional{fill:var(--zone);stroke:var(--zone-line);stroke-dasharray:4 3}
+.nm{fill:var(--ink);font:600 12px var(--font-sans)}
+.nm-l{fill:var(--ink);font:600 14px var(--font-sans)}
+.sub{fill:var(--muted);font:400 8px var(--font-mono)}
+.sub-l{fill:var(--muted);font:400 9px var(--font-mono)}
+.why{fill:var(--muted);font:400 11px var(--font-sans)}
+.tagb{fill:none;stroke-width:.8;stroke-opacity:.55}
+.tagt{font:500 8px var(--font-mono);letter-spacing:.08em}
+.t-ink{stroke:var(--ink);fill:var(--muted)} .t-acc{stroke:var(--accent);fill:var(--accent)} .t-link{stroke:var(--link);fill:var(--link)} .t-soft{stroke:var(--soft);fill:var(--soft)}
+text.t-ink,text.t-acc,text.t-link,text.t-soft{stroke:none}
+rect.tagb{fill:none}
+.lbl{fill:var(--soft);font:400 8px var(--font-mono);letter-spacing:.06em}
+.lbl-acc{fill:var(--accent)} .lbl-link{fill:var(--link)}
+.a{fill:none;stroke:var(--muted);stroke-width:1.2}
+.a.acc{stroke:var(--accent)} .a.lnk{stroke:var(--link)} .a.dash{stroke-dasharray:5 4}
+.a.thin{stroke-width:1}
+.mk{fill:var(--muted)} .mk-acc{fill:var(--accent)} .mk-lnk{fill:var(--link)}
+.callout{fill:var(--muted);font:italic 400 15px var(--font-serif)}
+.rule{stroke:var(--rule);stroke-width:.8}
+.badge{fill:var(--paper);stroke:var(--accent);stroke-width:1}
+.badget{fill:var(--accent);font:600 8px var(--font-mono)}
+.go{fill:var(--soft);font:400 9px var(--font-mono)}
+svg a{cursor:pointer}
+svg a:hover .k,svg a:focus-visible .k{stroke:var(--accent);stroke-width:1.6}
+svg a:hover .go,svg a:focus-visible .go{fill:var(--accent)}
+svg a:focus{outline:none}
+svg a:focus-visible .k{stroke-width:2.4}
+
+/* motion (from template-motion.html) */
+.motion-ready [data-motion-item]{opacity:.12;transform:translateY(8px);transform-box:fill-box;transform-origin:center;
+  transition:opacity var(--motion-step) var(--motion-ease),transform var(--motion-step) var(--motion-ease)}
+.motion-ready [data-motion-item].is-visible,.motion-ready[data-frame="end"] [data-motion-item],.motion-ready[data-frame="static"] [data-motion-item]{opacity:1;transform:none}
+.draw-path{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:1;stroke-dashoffset:1;pointer-events:none;opacity:0}
+.motion-ready .draw-path.is-visible{opacity:1;animation:draw-path var(--motion-step) linear forwards}
+.motion-ready[data-frame="end"] .draw-path,.motion-ready[data-frame="static"] .draw-path{opacity:0;animation:none}
+@keyframes draw-path{to{stroke-dashoffset:0}}
+[data-motion-controls]{display:none;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--rule)}
+.motion-ready [data-motion-controls]{display:flex}
+[data-motion-controls][hidden]{display:none !important}
+[data-motion-controls] button{min-width:44px;min-height:44px;padding:8px 12px;border:1px solid var(--muted);border-radius:4px;color:var(--ink);background:var(--paper);font:600 12px/1 var(--font-sans);cursor:pointer}
+[data-motion-controls] button:hover{border-color:var(--accent)}
+[data-motion-controls] button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[data-motion-controls] button:disabled{cursor:not-allowed;opacity:.45}
+.keyboard-help{color:var(--soft);font:400 11px/1.4 var(--font-mono)}
+[data-motion-status-visible]{margin-left:auto;color:var(--muted);font:500 12px/1.4 var(--font-mono)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+noscript p{margin:12px 0 0;color:var(--muted);font:500 12px/1.4 var(--font-mono)}
+html[data-motion="static"] [data-motion-controls],html[data-motion="static"] [data-motion-decorative]{display:none !important}
+html[data-motion="static"] [data-motion-item]{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
+html[data-motion="step"] [data-motion-controls],html[data-motion="step"] [data-motion-decorative]{display:none !important}
+html[data-motion="step"] [data-motion-item]{animation:none !important;transition:none !important}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important;transition-duration:.001ms !important}
+  [data-motion-item]{opacity:1 !important;transform:none !important}
+  [data-motion-decorative]{display:none !important}
+  [data-motion-controls]{display:none !important}
+}
+@media print{
+  .diagram-container{overflow-x:visible} .diagram-container>svg{min-width:0 !important}
+  [data-motion-controls],[data-motion-decorative]{display:none !important}
+  [data-motion-item]{opacity:1 !important;transform:none !important;animation:none !important;transition:none !important}
+}
+
+:root{--motion-total:4320ms}
+.diagram-container>svg{min-width:1000px}
+
+.peek{margin-top:.75rem;min-height:7.2rem;background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:.8rem 1rem}
+.peek>div{display:none}.peek>[data-p=intro]{display:block}
+.peek p{margin:0 0 .45rem;font-size:.86rem;line-height:1.5;max-width:80ch}
+.peek .tl{display:flex;flex-wrap:wrap;gap:.35rem .9rem;font:400 11px/1.4 var(--font-mono);color:var(--muted)}
+.st{font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:0 .3rem;border:1px solid currentColor;border-radius:2px}
+.st.built{color:var(--muted)} .st.proposed{color:var(--link)}
+main:has(#l-exp:hover) .peek>[data-p=intro], main:has(#l-exp:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#l-exp:hover) .peek>[data-p=exp], main:has(#l-exp:focus-visible) .peek>[data-p=exp]{display:block}
+main:has(#l-ai:hover) .peek>[data-p=intro], main:has(#l-ai:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#l-ai:hover) .peek>[data-p=ai], main:has(#l-ai:focus-visible) .peek>[data-p=ai]{display:block}
+main:has(#l-del:hover) .peek>[data-p=intro], main:has(#l-del:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#l-del:hover) .peek>[data-p=del], main:has(#l-del:focus-visible) .peek>[data-p=del]{display:block}
+main:has(#l-cp:hover) .peek>[data-p=intro], main:has(#l-cp:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#l-cp:hover) .peek>[data-p=cp], main:has(#l-cp:focus-visible) .peek>[data-p=cp]{display:block}
+main:has(#l-gr:hover) .peek>[data-p=intro], main:has(#l-gr:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#l-gr:hover) .peek>[data-p=gr], main:has(#l-gr:focus-visible) .peek>[data-p=gr]{display:block}
+main:has(#l-sec:hover) .peek>[data-p=intro], main:has(#l-sec:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#l-sec:hover) .peek>[data-p=sec], main:has(#l-sec:focus-visible) .peek>[data-p=sec]{display:block}
+main:has(#l-obs:hover) .peek>[data-p=intro], main:has(#l-obs:focus-visible) .peek>[data-p=intro]{display:none}
+main:has(#l-obs:hover) .peek>[data-p=obs], main:has(#l-obs:focus-visible) .peek>[data-p=obs]{display:block}</style>
+</head>
+<body>
+<div class="frame">
+<main data-motion-root data-motion-mode="reveal" data-step-count="6" data-step-current="6" data-frame="static" data-static-frame="complete">
+  <p class="eyebrow">Hangar · The stack</p>
+  <h1>Five layers, one platform</h1>
+  <p class="lede">Hangar from the ground up: clusters from one template, an API that keeps itself true, a guarded road to production, agents with less authority, and one place for people to look.</p>
+  <div class="diagram-container">
+    <svg viewBox="0 0 1000 456" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="hangar-layers-title hangar-layers-desc">
+      <title id="hangar-layers-title">Five layers, one platform</title>
+      <desc id="hangar-layers-desc">Hangar as a layer stack, from the clusters up: Ground (Apron), Control plane (Airframe), Delivery (Glidepath), AI workloads (Autopilot, early) and Experience (Tower). Secrets, identity and policy, and observability run through every layer.</desc>
+      <defs><marker id="hangar-layers-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="mk" points="0 0, 8 3, 0 6"/></marker><marker id="hangar-layers-arrow-acc" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="mk-acc" points="0 0, 8 3, 0 6"/></marker><marker id="hangar-layers-arrow-lnk" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="mk-lnk" points="0 0, 8 3, 0 6"/></marker></defs>
+      <rect class="bg" width="1000" height="456"/>
+<text class="zt" x="56" y="56" text-anchor="middle">PEOPLE</text>
+<text class="zt" x="56" y="388" text-anchor="middle">CLUSTERS</text>
+<path class="a thin" d="M56,218 L56,70" marker-end="url(#hangar-layers-arrow)"/>
+<path class="a thin" d="M56,218 L56,370" marker-end="url(#hangar-layers-arrow)"/>
+<g data-motion-item data-step="1" aria-label="Layer 1: Ground, built by Apron"><a id="l-gr" href="/docs/apron/" target="_top" aria-label="Ground, Apron: open its page"><rect class="mask" x="96" y="328" width="648" height="64" rx="6"/><rect class="k k-backend" x="96" y="328" width="648" height="64" rx="6"/><text class="lbl" x="112" y="364">L1</text><svg x="136" y="342" width="36" height="36" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#96A2AC"/><rect x="34" y="34" width="10" height="10" rx="2" fill="none" stroke="#96A2AC" stroke-width="2"/><rect x="52" y="34" width="10" height="10" rx="2" fill="none" stroke="#96A2AC" stroke-width="2"/><rect x="34" y="52" width="10" height="10" rx="2" fill="none" stroke="#96A2AC" stroke-width="2"/><rect x="52" y="52" width="10" height="10" rx="2" fill="none" stroke="#96A2AC" stroke-width="2"/></g></svg><text class="nm-l" x="184" y="358">Ground</text><rect class="tagb t-ink" x="184" y="366" width="36" height="12" rx="2"/><text class="tagt t-ink" x="202" y="375" text-anchor="middle">APRON</text><text class="sub-l" x="728" y="356" text-anchor="end">Kubernetes · Calico · Gateway API · cert-manager</text><text class="why" x="728" y="374" text-anchor="end">Every cluster starts from the same template.</text><text class="go" x="736" y="341" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="2" aria-label="Layer 2: Control plane, built by Airframe"><a id="l-cp" href="/docs/airframe/" target="_top" aria-label="Control plane, Airframe: open its page"><rect class="mask" x="96" y="256" width="648" height="64" rx="6"/><rect class="k k-focal" x="96" y="256" width="648" height="64" rx="6"/><text class="lbl" x="112" y="292">L2</text><svg x="136" y="270" width="36" height="36" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#6FB2D9"/><line x1="28" y1="48" x2="68" y2="48" stroke="#6FB2D9" stroke-width="4" stroke-linecap="round"/><line x1="36" y1="44" x2="36" y2="52" stroke="#6FB2D9" stroke-width="2"/><line x1="44" y1="44" x2="44" y2="52" stroke="#6FB2D9" stroke-width="2"/><line x1="52" y1="44" x2="52" y2="52" stroke="#6FB2D9" stroke-width="2"/><line x1="60" y1="44" x2="60" y2="52" stroke="#6FB2D9" stroke-width="2"/></g></svg><text class="nm-l" x="184" y="286">Control plane</text><rect class="tagb t-acc" x="184" y="294" width="56" height="12" rx="2"/><text class="tagt t-acc" x="212" y="303" text-anchor="middle">AIRFRAME</text><text class="sub-l" x="728" y="284" text-anchor="end">Crossplane · XRDs · Functions · CloudNativePG</text><text class="why" x="728" y="302" text-anchor="end">The platform is an API that keeps itself true.</text><text class="go" x="736" y="269" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="3" aria-label="Layer 3: Delivery, built by Glidepath"><a id="l-del" href="/cicd/" target="_top" aria-label="Delivery, Glidepath: open its page"><rect class="mask" x="96" y="184" width="648" height="64" rx="6"/><rect class="k k-backend" x="96" y="184" width="648" height="64" rx="6"/><text class="lbl" x="112" y="220">L3</text><svg x="136" y="198" width="36" height="36" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#6FB2D9"/><line x1="32" y1="36" x2="60" y2="60" stroke="#6FB2D9" stroke-width="4" stroke-linecap="round"/><circle cx="60" cy="60" r="4" fill="#6FB2D9"/><line x1="28" y1="66" x2="68" y2="66" stroke="#262C33" stroke-width="2"/></g></svg><text class="nm-l" x="184" y="214">Delivery</text><rect class="tagb t-ink" x="184" y="222" width="60" height="12" rx="2"/><text class="tagt t-ink" x="214" y="231" text-anchor="middle">GLIDEPATH</text><text class="sub-l" x="728" y="212" text-anchor="end">Tekton · Chains · Sigstore · ArgoCD · Rollouts</text><text class="why" x="728" y="230" text-anchor="end">One small file in; a signed, verified release out.</text><text class="go" x="736" y="197" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="4" aria-label="Layer 4: AI workloads, built by Autopilot"><a id="l-ai" href="/autopilot/" target="_top" aria-label="AI workloads, Autopilot: open its page"><rect class="mask" x="96" y="112" width="648" height="64" rx="6"/><rect class="k k-backend" x="96" y="112" width="648" height="64" rx="6"/><text class="lbl" x="112" y="148">L4</text><svg x="136" y="126" width="36" height="36" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#E8A33D"/><path d="M33,34 H28 V62 H33 M63,34 H68 V62 H63" fill="none" stroke="#E8A33D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polygon points="48,33 57.5,59 48,53.5 38.5,59" fill="#E8A33D" stroke="#E8A33D" stroke-width="1.5" stroke-linejoin="round"/></g></svg><text class="nm-l" x="184" y="142">AI workloads</text><rect class="tagb t-ink" x="184" y="150" width="60" height="12" rx="2"/><text class="tagt t-ink" x="214" y="159" text-anchor="middle">AUTOPILOT</text><rect class="tagb t-link" x="248" y="150" width="36" height="12" rx="2"/><text class="tagt t-link" x="266" y="159" text-anchor="middle">EARLY</text><text class="sub-l" x="728" y="140" text-anchor="end">Clearance · CEL policy · Preflight · AgentRun</text><text class="why" x="728" y="158" text-anchor="end">Same road, less authority, every call on record.</text><text class="go" x="736" y="125" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="5" aria-label="Layer 5: Experience, built by Tower"><a id="l-exp" href="/tower/" target="_top" aria-label="Experience, Tower: open its page"><rect class="mask" x="96" y="40" width="648" height="64" rx="6"/><rect class="k k-backend" x="96" y="40" width="648" height="64" rx="6"/><text class="lbl" x="112" y="76">L5</text><svg x="136" y="54" width="36" height="36" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><rect x="8" y="8" width="80" height="80" rx="22" fill="#0B0D10"/><g transform="translate(48 48) scale(0.82) translate(-48 -48)"><circle cx="48" cy="48" r="40" fill="none" stroke="#262C33" stroke-width="2"/><g stroke="#66717B" stroke-width="2"><line x1="48" y1="8" x2="48" y2="15" transform="rotate(0 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(45 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(90 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(135 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(180 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(225 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(270 48 48)"/><line x1="48" y1="8" x2="48" y2="15" transform="rotate(315 48 48)"/></g><polygon points="44,2 52,2 48,9" fill="#E8A33D"/><line x1="48" y1="34" x2="48" y2="64" stroke="#E8A33D" stroke-width="4" stroke-linecap="round"/><rect x="42" y="64" width="12" height="5" rx="1" fill="#E8A33D"/><path d="M40,34 A8,8 0 0 1 56,34" fill="none" stroke="#E8A33D" stroke-width="2"/><path d="M34,34 A14,14 0 0 1 62,34" fill="none" stroke="#E8A33D" stroke-width="2" opacity=".5"/></g></svg><text class="nm-l" x="184" y="70">Experience</text><rect class="tagb t-ink" x="184" y="78" width="36" height="12" rx="2"/><text class="tagt t-ink" x="202" y="87" text-anchor="middle">TOWER</text><text class="sub-l" x="728" y="68" text-anchor="end">Backstage · Tower plugin · TechDocs</text><text class="why" x="728" y="86" text-anchor="end">One place to look. Every change becomes a PR.</text><text class="go" x="736" y="53" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="6" aria-label="Cross-cutting: Secrets, identity, policy"><a id="l-sec" href="/sdlc/secure/" target="_top" aria-label="Secrets, identity, policy: open its page"><rect class="mask" x="768" y="40" width="96" height="352" rx="6"/><rect class="k k-store" x="768" y="40" width="96" height="352" rx="6"/><text class="tagt t-ink" x="816" y="58" text-anchor="middle">RUNS THROUGH</text><text class="nm" x="816" y="84" text-anchor="middle">Secrets,</text><text class="nm" x="816" y="100" text-anchor="middle">identity,</text><text class="nm" x="816" y="116" text-anchor="middle">policy</text><text class="sub" x="816" y="160" text-anchor="middle">Infisical</text><text class="sub" x="816" y="178" text-anchor="middle">External Secrets</text><text class="sub" x="816" y="196" text-anchor="middle">TokenReview</text><text class="sub" x="816" y="214" text-anchor="middle">Kyverno</text><text class="go" x="856" y="384" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<g data-motion-item data-step="6" aria-label="Cross-cutting: Observability"><a id="l-obs" href="/sdlc/operate/" target="_top" aria-label="Observability: open its page"><rect class="mask" x="880" y="40" width="96" height="352" rx="6"/><rect class="k k-store" x="880" y="40" width="96" height="352" rx="6"/><text class="tagt t-ink" x="928" y="58" text-anchor="middle">RUNS THROUGH</text><text class="nm" x="928" y="84" text-anchor="middle">Observability</text><text class="sub" x="928" y="160" text-anchor="middle">OpenTelemetry</text><text class="sub" x="928" y="178" text-anchor="middle">Prometheus</text><text class="sub" x="928" y="196" text-anchor="middle">Loki · Tempo</text><text class="sub" x="928" y="214" text-anchor="middle">Sloth SLOs</text><text class="sub" x="928" y="232" text-anchor="middle">DORA</text><text class="go" x="968" y="384" text-anchor="end" aria-hidden="true">↗</text></a></g>
+<line class="rule" x1="24" y1="412" x2="976" y2="412"/><text class="zt" x="24" y="433">LEGEND</text><rect class="k k-backend" x="96" y="424" width="16" height="12" rx="3"/><text class="sub" x="120" y="433">Hangar layer</text><rect class="k k-focal" x="200" y="424" width="16" height="12" rx="3"/><text class="sub" x="224" y="433">The API everything drives</text><rect class="k k-store" x="369" y="424" width="16" height="12" rx="3"/><text class="sub" x="393" y="433">Runs through every layer</text>
+    </svg>
+  </div>
+  <div class="peek" aria-live="polite"><div data-p="intro"><p class="eyebrow">Five layers, two rails</p><p>Point at a layer (or tab to it) to see what is in it and why. Click to open its page.</p></div><div data-p="exp"><p class="eyebrow">L5 · Experience · Tower</p><p>People should look in one place, and every change they make there should become a pull request.</p><p class="tl"><span>Backstage <span class="st built">built</span></span> <span>Tower <span class="st built">built</span></span> <span>TechDocs <span class="st built">built</span></span></p></div><div data-p="ai"><p class="eyebrow">L4 · AI workloads · Autopilot</p><p>An agent is just another workload, with less authority by default and every call on the record.</p><p class="tl"><span>Clearance <span class="st built">built</span></span> <span>CEL policy <span class="st built">built</span></span> <span>Preflight <span class="st built">built</span></span> <span>MCP <span class="st proposed">proposed</span></span> <span>AgentRun claim <span class="st proposed">proposed</span></span></p></div><div data-p="del"><p class="eyebrow">L3 · Delivery · Glidepath</p><p>One small file for developers; a fixed, platform-owned path from a merged commit to a verified release. ArgoCD is the only thing that writes to a cluster, and each cluster has its own.</p><p class="tl"><span>Tekton <span class="st built">built</span></span> <span>Pipelines-as-Code <span class="st built">built</span></span> <span>CDEvents broker <span class="st built">built</span></span> <span>Tekton Chains <span class="st built">built</span></span> <span>Conforma <span class="st built">built</span></span> <span>ArgoCD <span class="st built">built</span></span> <span>Argo Rollouts <span class="st built">built</span></span></p></div><div data-p="cp"><p class="eyebrow">L2 · Control plane · Airframe</p><p>The platform is an API. A claim says what you want; reconciliation keeps it true afterwards.</p><p class="tl"><span>Crossplane <span class="st built">built</span></span> <span>Airframe XRDs <span class="st built">built</span></span> <span>Composition Functions <span class="st built">built</span></span> <span>provider-github <span class="st built">built</span></span> <span>CloudNativePG <span class="st built">built</span></span></p></div><div data-p="gr"><p class="eyebrow">L1 · Ground · Apron</p><p>Every cluster starts from the same template and the same bootstrap order, with its own trust roots. Two today: dev and prod.</p><p class="tl"><span>Kubernetes <span class="st built">built</span></span> <span>Calico <span class="st built">built</span></span> <span>Contour + Gateway API <span class="st built">built</span></span> <span>cert-manager <span class="st built">built</span></span> <span>Apron template <span class="st built">built</span></span></p></div><div data-p="sec"><p class="eyebrow">Runs through every layer · Secrets, identity, policy</p><p>Identity comes from the platform, not from secrets the platform has to guard. Policy runs at admission and at release.</p><p class="tl"><span>Infisical <span class="st built">built</span></span> <span>External Secrets <span class="st built">built</span></span> <span>provider-infisical <span class="st built">built</span></span> <span>TokenReview <span class="st built">built</span></span> <span>Kyverno <span class="st built">built</span></span></p></div><div data-p="obs"><p class="eyebrow">Runs through every layer · Observability</p><p>One trace per change, from commit to canary, and SLOs and DORA metrics that Tower shows next to every release.</p><p class="tl"><span>OpenTelemetry <span class="st built">built</span></span> <span>Prometheus + Thanos <span class="st built">built</span></span> <span>Loki + Tempo <span class="st built">built</span></span> <span>Sloth <span class="st built">built</span></span> <span>DORA exporter <span class="st built">built</span></span></p></div></div>
+  <p class="hint">Builds from the ground up on load. Point at a layer to preview it below; click to open its page.</p>
+  <div data-motion-controls role="group" aria-label="Diagram playback controls">
+      <button type="button" data-motion-action="prev">Previous</button>
+      <button type="button" data-motion-action="play" aria-pressed="false">Play</button>
+      <button type="button" data-motion-action="pause" aria-pressed="true">Pause</button>
+      <button type="button" data-motion-action="next">Next</button>
+      <button type="button" data-motion-action="replay">Replay</button>
+      <span class="keyboard-help">←/→ step · Space play/pause · R replay · Home/End jump</span>
+      <span data-motion-status-visible aria-hidden="true">Step <span data-motion-step-label>6</span> of 6</span>
+    </div>
+    <p class="sr-only" data-motion-status role="status" aria-live="polite" aria-atomic="true"></p>
+    <noscript><p>Animation controls require JavaScript. The complete final diagram is shown above.</p></noscript>
+</main>
+<div class="foot"><span>Hangar · Overview</span><span>Click any box to open its page</span></div>
+</div>
+<script data-diagram-controls>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const staticOverride = params.get('motion') === 'static' || document.documentElement.dataset.motion === 'static';
+      const requestedStep = params.get('step');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+      document.fonts.ready.then(() => { document.documentElement.dataset.fontsReady = 'true'; });
+
+      document.querySelectorAll('[data-motion-root]').forEach((root) => {
+        const count = Number(root.dataset.stepCount);
+        const hold = parseFloat(getComputedStyle(root).getPropertyValue('--motion-hold')) || 720;
+        const parsedStep = requestedStep !== null && /^\d+$/.test(requestedStep) ? Number(requestedStep) : null;
+        const exactStep = params.get('motion') === 'step' && Number.isSafeInteger(parsedStep) && parsedStep >= 0 && parsedStep <= count ? parsedStep : null;
+        const items = [...root.querySelectorAll('[data-motion-item]')];
+        const labels = Array.from({ length: count + 1 }, (_, index) => index === 0
+          ? 'Ready'
+          : items.filter((item) => !item.hasAttribute('data-motion-decorative') && Number(item.dataset.step) === index)
+              .map((item) => item.getAttribute('aria-label')).join('; '));
+        const controls = root.querySelector('[data-motion-controls]');
+        const status = root.querySelector('[data-motion-status]');
+        const visibleStep = root.querySelector('[data-motion-step-label]');
+        let step = count;
+        let timer = 0;
+        let playing = false;
+        let stepBeforeReduce = 0;
+        let resumeAfterReduce = root.dataset.motionMode === 'reveal';
+
+        const buttons = (action) => controls.querySelector(`[data-motion-action="${action}"]`);
+        const clearClock = () => { window.clearTimeout(timer); timer = 0; };
+        const announce = () => { status.textContent = `Step ${step} of ${count}: ${labels[step] || 'Complete'}`; };
+        const setControlsAvailable = (available) => {
+          controls.hidden = !available;
+          controls.setAttribute('aria-hidden', String(!available));
+          controls.dataset.playbackDisabled = String(!available);
+          controls.querySelectorAll('button').forEach((control) => { control.disabled = !available; });
+        };
+
+        function render(next, userInitiated = false) {
+          step = Math.max(0, Math.min(count, next));
+          root.dataset.stepCurrent = String(step);
+          root.dataset.frame = step === count ? 'end' : step === 0 ? 'start' : 'step';
+          items.forEach((item) => {
+            const itemStep = Number(item.dataset.step);
+            item.classList.toggle('is-visible', itemStep <= step);
+            item.classList.toggle('is-current', itemStep === step);
+          });
+          if (visibleStep) visibleStep.textContent = String(step);
+          const unavailable = controls.dataset.playbackDisabled === 'true';
+          buttons('prev').disabled = unavailable || step === 0;
+          buttons('next').disabled = unavailable || step === count;
+          if (userInitiated) announce();
+        }
+
+        function pause(userInitiated = false) {
+          clearClock();
+          playing = false;
+          root.classList.remove('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'false');
+          buttons('pause').setAttribute('aria-pressed', 'true');
+          if (userInitiated) status.textContent = `Paused at step ${step} of ${count}`;
+        }
+
+        function finish() {
+          pause(false);
+          root.dataset.frame = 'end';
+          status.textContent = `Complete · step ${count} of ${count}`;
+        }
+
+        function tick() {
+          if (!playing) return;
+          if (step >= count) { finish(); return; }
+          render(step + 1, false);
+          if (step >= count) { finish(); return; }
+          timer = window.setTimeout(tick, hold);
+        }
+
+        function play(fromStart = false, userInitiated = false) {
+          clearClock();
+          if (fromStart || step >= count) render(0, userInitiated);
+          playing = true;
+          root.classList.add('is-playing');
+          buttons('play').setAttribute('aria-pressed', 'true');
+          buttons('pause').setAttribute('aria-pressed', 'false');
+          timer = window.setTimeout(tick, hold);
+        }
+
+        controls.addEventListener('click', (event) => {
+          const button = event.target.closest('[data-motion-action]');
+          if (!button) return;
+          const action = button.dataset.motionAction;
+          if (action === 'play') play(false, true);
+          if (action === 'pause') pause(true);
+          if (action === 'replay') play(true, true);
+          if (action === 'prev') { pause(false); render(step - 1, true); }
+          if (action === 'next') { pause(false); render(step + 1, true); }
+        });
+
+        root.addEventListener('keydown', (event) => {
+          if (event.target.matches('input, textarea, select, a[href]')) return;
+          const keys = { ArrowLeft: step - 1, ArrowRight: step + 1, Home: 0, End: count };
+          if (event.code === 'Space' && !event.target.closest('button')) {
+            event.preventDefault();
+            playing ? pause(true) : play(false, true);
+            return;
+          }
+          if (!event.ctrlKey && !event.metaKey && !event.altKey && event.key.toLowerCase() === 'r') {
+            event.preventDefault();
+            play(true, true);
+            return;
+          }
+          if (!(event.key in keys)) return;
+          event.preventDefault();
+          pause(false);
+          render(keys[event.key], true);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden' && playing) pause(false);
+        });
+        reduce.addEventListener('change', (event) => {
+          if (event.matches && root.dataset.motionState !== 'reduced') {
+            stepBeforeReduce = step;
+            resumeAfterReduce = playing;
+          }
+          pause(false);
+          if (event.matches) {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'reduced';
+            status.textContent = 'Reduced motion · complete static frame · playback controls unavailable';
+          } else if (staticOverride || root.dataset.motionMode === 'none') {
+            setControlsAvailable(false);
+            render(count, false);
+            root.dataset.frame = 'static';
+            root.dataset.motionState = 'static';
+            status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+          } else {
+            delete root.dataset.motionState;
+            if (exactStep !== null) {
+              setControlsAvailable(false);
+              render(exactStep, false);
+              root.dataset.frame = 'step';
+              root.dataset.motionState = 'test';
+              status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+            } else {
+              setControlsAvailable(true);
+              render(stepBeforeReduce, false);
+              status.textContent = `Ready · step ${step} of ${count}`;
+              if (resumeAfterReduce && root.dataset.motionMode === 'reveal') {
+                play(false, false);
+              }
+            }
+            resumeAfterReduce = false;
+          }
+        });
+
+        if (staticOverride) {
+          document.documentElement.dataset.motion = 'static';
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = 'static';
+          status.textContent = 'Static frame · complete diagram · playback controls unavailable';
+        } else if (reduce.matches || root.dataset.motionMode === 'none') {
+          pause(false);
+          setControlsAvailable(false);
+          render(count, false);
+          root.dataset.frame = 'static';
+          root.dataset.motionState = reduce.matches ? 'reduced' : 'static';
+          status.textContent = reduce.matches
+            ? 'Reduced motion · complete static frame · playback controls unavailable'
+            : 'Static frame · complete diagram · playback controls unavailable';
+        } else if (exactStep !== null) {
+          document.documentElement.dataset.motion = 'step';
+          pause(false);
+          setControlsAvailable(false);
+          render(exactStep, false);
+          root.dataset.frame = 'step';
+          root.dataset.motionState = 'test';
+          status.textContent = `Test frame · step ${step} of ${count} · playback controls unavailable`;
+        } else if (root.dataset.motionMode === 'reveal') {
+          setControlsAvailable(true);
+          render(0, false);
+          play(false, false);
+        } else {
+          pause(false);
+          setControlsAvailable(true);
+          render(0, false);
+          status.textContent = `Ready · step 0 of ${count}`;
+        }
+        root.classList.add('motion-ready');
+      });
+    })();
+  </script>
+</body>
+</html>
