@@ -6,9 +6,9 @@ export const notes: Note[] = [
   {
     slug: 'origin',
     title: 'How Hangar started, and what AI taught me along the way',
-    dek: "Two projects at once: rebuild my home lab into a real platform, and learn to build with AI while doing it. Five mockups, a Star Trek replicator moment, a name that changed jobs, and the token bills I didn't see coming. Plus the lesson I'd pass on first: how to manage your sessions.",
+    dek: "Two projects at once: rebuild my home lab into a real platform, and learn to build with AI while doing it. Five mockups, a Star Trek replicator moment, a name that changed jobs, and the token bills I didn't see coming. Plus the lessons I'd pass on first: how to manage your sessions, and how to use memory.",
     date: '2026-10-02',
-    minutes: 9,
+    minutes: 10,
     tags: ['Hangar', 'AI'],
   },
   {
