@@ -46,7 +46,7 @@ def t_in_hangar():
     b += [zone(24, 100, 280, 236, 'the app repo'), zone(328, 100, 320, 236, 'glidepath · run-testworkflow'),
           zone(672, 100, 304, 236, 'testkube namespace · shared'), zone(24, 372, 952, 116, 'where people see it')]
     b += [node(48, 144, 232, 56, 'cicd.yaml', 'test: enabled · name: integration', 'input'),
-          node(48, 232, 232, 56, 'platform/integration.yaml', 'a TestWorkflow the team owns', 'input')]
+          node(48, 232, 232, 56, 'glidepath/integration.yaml', 'a TestWorkflow the team owns', 'input')]
     steps = ['1  Copy app secrets into testkube', '2  Rewrite the name, then apply',
              '3  Run with the testkube CLI, poll', '4  Blank the secret again']
     for i, s in enumerate(steps):
@@ -73,7 +73,7 @@ def t_in_hangar():
                           ('focal', 'What matters most'), ('accent', 'Apply'), ('link', 'Run'), ('open', 'Shown in')]))
     return dict(slug='a-test-run-in-hangar', eyebrow='Testing · 02 of 03 · In Hangar',
       title='One test run in Hangar',
-      desc='Four zones. The app repo holds cicd.yaml, which turns the test stage on and names the test (integration), and platform/integration.yaml, a TestWorkflow the team owns. Glidepath\'s run-testworkflow Task takes four steps: copy the app\'s secrets into the shared testkube namespace, rewrite the workflow\'s name and apply it, run it with the testkube CLI and poll, and blank the secret again. In the shared testkube namespace, a Kyverno admission policy, drawn as a security boundary, only lets the workflow reference the app\'s own secret, or denies it. The admitted TestWorkflow is named after the app and the test, and Testkube CE, with no control plane, runs the pods. Below, where people see it: the Task\'s results (an outcome and one line per step) are shown in the Release Record in Tower, beside the build, and the stage emits an OpenTelemetry span, a CDEvent and a Slack notification.',
+      desc='Four zones. The app repo holds cicd.yaml, which turns the test stage on and names the test (integration), and glidepath/integration.yaml, a TestWorkflow the team owns. Glidepath\'s run-testworkflow Task takes four steps: copy the app\'s secrets into the shared testkube namespace, rewrite the workflow\'s name and apply it, run it with the testkube CLI and poll, and blank the secret again. In the shared testkube namespace, a Kyverno admission policy, drawn as a security boundary, only lets the workflow reference the app\'s own secret, or denies it. The admitted TestWorkflow is named after the app and the test, and Testkube CE, with no control plane, runs the pods. Below, where people see it: the Task\'s results (an outcome and one line per step) are shown in the Release Record in Tower, beside the build, and the stage emits an OpenTelemetry span, a CDEvent and a Slack notification.',
       lede='The app team writes one file. Glidepath does the rest: it moves the secrets in for the length of the run, applies the workflow through a policy gate, and puts the result where people already look.',
       body=''.join(b), W=1000, H=588, y0=76,
       cards=[('Self-service', '', P('A new test is a file in the app repo, next to cicd.yaml. No ticket, no operator, and the name can\'t collide with another app\'s.')),
