@@ -1,0 +1,271 @@
+---
+import Base from '../../layouts/Base.astro';
+import Diagram from '../../components/Diagram.astro';
+import Evidence from '../../components/Evidence.astro';
+import { essays } from '../../data/essays';
+import { gh, u } from '../../lib/url';
+
+const essay = essays.find((e) => e.slug === 'why-testkube')!;
+
+const adr = (n: string, f: string) => gh('glidepath', `docs/admin/adr/${n}-${f}.md`);
+
+// A sketch to show the shape, not a file in Hangar: four k6 workers against a Skyport service.
+const sketch = `apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
+metadata:
+  name: flight-api-load
+spec:
+  content:
+    files:
+      - path: /data/load.js
+        content: |
+          import http from 'k6/http';
+          export default () => http.get('http://flight-api/healthz');
+  steps:
+    - name: Four workers at once
+      parallel:
+        count: 4
+        transfer:
+          - from: /data
+        container:
+          image: grafana/k6:latest
+        shell: k6 run /data/load.js`;
+
+const fit = [
+  ['A resource, not a script', "A TestWorkflow has a schema, a status and an owner, like every other thing Hangar runs. It lives in the app repo and goes through review with the code it tests."],
+  ['Any framework', "k6, Playwright, Cypress, JMeter, Postman, pytest. The paved road is where tests run and how results come back, not which tool a team has to learn."],
+  ['Any caller', "Glidepath's Tekton pipeline starts it today, but the workflow doesn't know that. The same file runs from GitHub Actions, the CLI, a schedule or a Kubernetes event."],
+];
+
+const evidence = [
+  { text: 'Testkube CE installed on every cluster with the CI/CD platform, through Apron and ArgoCD', status: 'built' as const, href: gh('apron', '50-platform-cicd/testkube/application.yaml') },
+  { text: "Glidepath's test stage applies and runs an app's platform/<name>.yaml as a TestWorkflow", status: 'built' as const, href: gh('glidepath', 'docs/user/cicd-yaml-reference.md') },
+  { text: 'One shared namespace, with secrets moved in for the run and blanked after (ADR-0007)', status: 'built' as const, href: adr('0007', 'testkube-shared-namespace') },
+  { text: "A Kyverno policy so one app's tests can't mount another app's secrets (ADR-0008)", status: 'built' as const, href: adr('0008', 'kyverno-testkube-secret-policy') },
+  { text: 'An outcome and one line per step, written for the Release Record in Tower', status: 'built' as const, href: gh('glidepath', 'charts/glidepath-catalog/templates/tasks/run-testworkflow.yaml') },
+  { text: 'Parallel and sharded runs for the Skyport test suites', status: 'proposal' as const },
+  { text: "Testkube's own CDEvents on the same event stream as Glidepath's", status: 'proposal' as const },
+  { text: "Autopilot's Preflight evaluations running as TestWorkflows", status: 'proposal' as const, href: gh('autopilot', 'README.md') },
+  { text: 'A control plane connection: per-namespace runs and one dashboard for every run', status: 'proposal' as const },
+];
+---
+<Base title={essay.title} description={essay.dek} section="architecture">
+  <div class="wrap">
+    <article class="essay">
+      <header class="hero">
+        <p class="eyebrow"><a href={u('architecture/')}>Architecture</a> · {essay.minutes} min read</p>
+        <h1>Why Hangar runs its tests in <em>Testkube</em></h1>
+        <p class="lede">{essay.dek}</p>
+      </header>
+
+      <div class="prose">
+        <p>
+          Tests are where a lot of good pipelines quietly go wrong. Usually it isn't the tests themselves. It's where
+          they end up living: a shell script at the bottom of a CI job, running one file at a time on one runner, with
+          the results buried in a log that scrolls away before anyone reads it. The suite gets bigger, the wait gets
+          longer, and the people who care most about quality have the least visibility into it.
+        </p>
+        <p>
+          Hangar runs its tests in <a href="https://testkube.io">Testkube</a>. This essay is about why: the proof of
+          concept that sold me on it, how it works, and why it fits a platform built around an API-driven control
+          plane. I'll also be honest about the free tier, because running it in my lab taught me a few things the docs
+          didn't.
+        </p>
+
+        <h2>It started with the test engineers</h2>
+        <p>
+          In a previous role, I ran a Testkube proof of concept with our test engineers. They were good at their jobs
+          and wanted to level up their tooling. Their suites were slow, and they had no way to run them in parallel, so
+          a bigger suite just meant a longer wait. Their results were spread across pipeline runs, and what they asked
+          for, in so many words, was a single pane of glass: every run, on every environment, in one place.
+        </p>
+        <p>
+          The POC went really well. Parallelism was the thing they'd been missing, and seeing every result together
+          was the thing they'd been asking for. What won me over, as the platform engineer in the room, was something
+          they didn't care about at all: Testkube is Kubernetes-native. A test is a custom resource with a schema,
+          sitting in the cluster beside everything else, and that's exactly the shape I want every part of a platform
+          to have.
+        </p>
+        <p>
+          The people helped too. The Testkube team was great to work with from start to finish. I came to them with a
+          number of feature requests along the way, and they were well received, never lost in a support queue. When
+          you're picking a tool you'll live with for years, how its makers treat a stranger's feature request tells you
+          a lot.
+        </p>
+
+        <h2>How Testkube works</h2>
+        <p>
+          The core idea is that a test is a Kubernetes resource. You describe it in a <strong>TestWorkflow</strong>:
+          which container image to run, the steps, any services it needs alongside it, like a database or a browser,
+          and which files to keep as artifacts. Then something starts it: a CI pipeline, the CLI or API, a cron schedule
+          declared in the workflow, or a Kubernetes event through a TestTrigger. The open source agent, running in your
+          cluster, turns it into pods, runs it, and collects the logs, reports and per-step status.
+        </p>
+      </div>
+
+      <Diagram id="testing/01-how-testkube-works" />
+
+      <div class="prose">
+        <p>
+          Two things make it much more than a fancy Job runner. The first is orchestration. A step can fan out into
+          parallel workers, split a suite into shards, or run a matrix of configurations, then gather the results back
+          up. That's the parallelization the test engineers were missing, and it's a few lines of YAML, not a rewrite.
+          Here's the shape of it, four k6 workers against one of the Skyport services. It's a sketch to show the idea,
+          not a file that lives in Hangar:
+        </p>
+        <pre><code>{sketch}</code></pre>
+        <p>
+          The second is that Testkube doesn't care which test framework you use. If it runs in a container, Testkube
+          can orchestrate it. There's no framework lock-in, and that matters more than it sounds: test suites tend to
+          outlive almost every tool around them, including the CI system that runs them.
+        </p>
+        <p>
+          And you choose where it lives. The agent is open source and runs on its own. The control plane, where the
+          dashboard and that single pane of glass live, comes as a hosted cloud service or on-premises, air-gapped if
+          you need it. The flexibility runs the other way too: it plugs into GitHub Actions, GitLab, Jenkins, Argo CD,
+          Tekton or plain kubectl, so the test never has to know which pipeline called it.
+        </p>
+
+        <h2>Why it fits Hangar</h2>
+        <p>
+          The third of my <a href={u('principles/')}>principles</a> is an API-driven control plane, ready for AI. In
+          Hangar, everything is a declared resource that a controller reconciles, and every change is a reviewed
+          commit. Testkube's model is that same shape, applied to testing.
+        </p>
+      </div>
+
+      <dl class="split">{fit.map(([t, v]) => <div><dt>{t}</dt><dd>{v}</dd></div>)}</dl>
+
+      <div class="prose">
+        <p>
+          The control-plane fit matters more every month. When an agent asks whether a release is good, I want the
+          answer to come from a typed resource with a status and a per-step result, not from somebody's regex over a
+          log. A TestWorkflow and its executions give an agent the same thing Airframe's contract does: something it can
+          read without guessing.
+        </p>
+        <p class="pull">Pipelines get rewritten. Test suites outlive them. Put the tests somewhere that doesn't care who called.</p>
+        <p>
+          It's event-friendly too, which is my fifth principle. Testkube can start a run when something changes in the
+          cluster, and it can emit CDEvents, the same vocabulary Glidepath already uses for every stage of a release.
+          Hangar doesn't wire Testkube's own events into that stream yet. It's on the list.
+        </p>
+
+        <h2>How a test runs in Hangar today</h2>
+        <p>
+          Testkube is built into <a href={u('cicd/')}>Glidepath</a>'s test stage. An app turns the stage on in its
+          <code>cicd.yaml</code> and names a test. If the repo has a matching <code>platform/&lt;name&gt;.yaml</code>,
+          that file is a TestWorkflow, written and owned by the app team, with no ticket and no operator involved.
+        </p>
+      </div>
+
+      <Diagram id="testing/02-a-test-run-in-hangar" />
+
+      <div class="prose">
+        <p>
+          Glidepath's <code>run-testworkflow</code> step does the rest. It copies the app's secrets into Testkube's
+          namespace for the length of the run, renames the workflow to <code>&lt;app&gt;-&lt;test&gt;</code> so it can't
+          collide with another app's, applies it through a Kyverno policy gate, runs it with the Testkube CLI, and blanks
+          the secret again afterwards. The outcome and one line per step become results of the pipeline run, which is
+          what the Release Record in <a href={u('tower/')}>Tower</a> shows beside the build. Apps that haven't moved yet
+          can still fall back to an <code>integration-test.sh</code>.
+        </p>
+        <p>
+          One thing I enjoyed finding: a TestWorkflow doesn't have to be a test. It's anything that runs and reports
+          pass or fail. Warming a cache before a release fits just as well as a Playwright suite, so the step is named
+          for what it does, not for what we assumed it would hold.
+        </p>
+        <p>
+          And to be plain about what isn't there yet: Hangar doesn't use parallel or sharded runs today. The Skyport
+          apps' suites are small enough that one worker is plenty. There's also no Testkube dashboard in my lab, so for
+          now the single pane of glass is Tower's Release Record. The day the suites grow, parallelism is a change to a
+          YAML file, not to the platform.
+        </p>
+
+        <h2>What the free tier taught me</h2>
+        <p>
+          Hangar runs Testkube's open source agent with no control plane, on purpose, because I wanted to know exactly
+          what the free floor looks like. On August 24, 2026, I found out. The first design ran each app's tests in that
+          app's own namespace, which the docs suggested was possible. The moment I applied it, the API server
+          crash-looped. The answer was in the source: multi-namespace execution is gated to the paid editions, and the
+          server exits if you ask for it in standalone mode.
+        </p>
+      </div>
+
+      <Diagram id="testing/03-what-the-free-tier-taught-me" />
+
+      <div class="prose">
+        <p>
+          So every app's tests run in one shared namespace, and that opened a real gap. Kubernetes RBAC decides who can
+          edit a Secret, but not which Secret a pod is allowed to mount. Any tenant could have written another app's
+          secret name into their own workflow. Testkube's per-run sensitive config is meant to solve exactly that, but
+          it didn't work in the community build I was on. A Kyverno admission policy closed it instead, checking every
+          TestWorkflow at the one moment the caller's real identity is still visible. Both halves of the story are
+          written up, in <a href={adr('0007', 'testkube-shared-namespace')}>ADR-0007</a> and
+          <a href={adr('0008', 'kyverno-testkube-secret-policy')}>ADR-0008</a>.
+        </p>
+        <p>
+          There were smaller lessons. My first "blank the secret" step didn't blank anything, because an empty object in
+          a merge patch means "change nothing"; <code>data: null</code> is what actually clears it. Passing runs
+          sometimes reported themselves as aborted, a race with the Job controller, so Glidepath now trusts the per-step
+          results underneath. And the chart's default MongoDB wouldn't start on my nodes' kernel, so Testkube runs on its
+          PostgreSQL backend instead.
+        </p>
+        <p>
+          None of this changed my mind about Testkube. Open core means the paid features are paid, and I think that's a
+          fair deal from a company that gives away a genuinely useful agent. I'd just rather know where the line is than
+          guess. At a company, I'd buy the control plane without much debate: the single pane of glass is what the test
+          engineers asked for, and it's what made the POC land. In a home lab where I'm the only test engineer, the free
+          agent plus one well-placed policy is the right size.
+        </p>
+        <p>
+          That's consistent with what I wrote in <a href={u('architecture/cost-of-the-platform/')}>What Hangar
+          costs</a>, where Testkube is on the list of things a small team could leave out at first. I still believe
+          that. Run the tests in the pipeline until someone asks for more. In my experience the someone is the test
+          engineers, they ask for parallel runs and one place to look, and they ask early.
+        </p>
+
+        <h2>Where I'd take it next</h2>
+        <p>
+          Hangar's support for testing is likely to grow, and Testkube is the integration point I'd build it on:
+          whatever kind of testing comes next, it arrives as another TestWorkflow rather than another bespoke pipeline
+          step. Three things are on my mind, none of them built yet. Testkube's own CDEvents should join the event stream Glidepath already
+          writes, so a test run shows up in the same trace as the build that triggered it. The Skyport suites should get
+          big enough to earn sharding. And the one I'm most curious about: Autopilot's Preflight cases, which score how
+          an agent behaves, are tests in every way that matters. Running them as TestWorkflows would give agent
+          evaluations the same home, the same history and the same policy fence as everything else.
+        </p>
+        <p>
+          Testing is the part of the lifecycle where platforms most often give up and hand teams a script. Testkube let
+          me treat it like the rest of Hangar: declared, reviewed, run by a controller, and readable by people and
+          machines alike. And the team behind it made a stranger with a list of feature requests feel welcome, which is
+          a good sign of how they'll treat the next one.
+        </p>
+        <p class="sign">James</p>
+        <p class="more"><a href={u('architecture/')}>← All architecture essays</a></p>
+      </div>
+
+      <Evidence items={evidence} heading="Where Hangar does this, and where it doesn't yet" />
+    </article>
+  </div>
+</Base>
+<style>
+  .essay .hero .eyebrow a { color: inherit; }
+  .essay .hero h1 { max-width: 22ch; }
+  .prose h2 { margin-top: 3rem; }
+  .prose pre {
+    margin: 1.4rem 0; padding: 0.9rem 1rem; overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--raised); font-size: 0.84rem; line-height: 1.55;
+  }
+  .prose pre code { background: none; padding: 0; font-size: inherit; }
+  .pull {
+    font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem; margin: 2.5rem 0; max-width: 34ch;
+  }
+  .split { display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin: 1.2rem 0 1rem; max-width: 60rem; }
+  @media (min-width: 800px) { .split { grid-template-columns: 1fr 1fr 1fr; } }
+  .split div { background: var(--raised); border: 1px solid var(--rule); border-radius: 8px; padding: 0.9rem 1.1rem; }
+  .split dt { font-weight: 600; }
+  .split dd { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+  .sign { font-family: var(--font-serif); font-size: 1.4rem; margin-top: 2rem; }
+  .more { margin-top: 2rem; }
+</style>

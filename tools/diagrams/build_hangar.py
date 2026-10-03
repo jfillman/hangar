@@ -2,12 +2,12 @@
 
     python3 build_hangar.py [OUT_DIR]
 
-Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossplane (4), Service catalog (5), SLO (4) and Overview (5) beside them. Needs only the Python standard library.
+Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossplane (4), Service catalog (5), Testing (3), SLO (4) and Overview (5) beside them. Needs only the Python standard library.
 """
 import sys, os, re, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib
-import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, d123, d456, d789, d1011
+import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, e_m, d123, d456, d789, d1011
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '../../docs/autopilot/diagrams')
@@ -17,6 +17,8 @@ OUT_GLIDEPATH = os.path.join(OUT, '../../glidepath/diagrams')
 OUT_CROSSPLANE = os.path.join(OUT, '../../crossplane/diagrams')
 # The Service catalog set (pictures for the Why Airframe essay) lives in docs/catalog/diagrams.
 OUT_CATALOG = os.path.join(OUT, '../../catalog/diagrams')
+# The Testing set (pictures for the Testkube essay) lives in docs/testing/diagrams.
+OUT_TESTING = os.path.join(OUT, '../../testing/diagrams')
 # The SLO set (pictures for the SLO feature doc) lives in docs/slo/diagrams.
 OUT_SLO = os.path.join(OUT, '../../slo/diagrams')
 # The Overview set (high-level Hangar pictures, the home page's diagram among them) lives in docs/overview/diagrams.
@@ -38,6 +40,7 @@ CROSSPLANE = [e_i.x_secretstore, e_i.x_readiness, e_i.x_budget, e_i.x_timeline]
 CATALOG = [e_j.c_one_api, e_j.c_menu_inventory, e_j.c_anatomy, e_j.c_discovery, e_j.c_roadmap]
 OVERVIEW = [('change-road', e_l.o_change), ('product-family', e_l.o_family), ('two-clusters', e_l.o_clusters),
             ('layer-stack', e_l.o_layers), ('lifecycle-wheel', e_l.o_wheel)]
+TESTING = [e_m.t_how_it_works, e_m.t_in_hangar, e_m.t_free_tier]
 SLO = [e_k.s_pipeline, e_k.s_thresholds, e_k.s_state, e_k.s_tick]
 REFERENCE = [d123.d1, d123.d2, d123.d3, d456.d4, d456.d5, d456.d6, d789.d7, d789.d8, d789.d9, d1011.d10]
 
@@ -66,6 +69,7 @@ ref = build('reference', REFERENCE, 'reference', 'Hangar · reference architectu
 glide = build('glidepath', GLIDEPATH, '.', 'Hangar · Glidepath', root=OUT_GLIDEPATH)
 xp = build('crossplane', CROSSPLANE, '.', 'Hangar · Airframe · Crossplane', root=OUT_CROSSPLANE)
 cat = build('catalog', CATALOG, '.', 'Hangar · Airframe · Service catalog', root=OUT_CATALOG)
+tst = build('testing', TESTING, '.', 'Hangar · Glidepath · Testing', root=OUT_TESTING)
 slo = build('slo', SLO, '.', 'Hangar · SLOs', root=OUT_SLO)
 
 os.makedirs(OUT_OVERVIEW, exist_ok=True)
