@@ -226,7 +226,9 @@ const evidence = [
 
         <h2>Where I'd take it next</h2>
         <p>
-          Three things, none of them built yet. Testkube's own CDEvents should join the event stream Glidepath already
+          Hangar's support for testing is likely to grow, and Testkube is the integration point I'd build it on:
+          whatever kind of testing comes next, it arrives as another TestWorkflow rather than another bespoke pipeline
+          step. Three things are on my mind, none of them built yet. Testkube's own CDEvents should join the event stream Glidepath already
           writes, so a test run shows up in the same trace as the build that triggered it. The Skyport suites should get
           big enough to earn sharding. And the one I'm most curious about: Autopilot's Preflight cases, which score how
           an agent behaves, are tests in every way that matters. Running them as TestWorkflows would give agent
