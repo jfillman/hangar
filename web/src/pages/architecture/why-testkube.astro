@@ -39,7 +39,7 @@ const fit = [
 
 const evidence = [
   { text: 'Testkube CE installed on every cluster with the CI/CD platform, through Apron and ArgoCD', status: 'built' as const, href: gh('apron', '50-platform-cicd/testkube/application.yaml') },
-  { text: "Glidepath's test stage applies and runs an app's platform/<name>.yaml as a TestWorkflow", status: 'built' as const, href: gh('glidepath', 'docs/user/cicd-yaml-reference.md') },
+  { text: "Glidepath's test stage applies and runs an app's glidepath/<name>.yaml as a TestWorkflow", status: 'built' as const, href: gh('glidepath', 'docs/user/cicd-yaml-reference.md') },
   { text: 'One shared namespace, with secrets moved in for the run and blanked after (ADR-0007)', status: 'built' as const, href: adr('0007', 'testkube-shared-namespace') },
   { text: "A Kyverno policy so one app's tests can't mount another app's secrets (ADR-0008)", status: 'built' as const, href: adr('0008', 'kyverno-testkube-secret-policy') },
   { text: 'An outcome and one line per step, written for the Release Record in Tower', status: 'built' as const, href: gh('glidepath', 'charts/glidepath-catalog/templates/tasks/run-testworkflow.yaml') },
@@ -153,7 +153,7 @@ const evidence = [
         <h2>How a test runs in Hangar today</h2>
         <p>
           Testkube is built into <a href={u('cicd/')}>Glidepath</a>'s test stage. An app turns the stage on in its
-          <code>cicd.yaml</code> and names a test. If the repo has a matching <code>platform/&lt;name&gt;.yaml</code>,
+          <code>cicd.yaml</code> and names a test. If the repo has a matching <code>glidepath/&lt;name&gt;.yaml</code>,
           that file is a TestWorkflow, written and owned by the app team, with no ticket and no operator involved.
         </p>
       </div>
