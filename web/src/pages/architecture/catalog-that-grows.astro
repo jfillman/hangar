@@ -1,0 +1,271 @@
+---
+import Base from '../../layouts/Base.astro';
+import Diagram from '../../components/Diagram.astro';
+import Evidence from '../../components/Evidence.astro';
+import { essays } from '../../data/essays';
+import { gh, u } from '../../lib/url';
+
+const essay = essays.find((e) => e.slug === 'catalog-that-grows')!;
+
+const gaps = gh('glidepath', 'docs/admin/known-gaps.md');
+const cicdRef = gh('glidepath', 'docs/user/cicd-yaml-reference.md');
+
+// The whole request, as Airframe's LambdaFunction API takes it. The name is a Skyport app, for illustration.
+const request = `apiVersion: catalog.hangar.io/v1alpha1
+kind: LambdaFunction
+metadata:
+  name: baggage-api
+  namespace: demo-apps
+spec:
+  devCluster: dev
+  runtime: python3.13      # or nodejs22, go
+  architecture: arm64      # only this one gets built
+  region: us-east-1`;
+
+
+const evidence = [
+  { text: 'LambdaFunction and AzureFunction APIs in catalog.hangar.io, beside the four app kinds', status: 'built' as const, href: gh('airframe', 'xrds/lambdafunction.yaml') },
+  { text: "Glidepath's deploy.target: aws-ecs, aws-lambda and azure-container-apps, behind one gate in the deploy stage", status: 'built' as const, href: cicdRef },
+  { text: 'Per-environment cloud resources, so dev and test can deploy to different functions or services', status: 'built' as const, href: cicdRef },
+  { text: "Tower's service classes, and a cloud Deployments tab read from the pipeline, with no cloud credential", status: 'built' as const, href: gh('tower', 'docs/service-classes.md') },
+  { text: 'Lambda, Azure Functions, ECS and Container Apps, each tested end to end', status: 'built' as const, href: gaps },
+  { text: "The XR composes the function, its role and its registry, with the architects' and security team's rules built in", status: 'proposal' as const },
+  { text: 'An approval step for cloud production environments: a release pin PR on the source repo (ADR-0020)', status: 'proposal' as const, href: gh('glidepath', 'docs/admin/adr/0020-cloud-gated-promotion-by-release-pin.md') },
+  { text: 'Live health for cloud services in Tower', status: 'proposal' as const, href: gh('tower', 'docs/cloud-deploys.md') },
+];
+---
+<Base title={essay.title} description={essay.dek} section="architecture">
+  <div class="wrap">
+    <article class="essay">
+      <header class="hero">
+        <p class="eyebrow"><a href={u('architecture/')}>Architecture</a> · {essay.minutes} min read</p>
+        <h1>A service catalog that <em>grows</em> with the company</h1>
+        <p class="lede">{essay.dek}</p>
+      </header>
+
+      <div class="prose">
+        <p>
+          Hangar is a Kubernetes-native platform. Its control plane, its pipelines, its portal and its catalog all run
+          on Kubernetes, and every API it offers is a Kubernetes resource. That's a decision about where the platform
+          lives. It was never meant to be a rule about where everybody's work has to run.
+        </p>
+        <p>
+          Real companies have a bit of everything. There's the team whose whole service is a handful of functions on AWS
+          Lambda. There's the group that came in through an acquisition and runs on Azure. There's the service that
+          belongs next to its data in a managed container platform, and moving it onto your cluster would help nobody. A
+          platform that answers all of them with "Kubernetes or nothing" doesn't get adopted. It gets routed around, and
+          the teams doing the routing quietly lose every guardrail the platform was built to give them.
+        </p>
+        <p>
+          So on October 3 and 4, 2026, Glidepath, Airframe and Tower all grew at once. Hangar's catalog can now offer
+          AWS Lambda functions and Azure Functions as services of their own, and any app can deploy to three cloud
+          targets instead of the cluster. This essay is about what changed, why an API is the right front door to the
+          cloud, and the part I care about most: where the architects' and the security team's rules get to live.
+        </p>
+
+        <h2>Crossplane was built for this</h2>
+        <p>
+          Most people meet Crossplane as a way to provision cloud infrastructure. It's a Kubernetes controller that
+          creates databases, buckets, queues and networks in the clouds, and lets you hide each pile of them behind an
+          API of your own. In <a href={u('architecture/building-airframe/')}>Building Airframe</a> I wrote about using
+          it mostly closer to home: repos, pipelines, secret stores and databases, all composed around the cluster and
+          GitHub. Reaching out to the clouds is using Crossplane for the thing it was born to do.
+        </p>
+        <p>
+          And it's the natural next step for the catalog. In <a href={u('architecture/why-airframe/')}>Why a platform
+          still needs a service catalog</a>, I argued that the catalog is a menu: the things you can ask for, written
+          down precisely enough for people and agents to read. A menu with only one kind of dish on it isn't much of a
+          menu.
+        </p>
+
+        <h2>What we added</h2>
+        <p>
+          Three products changed, and the nice thing is how little each of them had to change.
+        </p>
+      </div>
+
+      <Diagram id="expansion/01-one-catalog-many-targets" />
+
+      <div class="prose">
+        <p>
+          <strong>Airframe</strong> got two new APIs, <code>LambdaFunction</code> and <code>AzureFunction</code>,
+          beside the four application kinds. A function isn't a Go application with a different deploy step. It has no
+          ports, no replicas, no probes, no canary and no Helm chart, so none of the application APIs' settings make
+          sense for it. It gets its own API with its own short list of questions. Here's the whole request, if Skyport's
+          baggage-api were a function:
+        </p>
+        <pre><code>{request}</code></pre>
+        <p>
+          From that, Airframe creates the source repo with a starter handler, a Containerfile and a <code>cicd.yaml</code>,
+          wires up the pipeline, and registers the service in the catalog. The Azure version asks the same kind of
+          questions, with a resource group in place of a region.
+        </p>
+        <p>
+          <strong>Glidepath</strong> learned <code>deploy.target</code>. Until October 3, it could only deploy to an Argo
+          Rollout on the app's own cluster. Now an app can choose <code>aws-ecs</code>, <code>aws-lambda</code> or
+          <code>azure-container-apps</code> instead, and the build in front of it doesn't change at all: the same
+          Containerfile becomes the same signed image. Two details made me smile. Lambda will only pull from its own
+          registry, and it won't take an image built for several architectures, so the deploy step copies the one image
+          the function runs into the function's registry and deploys it by digest. And an Azure Functions app hosted on
+          Container Apps is, as far as the deploy is concerned, a Container App, so it rides the existing target rather
+          than needing a new one. A day later, each environment got its own cloud resource, so dev and test can deploy to
+          different functions with one line each.
+        </p>
+        <p>
+          <strong>Tower</strong> doesn't keep a list of the kinds of service it supports. A service says what it is with
+          two annotations, a class like <code>function</code> and a target like <code>aws-lambda</code>, and Tower works
+          out which tabs it should get. A function gets the pipeline, the images and the releases, but not the SLOs or the pod topology, because there are no pods to look at. Its Deployments tab is the cloud variant, built entirely
+          from what the pipeline recorded. Tower holds no cloud credential at all.
+        </p>
+        <p class="pull">Kubernetes is where the platform lives. It doesn't have to be where every workload runs.</p>
+
+        <h2>Why an API, and not a wiki page</h2>
+        <p>
+          Think about how a team gets a new cloud service at most companies. Someone finds the wiki page. They file a
+          ticket, or they borrow a Terraform module from a team that did it last year. They copy a pipeline from another
+          repo and change the names. Every one of those steps is a place where a standard gets forgotten, and none of
+          them gets better on its own when the standard changes.
+        </p>
+        <p>
+          An API in front of the cloud turns all of that around. The developer asks for the noun, a function or a
+          service, and answers a few questions in their own words. Everything else is the platform's job: the repo, the
+          build, the signing, the registry, the deploy, the catalog entry, and eventually the cloud resource itself. When
+          a standard changes, the platform team changes it in one place, and every service built from that API picks it
+          up on its next reconcile. That's what I mean by a catalog that grows with the company.
+        </p>
+        <p>
+          It grows in the other direction too. A new kind of service is a new API on the menu, and the doors people use
+          to reach it don't move. A Backstage form, Tower, a pull request and an AI agent all create the same kind of
+          resource, so adding functions changed none of them. That's the third of my
+          <a href={u('principles/')}>principles</a>, an API-driven control plane ready for AI, paying off in a way I
+          didn't plan for: every new API also carries a one-line summary written for agents, so the day it lands, an
+          agent can read what it's for and how to ask for one.
+        </p>
+        <p>
+          And the API is a promise that outlives what's behind it. Today the platform does some of the work for a
+          function and trusts you with the rest. Tomorrow it will do more. The request above won't change when it does,
+          and that's the whole point of putting an API in front.
+        </p>
+
+        <h2>Where the policy lives</h2>
+        <p>
+          Here's the part of this I care about most. Every company that runs in the cloud has people whose job is to
+          say how it should be done. Enterprise Architects write the standards and the approved patterns. The security
+          team writes the controls and decides how data is classified. Too often, those rules live in documents, and
+          they're checked at the end, in a review, by people who are tired of saying the same thing.
+        </p>
+        <p>
+          A platform can do better than that. The architects and the security team own the rules. The platform team
+          turns them into code. The code lives inside the API, in the Crossplane XR, where every request has to pass
+          through it. The developer never has to read the standard, because the standard is simply how the platform
+          builds things.
+        </p>
+      </div>
+
+      <Diagram id="expansion/02-where-the-policy-lives" />
+
+
+      <div class="prose">
+        <p>
+          Some of this is already real in Hangar. The function APIs only accept the runtimes and architectures the
+          platform can actually build, and a region has to look like one. Airframe's APIs use CEL rules for constraints
+          that cross fields. Before it creates anything, an XR checks the cluster registry live, and if the cluster it
+          was asked for isn't ready, it builds nothing and says why rather than half-succeeding. Deleting a request never
+          deletes the repo behind it. Cloud credentials come from each app's own secret store, never from one platform-wide
+          account. And a Kyverno admission policy and Airframe's validator in CI catch what gets around the API.
+        </p>
+        <p>
+          My favourite piece of governance from these two days is a refusal. In Hangar, an environment on the Flight tier,
+          production among them, never deploys without an explicit approval, and for a Kubernetes app that approval is a
+          reviewed release PR. A cloud service doesn't have that path yet. So Glidepath refuses to give one a Flight
+          environment at all, rather than
+          letting a cloud prod quietly deploy on every push. I'd much rather the platform say no than pretend. The design
+          for the missing approval is written up as <a href={gh('glidepath', 'docs/admin/adr/0020-cloud-gated-promotion-by-release-pin.md')}>ADR-0020</a>,
+          and it isn't built yet.
+        </p>
+        <p>
+          The rules I'd most like to see in here next are the ones every architecture and security team I've worked with
+          writes in some form. Functions run only in approved regions. Every cloud resource carries an owner and a cost
+          centre. Roles are least privilege, inside a permission boundary. Registries scan what's pushed to them, logs
+          are kept for a set number of days, and everything is encrypted. Each of those is a sentence in a standard
+          today. In an XR, each becomes a default nobody can forget, or a value the API won't accept.
+        </p>
+        <p>
+          There's a human side to this that I think matters as much as the technical one. When the rules are code, the
+          architects and the security team stop being the last reviewers in line and become the first authors. Their
+          standard turns into a pull request they can review, with a test and an owner, and the conversation changes from
+          "did you follow the standard?" to "the standard is the default." In my experience, that's a much nicer
+          conversation for everyone in it.
+        </p>
+
+        <h2>Where it really is today</h2>
+        <p>
+          I want to be plain about what these two days did and didn't build, because the honest version is more useful
+          than the brochure.
+        </p>
+      </div>
+
+      <Diagram id="expansion/03-a-lambda-today-and-next" />
+
+      <div class="prose">
+        <p>
+          Today the function APIs are bring your own function. The XR builds everything around the function, the repo,
+          the pipeline and the catalog entry, but the function itself, its role and its registry have to exist before
+          you onboard. Glidepath only updates them. I shipped it that way on purpose: it let the first cloud targets land
+          in two days, and it meant the control plane didn't need to hold a single cloud credential. But it also means
+          the most interesting rules from the last section don't have anywhere to live yet. Composing the cloud resource
+          is the next step, and the request won't change when it happens.
+        </p>
+        <p>
+          The good news is that all of it works. Lambda functions, Azure Functions and every one of the cloud deploy
+          targets have been tested end to end and come through successfully. Getting there taught me a couple of things.
+          The first real ECS run, on October 4, 2026, found a bug straight away: the deploy copied a fixed list of fields
+          out of the old task definition, failed on the first one that wasn't set, and would have quietly dropped others,
+          turning an Arm-based task back into an x86 one. It now re-registers the whole definition. Preparing for the
+          first Lambda run turned up a bigger one: Lambda can't pull from the registry Glidepath pushes to, which is why
+          the deploy step now copies the image across. What's still missing is on the Tower side: it can show what was
+          deployed to a cloud service, but not yet whether it's healthy. All of this is written down in
+          <a href={gaps}>Glidepath's known gaps</a> or Tower's own docs, not tucked away.
+        </p>
+
+        <h2>Where I'd take it next</h2>
+        <p>
+          Three things, in this order. First, let the function APIs compose the cloud resources themselves, through
+          Crossplane's providers for each cloud, so the architects' and security team's rules live in the Composition
+          where they belong. Second, build the release pin from ADR-0020, so a cloud service can have a real production
+          environment with the same reviewed approval as everything else. Third, give Tower a read-only cloud identity
+          on its backend, so a cloud service shows its health and not just its history.
+        </p>
+        <p>
+          After that, the menu should grow the way I said it should in the catalog essay: by asking. Maybe the next noun
+          is a queue, or a bucket, or a scheduled job. I'd rather find out from the people who need it than guess. What
+          I'm sure of is the shape. Every new offering is one more API, the doors stay where they are, and the rules come
+          along for free.
+        </p>
+        <p>
+          Hangar will always live on Kubernetes. The people it serves don't all have to, and now they don't.
+        </p>
+        <p class="sign">James</p>
+        <p class="more"><a href={u('architecture/')}>← All architecture essays</a></p>
+      </div>
+
+      <Evidence items={evidence} heading="Where Hangar does this, and where it doesn't yet" />
+    </article>
+  </div>
+</Base>
+<style>
+  .essay .hero .eyebrow a { color: inherit; }
+  .essay .hero h1 { max-width: 22ch; }
+  .prose h2 { margin-top: 3rem; }
+  .prose pre {
+    margin: 1.4rem 0; padding: 0.9rem 1rem; overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--raised); font-size: 0.84rem; line-height: 1.55;
+  }
+  .prose pre code { background: none; padding: 0; font-size: inherit; }
+  .pull {
+    font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem; margin: 2.5rem 0; max-width: 34ch;
+  }
+  .sign { font-family: var(--font-serif); font-size: 1.4rem; margin-top: 2rem; }
+  .more { margin-top: 2rem; }
+</style>
