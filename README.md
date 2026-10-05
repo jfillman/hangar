@@ -29,7 +29,7 @@ Hangar gains a sixth product, **Autopilot**: it runs any AI agent workload (task
 scheduled, event, team), bounded and audited, and it drives a program to make Airframe operable by
 agents (measured by [`tools/airframe-scorecard`](tools/airframe-scorecard/): baseline 27/100, A+ needs
 97 and 14 of 14 checks). Skyport gains six AI workloads, one per shape. The design principle:
-**durable changes are git commits; ephemeral runs are claims to Crossplane.** Start at
+**durable changes are git commits; ephemeral runs are direct requests to Crossplane.** Start at
 [`docs/autopilot/README.md`](docs/autopilot/README.md); the plan is [`docs/autopilot/roadmap.md`](docs/autopilot/roadmap.md).
 Built so far, with 255 passing tests and no cluster: the Clearance core, the AppSpec planner (the
 "parachute" acceptance test: one plain-language request to provision a Python app named parachute, end to end), nine Skyport agent definitions and six Preflight cases. Drafted, never

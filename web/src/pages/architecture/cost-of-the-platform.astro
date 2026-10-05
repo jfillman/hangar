@@ -67,7 +67,7 @@ const evidence = [
 
         <h2>Where Crossplane stops</h2>
         <p>
-          I use Crossplane as Hangar's API, and I'd do it again. A claim says what you want, and reconciliation keeps it
+          I use Crossplane as Hangar's API, and I'd do it again. An XR says what you want, and reconciliation keeps it
           true afterwards: a database that should exist, a secret store that should be wired to the right project, an
           environment that should have its namespace and identity. When something drifts, it gets put back. That's
           exactly what you want for things that are supposed to <em>stay</em> a certain way.
@@ -81,12 +81,12 @@ const evidence = [
           the GitHub provider. Every one of those is fixed now. None of them needed to exist.
         </p>
         <p>The rule I use now is short enough to remember in a design review:</p>
-        <p class="rule-line">If you'd be upset that it changed back, it's a claim. If you'd be upset that it ran twice, it isn't.</p>
+        <p class="rule-line">If you'd be upset that it changed back, it's an XR. If you'd be upset that it ran twice, it isn't.</p>
         <p>
-          A database is a claim. A repository scaffold is a one-time action. A pipeline is a sequence, so it lives in
+          A database is an XR. A repository scaffold is a one-time action. A pipeline is a sequence, so it lives in
           Tekton. A release is a decision, so it's a pull request. An interactive agent session needs to react in
           milliseconds, and Crossplane on my installation re-renders every sixty seconds, so Autopilot's draft
-          <code>AgentRun</code> claim only describes the sandbox and its scope. The hard stop at expiry comes from the
+          <code>AgentRun</code> XR only describes the sandbox and its scope. The hard stop at expiry comes from the
           sandbox controller, not from a reconcile loop.
         </p>
 

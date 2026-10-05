@@ -2,7 +2,7 @@ from libx import *
 
 def w_two_planes():
     b=[]
-    b += [zone(24,84,432,336,'durable plane · git · reviewed'), zone(544,84,432,336,'ephemeral plane · claims · ttl')]
+    b += [zone(24,84,432,336,'durable plane · git · reviewed'), zone(544,84,432,336,'ephemeral plane · XRs · ttl')]
     b += [path([(240,292),(240,324)]), vlab(240,292,324,'PULL'),
           path([(760,196),(760,228)]), vlab(760,196,228,'RENDERS'),
           path([(760,292),(760,324)]), vlab(760,292,324,'CREATES'),
@@ -11,23 +11,23 @@ def w_two_planes():
     b += [node(48,132,384,64,'Agent definitions and policy','ceilings, tools, network · reviewed commit'),
           node(48,228,384,64,'App, gitops and tenants repos','PRs · xr-requests · platform/envs'),
           node(48,324,384,64,'ArgoCD pulls','per cluster · lower and upper'),
-          node(568,132,384,64,'AgentRun claim','namespaced XR · dev clusters only · TTL'),
+          node(568,132,384,64,'AgentRun','namespaced XR · dev clusters only · TTL'),
           node(568,228,384,64,'Crossplane composition','function-agentrun · a pure function'),
           node(568,324,384,64,'Run namespace','sandbox · budget · gone at expiresAt','focal')]
     b.append(callout(24,452,'The ephemeral plane can only narrow what the durable plane grants. It reaches the durable plane only as a PR.'))
     b.append(legend(484,[('focal','Ephemeral sandbox'),('backend','Component'),('muted','Flow'),('muted-dash','Proposal only')]))
     return dict(slug='two-planes', eyebrow='Architecture · 02 of 19 · Two planes',
-      title='Durable changes are commits. Ephemeral runs are claims.',
-      desc='Architecture with two planes: a durable plane where agent definitions, repos and ArgoCD change only by reviewed git commits, and an ephemeral plane where an AgentRun claim is rendered by a Crossplane function into a sandbox namespace that disappears at its deadline, with durable ceilings narrowing every claim and the ephemeral plane reaching the durable one only through a pull request.',
-      lede='Committing every session to git would be slow, noisy, rate-limited and unreviewable. So ephemeral, bounded, disposable things are created as claims, and everything that outlives a run stays a reviewed commit.',
+      title='Durable changes are commits. Ephemeral runs are direct requests.',
+      desc='Architecture with two planes: a durable plane where agent definitions, repos and ArgoCD change only by reviewed git commits, and an ephemeral plane where an AgentRun XR, created directly through the API, is rendered by a Crossplane function into a sandbox namespace that disappears at its deadline, with durable ceilings narrowing every run and the ephemeral plane reaching the durable one only through a pull request.',
+      lede='Committing every session to git would be slow, noisy, rate-limited and unreviewable. So ephemeral, bounded, disposable things are created directly as Crossplane XRs, and everything that outlives a run stays a reviewed commit.',
       body=''.join(b), W=1000, H=540, y0=60,
-      cards=[('Principle, revised','', P('Every durable mutation is a git commit. An ephemeral one is a declarative claim to an already-privileged control plane (Crossplane), never a direct write. That is still delegate-to-the-audited-system, and still dev-only.')),
+      cards=[('Principle, revised','', P('Every durable mutation is a git commit. An ephemeral one is a declarative request made straight to an already-privileged control plane (a namespaced Crossplane XR), never a direct write to the resources underneath. That is still delegate-to-the-audited-system, and still dev-only.')),
              ('The ephemerality test','accent', UL(['It has a hard deadline that needs no Clearance to enforce.','It holds no durable state, and reaches the durable plane only as a PR.','One narrowly scoped identity creates it, in one reserved namespace.','It can only narrow what git grants.','It can be rebuilt from git plus the task spec. Fail any one and it goes through git.'])),
              ('What this costs','link', P('Clearance now holds one Kubernetes permission: create, get, patch and delete AgentRun in autopilot-runs, on dev clusters. That is a real departure from zero write credentials, so it is one kind in one namespace, and the composition, not the caller, decides what gets created.'))])
 
 def w_shapes():
     b=[]
-    cols=[(24,172,'SHAPE'),(200,148,'TRIGGER'),(352,132,'LIFETIME'),(488,164,'DURABLE (GIT)'),(656,164,'EPHEMERAL (CLAIM)'),(824,152,'EXAMPLES')]
+    cols=[(24,172,'SHAPE'),(200,148,'TRIGGER'),(352,132,'LIFETIME'),(488,164,'DURABLE (GIT)'),(656,164,'EPHEMERAL (XR)'),(824,152,'EXAMPLES')]
     for x,w,t in cols: b.append(text(x+8,108,t,8,500,MUTED,mono=True,ls='0.14em'))
     b.append(f'<line x1="24" y1="118" x2="976" y2="118" stroke="{RULE}" stroke-width="0.8"/>')
     rows=[('Task agent','task','human, API, agent','to completion','Agent definition','AgentRun','coding, triage'),
@@ -61,10 +61,10 @@ def w_shapes():
         x,w,_=cols[5]; assert len(ex)*6.7<=w-8, ex
         b.append(text(x+8,y+29,ex,12,400,MUTED))
         y+=56
-    b.append(legend(y+12,[('backend','Durable, in git'),('store','Ephemeral claim'),('optional','Not a run'),('focal','Narrowing enforced')]))
+    b.append(legend(y+12,[('backend','Durable, in git'),('store','Ephemeral XR'),('optional','Not a run'),('focal','Narrowing enforced')]))
     return dict(slug='workload-shapes', eyebrow='Matrix · 04 of 19 · Workload shapes',
       title='Any agent workload is one of six shapes, built from two kinds of thing',
-      desc='Matrix of six agent workload shapes, task, session, service, scheduled, event and team, showing for each the trigger, lifetime, the durable git part and the ephemeral AgentRun claim, where a service agent has no ephemeral part because it is an ordinary deployed application.',
+      desc='Matrix of six agent workload shapes, task, session, service, scheduled, event and team, showing for each the trigger, lifetime, the durable git part and the ephemeral AgentRun XR, where a service agent has no ephemeral part because it is an ordinary deployed application.',
       lede='The platform does not care what the agent does or which framework it uses. A definition is durable and reviewed. A run is a disposable instance of it. A long-running service agent is just the durable half, deployed the way any application is.',
       body=''.join(b), W=1000, H=y+12+52, y0=60,
       cards=C3(P('Definition durable, run ephemeral. Service agents reuse the existing application path, so nothing new is invented for them.'),
@@ -73,13 +73,13 @@ def w_shapes():
 
 def w_definition_to_run():
     b=[]
-    b += [zone(16,100,968,124,'durable · git · reviewed',center=True), zone(16,244,968,144,'ephemeral · claims · ttl',center=True)]
+    b += [zone(16,100,968,124,'durable · git · reviewed',center=True), zone(16,244,968,144,'ephemeral · XRs · ttl',center=True)]
     b += [path([(176,164),(424,164)]), hlab(176,424,164,'ON MERGE'),
           path([(576,164),(824,164)]), hlab(576,824,164,'SIGN + SCAN'),
           path([(96,196),(96,260),(296,260),(296,300)]), hlab(96,296,260,'DEFINITION + PROFILE'),
           path([(900,196),(900,300)]), vlab(900,196,300,'IMAGE PULL'),
           path([(168,332),(224,332)]), hlab(168,224,332,'EVENT'),
-          path([(368,332),(424,332)],'accent'), hlab(368,424,332,'CLAIM',ACC),
+          path([(368,332),(424,332)],'accent'), hlab(368,424,332,'API',ACC),
           path([(568,332),(624,332)]), hlab(568,624,332,'RENDERS'),
           path([(768,332),(824,332)]), hlab(768,824,332,'CREATES')]
     b += [node(24,132,152,64,'Agent definition','YAML in git','focal'),
@@ -87,14 +87,14 @@ def w_definition_to_run():
           node(824,132,152,64,'Signed image','pinned by digest','store'),
           node(24,300,144,64,'Trigger','manual · cron · alert','input'),
           node(224,300,144,64,'Clearance','policy · narrow-only'),
-          node(424,300,144,64,'AgentRun claim','ephemeral XR','focal'),
+          node(424,300,144,64,'AgentRun','ephemeral XR','focal'),
           node(624,300,144,64,'Crossplane','function-agentrun'),
           node(824,300,152,64,'Run namespace','sandbox · TTL')]
-    b.append(legend(420,[('focal','New'),('backend','Exists today'),('store','Artifact'),('input','Trigger'),('accent','The claim')]))
+    b.append(legend(420,[('focal','New'),('backend','Exists today'),('store','Artifact'),('input','Trigger'),('accent','The direct request')]))
     return dict(slug='definition-to-run', eyebrow='Architecture · 05 of 19 · Definition to run',
       title='From a reviewed definition to a disposable run',
-      desc='Architecture in two zones: a durable zone where an agent definition merged in git triggers Glidepath to build, scan and sign an image pinned by digest, and an ephemeral zone where a trigger reaches Clearance, which checks policy against the definition and creates an AgentRun claim that Crossplane renders into a run namespace which pulls the signed image.',
-      lede='The image is built and signed by the same pipeline as any application, so a run can only execute what was reviewed. The run itself is a claim that Clearance narrows and Crossplane renders.',
+      desc='Architecture in two zones: a durable zone where an agent definition merged in git triggers Glidepath to build, scan and sign an image pinned by digest, and an ephemeral zone where a trigger reaches Clearance, which checks policy against the definition and creates an AgentRun XR that Crossplane renders into a run namespace which pulls the signed image.',
+      lede='The image is built and signed by the same pipeline as any application, so a run can only execute what was reviewed. The run itself is an XR that Clearance narrows and creates, and Crossplane renders.',
       body=''.join(b), W=1000, H=470, y0=76,
       cards=C3(P('Supply chain first: agent code is untrusted code. Images are signed by Glidepath (cosign, self-hosted Fulcio and Rekor) and referenced by digest, never by tag.'),
                UL(['Admission verifies the signature (Kyverno verifyImages is already in the cluster).','Third-party agent images take the same path, and default to the hardened sandbox class where the cluster has one.','A run whose image is not on the signed path is rejected, not warned about.']),
@@ -137,7 +137,7 @@ def w_lifecycle():
           path([(592,376),(724,376),(724,264)],'accent',dashed=True), hlab(592,724,376,'HOLD ENDS',ACC),
           path([(324,264),(324,448),(760,448),(760,264)],dashed=True), lab(542,456,'never ready · 2 min')]
     b.append(f'<circle cx="900" cy="232" r="8" fill="none" stroke="{INK}" stroke-width="1.2"/><circle cx="900" cy="232" r="5" fill="{INK}"/>')
-    b += [node(56,200,136,64,'Requested','claim created',rx=8),
+    b += [node(56,200,136,64,'Requested','XR created',rx=8),
           node(256,200,136,64,'Provisioning','namespace + policy',rx=8),
           node(456,200,136,64,'Running','agent executes','focal',rx=8),
           node(656,200,136,64,'Draining','ttl · done · budget',rx=8),
@@ -171,6 +171,6 @@ def w_team():
       desc='Tree of an orchestrator run that spawns a researcher and a coder, where the coder spawns a test runner, each with a lower or equal tier, shorter time and smaller budget than its parent, and a fourth spawn, a deployer asking for tier two, is denied for exceeding the parent ceiling.',
       lede='Delegation is narrowing. A planner can hand work to workers without any of them being able to do more than the planner could. The reservation makes it arithmetic: the children cannot collectively spend more than the root was granted.',
       body=''.join(b), W=1000, H=544, y0=40,
-      cards=C3(P('Least privilege and bounded blast radius, applied to delegation. The same narrow-only rule that applies to a claim applies to a child.'),
+      cards=C3(P('Least privilege and bounded blast radius, applied to delegation. The same narrow-only rule that applies to requested limits applies to a child.'),
                UL(['One task_id across the whole tree, so the flight recorder shows a team as one story.','Depth is capped at 3 and children at a per-definition limit, so a runaway spawn loop stops.','Closing a parent closes the tree; tripping a parent freezes it.']),
                P('This is tested as a property: in 200 random sequences of spawn, spend and close, no session ever overspends and no tree ever exceeds what the root was granted. That test is in the repository.'), 'Proved in code'))

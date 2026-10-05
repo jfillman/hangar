@@ -158,9 +158,9 @@ export const stages: Stage[] = [
       { id: 'reference/05-multicloud-gitops' },
     ],
     agents: {
-      title: 'Durable changes are commits. Ephemeral runs are claims.',
+      title: 'Durable changes are commits. Ephemeral runs are direct requests.',
       body: [
-        'An agent\'s durable write is a git write, and it goes through the same release path as everyone else\'s. Only its run, which is short-lived, stateless and rebuildable from git, is created directly, as a narrowly scoped claim to Crossplane on dev clusters. Upper clusters get neither.',
+        'An agent\'s durable write is a git write, and it goes through the same release path as everyone else\'s. Only its run, which is short-lived, stateless and rebuildable from git, is created directly, as a narrowly scoped Crossplane XR on dev clusters. Upper clusters get neither.',
       ],
       diagrams: ['autopilot/02-two-planes', 'autopilot/03-write-path-spine'],
     },

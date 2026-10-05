@@ -36,7 +36,7 @@ def p_family():
       lede='Autopilot sits beside Airframe and Glidepath, not above them. It uses Airframe\'s contract through tools, uses Glidepath\'s guardrails as gates, and shows up in Tower as an Agent tab.',
       body=''.join(b), W=1000, H=580, y0=60,
       cards=C3(P('One vocabulary, six products: Hangar, Apron, Airframe, Glidepath, Tower, Autopilot. Clearance and Flight recorder are features of Autopilot, like Tower\'s Ground Control.'),
-               UL(['Airframe gains a machine-readable contract (the A+ program).','Autopilot adds Clearance, the AgentRun claim and a model proxy.','Skyport gains six AI workloads, one per workload shape.']),
+               UL(['Airframe gains a machine-readable contract (the A+ program).','Autopilot adds Clearance, the AgentRun XR and a model proxy.','Skyport gains six AI workloads, one per workload shape.']),
                P('Each product keeps its own repo and its own install. Autopilot needs Airframe and Glidepath; it does not need Tower to run, only to be seen.'), 'Independence'))
 
 def p_roadmap():
@@ -250,7 +250,7 @@ def p_skyport_seq():
           msg(310,510,160,'open_triggered(responder)',410),
           msg(510,310,196,'session s-1 (deduped)',410,'muted',True),
           msg(310,110,232,'ack',210,'muted',True),
-          msg(510,710,268,'launch: agentrun claim',610),
+          msg(510,710,268,'launch: AgentRun XR',610),
           msg(710,510,304,'run.spawn(team, narrower)',610),
           msg(510,710,340,'child ok · budget reserved',610,'muted',True),
           msg(710,510,376,'run.spawn(worker, wider)',610),

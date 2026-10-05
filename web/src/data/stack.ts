@@ -42,7 +42,7 @@ export const layers: Layer[] = [
     "key": "control",
     "name": "Control plane",
     "product": "airframe",
-    "why": "The platform is an API. A claim says what you want; reconciliation keeps it true afterwards."
+    "why": "The platform is an API. An XR says what you want; reconciliation keeps it true afterwards."
   },
   {
     "key": "ground",
@@ -128,9 +128,9 @@ export const tools: Tool[] = [
   },
   {
     "layer": "agents",
-    "name": "AgentRun claim",
-    "role": "An ephemeral, scoped run as a Crossplane claim.",
-    "why": "Durable changes stay commits; a run is short-lived, so it's a claim with a TTL, not a pull request.",
+    "name": "AgentRun XR",
+    "role": "An ephemeral, scoped run as a namespaced Crossplane XR.",
+    "why": "Durable changes stay commits; a run is short-lived, so it's an XR with a TTL, created directly, not a pull request.",
     "status": "draft",
     "src": "https://github.com/jfillman/autopilot"
   },
@@ -289,14 +289,14 @@ export const tools: Tool[] = [
     "layer": "control",
     "name": "Airframe XRDs",
     "role": "What a compliant service is: apps, data services, SLOs.",
-    "why": "Node, Spring Boot, Go and Python apps, PostgreSQL, Redis, RabbitMQ and SLOs, each a small, schema-checked claim.",
+    "why": "Node, Spring Boot, Go and Python apps, PostgreSQL, Redis, RabbitMQ and SLOs, each a small, schema-checked XR.",
     "status": "built",
     "src": "https://github.com/jfillman/airframe/tree/main/xrds"
   },
   {
     "layer": "control",
     "name": "Composition Functions",
-    "role": "Turn a claim into real resources, and watch them.",
+    "role": "Turn an XR into real resources, and watch them.",
     "why": "go-templating for the plain cases; my own functions for the interesting ones, like watching a rollout.",
     "status": "built",
     "src": "https://github.com/jfillman/airframe/tree/main/functions"
@@ -304,7 +304,7 @@ export const tools: Tool[] = [
   {
     "layer": "control",
     "name": "provider-github",
-    "role": "Repos, teams and branch protection as claims.",
+    "role": "Repos, teams and branch protection as Crossplane resources.",
     "why": "A new service's repository is reconciled like anything else, so drift gets noticed and fixed.",
     "status": "built",
     "src": "https://github.com/jfillman/airframe"
@@ -312,8 +312,8 @@ export const tools: Tool[] = [
   {
     "layer": "control",
     "name": "CloudNativePG",
-    "role": "PostgreSQL behind the database claim.",
-    "why": "A real operator for failover and backups, hidden behind a claim small enough to ask for in one line.",
+    "role": "PostgreSQL behind the database XR.",
+    "why": "A real operator for failover and backups, hidden behind an XR small enough to ask for in one line.",
     "status": "built",
     "src": "https://github.com/jfillman/airframe/tree/main/xrds"
   },
@@ -436,7 +436,7 @@ export const tools: Tool[] = [
     "layer": "observe",
     "name": "Sloth",
     "role": "SLOs as code.",
-    "why": "An SLO is a claim in git that generates its own recording and alerting rules.",
+    "why": "An SLO is an XR in git that generates its own recording and alerting rules.",
     "status": "built",
     "src": "https://github.com/jfillman/airframe/tree/main/xrds"
   },
@@ -477,7 +477,7 @@ export const stages: Stage[] = [
     "name": "Compose",
     "q": "Make it real",
     "side": "ci",
-    "why": "Crossplane turns a small claim into a repo, a pipeline, secrets and a database, then keeps them that way.",
+    "why": "Crossplane turns a small XR into a repo, a pipeline, secrets and a database, then keeps them that way.",
     "tools": [
       "Crossplane",
       "Composition Functions",

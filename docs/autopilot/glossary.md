@@ -28,12 +28,12 @@ The aviation vocabulary is the brand's rule (see the Hangar Brand System): names
 |---|---|
 | **Agent workload** | Any AI agent, in any framework, that Hangar runs. |
 | **AgentDefinition** | The durable, reviewed description of an agent: identity, ceiling, tools, APIs, models, network, compute, limits, image, triggers. YAML in git. |
-| **AgentRun** | One bounded, disposable instance of a definition, created as a claim (an XR) and gone at its deadline. |
+| **AgentRun** | One bounded, disposable instance of a definition, created as a namespaced Crossplane XR and gone at its deadline. |
 | **Workload shape** | Task, session, service, scheduled, event, team. |
-| **Two planes** | The *durable* plane (git, reviewed, ArgoCD pulls) and the *ephemeral* plane (claims to Crossplane, bounded). |
-| **Ephemerality test** | The five conditions a thing must meet to be a claim instead of a commit. |
-| **Claim** | A request that can only **narrow** what its definition grants. |
-| **Narrow-only** | The invariant that a claim, a child run or a runtime signal may lower authority, never raise it. Raising is a git commit. |
+| **Two planes** | The *durable* plane (git, reviewed, ArgoCD pulls) and the *ephemeral* plane (namespaced XRs created directly through the API, bounded). |
+| **Ephemerality test** | The five conditions a thing must meet to be created directly instead of as a commit. |
+| **Requested limits** | What a session or run asks for when it opens. They can only **narrow** what its definition grants. The Autopilot code calls this a `claim` today; it is not a Crossplane Claim, which v2 removed. |
+| **Narrow-only** | The invariant that requested limits, a child run or a runtime signal may lower authority, never raise it. Raising is a git commit. |
 | **Tier T0 to T3** | T0 read; T1 reversible write (a PR, a lower-env sync, a child run, an artifact); T2 propose only (a PR to an upper environment); T3 never exposed. |
 | **Tripwire** | A T3 tool name registered only so an attempt is denied, audited and trips the session breaker. |
 | **Breaker** | Reduce-only runtime state that freezes a session. |

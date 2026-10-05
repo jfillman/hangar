@@ -13,7 +13,7 @@ def e01():
           path([(240,392),(268,392),(268,448),(356,448),(356,468)]),
           path([(436,412),(436,468)]), vlab(436,412,468,'PULLED'),
           path([(488,500),(560,500)]), hlab(488,560,500,'APPLIES'),
-          path([(64,260),(44,260),(44,564),(648,564),(648,532)],'accent',dashed=True), lab(346,572,'AGENTRUN CLAIM · DEV ONLY',ACC)]
+          path([(64,260),(44,260),(44,564),(648,564),(648,532)],'accent',dashed=True), lab(346,572,'AGENTRUN XR · DEV ONLY',ACC)]
     b += [node(64,116,176,56,'Agent workload','any framework · any model','input'),
           node(312,116,176,56,'Engineer','works in Tower','input'),
           node(64,228,176,64,'Clearance','MCP · CEL policy · audit','focal'),
@@ -23,14 +23,14 @@ def e01():
           node(64,468,176,64,'Glidepath','Tekton · PaC · broker'),
           node(312,468,176,64,'ArgoCD ×2','platform · apps'),
           node(560,468,176,64,'Airframe','XRDs · compositions')]
-    b.append(callout(24,612,'Durable changes are commits. Ephemeral runs are claims that Crossplane renders.'))
+    b.append(callout(24,612,'Durable changes are commits. Ephemeral runs are direct requests that Crossplane renders.'))
     b.append(legend(644,[('focal','New: Clearance'),('backend','Exists today'),('input','Actor'),('link','Governed call'),('muted','Existing flow')]))
     return dict(slug='hangar-plus-autopilot', eyebrow='Architecture · 01 of 11 · Hangar today',
       title='Hangar as it is, and the one new component beside it',
       desc='Architecture in four planes: agents and people, interface and policy, git as the only write path, and the pull-based cluster, showing the existing Tower, repos, Glidepath, ArgoCD and Airframe, with a single new component, Clearance, added beside Tower.',
-      lede='Nothing here replaces a Hangar component. Clearance sits next to Tower and federates its MCP actions. Durable writes are git commits the cluster pulls, like any human commit. Ephemeral agent runs are claims to Crossplane, dev clusters only.',
+      lede='Nothing here replaces a Hangar component. Clearance sits next to Tower and federates its MCP actions. Durable writes are git commits the cluster pulls, like any human commit. Ephemeral agent runs are direct requests to Crossplane, dev clusters only.',
       body=''.join(b), W=1000, H=692, y0=64,
-      cards=C3(P('Durable mutations are git commits (service-catalog-design.md §0). Ephemeral runs are claims to Crossplane, an already-privileged and audited control plane. Each cluster pulls, and holds no other cluster\'s credentials.'),
+      cards=C3(P('Durable mutations are git commits (service-catalog-design.md §0). Ephemeral runs are direct requests to Crossplane, an already-privileged and audited control plane. Each cluster pulls, and holds no other cluster\'s credentials.'),
                UL(['One new service: Clearance (Python), an InfraService like skyport-broker, with a model proxy beside it.','It federates the Backstage MCP actions already in app-config.yaml instead of re-implementing catalog and scaffolder tools.','Airframe gains one XRD, AgentRun, and one Python composition function. Nothing else changes.']),
                P('Checked in the repos today: Tower, the tenants repos, the two ArgoCD instances and Airframe v0.3.90 all exist as drawn. Whether the Backstage mcpActions endpoint is live on a cluster is not verified; check that first.'), 'What is real'))
 
@@ -133,4 +133,4 @@ def e04():
       body=''.join(b), W=1000, H=620, y0=64,
       cards=C3(P('Cluster-agnostic and generator-driven (ADR-0006). A cluster gets the feature by a toggle in cluster.yaml, and customize-cluster.sh refuses the invalid combination.'),
                UL(['apron/cluster.yaml: new components.autopilot, refused on type: upper like providerGithub and platformCicd.','New group apron/55-autopilot/ (after 50-platform-cicd, before 60-backstage).','Registry ConfigMap gains autopilotReady, set only after the network-policy canary passes.']),
-               P('The dev cluster\'s CNI does not enforce NetworkPolicy; the prod cluster\'s Calico does. Do not set autopilotReady on a claim. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
+               P('The dev cluster\'s CNI does not enforce NetworkPolicy; the prod cluster\'s Calico does. Do not set autopilotReady on an assumption. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))

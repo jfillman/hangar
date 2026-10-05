@@ -44,7 +44,7 @@ def d5():
     b=[]
     X0, W0, H0, Y0 = 112, 848, 72, 76
     layers = [
-      ('L5','Product teams','every team claims the same APIs',['Team A','Team B','Team C'],'backend'),
+      ('L5','Product teams','every team uses the same APIs',['Team A','Team B','Team C'],'backend'),
       ('L4','Golden-path API','one typed abstraction per capability',['Application','PostgreSQL','Queue','Secrets'],'backend'),
       ('L3','Compositions','cloud specifics live here and nowhere else',['AWS','Azure','Google Cloud'],'focal'),
       ('L2','GitOps delivery','per-cluster repos · lower/upper AppProject boundary',['ArgoCD','Kyverno','per-cluster repo'],'backend'),
@@ -78,10 +78,10 @@ def d5():
     return dict(slug='multicloud-gitops', eyebrow='Layer stack · 05 of 11 · Multi-cloud platform',
       title='One platform surface across every cloud',
       desc='Layer stack from foundations at the bottom through GitOps delivery, cloud-specific Crossplane compositions, the golden-path API and product teams at the top, marking Terraform below and Crossplane plus ArgoCD above, with cloud differences confined to the compositions layer.',
-      lede='Teams claim a capability once. Only the compositions layer knows whether that is AWS, Azure or Google Cloud, so product teams converge on one surface and differ only where regulation or workload genuinely requires it.',
+      lede='Teams ask for a capability once. Only the compositions layer knows whether that is AWS, Azure or Google Cloud, so product teams converge on one surface and differ only where regulation or workload genuinely requires it.',
       body=''.join(b), W=1000, H=Y0+5*H0+52+40, y0=40,
       cards=[('Problem','', P('Multi-cloud Kubernetes, IaC, GitOps. Serve every product team without a separate platform for each one; converge where they drifted for no reason.')),
-             ('Design choices','accent', UL(['Terraform for foundations; Crossplane and Argo for everything above the cluster. State the boundary out loud.','PostgreSQL becomes RDS, Azure Database or Cloud SQL from the same claim.','Convergence is a queue: inventory drift, score justified vs accidental, converge the accidental.'])),
+             ('Design choices','accent', UL(['Terraform for foundations; Crossplane and Argo for everything above the cluster. State the boundary out loud.','PostgreSQL becomes RDS, Azure Database or Cloud SQL from the same XR.','Convergence is a queue: inventory drift, score justified vs accidental, converge the accidental.'])),
              ('Evidence and gap','link', P('Built in Hangar: the per-cluster repo decision, two ArgoCD instances per cluster, lower/upper AppProject boundary, generator-driven cluster bootstrap, a PostgreSQL component on CNPG. Gap: Hangar runs on kind and Apple container, not on a public cloud.'))])
 
 def d6():

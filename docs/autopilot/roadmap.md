@@ -275,7 +275,7 @@ All U-experiments run on the dev cluster (decision 2026-09-26).
 ## 6. Risks
 - **One person, many repos.** airframe, glidepath, backstage, apron, the tenants repos and a new repo all change. Keep every change small, behind a gate, and reversible. Use worktrees.
 - **Retrofit cost** if the contract slips behind the next components. Hence the ordering.
-- **The dev cluster does not enforce NetworkPolicy.** `autopilotReady` is gated on a canary, and runs are never trusted on a claim.
+- **The dev cluster does not enforce NetworkPolicy.** `autopilotReady` is gated on a canary, and runs are never trusted on an assumption.
 - **The prod cluster is resource-limited** (observability scaled to 0). Runs are dev-only; prod gets none.
 - **Hosted model cost.** Token budgets and the breaker; two on-demand or scheduled spenders in the demo.
 - **Upstream churn.** Modelplane is v0.1 and the mcp SDK is v2; both sit behind contracts and pins.

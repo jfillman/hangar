@@ -64,7 +64,7 @@ export const principles: Principle[] = [
     evidence: [
       { text: 'Airframe: XRDs, Compositions and Composition Functions for the service catalog', status: 'built', href: gh('airframe') },
       { text: 'AI triage inside the control plane, proven end to end with a real broken canary and a real fix PR', status: 'built', href: ghTree('airframe', 'functions') },
-      { text: 'The AgentRun claim: an agent run as a Crossplane resource', status: 'draft', href: gh('autopilot') },
+      { text: 'The AgentRun XR: an agent run as a Crossplane resource', status: 'draft', href: gh('autopilot') },
       { text: 'A Crossplane provider for Infisical, generated with Upjet', status: 'built', href: gh('provider-infisical') },
     ],
     diagrams: ['plan/05-contract-architecture', 'autopilot/02-two-planes'],

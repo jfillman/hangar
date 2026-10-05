@@ -4,7 +4,7 @@ def w_placement():
     b=[]
     b += [zone(24,84,952,152,'dev cluster · type: dev · arm64'), zone(24,256,952,144,'github.com'), zone(24,420,952,144,'prod cluster · type: upper · amd64')]
     b += [path([(320,170),(368,170)]), hlab(320,368,170,'BROKER'),
-          path([(648,170),(696,170)]), hlab(648,696,170,'CLAIM',ACC),
+          path([(648,170),(696,170)]), hlab(648,696,170,'API',ACC),
           path([(180,216),(180,272),(400,272),(400,292)],'link'), lab(290,254,'HTTPS · CHECKS',LINK),
           path([(508,216),(508,292)],'link'), vlab(508,216,292,'HTTPS · PR',LINK),
           path([(836,216),(836,338),(648,338)],'link'), hlab(648,836,338,'PULL',LINK),
@@ -16,7 +16,7 @@ def w_placement():
           depnode(352,456,296,92,'POD','argocd-apps',[('airframe','v0.3.90',False),('agent write path','none',False)])]
     b.append(text(676,494,'No Clearance and no runs on upper clusters:',12,600,INK))
     b.append(text(676,510,'agents reach them only as a PR that a human merges.',8,400,MUTED,mono=True))
-    b.append(legend(590,[('focal','New service'),('backend','Exists today'),('link','Crosses a boundary'),('muted','Inside a cluster'),('accent','The claim')]))
+    b.append(legend(590,[('focal','New service'),('backend','Exists today'),('link','Crosses a boundary'),('muted','Inside a cluster'),('accent','The direct request')]))
     return dict(slug='fleet-placement', eyebrow='Deployment · 18 of 19 · Fleet placement',
       title='Where it runs: dev gets the write path and the runs, upper gets none',
       desc='Deployment diagram with three zones: the dev cluster hosting the planned clearance service with its model proxy, a glidepath and broker pod with a planned agent-token route and agent-scope gate, and ArgoCD with Crossplane and a planned agentrun composition; GitHub with required checks; and the upper cluster with ArgoCD only and no agent write path.',
@@ -24,7 +24,7 @@ def w_placement():
       body=''.join(b), W=1000, H=620, y0=64,
       cards=C3(P('Cluster-agnostic and generator-driven (ADR-0006). A cluster gets the feature by a toggle in cluster.yaml, and customize-cluster.sh refuses the invalid combination.'),
                UL(['apron/cluster.yaml: components.autopilot, refused on type: upper like providerGithub and platformCicd. New types hub and inference for the model fleet.','New group apron/55-autopilot/, and provider-kubernetes grants for the kinds a run renders.','Registry ConfigMap gains autopilotReady, set only after the network-policy canary passes.']),
-               P('The dev cluster\'s CNI does not enforce NetworkPolicy; the prod cluster\'s Calico does. Do not set autopilotReady on a claim. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
+               P('The dev cluster\'s CNI does not enforce NetworkPolicy; the prod cluster\'s Calico does. Do not set autopilotReady on an assumption. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
 
 def w_tiers():
     b=[]
@@ -39,7 +39,7 @@ def w_tiers():
           ('Request a lower env','T1',['never','rev','never'],'Commit to the tenants repo (GitOps)'),
           ('Sync or refresh a lower env','T1',['never','rev','never'],'ArgoCD role:clearance-lower'),
           ('Re-run a failed pipeline','T1',['never','rev','never'],"Tower's delegated re-run"),
-          ('Start a child run','T1',['rev','rev','rev'],'AgentRun claim, narrower than parent'),
+          ('Start a child run','T1',['rev','rev','rev'],'AgentRun XR, narrower than parent'),
           ('PR to an upper gitops repo','T2',['prop','prop','prop'],'PR only; human merge, CODEOWNERS'),
           ('Secrets, exec, upper sync, IAM','T3',['never','never','never'],'Not exposed to any identity')]
     sty={'allow':('allow','#ffffff',INK,None,INK),'rev':('allow · reversible','rgba(27,31,36,0.05)',MUTED,None,INK),
@@ -65,13 +65,13 @@ def w_tiers():
       lede='Write access is mostly a pull request, which a human can revert. The few imperative actions are delegated to systems that already audit themselves. The last row is not exposed to any identity, including Clearance itself.',
       body=''.join(b), W=1000, H=y+16+52, y0=64,
       cards=C3(P('Delegated over interactive. Every write action must state which category it falls in and the exact API it needs, before it is built (Tower write-action policy).'),
-               UL(['Definitions are YAML in gitops-infra-clearance, reviewed like any change, and schema-validated in CI.','For delegated agents the ceiling is the intersection with the human\'s own Tower permissions.','Starting a child run is a claim, and a claim can only narrow: see Agent teams.']),
+               UL(['Definitions are YAML in gitops-infra-clearance, reviewed like any change, and schema-validated in CI.','For delegated agents the ceiling is the intersection with the human\'s own Tower permissions.','A child run requests limits, and requested limits can only narrow: see Agent teams.']),
                P('As of the last handoff (2026-09-15), Tower Tier 1 write actions were built but not live-verified. Verify those first: Clearance would be delegating to something not yet proven against a genuinely stuck app.'), 'Caution'))
 
 def w_authority():
     b=[]
     ins=[(132,'AgentDefinition','in git · reviewed','backend','TIER CEILING'),(212,'Human delegation','Tower permission policy','backend','USER RIGHTS'),
-         (292,'Run claim','narrow-only, per run','backend','NARROWED TO'),(372,'Parent run','what the parent has left','backend','PARENT LEFT'),
+         (292,'Run limits','requested, narrow-only','backend','NARROWED TO'),(372,'Parent run','what the parent has left','backend','PARENT LEFT'),
          (452,'Runtime breaker','reduce-only state','security','TRIPPED?')]
     for y,n,s,k,l in ins:
         b.append(path([(264,y+28),(400,y+28)])); b.append(hlab(264,400,y+28,l))
@@ -87,8 +87,8 @@ def w_authority():
     b.append(legend(636,[('focal','Decision'),('security','Reduce-only'),('backend','Input'),('input','Outcome: propose')]))
     return dict(slug='effective-authority', eyebrow='Architecture · 13 of 19 · Authority',
       title='Effective authority is the minimum of five inputs, and runtime can only lower it',
-      desc='Architecture showing five inputs, the git-managed agent definition, the human\'s delegated permissions, the narrow-only run claim, the parent run\'s remaining budget, and a reduce-only runtime breaker, feeding one CEL policy decision that yields allow with an audit row, deny with a rule id, or propose only for a pull request that a human merges.',
-      lede='Any of the five can say no; none can say yes on behalf of another. The claim and the parent can only narrow what the definition grants, and the breaker can only take authority away, so a compromised run cannot widen its own reach.',
+      desc='Architecture showing five inputs, the git-managed agent definition, the human\'s delegated permissions, the narrow-only requested run limits, the parent run\'s remaining budget, and a reduce-only runtime breaker, feeding one CEL policy decision that yields allow with an audit row, deny with a rule id, or propose only for a pull request that a human merges.',
+      lede='Any of the five can say no; none can say yes on behalf of another. The requested limits and the parent can only narrow what the definition grants, and the breaker can only take authority away, so a compromised run cannot widen its own reach.',
       body=''.join(b), W=1000, H=676, y0=72,
       cards=C3(P('Least privilege, fail toward less. Runtime state may only reduce authority; raising it is a git commit, like every other durable change.'),
                UL(['Definitions live in gitops-infra-clearance/agents/*.yaml, schema-validated like cicd.yaml is.','The breaker is state inside Clearance only; a tripped run is also frozen by setting one field on its AgentRun.','Sessions live in memory on one replica for now. A restart ends them, which is the safe direction.']),
@@ -97,7 +97,7 @@ def w_authority():
 def w_rollout():
     b=[]
     GX0=248; PITCH=44; NW=16
-    phases=[('A · read-only and claims, dev only',[
+    phases=[('A · read-only and runs, dev only',[
                ('apron: autopilot toggle',1,2,0),('Clearance as InfraService',1,4,0),('T0 read tools',3,4,0),('AgentRun + expiry test',2,6,0)]),
             ('B · governed writes, lower only',[
                ('Interceptor agent-token route',5,6,1),('Model proxy v0',5,8,0),('T1 tools + run.spawn',6,9,0),('Gates: scope + identity',7,10,0)]),
@@ -130,7 +130,7 @@ def w_rollout():
     b.append(legend(cur+16,[('focal','Credential boundary'),('input','Task'),('muted-dash','Live-verify gate before the next phase')]))
     return dict(slug='rollout-plan', eyebrow='Gantt · 19 of 19 · Rollout',
       title='Rollout: four phases, each closed by a live check before the next begins',
-      desc='Gantt chart of twelve tasks over sixteen weeks in four phases: read-only and claims on dev, governed writes on lower environments, evidence and any-agent support, then triggers and routing Holmes through Clearance, with live-verify checkpoints after weeks six, ten and fourteen.',
+      desc='Gantt chart of twelve tasks over sixteen weeks in four phases: read-only and runs on dev, governed writes on lower environments, evidence and any-agent support, then triggers and routing Holmes through Clearance, with live-verify checkpoints after weeks six, ten and fourteen.',
       lede='Each phase ends with a check against real state, not a checklist. Durations are estimates for one person working alone, which is how Hangar has been built. A Modelplane hub trial and a second cloud come after this, once agents run and their spend is bounded.',
       body=''.join(b), W=1000, H=cur+16+52, y0=24,
       cards=[('Verify A · end of week 6','', UL(['A T0 call works end to end and leaves an audit row.','A run ends on time with Clearance stopped, and again with the function pod killed.','The network-policy canary fails on the dev cluster (reported honestly) and passes on the prod cluster.','customize-cluster.sh refuses autopilot on a type: upper cluster.'])),

@@ -11,7 +11,7 @@ def w_fleets():
           path([(828,204),(828,240)]), vlab(828,204,240,'ROUTES'),
           path([(828,304),(828,340)]), vlab(828,304,340,'WEIGHTS')]
     b += [node(48,140,272,64,'Clearance + model proxy','InfraService · dev only','focal'),
-          node(48,240,272,64,'Agent runs','ephemeral · AgentRun claims'),
+          node(48,240,272,64,'Agent runs','ephemeral · AgentRun XRs'),
           node(48,340,272,64,'Shared backends','Postgres · Redis · queue · MinIO','store'),
           node(408,244,208,80,'Modelplane control plane','Crossplane · v1alpha1 · pinned'),
           node(408,388,208,64,'Hosted providers','API key stays in the proxy','external'),
