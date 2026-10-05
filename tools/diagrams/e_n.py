@@ -122,5 +122,5 @@ def g_today_and_next():
       lede='Today the XR wires up everything around the function and trusts you to have made the function. Next, the XR makes the function too, and that is where the architects\' and security team\'s rules get to live.',
       body=''.join(b), W=1000, H=640, y0=76,
       cards=[('Shipped small', '', P('Bring your own function let the first cloud targets land in two days, with no cloud credentials held by the control plane.')),
-             ('The gap is named', 'accent', P('Nothing composes the cloud resource yet, and the Lambda and Azure targets have not deployed for real yet. Both are written down, not hidden.')),
+             ('Tested end to end', 'accent', P('Lambda, Azure Functions and every cloud target have run end to end. The gap that is left, composing the cloud resource, is written down, not hidden.')),
              ('Same contract', 'link', P('When the XR starts composing the function, the request does not change. That is the point of putting an API in front.'))])

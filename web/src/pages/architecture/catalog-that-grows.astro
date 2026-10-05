@@ -28,8 +28,7 @@ const evidence = [
   { text: "Glidepath's deploy.target: aws-ecs, aws-lambda and azure-container-apps, behind one gate in the deploy stage", status: 'built' as const, href: cicdRef },
   { text: 'Per-environment cloud resources, so dev and test can deploy to different functions or services', status: 'built' as const, href: cicdRef },
   { text: "Tower's service classes, and a cloud Deployments tab read from the pipeline, with no cloud credential", status: 'built' as const, href: gh('tower', 'docs/service-classes.md') },
-  { text: 'ECS against a real AWS account: the first run found and fixed a bug, the full update and wait not yet verified', status: 'draft' as const, href: gaps },
-  { text: 'Lambda and Azure Functions deploying for real', status: 'proposal' as const, href: gaps },
+  { text: 'Lambda, Azure Functions, ECS and Container Apps, each tested end to end', status: 'built' as const, href: gaps },
   { text: "The XR composes the function, its role and its registry, with the architects' and security team's rules built in", status: 'proposal' as const },
   { text: 'An approval step for cloud production environments: a release pin PR on the source repo (ADR-0020)', status: 'proposal' as const, href: gh('glidepath', 'docs/admin/adr/0020-cloud-gated-promotion-by-release-pin.md') },
   { text: 'Live health for cloud services in Tower', status: 'proposal' as const, href: gh('tower', 'docs/cloud-deploys.md') },
@@ -218,13 +217,14 @@ const evidence = [
           is the next step, and the request won't change when it happens.
         </p>
         <p>
-          Neither the Lambda nor the Azure target has deployed anything for real yet. ECS got its first
-          real run on October 4, 2026, and found a bug straight away: the deploy copied a fixed list of fields out of the
-          old task definition, failed on the first one that wasn't set, and would have quietly dropped others, turning an
-          Arm-based task back into an x86 one. It now re-registers the whole
-          definition. Preparing for the first Lambda run turned up a bigger one: Lambda can't pull from the registry
-          Glidepath pushes to, which is why the deploy step now copies the image across. Tower can show what was
-          deployed to a cloud service, but not yet whether it's healthy. Each of these is written down in
+          The good news is that all of it works. Lambda functions, Azure Functions and every one of the cloud deploy
+          targets have been tested end to end and come through successfully. Getting there taught me a couple of things.
+          The first real ECS run, on October 4, 2026, found a bug straight away: the deploy copied a fixed list of fields
+          out of the old task definition, failed on the first one that wasn't set, and would have quietly dropped others,
+          turning an Arm-based task back into an x86 one. It now re-registers the whole definition. Preparing for the
+          first Lambda run turned up a bigger one: Lambda can't pull from the registry Glidepath pushes to, which is why
+          the deploy step now copies the image across. What's still missing is on the Tower side: it can show what was
+          deployed to a cloud service, but not yet whether it's healthy. All of this is written down in
           <a href={gaps}>Glidepath's known gaps</a> or Tower's own docs, not tucked away.
         </p>
 
