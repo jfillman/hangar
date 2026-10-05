@@ -3,6 +3,13 @@ export type Essay = { slug: string; title: string; dek: string; date: string; mi
 
 export const essays: Essay[] = [
   {
+    slug: 'catalog-that-grows',
+    title: 'A service catalog that grows with the company',
+    dek: "Hangar is Kubernetes-native, but the people it serves don't all run on Kubernetes. In two days, its catalog learned to offer AWS Lambda functions, Azure Functions and three cloud deploy targets. Why an API in front of the cloud lets a catalog grow with a company, and how the architects' and security team's rules can live inside it as code.",
+    date: '2026-10-05',
+    minutes: 11,
+  },
+  {
     slug: 'why-testkube',
     title: 'Why Hangar runs its tests in Testkube',
     dek: "A proof of concept with a team of test engineers sold me on Testkube: tests as Kubernetes resources, parallel runs, any framework, and one place to see every result. How it works, why it fits an API-driven control plane, how Glidepath runs it today, and what the free tier taught me.",
