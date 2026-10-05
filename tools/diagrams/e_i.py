@@ -11,7 +11,7 @@ def x_secretstore():
           path([(290, 308), (290, 328), (340, 328), (340, 348)], dashed=True),
           path([(248, 380), (232, 380)], 'open', dashed=True),
           path([(340, 412), (340, 452)], dashed=True), vlab(340, 412, 452, 'SYNCS')]
-    b += [node(140, 140, 200, 64, 'SecretStore claim', 'app · env', 'optional'),
+    b += [node(140, 140, 200, 64, 'SecretStore XR', 'app · env', 'optional'),
           node(140, 244, 200, 64, 'Composition', 'one template, two outputs', 'optional'),
           node(48, 348, 184, 64, 'Azure Key Vault', 'one per app', 'optional'),
           node(248, 348, 184, 64, 'ESO SecretStore', 'points at the vault', 'optional'),
@@ -33,10 +33,10 @@ def x_secretstore():
     b.append(legend(616, [('optional', 'Planned, never built'), ('input', 'The request'), ('focal', 'Composition'), ('store', 'State'), ('accent', 'Creates'), ('open', 'Reads')]))
     return dict(slug='secretstore-then-and-now', eyebrow='Crossplane · 01 of 04 · Where it started',
       title='The SecretStore I planned, and the one I built',
-      desc='Two panels. Left, drawn dashed because it was never built: a proof of concept in which a SecretStore claim is composed into an Azure Key Vault and an External Secrets SecretStore pointing at it, which syncs app secrets. Right, what Airframe runs today: a SecretStore XR with app, cluster and environment, composed by a go-templating pipeline into provider-infisical resources (a project and an identity in Infisical, the project never deleted with the XR) and a provider-kubernetes Object that wraps a ClusterSecretStore for External Secrets, which pulls values from Infisical.',
+      desc='Two panels. Left, drawn dashed because it was never built: a proof of concept in which a SecretStore XR is composed into an Azure Key Vault and an External Secrets SecretStore pointing at it, which syncs app secrets. Right, what Airframe runs today: a SecretStore XR with app, cluster and environment, composed by a go-templating pipeline into provider-infisical resources (a project and an identity in Infisical, the project never deleted with the XR) and a provider-kubernetes Object that wraps a ClusterSecretStore for External Secrets, which pulls values from Infisical.',
       lede='In my previous role I wanted to try Crossplane on one small, well-understood resource: a secret store. That proof of concept never happened. In Hangar the same idea became Airframe\'s first real cross-cluster API.',
       body=''.join(b), W=1000, H=644, y0=76,
-      cards=[('Planned, never built', '', P('One claim, two outputs: an Azure Key Vault and an External Secrets SecretStore pointing at it. Small enough to learn on, useful enough to matter.')),
+      cards=[('Planned, never built', '', P('One XR, two outputs: an Azure Key Vault and an External Secrets SecretStore pointing at it. Small enough to learn on, useful enough to matter.')),
              ('Built', 'accent', UL(['First live on 2026-08-17 behind a small operator of my own.', 'Since September, provider-infisical (my own Upjet provider) does the provisioning, and the operator is retired.', 'A per-environment store narrows a secret to exactly one namespace.'])),
              ('What it taught me', 'link', P('A namespaced XR can\'t compose a cluster-scoped resource in Crossplane v2, so the ClusterSecretStore rides inside a provider-kubernetes Object. And a secret store must never be deleted just because its request was.'))])
 

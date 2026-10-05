@@ -5,8 +5,8 @@ import { products } from '../data/products';
 import { u } from '../lib/url';
 
 const rows = [
-  ['Defined by', 'An Airframe claim (app stack, environments, components) in git', 'An agent definition, schema-validated, in git'],
-  ['Created by', 'A reviewed commit, usually opened from Tower', 'A reviewed commit for the definition; a scoped claim for each run'],
+  ['Defined by', 'An Airframe XR (app stack, environments, components) in git', 'An agent definition, schema-validated, in git'],
+  ['Created by', 'A reviewed commit, usually opened from Tower', 'A reviewed commit for the definition; a scoped XR, created directly, for each run'],
   ['Runs on', 'Its own namespaces per environment, on every cluster it is promoted to', 'A sandbox in one reserved namespace, on dev clusters only'],
   ['Identity', 'Kubernetes service accounts, verified by TokenReview', 'The same, plus a scoped token per call from Clearance'],
   ['Changes the platform by', 'Pull requests to its GitOps repo, synced by ArgoCD', 'Pull requests, through the same gates plus two for agents'],

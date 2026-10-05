@@ -15,7 +15,7 @@ Names, checked against the Hangar Brand System on 2026-09-26. **Autopilot** (a s
 | Real adapters (GitHub, ArgoCD, Kubernetes, Backstage), authentication, HTTP transports, the model proxy forwarder, the CI gates, the interceptor route | **Proposal** |
 
 Three design decisions shaped it, each made with the project owner:
-1. **Durable changes are git commits; ephemeral runs are claims to Crossplane** (section 1).
+1. **Durable changes are git commits; ephemeral runs are direct requests to Crossplane** (section 1).
 2. **It must run any AI agent workload**, not only deploy applications (section 3).
 3. **Backend infrastructure is managed the Hangar way, with Modelplane for self-hosted models** (section 6).
 
@@ -27,13 +27,15 @@ It is wrong for a run itself. Committing every session to git would be slow, rat
 
 So:
 
-> **Durable changes are git commits. Ephemeral runs are declarative claims to Crossplane, an already-privileged and already-audited control plane. The requester never touches the underlying resources.**
+> **Durable changes are git commits. Ephemeral runs are direct requests to Crossplane: a namespaced XR, created through the Kubernetes API instead of through git, and reconciled by an already-privileged and already-audited control plane. The requester never touches the underlying resources.**
+
+(Crossplane v2 has no Claims; an `AgentRun` is a namespaced XR like every other Airframe API. What makes it ephemeral is how it is created and when it dies, not its kind.)
 
 That is still your Tower policy (delegate to a system that already audits itself), and still dev-only.
 
 ### The ephemerality test
 
-A thing may be created as a claim instead of a commit only if **all five** hold. If any fails, it goes through git.
+A thing may be created directly through the API instead of as a commit only if **all five** hold. If any fails, it goes through git.
 
 1. It has a **hard deadline** that needs no Clearance to enforce.
 2. It **holds no durable state** and reaches the durable plane only as a PR.
@@ -65,8 +67,8 @@ Agent definitions and policy, profiles and their ceilings, app, gitops and tenan
 
 | Principle (source) | Consequence |
 |---|---|
-| Durable writes are commits; ephemeral runs are claims (revised, section 1) | Two planes. The ephemeral plane can only narrow the durable one and reaches it only as a PR. |
-| Delegated over interactive; lower-only for write RBAC; no pod exec (Tower write-action policy) | The imperative actions are lower-env ArgoCD sync and pipeline re-run, plus AgentRun claims. Exec is a tripwire. |
+| Durable writes are commits; ephemeral runs are direct requests (revised, section 1) | Two planes. The ephemeral plane can only narrow the durable one and reaches it only as a PR. |
+| Delegated over interactive; lower-only for write RBAC; no pod exec (Tower write-action policy) | The imperative actions are lower-env ArgoCD sync and pipeline re-run, plus creating `AgentRun` XRs. Exec is a tripwire. |
 | Never-persisted credentials (token-review-interceptor, ADR-0002) | Repo-scoped GitHub tokens minted per call. Runs get audience-bound projected tokens, never keys. Modelplane's per-caller keys are avoided (section 6). |
 | Isolation comes from the TokenReview answer, not a request claim (ADR-0002) | A session's principal is checked server-side; a forged session id is denied (R001, tested). |
 | No cluster holds another cluster's credentials; per-cluster repos; lower/upper split (gitops-strategy, ADR-0005) | The write path and runs exist on dev only. The Modelplane hub is a bounded exception (section 6). |
@@ -81,7 +83,7 @@ Agent definitions and policy, profiles and their ceilings, app, gitops and tenan
 
 **AgentDefinition (durable, git)** says what an agent is: kind, identity, tier ceiling, tools, repos, models, network reach, compute class, limits, image (by digest), framework, sandbox class, sidecars, triggers. Today it is reviewed YAML validated by `schemas/agent-definition.schema.json`. Later it becomes an `Agent` XRD, so Tower generates a *New Agent* form like every other XRD (Phase C).
 
-**AgentRun (ephemeral, claim)** is one bounded instance: the definition narrowed by a claim, with a deadline.
+**AgentRun (ephemeral, namespaced XR)** is one bounded instance: the definition narrowed by its requested limits, with a deadline.
 
 | Shape | Trigger | Durable part | Ephemeral part |
 |---|---|---|---|
@@ -134,7 +136,7 @@ Environment: `HANGAR_RUN_ID`, `_TASK_ID`, `_SESSION_ID`, `_AGENT`, `_EXPIRES_AT`
 | A new **Autopilot** Backstage plugin, standalone-installable beside Tower | Fleet-wide console: every run across every agent, budgets, the breaker, Preflight results, audit | C | Proposal |
 | Airframe A+ program (contract bundle, `airframe validate`, ownership split, `airframe.*` tools) | see [airframe-ai-friendly.md](airframe-ai-friendly.md); Autopilot's planner and tools depend on it | M0 to M3 | Proposal; planner **Built** |
 | Trigger runner and trigger bridge | interval and broker-event agents | M4 | Logic **Built**; runners Proposal |
-| Real backends and auth adapters | GitHub via the interceptor, ArgoCD, Kubernetes claims, Backstage MCP federation, Tower and TokenReview auth | A to B | Proposal (interfaces and fakes **Built**) |
+| Real backends and auth adapters | GitHub via the interceptor, ArgoCD, the Kubernetes API for `AgentRun` XRs, Backstage MCP federation, Tower and TokenReview auth | A to B | Proposal (interfaces and fakes **Built**) |
 
 ## 5. Concrete artifacts
 
@@ -164,7 +166,7 @@ Nineteen rules, first match wins, each with a stable id and a fix hint that goes
 | R003 | unknown tool |
 | R004 / R005 | session expired / breaker tripped |
 | R006 | tool not in the session's tool set |
-| R007 | tier above the ceiling (a propose-only tool needs T1, not more), or a claim that widens |
+| R007 | tier above the ceiling (a propose-only tool needs T1, not more), or requested limits that widen |
 | R008 | required arguments missing |
 | R009 / R010 / R011 | tool-call, GitHub-call or open-PR budget exhausted |
 | R012 | a lower-only tool aimed at an upper environment |
@@ -180,7 +182,7 @@ Tools, by tier: **T0** `catalog.read`, `metrics.query`, `logs.query`, `argo.app.
 
 ### 5.4 Narrow-only, and teams
 
-A claim or a child may only narrow what it inherits: tier, time, each budget, tools, models, network reach, compute. A child starts from what its parent has *left* and reserves its budget from the parent. There is a property test: in 200 random sequences of spawn, spend and close, no session overspends and no tree exceeds what the root was granted. Depth is capped at 3.
+Requested limits, or a child run, may only narrow what they inherit: tier, time, each budget, tools, models, network reach, compute. A child starts from what its parent has *left* and reserves its budget from the parent. There is a property test: in 200 random sequences of spawn, spend and close, no session overspends and no tree exceeds what the root was granted. Depth is capped at 3.
 
 ### 5.5 Tokens, ArgoCD, audit
 
@@ -198,7 +200,7 @@ A case names deterministic verifiers, a path scope, and denial and token budgets
 
 | Backend | Managed by | Plane | Exists? |
 |---|---|---|---|
-| Agent runs | `AgentRun` claim, `function-agentrun` | ephemeral | Draft |
+| Agent runs | `AgentRun` XR, `function-agentrun` | ephemeral | Draft |
 | Clearance and the model proxy | `InfraService` (`gitops-infra-clearance`) | durable | pattern **Built** (`skyport-broker`) |
 | State: Postgres, Redis, RabbitMQ | Airframe components, `attach` mode per run | durable | **Built** (CloudNativePG 1.30.1, RabbitMQ operators) |
 | Object storage for artifacts | MinIO (already in the observability stack) | durable | **Built** |

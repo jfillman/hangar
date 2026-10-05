@@ -7,14 +7,14 @@ def d1():
     b = []
     b.append(zone(568,100,232,308,'ephemeral namespace · per session'))
     b += [path([(144,224),(200,224)]), hlab(144,200,224,'TASK'),
-          path([(328,224),(384,224)]), hlab(328,384,224,'CLAIM'),
+          path([(328,224),(384,224)]), hlab(328,384,224,'API'),
           path([(512,224),(568,224)]), hlab(512,568,224,'CREATES'),
           path([(512,360),(568,360)],dashed=True), hlab(512,568,360,'DELETES'),
           path([(776,172),(840,172)],'link'), hlab(806,834,172,'MCP',LINK),
           path([(908,204),(908,236)],'link'), vlab(908,204,236,'EVERY CALL')]
     b += [node(24,196,120,56,'Agent request','task · repo · scope','input'),
           node(200,196,128,56,'Agent broker','authz · quota · TTL'),
-          node(384,196,128,56,'AgentSession XR','Crossplane claim'),
+          node(384,196,128,56,'AgentSession','namespaced XR'),
           node(384,332,128,56,'TTL reaper','deletes namespace','optional'),
           node(592,140,184,64,'Sandbox pod','gVisor · read-only rootfs','focal'),
           node(592,236,184,64,'Session identity','projected SA · 30 min TTL','security'),
@@ -25,12 +25,12 @@ def d1():
     b.append(legend(472,[('focal','Isolation unit'),('security','Identity'),('store','Policy · log'),('optional','Lifecycle'),('link','Governed call'),('muted','Provisioning')]))
     return dict(slug='agent-substrate', eyebrow='Architecture · 01 of 11 · Agent substrate',
       title='Agent execution substrate: sandboxed, scoped, disposable',
-      desc='Architecture showing an agent task becoming a per-session Crossplane claim that provisions an ephemeral namespace with a sandbox pod, a short-lived identity and default-deny egress, whose only route out is the MCP gateway, with a reaper deleting the namespace on TTL expiry.',
-      lede='Every agent task gets its own disposable environment. The broker decides scope, the claim creates it, and the only way out of the sandbox is the governed gateway.',
+      desc='Architecture showing an agent task becoming a per-session namespaced Crossplane XR that provisions an ephemeral namespace with a sandbox pod, a short-lived identity and default-deny egress, whose only route out is the MCP gateway, with a reaper deleting the namespace on TTL expiry.',
+      lede='Every agent task gets its own disposable environment. The broker decides scope, the XR creates it, and the only way out of the sandbox is the governed gateway.',
       body=''.join(b), W=1000, H=512, y0=76,
       cards=[('Problem','', P('Agents need somewhere to work that is sandboxed, reproducible, permissioned and disposable.')),
              ('Design choices','accent', UL(['Identity per session, not per agent type: 30 minute TTL, scope derived from the task.','No route out except the gateway; no standing secrets inside the sandbox.','Namespace carries a TTL and finalizer; rebuildable from an image digest plus the task spec.'])),
-             ('Evidence and gap','link', P('Built in Hangar: the claim-a-thing, get-a-governed-environment pattern (Crossplane XRs) and the Tower policy of no standing pod exec. Proposal only: gVisor or Kata runtime and per-session identity minting.'))])
+             ('Evidence and gap','link', P('Built in Hangar: the request-a-thing, get-a-governed-environment pattern (Crossplane XRs) and the Tower policy of no standing pod exec. Proposal only: gVisor or Kata runtime and per-session identity minting.'))])
 
 def d2():
     b = []

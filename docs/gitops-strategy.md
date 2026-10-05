@@ -54,7 +54,7 @@ Six repo shapes, each with one owner:
 
 | Repo | Owner | Contains |
 |---|---|---|
-| `<app-name>` | app owner | source code, `cicd.yaml`, a `platform/` self-service folder — developer-authored Crossplane Claims, plus lower-env definitions (§10) |
+| `<app-name>` | app owner | source code, `cicd.yaml`, a `platform/` self-service folder — developer-authored Crossplane XRs, plus lower-env definitions (§10) |
 | `gitops-<app-name>` | app owner (writes only via CI-opened, reviewed PRs) | rendered/patched deploy config for that app's **upper environments only** — see §10 |
 | `gitops-cluster-<cluster-name>` | cluster admin | one cluster's static declarative config, organized into logical groups (§3) |
 | `gitops-cluster-<cluster-name>-tenants` | cluster admin (lighter review — see below) | which apps are onboarded to *this* cluster — the churny per-app-onboarding half, split out of the repo above |
@@ -290,7 +290,7 @@ directory, not restructuring anything.
 
 **One Application, one namespace, bundled supporting components (requirement 5)**: the
 shared chart's templates render everything for one app+env — the app's own Deployment/
-Service, and any Crossplane Claims for components the app owns the lifecycle of (a
+Service, and any Crossplane XRs for components the app owns the lifecycle of (a
 cache, an auth sidecar's config) — as part of the *same* Helm release, into the *same*
 `app-<name>-<env>` namespace (naming convention unchanged from `platform-cicd`'s
 `docs/naming-conventions.md`). Nothing here creates a second `Application` per component;
@@ -545,8 +545,8 @@ mistaken for, or escalated into, a real environment."
 Two follow-on questions surfaced by this split belong to the XRD/Composition design, not
 this doc:
 
-- Whether a lower-env Claim (e.g. "give me a database") should resolve to a cheaper/
-  lighter Composition than the same Claim kind would in an upper env — likely yes, but
+- Whether a lower-env XR (e.g. "give me a database") should resolve to a cheaper/
+  lighter Composition than the same XR kind would in an upper env — likely yes, but
   that's a Composition-authoring decision, not a GitOps-topology one.
 - TTL/cleanup for a developer-triggered ad hoc env that isn't tied to a PR's lifecycle.
   `platform-cicd` already has a marker for this class of problem

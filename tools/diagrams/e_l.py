@@ -14,7 +14,7 @@ def o_change():
     f.arrow([(536, 240), (612, 240)], 'acc'); A(hlab(536, 612, 240, 'webhook', 'acc'))
     f.arrow([(612, 268), (536, 268)], dashed=True); A(hlab(536, 612, 268, 'release PR', below=True))
     f.arrow([(472, 288), (472, 316), (896, 316), (896, 284)], 'acc'); A(label(820, 298, 'pull', 'acc'))
-    f.arrow([(896, 220), (896, 164)]); A(vlab(896, 164, 220, 'claim'))
+    f.arrow([(896, 220), (896, 164)]); A(vlab(896, 164, 220, 'XR'))
     f.arrow([(828, 132), (748, 132)]); A(hlab(748, 828, 132, 'composes'))
     f.arrow([(612, 120), (568, 120), (568, 44), (256, 44), (256, 96)], 'lnk', dashed=True)
     # nodes, in reading order
@@ -31,7 +31,7 @@ def o_change():
            node(612, 220, 136, 64, 'Glidepath', 'build · sign', tag='delivery', href='/cicd/', icon='glidepath') + badge(748, 220, 3)))
     A(item(4, 'Step 4: each cluster\'s ArgoCD pulls the merged change',
            node(828, 220, 136, 64, 'ArgoCD', 'one per cluster · pulls', 'external', href='/stack/') + badge(964, 220, 4)))
-    A(item(5, 'Step 5: Airframe turns the claim into real resources',
+    A(item(5, 'Step 5: Airframe turns the XR into real resources',
            node(828, 100, 136, 64, 'Airframe', 'Crossplane', tag='control plane', href='/docs/airframe/', icon='airframe') + badge(964, 100, 5)))
     A(item(5, 'Step 5: the Skyport apps run',
            node(612, 100, 136, 64, 'Skyport apps', 'flight-api · baggage-api', href='/run/')))
@@ -77,14 +77,14 @@ LAYERS = [  # top to bottom
     ('ai', 'L4', 'AI workloads', 'Autopilot', 'Clearance · CEL policy · Preflight · AgentRun',
      'Same road, less authority, every call on record.', '/autopilot/', 'backend', 'early',
      'An agent is just another workload, with less authority by default and every call on the record.',
-     [('Clearance', 'built'), ('CEL policy', 'built'), ('Preflight', 'built'), ('MCP', 'proposed'), ('AgentRun claim', 'proposed')]),
+     [('Clearance', 'built'), ('CEL policy', 'built'), ('Preflight', 'built'), ('MCP', 'proposed'), ('AgentRun XR', 'proposed')]),
     ('del', 'L3', 'Delivery', 'Glidepath', 'Tekton · Chains · Sigstore · ArgoCD · Rollouts',
      'One small file in; a signed, verified release out.', '/cicd/', 'backend', None,
      'One small file for developers; a fixed, platform-owned path from a merged commit to a verified release. ArgoCD is the only thing that writes to a cluster, and each cluster has its own.',
      [('Tekton', 'built'), ('Pipelines-as-Code', 'built'), ('CDEvents broker', 'built'), ('Tekton Chains', 'built'), ('Conforma', 'built'), ('ArgoCD', 'built'), ('Argo Rollouts', 'built')]),
     ('cp', 'L2', 'Control plane', 'Airframe', 'Crossplane · XRDs · Functions · CloudNativePG',
      'The platform is an API that keeps itself true.', '/docs/airframe/', 'focal', None,
-     'The platform is an API. A claim says what you want; reconciliation keeps it true afterwards.',
+     'The platform is an API. An XR says what you want; reconciliation keeps it true afterwards.',
      [('Crossplane', 'built'), ('Airframe XRDs', 'built'), ('Composition Functions', 'built'), ('provider-github', 'built'), ('CloudNativePG', 'built')]),
     ('gr', 'L1', 'Ground', 'Apron', 'Kubernetes · Calico · Gateway API · cert-manager',
      'Every cluster starts from the same template.', '/docs/apron/', 'backend', None,
@@ -218,8 +218,8 @@ def o_clusters():
     A(node(328, 184, 128, 72, 'Skyport apps', 'dev · test', href='/run/'))
     A(node(544, 184, 128, 72, 'Tower', 'Backstage', href='/tower/', icon='tower'))
     A(node(696, 184, 256, 72, 'Skyport apps', 'flight-api · baggage-api · canary', href='/run/'))
-    A(node(48, 320, 408, 56, 'ArgoCD + Airframe', 'pulls from git · composes claims', href='/docs/airframe/', icon='airframe'))
-    A(node(544, 320, 408, 56, 'ArgoCD + Airframe', 'pulls from git · composes claims', href='/docs/airframe/', icon='airframe'))
+    A(node(48, 320, 408, 56, 'ArgoCD + Airframe', 'pulls from git · composes XRs', href='/docs/airframe/', icon='airframe'))
+    A(node(544, 320, 408, 56, 'ArgoCD + Airframe', 'pulls from git · composes XRs', href='/docs/airframe/', icon='airframe'))
     A(item(1, 'No cluster holds credentials for another; each one pulls',
            '<text class="callout" x="500" y="420" text-anchor="middle">No cluster holds credentials for another. Each one pulls.</text>'))
     A('<g data-motion-item data-step="1" data-motion-decorative aria-hidden="true" focusable="false">'
@@ -272,7 +272,7 @@ STAGES = [  # slug, name, sub, short (from web/src/data/sdlc.ts), spoke
     ('improve', 'Measure and improve', 'DORA · scorecard', 'Scorecards, evals and written-down gaps', True),
 ]
 LONG = {
-    'design': 'Every decision that shapes the platform is written down as an ADR, and every service starts as a contract (an Airframe claim) before it is code.',
+    'design': 'Every decision that shapes the platform is written down as an ADR, and every service starts as a contract (an Airframe XR) before it is code.',
     'onboard': 'A new service is one form in Tower. It becomes a pull request with a single cicd.yaml; nobody hand-writes pipelines.',
     'build': 'Glidepath builds on Tekton with rootless Kaniko, pinned task catalogs, and real tests through Testkube.',
     'secure': 'Keyless signing, provenance that says what the build really did, and policy that checks both before release.',
@@ -408,7 +408,7 @@ def o_family():
     f.arrow([(152, 96), (200, 96)])
     f.arrow([(588, 144), (588, 184)], 'acc'); A(vlab(588, 144, 184, 'pull requests', 'acc'))
     f.arrow([(320, 224), (320, 264)], 'acc'); A(vlab(320, 224, 264, 'webhook', 'acc'))
-    f.arrow([(588, 224), (588, 264)], 'acc'); A(vlab(588, 224, 264, 'claims', 'acc'))
+    f.arrow([(588, 224), (588, 264)], 'acc'); A(vlab(588, 224, 264, 'XRs', 'acc'))
     f.arrow([(856, 224), (856, 264)]); A(vlab(856, 224, 264, 'agent defs'))
     f.arrow([(200, 312), (164, 312), (164, 128), (200, 128)], 'lnk', dashed=True); A(vlab(164, 128, 312, 'events', 'link', side='l'))
     A(item(1, 'Step 1: Apron, the ground every cluster starts from',

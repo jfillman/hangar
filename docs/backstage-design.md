@@ -215,7 +215,7 @@ both:**
   NodePort/host-IP reachability problem
   exactly as this doc originally flagged.
 - **Crossplane plugin** (`backstage-community/plugin-crossplane`) — shows live
-  XR/Claim status and its own resource graph on a catalog entity page. This is a real,
+  XR status and its own resource graph on a catalog entity page. This is a real,
   partial answer to `service-catalog-design.md` Goal 8 ("service catalog generated
   from Crossplane's CRDs") and to the `dependsOn`/`dependencyOf`-from-`componentRef`
   gap that doc flagged as "still not built" — worth re-checking that doc's own status
@@ -425,7 +425,7 @@ cluster."
 Root cause, confirmed by reading `kubernetes-ingestor`'s `EntityProvider.cjs.js`
 directly: it ingests **two different Kubernetes resources into the same catalog
 entity ref** - the workload `Rollout` (tracked by `<app>-dev`/`-prod`) and the
-`NodeJSApplication` XR claim (tracked by `<app>-xr-requests`) both become
+`NodeJSApplication` XR (tracked by `<app>-xr-requests`) both become
 `component:default/checkout-api`, and whichever resource this ingestion pass
 processes last silently overwrites the other's annotation. Even the "correct" single
 app-name would still only show one Application per cluster - `extractArgoAppName()`

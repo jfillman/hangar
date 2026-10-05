@@ -5,7 +5,7 @@ Answers to the open decisions in [roadmap.md](roadmap.md), recorded 2026-09-26.
 | Id | Decision | Status |
 |---|---|---|
 | D1 | Sign agent commits with a self-hosted Fulcio. A self-signed root CA for it is acceptable and to be evaluated. | Decided |
-| D2 | `AgentRun` is a Crossplane XR (namespaced claim, composed by `function-agentrun`). | Decided |
+| D2 | `AgentRun` is a namespaced Crossplane v2 XR (no Claim, composed by `function-agentrun`). | Decided |
 | D3 | Clearance is a standalone component (its own deployment, one Kubernetes permission). | Decided |
 | D4 | Agents get their own GitHub App, separate from the platform's. | Decided |
 | D5 | Audit object lock: take the recommendation in roadmap.md. | Decided |

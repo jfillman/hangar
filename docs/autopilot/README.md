@@ -4,7 +4,7 @@ Autopilot is Hangar's sixth product: it runs any AI agent workload, bounded and 
 the Airframe A+ program that makes the service catalog operable by agents.
 
 > **One idea:** an agent is one more author of git commits. **Durable changes are commits. Ephemeral
-> runs are claims to Crossplane.** Everything else follows from keeping those two planes apart.
+> runs are direct requests to Crossplane.** Everything else follows from keeping those two planes apart.
 
 **Brand:** the mark is Option A, Hold, chosen 2026-09-26; the five options considered are in `docs/brand/autopilot-logo-options.html` in the repo (open the file in a browser; TechDocs cannot link to standalone HTML), and the files are in [`brand/marks/`](../../brand/marks/).
 

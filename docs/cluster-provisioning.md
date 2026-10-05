@@ -170,7 +170,7 @@ but a separate, deliberately-not-automated action (real cluster creation).
 
 ## Cluster API on Crossplane — recommendation, not built
 
-Raised alongside this work as a possible additional cluster-onboarding path (Claim a
+Raised alongside this work as a possible additional cluster-onboarding path (Request a
 cluster, get a real Kubernetes API back). Checked `crossplane-contrib/provider-capi`
 live: real, but early-stage (20 GitHub stars, 13 commits total, 2 open issues, minimal
 recent activity) — not something to build real infrastructure on yet.
@@ -181,7 +181,7 @@ If/when this becomes a real task, prefer wrapping upstream Cluster API CRDs
 — the same mechanism this catalog already uses for `SLO`/Sloth (native resources, no
 bespoke thin provider in between) — rather than depending on `provider-capi`'s current
 maturity level. A `KubernetesCluster` XRD built this way would be a natural
-**producer** for this doc's own template+script: Claim a cluster, the Composition
+**producer** for this doc's own template+script: request a cluster, the Composition
 stands up CAPI resources, and once the workload cluster's API is reachable,
 `hack/customize-cluster.sh` + the bootstrap sequence take over. Worth designing as its
 own follow-on task now that there's a real bootstrap target to hand off to — nothing
