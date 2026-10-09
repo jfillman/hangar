@@ -141,12 +141,17 @@ const gain = latest.overall - first.overall;
         <p>Measured, not felt. Every check is automated, so A+ is something the tool prints, not something I claim. Every run that moves the number is committed, so the history on this page is the tool's own output.</p>
       </div>
       <div class="card">
-        <p class="eyebrow">A correction to the tool</p>
+        <p class="eyebrow">Corrections to the tool</p>
         <p>
-          The first run on {longDate(latest.date)} said 58. The tool was looking for component contracts and for Clearance where
+          The first run on {longDate('2026-09-29')} said 58. The tool was looking for component contracts and for Clearance where
           they were first planned to live, not where M1 and M2 put them, and two checks were hard-coded to zero. I fixed
-          the paths and turned those two checks into real ones; the fix is in the same commit as the score. Snapshots
-          before it were not re-scored.
+          the paths and turned those two checks into real ones.
+        </p>
+        <p>
+          The first run on {longDate('2026-10-09')} said 82.2, because the app repos had renamed <code>platform/</code> to
+          <code>glidepath/</code> and the release-file layering had moved into Glidepath, so the tool lost both. The
+          release-file split looked undone when it wasn't. I pointed the tool at the new paths. Each fix is in the same
+          commit as its score, and snapshots before it were not re-scored.
         </p>
       </div>
       <div class="card">

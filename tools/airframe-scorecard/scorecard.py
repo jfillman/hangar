@@ -179,7 +179,9 @@ def collect(tech: Path) -> dict:
     m["helm_lint_ok"] = lint.returncode == 0
 
     # base layer / ownership split in the ApplicationSets
-    appsets = glob.glob(str(tech / "gitops-cluster-dev" / "02-argocd-apps" / "**" / "*.yaml"), recursive=True)
+    # The lower-envs ApplicationSet moved into Glidepath's glidepath-app chart (ADR-0023, Oct 7, 2026).
+    appsets = glob.glob(str(tech / "gitops-cluster-dev" / "02-argocd-apps" / "**" / "*.yaml"), recursive=True) + \
+        glob.glob(str(tech / "glidepath" / "charts" / "glidepath-app" / "templates" / "argocd" / "*.yaml"))
     text = "\n".join(Path(p).read_text() for p in appsets)
     m["base_layer"] = bool(re.search(r"valueFiles:[\s\S]{0,400}base", text))
     m["release_file_split"] = "values.release.yaml" in text or ".release.yaml" in text
@@ -187,7 +189,10 @@ def collect(tech: Path) -> dict:
     # live values files
     upper = [p for p in glob.glob(str(tech / "gitops-*" / "*" / "*" / "values.yaml"))
              if "appName" in (load_yaml(p) or {})]
-    lower = glob.glob(str(tech / "*" / "platform" / "envs" / "*.yaml"))
+    # App repos renamed platform/ to glidepath/ (Oct 6, 2026). <env>.release.yaml is the machine-owned
+    # overlay layered over <env>.yaml, not a values file of its own, so it is not a live file here.
+    lower = [p for d in ("platform", "glidepath") for p in glob.glob(str(tech / "*" / d / "envs" / "*.yaml"))
+             if not p.endswith(".release.yaml")]
     m["live_upper"], m["live_lower"] = len(upper), len(lower)
 
     def keys_mixed_upper(d):
