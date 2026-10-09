@@ -31,6 +31,11 @@ const labels: Record<string, { date: string; label: string; note: string }> = {
     label: 'M1 and M2',
     note: 'A strict schema, component outputs, a contract bundle, the release-file split, an ownership gate, field-level agent scope and replayable walkthroughs.',
   },
+  'baseline-2026-10-09': {
+    date: '2026-10-09',
+    label: 'Review fixes',
+    note: 'Fixes from the architecture review: AGENTS.md on every component, an owner and a risk class on every values field, status conditions and reason codes on 17 of 20 XRDs, and every XRD described and in the catalog. Past the M2 target of 75 for the first time.',
+  },
 };
 
 export type Snapshot = Raw & { id: string; date: string; label: string; note: string; passed: number };
@@ -61,28 +66,28 @@ export const aPlus = 97;
 // snapshot's own metrics; update these when a new snapshot moves a dimension.
 export const findings: Record<string, { found: string; next: string }> = {
   '1 Discoverability': {
-    found: 'AGENTS.md, llms.txt and a generated contract bundle exist; 6 of 15 XRDs are in the catalog',
-    next: 'AGENTS.md on every component',
+    found: 'AGENTS.md on all 20 components; every XRD is in the catalog or opts out with a reason',
+    next: 'held; every new component ships its AGENTS.md',
   },
   '2 Schema precision': {
-    found: '86% of schema nodes described, 46 of 76 objects strict; typos now fail',
-    next: '95% described, every object strict, examples',
+    found: 'every schema node and XRD field is described; 46 of 82 objects strict; 8 of 20 XRDs carry a CEL rule',
+    next: 'every object strict, tighter leaf fields, examples',
   },
   '3 Component contracts': {
-    found: '5 components declare outputs and verify checks; 33 of 45 env entries still hard-code a name',
-    next: 'fromComponent in every live env entry, SecretStore outputs',
+    found: 'every component declares outputs and verify checks; 33 of 47 env entries still hard-code a name',
+    next: 'fromComponent in every live env entry',
   },
   '4 Pre-merge validation': {
-    found: 'airframe validate is a required check, with 7 dead-end rules',
-    next: 'more chart guards with actionable messages',
+    found: 'airframe validate is a required check, with 11 dead-end rules and 18 chart guards',
+    next: 'the last seven chart guards, with actionable messages',
   },
   '5 Write safety': {
-    found: 'no live file mixes owners; base layer and release file are real',
-    next: 'an owner and a risk class on every field',
+    found: 'every values field carries an owner and a risk class; no live file mixes owners',
+    next: 'held; keep machine-owned data in the release file',
   },
   '6 Observe and verify': {
-    found: '5 components declare a closed set of reason codes and verify checks',
-    next: 'reason codes on every XRD, a describe tool',
+    found: '17 of 20 XRDs declare status conditions and a closed set of reason codes',
+    next: 'the last three XRDs, a describe tool',
   },
   '7 Docs for agents': {
     found: 'all three quickstarts replay as live walkthroughs, green',
@@ -93,11 +98,11 @@ export const findings: Record<string, { found: string; next: string }> = {
     next: 'AppSpec, the planner and airframe.* tools (M3)',
   },
   '9 Safety integration': {
-    found: 'field-level agent scope is built into Clearance; no risk classes yet',
-    next: 'risk-classed fields, escape hatches denied by default',
+    found: 'every values field is risk-classed and field-level agent scope is built into Clearance',
+    next: 'escape hatches (extraManifests) denied by default',
   },
   '10 Hygiene and determinism': {
-    found: 'helm lint, 22 chart tests and chart CI; every live file renders',
+    found: 'helm lint, 30 chart tests and chart CI; all 21 live values files render',
     next: 'held; keep the fleet rendering clean',
   },
 };
