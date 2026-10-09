@@ -52,7 +52,9 @@ def walk_schema(node, fn):
 
 
 def frac(a, b):
-    return (a / b) if b else 0.0
+    # Clamped: a count can exceed its target (20 output sidecars against "of 6"), and an unclamped
+    # ratio scored "Component contracts" at 146.5/100 (2026-10-09).
+    return min(1.0, a / b) if b else 0.0
 
 
 def helm_ok(chart, values: dict) -> bool:
@@ -120,7 +122,11 @@ def collect(tech: Path) -> dict:
         x["count"] += 1
         kinds.append(d["spec"]["names"]["kind"])
         ann = d["metadata"].get("annotations", {})
-        x["catalog"] += ann.get("terasky.backstage.io/add-to-catalog") == "true"
+        # A kind that is never requested on its own (chart-rendered components, composed children) should
+        # NOT generate a Backstage template; an explicit "false" with a stated reason is the right state
+        # for it, not a gap.
+        x["catalog"] += ann.get("terasky.backstage.io/add-to-catalog") == "true" or (
+            ann.get("terasky.backstage.io/add-to-catalog") == "false" and bool(ann.get("hangar.io/catalog-exclusion")))
         x["summary"] += "hangar.io/agent-summary" in ann
         sch = d["spec"]["versions"][0]["schema"]["openAPIV3Schema"]
 
@@ -277,7 +283,7 @@ def score(m: dict) -> dict:
 
     dim("1 Discoverability", [
         (2, 1.0, "human docs and quickstarts exist"),
-        (2, frac(x["catalog"], x["count"]), "XRDs generate the Backstage catalog"),
+        (2, frac(x["catalog"], x["count"]), "XRDs generate the Backstage catalog (or opt out with a reason)"),
         (2, float(m["agents_md"]), "AGENTS.md at the repo root"),
         (1, frac(m["agents_md_components"], x["count"]), "AGENTS.md per component"),
         (3, float(m["contract_bundle"]), "machine-readable contract bundle"),
