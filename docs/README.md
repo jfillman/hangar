@@ -108,9 +108,16 @@ the on-ramp, not a duplicate.
 
 ## Tower — the Backstage UI
 
-Tower has no dedicated `docs/user/` or `docs/admin/` split yet (see
-[Open items](#open-items)) — its documentation today is the illustrated set
-below, plus `backstage-design.md` above.
+Tower's own documentation lives in the [tower repo's `docs/`](https://github.com/jfillman/tower/tree/main/docs)
+(also published through TechDocs). Start with these:
+
+| Doc | Read this when... |
+|---|---|
+| [Deployments](https://github.com/jfillman/tower/blob/main/docs/deployments.md) | You want to know what the Deployments tab tells you: the plain-language troubleshooting banner and its rules, the six-step delivery path, and every control explained (Argo CD sync, force sync and terminate, the Rollout actions, Roll back). |
+| [Security model](https://github.com/jfillman/tower/blob/main/docs/security.md) | You want to know who may do what from Tower, and the guardrails behind each action: owners and admins, no Kubernetes write permissions, the Argo CD account's scope, audit, what Tower never does. |
+| [Environments](https://github.com/jfillman/tower/blob/main/docs/environments.md) | You're adding, configuring or removing an environment, or editing its values. |
+
+The illustrated design set below records how the tabs came to be:
 
 | Doc | Read this when... |
 |---|---|
@@ -154,11 +161,11 @@ same artifact list. Not linked from Tower.
   against real source (`xrds/`, `compositions/`, the actual `docs/` trees); the
   Tower and brand sections are placed by title alone — flag anything
   miscategorized or stale.
-- **Tower/backstage and Apron have no `catalog-info.yaml`/`mkdocs.yml` yet** —
-  their docs don't appear in TechDocs until that's added. Airframe and Glidepath
-  do (2026-09-21).
-- **Tower has no `docs/user/`/`docs/admin/` split** — worth doing once its
-  illustrated mockups above settle into an as-built state, the same distinction
-  Airframe and Glidepath already draw.
+- **Backstage itself and Apron have no `catalog-info.yaml`/`mkdocs.yml` yet** —
+  their docs don't appear in TechDocs until that's added. Airframe, Glidepath
+  (2026-09-21) and Tower do.
+- **Tower has no `docs/user/`/`docs/admin/` split** — its as-built docs
+  (Deployments, Security model, Environments, ...) are one flat set; worth
+  splitting the same way Airframe and Glidepath do once it grows.
 - **Live-status and incident write-ups for the dev cluster** are one-off
   artifacts, not curated docs — deliberately left out of this index.
