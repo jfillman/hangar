@@ -217,8 +217,13 @@ kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What move
 2. **kiac-dev enforces NetworkPolicy.** It runs Cilium 1.20 with Kubernetes NetworkPolicy on; a scratch test showed
    ingress and egress deny-all enforced and a pod-selector allow restoring traffic. The AP-A1 canary is expected to
    pass there; the earlier "fails by design" premise was never tested.
-3. *Open:* review the provider-kubernetes ClusterRole drafted for U8 (namespace create/delete cluster-wide) as a
-   privilege grant before AP-A3 ships it.
+3. **The U8 ClusterRole is approved** (`autopilot/airframe-drafts/rbac/provider-kubernetes-agentrun.yaml`,
+   2026-10-09). Review notes for AP-A3: the grant lands on provider-kubernetes's shared service account, so it covers
+   every provider-kubernetes `Object`, not only function-agentrun's; Job and ServiceAccount create in any namespace
+   can run a pod as any existing service account; namespace patch can drop pod-security labels or add the PR-sweep
+   label anywhere. Recommended with it: a ValidatingAdmissionPolicy matched on the provider's service account that
+   confines these kinds to `agent-r-*` run namespaces and `serviceAccountName: run`; the `batch/jobs` rule swapped for
+   the agent-sandbox resources (U11); a binding through a stable service account name.
 4. **Holmes stays at 0 replicas**, on purpose. A5 (Holmes through Clearance) waits until Holmes is wanted again.
 5. **D1: a new Hangar root CA for the platform's Fulcio.** Agent commits (and the platform's other keyless signing)
    chain to a Hangar-owned root rather than a per-cluster self-generated one. Design and rollout are not started.
