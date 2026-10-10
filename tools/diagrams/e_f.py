@@ -24,7 +24,7 @@ def w_placement():
       body=''.join(b), W=1000, H=620, y0=64,
       cards=C3(P('Cluster-agnostic and generator-driven (ADR-0006). A cluster gets the feature by a toggle in cluster.yaml, and customize-cluster.sh refuses the invalid combination.'),
                UL(['apron/cluster.yaml: components.autopilot, refused on type: upper like providerGithub and platformCicd. New types hub and inference for the model fleet.','New group apron/55-autopilot/, and provider-kubernetes grants for the kinds a run renders.','Registry ConfigMap gains autopilotReady, set only after the network-policy canary passes.']),
-               P('The dev cluster\'s CNI does not enforce NetworkPolicy; the prod cluster\'s Calico does. Do not set autopilotReady on an assumption. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
+               P('Both clusters enforce NetworkPolicy (Cilium on dev, Calico on prod; dev verified 2026-10-09). Still, do not set autopilotReady on an assumption. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
 
 def w_tiers():
     b=[]

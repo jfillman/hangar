@@ -262,7 +262,7 @@ These are explicit decisions, not details:
 | Agent burns GitHub or model budget | Shared bucket starves CI (has happened) | Per-session budgets, a separate GitHub App, the breaker; token overrun trips it |
 | Time-driven re-invocation does not fire | Expiry is late | **Unverified**: the function sets a response TTL. Test first; fallback is an independent sweep |
 | PR-namespace sweep reaps runs | Live runs killed | Never use `hangar.io/ephemeral-env`; tested |
-| NetworkPolicy not enforced (dev cluster) | Egress claim is false | Canary gates `autopilotReady` |
+| NetworkPolicy not enforced on a cluster | Egress claim is false | Canary gates `autopilotReady`. kiac-dev enforces it (Cilium; verified 2026-10-09), so the canary is expected to pass there |
 | Hub compromised | Holds inference cluster credentials | Per-environment hubs, dedicated accounts, no app data on those clusters |
 | Modelplane API changes (v1alpha1) | Backend breaks | Pinned; the contract is the URL; contract test |
 | Prompt injection via logs, PR text, repo content | Agent steered | Tool output is data; T2 is propose-only; T3 is never |

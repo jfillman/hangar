@@ -22,3 +22,13 @@ All experiments (U1–U12) in the roadmap run on the dev cluster.
 ## 2026-09-26, substrate review
 
 Accepted: stable agent identity (AP-A4), model version in the record (AP-C1), cost accounting (AP-C2), upstream Agent Sandbox evaluation (U11), resumable state (AP-D1, U12), fixed T0 read set (AF-2b), rejection of a monolithic `AgentWorkspace`. See [industry-context.md](industry-context.md).
+
+## 2026-10-09, before M3
+
+| Id | Decision |
+|---|---|
+| D1 (detail) | Create a new Hangar root CA for the platform's Fulcio, rather than each cluster's self-generated root. |
+| D13 | `cicd.yaml` is agent-editable: an agent allowed to configure an app may configure its CI/CD. It leaves Clearance's `BASELINE_DENY_PATHS` (`.tekton/**` stays). Which fields, if any, stay human-only is open; see roadmap.md "M3 status". |
+| D14 | Holmes stays scaled to 0 on both clusters, on purpose; A5 (Holmes through Clearance) is deferred with it. |
+
+kiac-dev enforces NetworkPolicy (Cilium 1.20), verified 2026-10-09; the AP-A1 canary is expected to pass there.
