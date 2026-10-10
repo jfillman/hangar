@@ -36,6 +36,11 @@ const labels: Record<string, { date: string; label: string; note: string }> = {
     label: 'Review fixes',
     note: 'Fixes from the architecture review: AGENTS.md on every component, an owner and a risk class on every values field, status conditions and reason codes on 17 of 20 XRDs, and every XRD described and in the catalog. Past the M2 target of 75 for the first time.',
   },
+  'baseline-2026-10-09b': {
+    date: '2026-10-09',
+    label: 'AppSpec in the contract',
+    note: 'The AppSpec schema (one document stating an app and its environments) moved into Airframe\'s contract bundle, where an agent reading the contract finds it. Interaction surface doubled; the airframe.* tools are what it still lacks.',
+  },
 };
 
 export type Snapshot = Raw & { id: string; date: string; label: string; note: string; passed: number };
@@ -74,7 +79,7 @@ export const findings: Record<string, { found: string; next: string }> = {
     next: 'every object strict, tighter leaf fields, examples',
   },
   '3 Component contracts': {
-    found: 'every component declares outputs and verify checks; 33 of 47 env entries still hard-code a name',
+    found: 'every component declares outputs and verify checks; 33 of 46 env entries still hard-code a name',
     next: 'fromComponent in every live env entry',
   },
   '4 Pre-merge validation': {
@@ -94,8 +99,8 @@ export const findings: Record<string, { found: string; next: string }> = {
     next: 'held; every new component ships its walkthrough',
   },
   '8 Interaction surface': {
-    found: 'still Tower and Git only; no AppSpec schema, no airframe.* tools',
-    next: 'AppSpec, the planner and airframe.* tools (M3)',
+    found: 'an AppSpec schema in the contract bundle, with the parachute example; no airframe.* tools yet',
+    next: 'the planner and airframe.* tools behind Clearance (M3)',
   },
   '9 Safety integration': {
     found: 'every values field is risk-classed and field-level agent scope is built into Clearance',
