@@ -172,7 +172,7 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 - **AF-7a**, done, `airframe` (branch `af7a-walkthrough-runner`). `docs/walkthroughs/*.yaml` (schema in that directory's own `README.md`): each step has a `command` (documentation), an `expected` result (prose), and a `verify` (a real, idempotent shell command against the live clusters - exit 0 = still true). `tools/walkthrough-runner` replays a walkthrough's `verify` steps and reports PASS/FAIL, or `--render`s the command/expected text to markdown. Converted all 3 quickstarts (`boarding-api`, `flight-api`, `skyport-broker`) - **all three replay green for real against kiac-dev/kind-prod right now** (7/7, 4/4, 3/3 steps), satisfying this milestone's own exit line. Found and fixed a real, unrelated bug along the way: `hangar/tools/airframe-scorecard/scorecard.py`'s XRD glob matched `*.meta.yaml` sidecar files too (added by AF-3), crashing the whole scorecard with a `KeyError` since SP-3 added `mongodb.meta.yaml` - nobody had run it successfully since. Fixed; scorecard now runs clean (57.9/100, "Docs for agents" 100/A+, walkthroughs check passing).
 - **SP-4** (OAuth component, `skyport-auth`), done and **live-verified end to end**, `airframe#17`/`#19`-`#22`. Dex (`dexidp/dex`) chosen over Authentik (lighter footprint, already running in-cluster as ArgoCD's own SSO). `mode: attach` registers a client via Dex's real gRPC Admin API (`CreateClient`) through a new custom Crossplane Function, `function-dex` - this catalog's second hand-written Function, after `function-rollout-watcher`. Real, live proof, not offline: the real `skyport-auth` server (running on kiac-dev, kept as the permanent component, not torn down) issued a real `client_credentials` access token to a real registered client, and the JWT's signature was validated against the real JWKS endpoint with PyJWT.
   - **Solved multi-arch for real** using the `container` CLI (no docker/podman machine) + `skopeo` for image-format conversion; `crossplane xpkg push -f a.xpkg,b.xpkg TAG` genuinely combines two single-arch builds into one real multi-platform manifest - confirmed via `skopeo inspect --raw`. Full recipe in `functions/function-dex/README.md`.
-  - **Known, accepted tradeoff**: `client_credentials` isn't in any stable Dex release yet (confirmed absent from v2.45.1, the latest as of 2026-09-29) - only on Dex's unreleased `master` branch. Pinned to `ghcr.io/dexidp/dex:master` (a floating tag, no version stability), user-confirmed given there's no alternative with the feature at all. Revisit once a stable release ships it.
+  - **Known, accepted tradeoff**: `client_credentials` isn't in any stable Dex release yet (confirmed absent from v2.45.1, the latest as of 2026-09-29) - only on Dex's unreleased `master` branch. Pinned to `ghcr.io/dexidp/dex:master` (a floating tag, no version stability), user-confirmed given there's no alternative with the feature at all. Revisit once a stable release ships it. **Resolved 2026-10-09:** Dex v2.46.0 ships the grant (enabled by listing it in `oauth2.grantTypes`, which the config already does); function-dex v0.1.7 pins it (airframe#79), live on kiac-dev with a token verified against JWKS.
   - Three real bugs found and fixed live before this worked (Dex refuses to start with zero connectors; a wrong healthz probe path; four resource kinds with no `status.conditions` for `function-auto-ready`'s generic detection), plus a Crossplane RBAC gap (`PersistentVolumeClaim`, user-confirmed) and a Dockerfile portability fix (`container` CLI doesn't support BuildKit's `RUN --mount=target=.`). Full writeup: `project_sp4_oauth_dex_investigation.md` (session memory).
 - **The `platform/` → `airframe/` rename** (AF-5's own step 4) is scoped as a separate follow-on, not part of M2's AF-5 line item above - it touches every live app's file layout, both clusters' ApplicationSets, ~10 Glidepath Tasks, Tower's Config tab, and every scaffold template, and the design doc's own plan is a dual-path migration window, not a drop-in rename.
 
@@ -193,6 +193,42 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 | **AF-2b** fix the T0 read set (`getLogs`, `getMetrics`, `getRelease`, `getDeploymentStatus`) and put it in the contract bundle | read tools taught by example |
 
 **Exit:** the parachute sentence works end to end on dev (a human merges the flight PRs); killing Clearance mid-run still ends every run on time; the seeded bad run scores as failed.
+
+**M3 status (2026-10-09): not started.** Nothing of it exists on a cluster: no `AgentRun` or agent-sandbox CRD on
+kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What moved between M2 and here:
+- The Tier 2 rename finished on 2026-10-01: `catalog.hangar.io` is the only catalog group, and the autopilot drafts
+  emit it.
+- The 2026-10-08 architecture review closed on 2026-10-09 (airframe v0.3.137 on both clusters). It leaves A4
+  (condition vocabulary, `observedGeneration`) and A6 (XR rule ids) to the `airframe.*` tools (AF-8), and A5
+  (Holmes through Clearance) to AP-A2.
+- The planner follows ADR-0019 (`deploy.environments`, `glidepath/envs/`, the tenants repo from the registry;
+  autopilot#6). autopilot `main`: 240 tests pass.
+- The AppSpec schema now lives in Airframe's contract bundle (`contract/appspec.schema.json`, airframe#80). Autopilot
+  vendors it and its CI fails on drift (autopilot#7).
+- apron's cluster template is on airframe v0.3.137 with what that catalog needs (apron#20). AP-A1 builds on it.
+- Scorecard 86.6, 11 of 14 checks (`baseline-2026-10-09b.json`) against this milestone's 88. The lowest dimension is
+  the interaction surface (54.5), which waits on the `airframe.*` tools (AF-8).
+
+**Open before M3 code (decisions):**
+1. The planner's `app-repo` step patches `cicd.yaml`, but `BASELINE_DENY_PATHS` denies `cicd.yaml` to every agent
+   (R015), so the parachute plan cannot pass through Clearance. Either allow one JSON pointer (`/deploy/environments`)
+   with AF-9a's field-level scope, or make that step a human one. Recommendation: the field-level allow.
+2. kiac-dev does not enforce NetworkPolicy, so AP-A1's canary fails by design and `autopilotReady` stays false on the
+   only cluster runs may use. Either install an enforcing CNI there, or allow runs on dev with the canary failing and
+   say so in the run record.
+3. The provider-kubernetes ClusterRole drafted for U8 creates and deletes namespaces cluster-wide; review it as a
+   privilege grant before AP-A3 ships it.
+4. Holmes is at 0 replicas on both clusters. Say whether that is deliberate before A5 routes it through Clearance.
+5. D1: evaluate the self-signed root CA for the agents' Fulcio before AP-B1.
+
+**Gaps in the existing code that M3 closes:** nothing maps a run pod's identity
+(`system:serviceaccount:agent-r-<id>:run`) to the session principal R001 compares against (AP-A4); sessions are held
+in memory and their audit entry stores the requested limits only as a hash, so a Clearance restart loses the grant
+(AP-A2 needs a durable session store).
+
+**Build order:** AP-A1 -> AP-A3 (render an agent-sandbox `Sandbox`, per U11; hard expiry from its `shutdownTime`, per
+U2) -> AP-A2 with AF-2b -> AP-A4 -> AP-B1 -> AP-B2 -> AP-B3 -> AF-8 with AF-6b and AF-10c (the parachute run) -> AP-C1
+and AP-C2.
 
 ### M4 Skyport AI workloads (weeks 19-24), target 93
 Parts 6 to 11, in shape order: task, session, service, scheduled, event, team. Each is walked live, has
