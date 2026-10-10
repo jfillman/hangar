@@ -211,9 +211,22 @@ kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What move
 
 **Decisions before M3 code (answered 2026-10-09 unless marked open):**
 1. **`cicd.yaml` is agent-editable.** The CI/CD config is part of the app, so an agent allowed to configure the app
-   may configure it. `cicd.yaml` leaves `BASELINE_DENY_PATHS`; `.tekton/**` stays denied. *Open:* whether a few
-   fields stay human-only through AF-9a's field-level deny. Proposed: `/governance` (the scan gates and
-   `allowedCommitSigners`) and `/deploy/releaseFile` (where machine-owned release data is written).
+   may configure it. `cicd.yaml` leaves `BASELINE_DENY_PATHS`; `.tekton/**` stays denied. These stay human-only
+   (decided 2026-10-09):
+   - Field-level deny (AF-9a `BASELINE_DENY_FIELDS` for `cicd.yaml`): `/governance` (the scan gates; an agent adding
+     itself to `allowedCommitSigners` would approve its own release), `/deploy/releaseFile`, `/deploy/chart` (another
+     chart renders anything, past the schema and chart guards), `/deploy/target` with `/deploy/ecs`, `/deploy/lambda`,
+     `/deploy/azureContainerApps` and the same blocks on each environment (they point the cloud deployer elsewhere),
+     and `/secrets` (with `build.script` editable, an entry is a path to exfiltrate any key in the app's store).
+   - A new Clearance rule matching environments by name, because the pointer diff collapses a list-length change to
+     the whole list: an existing environment's `tier`, `production` and `cluster` cannot change, and flight
+     environments cannot be removed or reordered (the order is the promotion order). Adding environments stays allowed.
+   - Pipeline steps: no `gitops-image-bump` step (its `gitopsRepo`/`manifestPath` reach any repo); no `release` step
+     to a `production` environment in a flow with an automatic (push or event) trigger. Other release steps stay
+     allowed, since the planner adds one for the first flight environment.
+   - Allowed, with notes: `build.script`/`containerfile`/`unitTest.command` (check the build step holds no
+     credential the unit-test step lacks, such as registry push), `ephemeralEnvironments` (cap the TTL),
+     `notifications`, triggers.
 2. **kiac-dev enforces NetworkPolicy.** It runs Cilium 1.20 with Kubernetes NetworkPolicy on; a scratch test showed
    ingress and egress deny-all enforced and a pod-selector allow restoring traffic. The AP-A1 canary is expected to
    pass there; the earlier "fails by design" premise was never tested.
@@ -221,9 +234,11 @@ kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What move
    2026-10-09). Review notes for AP-A3: the grant lands on provider-kubernetes's shared service account, so it covers
    every provider-kubernetes `Object`, not only function-agentrun's; Job and ServiceAccount create in any namespace
    can run a pod as any existing service account; namespace patch can drop pod-security labels or add the PR-sweep
-   label anywhere. Recommended with it: a ValidatingAdmissionPolicy matched on the provider's service account that
-   confines these kinds to `agent-r-*` run namespaces and `serviceAccountName: run`; the `batch/jobs` rule swapped for
-   the agent-sandbox resources (U11); a binding through a stable service account name.
+   label anywhere. Approved to ship together with it (2026-10-09): a ValidatingAdmissionPolicy matched on the provider's
+   service account that confines these kinds to `agent-r-*` run namespaces carrying the run label, never touches
+   `pod-security.*` labels or adds the PR-sweep label, and allows only `serviceAccountName: run`; the `batch/jobs` rule
+   swapped for the agent-sandbox resources (U11); a binding through a stable service account name. A test proves the
+   policy rejects a Job in `default` and a label patch on `kube-system`.
 4. **Holmes stays at 0 replicas**, on purpose. A5 (Holmes through Clearance) waits until Holmes is wanted again.
 5. **D1: a new Hangar root CA for the platform's Fulcio.** Agent commits (and the platform's other keyless signing)
    chain to a Hangar-owned root rather than a per-cluster self-generated one. Design and rollout are not started.

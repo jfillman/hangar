@@ -28,8 +28,8 @@ Accepted: stable agent identity (AP-A4), model version in the record (AP-C1), co
 | Id | Decision |
 |---|---|
 | D1 (detail) | Create a new Hangar root CA for the platform's Fulcio, rather than each cluster's self-generated root. |
-| D13 | `cicd.yaml` is agent-editable: an agent allowed to configure an app may configure its CI/CD. It leaves Clearance's `BASELINE_DENY_PATHS` (`.tekton/**` stays). Which fields, if any, stay human-only is open; see roadmap.md "M3 status". |
+| D13 | `cicd.yaml` is agent-editable: an agent allowed to configure an app may configure its CI/CD. It leaves Clearance's `BASELINE_DENY_PATHS` (`.tekton/**` stays). Human-only fields and rules (governance, releaseFile, chart, cloud targets, secrets, environment tier/production/cluster, gitops-image-bump, automatic production releases) are listed in roadmap.md "M3 status". |
 | D14 | Holmes stays scaled to 0 on both clusters, on purpose; A5 (Holmes through Clearance) is deferred with it. |
-| D15 | The U8 ClusterRole for AgentRun's provider-kubernetes objects is approved (`autopilot/airframe-drafts/rbac/provider-kubernetes-agentrun.yaml`). Review notes and the recommended admission policy are in roadmap.md "M3 status". |
+| D15 | The U8 ClusterRole for AgentRun's provider-kubernetes objects is approved (`autopilot/airframe-drafts/rbac/provider-kubernetes-agentrun.yaml`). It ships only together with a ValidatingAdmissionPolicy confining the provider's service account to run namespaces, the agent-sandbox resources in place of Jobs, and a stable service-account binding; see roadmap.md "M3 status". |
 
 kiac-dev enforces NetworkPolicy (Cilium 1.20), verified 2026-10-09; the AP-A1 canary is expected to pass there.
