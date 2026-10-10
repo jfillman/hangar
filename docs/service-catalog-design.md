@@ -2047,7 +2047,7 @@ Crossplane RBAC for `postgresql.cnpg.io` and `networking.k8s.io`.
 - **The NetworkPolicy is necessary, proven on the prod cluster (Calico).** The same `Cluster` in a
   namespace with the app baseline policy but without the component's operator-allow policy never
   became healthy (`Instance Status Extraction Error: HTTP communication issue`); with it, Ready in
-  about a minute. The dev cluster's CNI does not enforce policy, so only prod could show this.
+  about a minute. (At the time we believed the dev cluster's CNI did not enforce policy; wrong: kiac-dev runs Cilium 1.20 with Kubernetes NetworkPolicy enabled; a scratch namespace on 2026-10-09 showed ingress and egress deny-all both enforced and a pod-selector allow restoring traffic.)
   Cross-namespace access to the database was blocked.
 - **Kubernetes 1.37 on the prod cluster.** CNPG 1.30 lists 1.34-1.36 as supported and 1.37 as "tested,
   but not supported". Works here; not covered by upstream support.
@@ -2114,7 +2114,7 @@ declaring a queue outside its prefix, the producer reading the consumer's queue.
 ### Not yet verified
 
 - **prod (amd64, Calico).** The NetworkPolicy (operator on 15672/5672, allowed namespaces on
-  5672) is written but only dev has run it, and its CNI does not enforce policy.
+  5672) is written but only dev has run it. (Corrected 2026-10-09: dev does enforce policy; kiac-dev runs Cilium 1.20 with Kubernetes NetworkPolicy enabled; a scratch namespace on 2026-10-09 showed ingress and egress deny-all both enforced and a pod-selector allow restoring traffic.)
 - **prod capacity.** The prod cluster is resource-constrained (observability is scaled
   to 0). RabbitMQ (~1Gi) plus two operators is a real addition to it.
 

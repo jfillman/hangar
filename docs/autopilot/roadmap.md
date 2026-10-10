@@ -179,7 +179,7 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 ### M3 Autopilot core (weeks 11-18), target 88
 | Task | Notes |
 |---|---|
-| **AP-A1** apron `components.autopilot` toggle, registry `autopilotReady`, network-policy canary | refused on `type: upper`; the canary fails honestly on the dev cluster |
+| **AP-A1** apron `components.autopilot` toggle, registry `autopilotReady`, network-policy canary | refused on `type: upper`; the canary must pass before `autopilotReady` flips (kiac-dev enforces NetworkPolicy: Cilium, verified 2026-10-09) |
 | **AP-A2** Clearance as an InfraService; T0 tools with real adapters | Backstage MCP, ArgoCD read-only account |
 | **AP-A3** `AgentRun` XRD, `function-agentrun`, `provider-kubernetes` grants, namespaced Role | copy-tested; expiry proven with Clearance stopped and with the function pod killed |
 | **AP-B1** interceptor `/agent-installation-token`, separate GitHub App, ArgoCD accounts | commit-signing decision executed |
@@ -209,17 +209,19 @@ kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What move
 - Scorecard 86.6, 11 of 14 checks (`baseline-2026-10-09b.json`) against this milestone's 88. The lowest dimension is
   the interaction surface (54.5), which waits on the `airframe.*` tools (AF-8).
 
-**Open before M3 code (decisions):**
-1. The planner's `app-repo` step patches `cicd.yaml`, but `BASELINE_DENY_PATHS` denies `cicd.yaml` to every agent
-   (R015), so the parachute plan cannot pass through Clearance. Either allow one JSON pointer (`/deploy/environments`)
-   with AF-9a's field-level scope, or make that step a human one. Recommendation: the field-level allow.
-2. kiac-dev does not enforce NetworkPolicy, so AP-A1's canary fails by design and `autopilotReady` stays false on the
-   only cluster runs may use. Either install an enforcing CNI there, or allow runs on dev with the canary failing and
-   say so in the run record.
-3. The provider-kubernetes ClusterRole drafted for U8 creates and deletes namespaces cluster-wide; review it as a
+**Decisions before M3 code (answered 2026-10-09 unless marked open):**
+1. **`cicd.yaml` is agent-editable.** The CI/CD config is part of the app, so an agent allowed to configure the app
+   may configure it. `cicd.yaml` leaves `BASELINE_DENY_PATHS`; `.tekton/**` stays denied. *Open:* whether a few
+   fields stay human-only through AF-9a's field-level deny. Proposed: `/governance` (the scan gates and
+   `allowedCommitSigners`) and `/deploy/releaseFile` (where machine-owned release data is written).
+2. **kiac-dev enforces NetworkPolicy.** It runs Cilium 1.20 with Kubernetes NetworkPolicy on; a scratch test showed
+   ingress and egress deny-all enforced and a pod-selector allow restoring traffic. The AP-A1 canary is expected to
+   pass there; the earlier "fails by design" premise was never tested.
+3. *Open:* review the provider-kubernetes ClusterRole drafted for U8 (namespace create/delete cluster-wide) as a
    privilege grant before AP-A3 ships it.
-4. Holmes is at 0 replicas on both clusters. Say whether that is deliberate before A5 routes it through Clearance.
-5. D1: evaluate the self-signed root CA for the agents' Fulcio before AP-B1.
+4. **Holmes stays at 0 replicas**, on purpose. A5 (Holmes through Clearance) waits until Holmes is wanted again.
+5. **D1: a new Hangar root CA for the platform's Fulcio.** Agent commits (and the platform's other keyless signing)
+   chain to a Hangar-owned root rather than a per-cluster self-generated one. Design and rollout are not started.
 
 **Gaps in the existing code that M3 closes:** nothing maps a run pod's identity
 (`system:serviceaccount:agent-r-<id>:run`) to the session principal R001 compares against (AP-A4); sessions are held
@@ -302,16 +304,16 @@ All U-experiments run on the dev cluster (decision 2026-09-26).
 | U6 | **Yes.** `helm lint` and `helm template` accept unknown `x-hangar-*` keys at the root and on a property; type enforcement still works (`appName=5` fails). |
 | U7 | **Yes, with the real name.** A git files generator with `path: .../*.release.yaml, exclude: true` generated exactly the `dev` and `test` apps and none for `dev.release.yaml` (live, scratch ApplicationSet on the dev cluster). |
 | U2 | **No, not on our Crossplane.** A function's response TTL only takes effect when Crossplane's beta realtime-compositions flag is on (it is off: the args are `core start`); otherwise the XR is requeued at the poll interval, default 1 minute, and the per-XR `crossplane.io/poll-interval` annotation cannot go below `--min-poll-interval`, default 1 minute. Measured: a composition that renders the current time re-rendered every 60 s whether the TTL annotation or a 10 s poll-interval annotation was set. Also: installed `function-go-templating` v0.12.3 has no TTL support at all, and installing a second package from the same repo under another name collides in the package lock (health flapped for about a minute, then recovered; nothing was left behind). **Consequence:** expiry cannot be driven by re-invocation faster than about a minute. Use the Sandbox `shutdownTime` (U11: enforced within a second) or the Job's `activeDeadlineSeconds` for hard expiry, and treat Crossplane's poll as the status refresh only. |
-| U8 | **Yes, once granted RBAC; today it is denied.** Rendered the six `AgentRun` objects with `function-agentrun`'s own `compose()` (docker.io alpine pinned by digest) and applied them as provider-kubernetes `Object`s on the dev cluster. Before any grant every one failed to observe with `forbidden` (provider-kubernetes has no rights on namespaces, resourcequotas, serviceaccounts, networkpolicies or jobs). With a scratch ClusterRole for exactly those kinds, all six synced and went Ready, the Job **completed** under `pod-security: restricted`, and deleting the Objects removed the run namespace. The narrow role is drafted in `autopilot/airframe-drafts/rbac/`; it must be reviewed as a privilege grant (namespace create/delete cluster-wide) before it ships. Not tested: NetworkPolicy enforcement (the dev cluster does not enforce it), the Modelplane path, or the composition running under a real XR (the function image is not built). |
+| U8 | **Yes, once granted RBAC; today it is denied.** Rendered the six `AgentRun` objects with `function-agentrun`'s own `compose()` (docker.io alpine pinned by digest) and applied them as provider-kubernetes `Object`s on the dev cluster. Before any grant every one failed to observe with `forbidden` (provider-kubernetes has no rights on namespaces, resourcequotas, serviceaccounts, networkpolicies or jobs). With a scratch ClusterRole for exactly those kinds, all six synced and went Ready, the Job **completed** under `pod-security: restricted`, and deleting the Objects removed the run namespace. The narrow role is drafted in `autopilot/airframe-drafts/rbac/`; it must be reviewed as a privilege grant (namespace create/delete cluster-wide) before it ships. Not tested: NetworkPolicy enforcement (believed then not to be enforced on the dev cluster; it is, see "M3 status"), the Modelplane path, or the composition running under a real XR (the function image is not built). |
 | U3 | **Partly.** On the prod cluster, Backstage serves `/api/mcp-actions` (401 "Missing credentials", where a made-up path returns 404), so the plugin is mounted and behind auth. Not verified: that it lists Tower/catalog actions with a real token. |
 | U4 | **Yes, live-verified 2026-09-27.** `baggage-api` PR #2 (branch `u4-failing-run`) produced a real failed PipelineRun; Tower's Re-run and Cancel were exercised against it and confirmed working before the PR was closed and the branch deleted. |
 | U12 | **Not with VolumeSnapshot on the dev cluster today.** The cluster has no snapshot CRDs and its only storage class is `rancher.io/local-path`. Workspace persistence for AP-D1 needs either a snapshot-capable CSI driver or an archive-to-object-store approach (tar the workspace, scan it, store it); restore cost is not measured. |
-| U11 | **Real and usable; adopt behind the `AgentRun` contract.** kubernetes-sigs/agent-sandbox v1.0.4 (2026-09-24, weekly releases, API `v1beta1`): `Sandbox`, `SandboxTemplate`, `SandboxClaim`, `SandboxWarmPool`. Installed on the dev cluster (arm64 image works) and measured: a cold sandbox Ready in 2 s (image cached), suspend and resume in about 1 s, a claim served from a warm pool Ready in 89 ms, and a Sandbox with `shutdownTime` and `shutdownPolicy: Delete` was deleted by the controller within a second of expiry. `SandboxTemplate` carries `networkPolicy`/`networkPolicyManagement` and an env-injection policy, which overlap what `function-agentrun` renders. Not tested: gVisor/Kata, snapshot restore, and NetworkPolicy enforcement (the dev cluster does not enforce it). Removed again after the trial. Decision for AP-A3: render a `Sandbox` (or claim) instead of a raw pod, and treat the controller as a pinned dependency. |
+| U11 | **Real and usable; adopt behind the `AgentRun` contract.** kubernetes-sigs/agent-sandbox v1.0.4 (2026-09-24, weekly releases, API `v1beta1`): `Sandbox`, `SandboxTemplate`, `SandboxClaim`, `SandboxWarmPool`. Installed on the dev cluster (arm64 image works) and measured: a cold sandbox Ready in 2 s (image cached), suspend and resume in about 1 s, a claim served from a warm pool Ready in 89 ms, and a Sandbox with `shutdownTime` and `shutdownPolicy: Delete` was deleted by the controller within a second of expiry. `SandboxTemplate` carries `networkPolicy`/`networkPolicyManagement` and an env-injection policy, which overlap what `function-agentrun` renders. Not tested: gVisor/Kata, snapshot restore, and NetworkPolicy enforcement (believed then not to be enforced on the dev cluster; it is, see "M3 status"). Removed again after the trial. Decision for AP-A3: render a `Sandbox` (or claim) instead of a raw pod, and treat the controller as a pinned dependency. |
 
 ## 6. Risks
 - **One person, many repos.** airframe, glidepath, backstage, apron, the tenants repos and a new repo all change. Keep every change small, behind a gate, and reversible. Use worktrees.
 - **Retrofit cost** if the contract slips behind the next components. Hence the ordering.
-- **The dev cluster does not enforce NetworkPolicy.** `autopilotReady` is gated on a canary, and runs are never trusted on an assumption.
+- **NetworkPolicy enforcement is per cluster.** kiac-dev enforces it (Cilium; ingress and egress verified 2026-10-09; an earlier version of this list said it did not, which was never tested). `autopilotReady` is still gated on a canary, so runs are never trusted on an assumption.
 - **The prod cluster is resource-limited** (observability scaled to 0). Runs are dev-only; prod gets none.
 - **Hosted model cost.** Token budgets and the breaker; two on-demand or scheduled spenders in the demo.
 - **Upstream churn.** Modelplane is v0.1 and the mcp SDK is v2; both sit behind contracts and pins.

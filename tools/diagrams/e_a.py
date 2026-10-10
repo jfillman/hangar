@@ -133,4 +133,4 @@ def e04():
       body=''.join(b), W=1000, H=620, y0=64,
       cards=C3(P('Cluster-agnostic and generator-driven (ADR-0006). A cluster gets the feature by a toggle in cluster.yaml, and customize-cluster.sh refuses the invalid combination.'),
                UL(['apron/cluster.yaml: new components.autopilot, refused on type: upper like providerGithub and platformCicd.','New group apron/55-autopilot/ (after 50-platform-cicd, before 60-backstage).','Registry ConfigMap gains autopilotReady, set only after the network-policy canary passes.']),
-               P('The dev cluster\'s CNI does not enforce NetworkPolicy; the prod cluster\'s Calico does. Do not set autopilotReady on an assumption. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
+               P('Both clusters enforce NetworkPolicy (Cilium on dev, Calico on prod; dev verified 2026-10-09). Still, do not set autopilotReady on an assumption. Run a canary pod that must fail to reach a blocked service, and gate the flag on that result.')))
