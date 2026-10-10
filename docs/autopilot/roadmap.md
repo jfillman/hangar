@@ -194,7 +194,20 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 
 **Exit:** the parachute sentence works end to end on dev (a human merges the flight PRs); killing Clearance mid-run still ends every run on time; the seeded bad run scores as failed.
 
-**M3 status (2026-10-09): not started.** Nothing of it exists on a cluster: no `AgentRun` or agent-sandbox CRD on
+**AP-A1 done (2026-10-09).**
+- Registry: `airframe.autopilotReady` (airframe#81, v0.3.138). The chart refuses it on any cluster without the
+  control-plane role; CI has a must-fail fixture. kiac-dev's registry runs v0.3.138 (gitops-cluster-dev#63, synced,
+  ConfigMaps byte-identical).
+- Canary: `autopilot/tools/netpol_canary.py` (autopilot#8) renders a run's real policies with `compose()` and pairs
+  every denial with a no-policy control. kiac-dev: 16/16 pass. Setting the flag on kind-dev is gitops-cluster-dev#64,
+  left for a person to merge and sync (the registry's manual sync is the attestation).
+- apron: `components.autopilot`, refused off the control-plane cluster and without the full catalog; `55-autopilot/`
+  with the `autopilot-system` and `autopilot-runs` namespaces (apron#21), adopted on kiac-dev (gitops-cluster-dev#65,
+  Synced/Healthy; a non-restricted pod is refused there).
+- Not in AP-A1: the `hub` and `inference` cluster types (Modelplane, M5).
+- AP-A2 (Clearance as an InfraService) is being built separately, in the user's AI lab.
+
+**M3 status (2026-10-09, before AP-A1): not started.** Nothing of it existed on a cluster: no `AgentRun` or agent-sandbox CRD on
 kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What moved between M2 and here:
 - The Tier 2 rename finished on 2026-10-01: `catalog.hangar.io` is the only catalog group, and the autopilot drafts
   emit it.
