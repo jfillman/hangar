@@ -114,7 +114,9 @@ Tower's own documentation lives in the [tower repo's `docs/`](https://github.com
 | Doc | Read this when... |
 |---|---|
 | [Deployments](https://github.com/jfillman/tower/blob/main/docs/deployments.md) | You want to know what the Deployments tab tells you: the plain-language troubleshooting banner and its rules, the six-step delivery path, and every control explained (Argo CD sync, force sync and terminate, the Rollout actions, Roll back). |
-| [Security model](https://github.com/jfillman/tower/blob/main/docs/security.md) | You want to know who may do what from Tower, and the guardrails behind each action: owners and admins, no Kubernetes write permissions, the Argo CD account's scope, audit, what Tower never does. |
+| [Security model](https://github.com/jfillman/tower/blob/main/docs/security.md) | You want to know who may do what from Tower, and the guardrails behind each action: owners and admins, no standing Kubernetes write permissions, the Argo CD account's scope, audit, what Tower never does. |
+| [Break-glass debugging](https://github.com/jfillman/tower/blob/main/docs/break-glass/index.md) | You need to look inside a running pod: a recorded, time-boxed debug shell without exec. Walkthroughs for Ground and Flight (two-person approval), breaking the glass and reviews, recordings, the guardrails layer by layer, troubleshooting. |
+| [Break-glass admin guide](https://github.com/jfillman/tower/blob/main/docs/break-glass/admin/index.md) | You run break-glass: architecture, setting it up on a cluster, configuration, the admission policies (Ground and Flight), the operations runbook, internals, design decisions, testing. |
 | [Environments](https://github.com/jfillman/tower/blob/main/docs/environments.md) | You're adding, configuring or removing an environment, or editing its values. |
 
 The illustrated design set below records how the tabs came to be:
