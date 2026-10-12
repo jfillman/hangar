@@ -15,10 +15,10 @@ const sets: { key: Diagram['set']; blurb: string }[] = [
   { key: 'slo', blurb: 'How an SLO goes from a values file to a notification: the pipeline, the three signals and their thresholds, the stored state, and one poll tick.' },
 ];
 ---
-<Base title="Diagrams" description={`All ${diagrams.length} Hangar architecture diagrams, by set.`} section="diagrams">
+<Base title="Diagrams" description={`All ${diagrams.length} Hangar architecture diagrams, by set.`} section="library">
   <div class="wrap">
     <section class="hero">
-      <p class="eyebrow">Diagrams · {diagrams.length} pages</p>
+      <p class="eyebrow"><a href={u('library/')}>Library</a> · Diagrams · {diagrams.length} pages</p>
       <h1>Every diagram, in one place</h1>
       <p class="lede">
         I think in pictures, so a lot of Hangar's design lives here. Each diagram is one page with one idea, drawn

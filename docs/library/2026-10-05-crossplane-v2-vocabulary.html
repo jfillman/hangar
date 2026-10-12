@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Is &quot;claim&quot; the right word in a Crossplane v2 world?</title>
+<meta name="description" content="A review of ChatGPT&#x27;s analysis of the word &quot;claim&quot; across Hangar&#x27;s site and docs, what I changed, and what I left alone.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The Hangar diagram profile (web/src/styles/global.css, tools/diagrams/lib.py): warm paper,
+   ink, amber accent, sky links; Instrument Serif, Geist, Geist Mono. Semantic colours mark
+   severity only. Theme follows the system unless <html data-theme> is set (the site sets it
+   when this page is embedded). */
+:root{
+  color-scheme:light;
+  --ground:#f2efe9; --paper:#fbfaf7; --ink:#1b1f24; --ink-2:#5b6570; --rule:rgba(27,31,36,.14);
+  --accent:#2e7ba6; --accent-soft:#dcebf4; --amber:#b9791f;
+  --ok:#2e7d4f; --ok-bg:#e1efe5; --warn:#9a6212; --warn-bg:#f4e6c9; --bad:#a3352b; --bad-bg:#f5e1dd; --info:#5b6570; --info-bg:#e8e3da;
+  --code-bg:#e8e3da;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+    --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+    --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+    --code-bg:#1b1f24;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+  --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+  --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+  --code-bg:#1b1f24;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,2.75rem)}
+h2{font-size:1.9rem;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+h3{font-size:1.3rem}
+p{margin:0}
+section{display:flex;flex-direction:column;gap:16px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+code{font-family:var(--mono);font-size:.85em;background:var(--code-bg);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.85rem;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:500}
+
+.verdict{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--warn);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.verdict .stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);padding:4px 10px;border-radius:3px}
+.verdict h2{border:0;padding:0;font-size:1.8rem}
+.verdict ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+
+.tbl{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--rule)}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:500;background:var(--ground)}
+tr:last-child td{border-bottom:0}
+td.area{font-weight:600;white-space:nowrap}
+.chip{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.04em;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.c-ok{color:var(--ok);background:var(--ok-bg)} .c-warn{color:var(--warn);background:var(--warn-bg)} .c-bad{color:var(--bad);background:var(--bad-bg)} .c-info{color:var(--info);background:var(--info-bg)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.card h3{font-size:1rem;font-family:var(--sans);font-weight:600}
+.card p{font-size:.92rem;color:var(--ink-2)}
+
+.finding{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);border-radius:4px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.finding.sev-high{border-left-color:var(--bad)} .finding.sev-med{border-left-color:var(--warn)} .finding.sev-low{border-left-color:var(--info)}
+.finding .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.finding .id{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.finding h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;flex:1 1 300px}
+.finding p{font-size:.94rem}
+.ev{font-size:.84rem;color:var(--ink-2)}
+.ev b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin-right:6px}
+.flist{display:flex;flex-direction:column;gap:10px}
+
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.rec{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.rec h3{display:flex;align-items:center;gap:8px}
+.rec ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:.92rem}
+.rec li b{font-weight:600}
+
+.gates{counter-reset:g;display:flex;flex-direction:column;gap:0;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.gate{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+.gate:last-child{border-bottom:0}
+.gate .n{font-family:var(--mono);font-size:.85rem;color:var(--accent);background:var(--accent-soft);border-radius:4px;height:28px;display:flex;align-items:center;justify-content:center}
+.gate p{font-size:.94rem}
+.gate .when{font-size:.82rem;color:var(--ink-2)}
+
+.phase{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.note{font-size:.85rem;color:var(--ink-2)}
+ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:16px}
+
+.fig{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.fig .scroll{overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:600px;max-width:760px;height:auto;margin:0 auto}
+.fig figcaption{font-size:.85rem;color:var(--ink-2)}
+.fig figcaption b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;color:var(--amber);margin-right:6px}
+.stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:3px}
+.verdict.ok{border-top-color:var(--ok)} .verdict.ok .stamp{color:var(--ok);background:var(--ok-bg)}
+.verdict.info{border-top-color:var(--accent)} .verdict.info .stamp{color:var(--accent);background:var(--accent-soft)}
+.verdict.bad{border-top-color:var(--bad)} .verdict.bad .stamp{color:var(--bad);background:var(--bad-bg)}
+.track{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.track .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;padding:14px 16px;border-bottom:1px solid var(--rule);align-items:baseline}
+.track .row:last-child{border-bottom:0}
+.track .row h3{font-family:var(--sans);font-size:1rem;font-weight:600}
+.track .row p{grid-column:1/-1;font-size:.92rem;color:var(--ink-2)}
+.track .row .chip{justify-self:end}
+.quote{border-left:3px solid var(--amber);padding:4px 0 4px 16px;font-family:var(--serif);font-size:1.35rem;line-height:1.3}
+p.prose{display:block}
+@media (max-width:560px){.track .row{grid-template-columns:1fr}.track .row .chip{justify-self:start}}
+
+svg rect[fill="#f2efe9"]{fill:var(--paper)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) svg [fill="#1b1f24"]{fill:#e8e4dc}:root:not([data-theme=light]) svg [fill="#2e7ba6"]{fill:#6fb2d9}:root:not([data-theme=light]) svg [fill="#5b6570"]{fill:#a1aab3}:root:not([data-theme=light]) svg [fill="#838b93"]{fill:#7f8891}:root:not([data-theme=light]) svg [fill="#b9791f"]{fill:#e8a33d}:root:not([data-theme=light]) svg [fill="#ffffff"]{fill:#1c2127}:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.05)"]{fill:rgba(232,163,61,0.065)}:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root:not([data-theme=light]) svg [fill="rgba(46,123,166,0.10)"]{fill:rgba(111,178,217,0.13)}:root:not([data-theme=light]) svg [fill="rgba(91,101,112,0.10)"]{fill:rgba(161,170,179,0.1)}:root:not([data-theme=light]) svg [stroke="#1b1f24"]{stroke:#e8e4dc}:root:not([data-theme=light]) svg [stroke="#2e7ba6"]{stroke:#6fb2d9}:root:not([data-theme=light]) svg [stroke="#5b6570"]{stroke:#a1aab3}:root:not([data-theme=light]) svg [stroke="#838b93"]{stroke:#7f8891}:root:not([data-theme=light]) svg [stroke="#b9791f"]{stroke:#e8a33d}:root:not([data-theme=light]) svg [stroke="rgba(185,121,31,0.50)"]{stroke:rgba(232,163,61,0.65)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.20)"]{stroke:rgba(232,228,220,0.2)}}
+:root[data-theme=dark] svg [fill="#1b1f24"]{fill:#e8e4dc}:root[data-theme=dark] svg [fill="#2e7ba6"]{fill:#6fb2d9}:root[data-theme=dark] svg [fill="#5b6570"]{fill:#a1aab3}:root[data-theme=dark] svg [fill="#838b93"]{fill:#7f8891}:root[data-theme=dark] svg [fill="#b9791f"]{fill:#e8a33d}:root[data-theme=dark] svg [fill="#ffffff"]{fill:#1c2127}:root[data-theme=dark] svg [fill="rgba(185,121,31,0.05)"]{fill:rgba(232,163,61,0.065)}:root[data-theme=dark] svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root[data-theme=dark] svg [fill="rgba(46,123,166,0.10)"]{fill:rgba(111,178,217,0.13)}:root[data-theme=dark] svg [fill="rgba(91,101,112,0.10)"]{fill:rgba(161,170,179,0.1)}:root[data-theme=dark] svg [stroke="#1b1f24"]{stroke:#e8e4dc}:root[data-theme=dark] svg [stroke="#2e7ba6"]{stroke:#6fb2d9}:root[data-theme=dark] svg [stroke="#5b6570"]{stroke:#a1aab3}:root[data-theme=dark] svg [stroke="#838b93"]{stroke:#7f8891}:root[data-theme=dark] svg [stroke="#b9791f"]{stroke:#e8a33d}:root[data-theme=dark] svg [stroke="rgba(185,121,31,0.50)"]{stroke:rgba(232,163,61,0.65)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.20)"]{stroke:rgba(232,228,220,0.2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Hangar · Review · Crossplane v2 vocabulary</span>
+  <h1>Is &quot;claim&quot; the right word in a Crossplane v2 world?</h1>
+  <p class="prose" style="color:var(--ink-2)">I use Crossplane v2 exclusively, and one word kept rubbing me the wrong way: "Ephemeral runs are claims to Crossplane." I asked ChatGPT to analyse it, then had Claude check that analysis against the v2 docs and every repo. This is what held up, what didn't, and what changed.</p>
+  <div class="meta"><span><b>Review</b> October 5, 2026</span><span><b>Scope</b> the site, Hangar docs, Autopilot code and docs, Airframe docs</span><span><b>Acted on in</b> hangar#32, hangar#33, autopilot#5, airframe#50</span></div>
+</header>
+
+
+<div class="verdict ok">
+  <span class="stamp">Done · all four PRs merged Oct 5, 2026</span>
+  <h2>"Claim" was the wrong word. "Direct request" says what's actually different.</h2>
+  <p class="prose">Crossplane v2 removed Claims: namespaced XRs don't need them, and only <code>LegacyCluster</code> XRs from v1 XRDs still support them. So a Crossplane reader who sees "AgentRun claim" assumes v1 indirection that Hangar never used. The fix was mostly words, because nothing in Hangar was ever built on Claims.</p>
+  <ul>
+    <li><b>Principle, now:</b> Durable changes are git commits. Ephemeral runs are direct requests to Crossplane.</li>
+    <li><b>Any Crossplane object</b> is an XR (a namespaced composite resource), never a claim.</li>
+    <li><b>Autopilot's narrow-only request</b> is called <i>requested limits</i> (<code>LimitRequest</code> in code, passed as <code>limits</code>).</li>
+  </ul>
+</div>
+
+<section>
+  <h2>What changed in v2</h2>
+  <div class="prose"><p>The whole reason for a Claim was that v1 XRs were cluster-scoped. Namespaced XRs remove that reason, and v2 removes Claims with it. Every Airframe XRD and the draft <code>AgentRun</code> XRD are <code>apiextensions.crossplane.io/v2</code>, <code>scope: Namespaced</code>, with no <code>claimNames</code>.</p></div>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="crossplane-v2-vocabulary-f1-t crossplane-v2-vocabulary-f1-d"><title id="crossplane-v2-vocabulary-f1-t">Crossplane v1 and v2 resource paths</title><desc id="crossplane-v2-vocabulary-f1-d">In v1 a namespaced Claim pointed at a cluster-scoped XR, which composed resources. In v2 a namespaced XR composes resources directly, and Claims are gone.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><rect x="24" y="24" width="346" height="228" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="28" width="92" height="12" rx="2" fill="#f2efe9"/><text x="82.0" y="37" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">CROSSPLANE V1</text><rect x="40" y="72" width="92" height="56" rx="6" fill="#f2efe9"/><rect x="40" y="72" width="92" height="56" rx="6" fill="rgba(91,101,112,0.10)" stroke="#838b93" stroke-width="1"/><text x="86.0" y="98.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Claim</text><text x="86.0" y="114.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">namespaced</text><rect x="150" y="72" width="92" height="56" rx="6" fill="#f2efe9"/><rect x="150" y="72" width="92" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="196.0" y="98.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">XR</text><text x="196.0" y="114.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">cluster-scoped</text><rect x="260" y="72" width="92" height="56" rx="6" fill="#f2efe9"/><rect x="260" y="72" width="92" height="56" rx="6" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="306.0" y="98.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Resources</text><text x="306.0" y="114.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">composed</text><path d="M132,100 L146,100" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M242,100 L256,100" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><text x="40" y="168" fill="#5b6570" font-size="11" font-weight="400" font-family="'Geist', system-ui, sans-serif" text-anchor="start">A Claim let a namespaced team ask for a</text><text x="40" y="186" fill="#5b6570" font-size="11" font-weight="400" font-family="'Geist', system-ui, sans-serif" text-anchor="start">cluster-scoped XR without cluster access.</text><text x="40" y="228" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">The indirection the word implies.</text><rect x="390" y="24" width="346" height="228" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="402" y="28" width="196" height="12" rx="2" fill="#f2efe9"/><text x="500.0" y="37" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">CROSSPLANE V2 · WHAT HANGAR USES</text><rect x="406" y="72" width="120" height="56" rx="6" fill="#f2efe9"/><rect x="406" y="72" width="120" height="56" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="466.0" y="98.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">XR</text><text x="466.0" y="114.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">namespaced</text><rect x="606" y="72" width="114" height="56" rx="6" fill="#f2efe9"/><rect x="606" y="72" width="114" height="56" rx="6" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="663.0" y="98.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Resources</text><text x="663.0" y="114.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">composed</text><path d="M526,100 L602,100" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><rect x="536" y="82" width="56" height="12" rx="2" fill="#f2efe9"/><text x="564.0" y="91" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">COMPOSES</text><rect x="406" y="156" width="120" height="44" rx="6" fill="#f2efe9"/><rect x="406" y="156" width="120" height="44" rx="6" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.20)" stroke-width="1" stroke-dasharray="4,3"/><text x="466.0" y="182.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Claim</text><line x1="495" y1="173" x2="505" y2="183" stroke="#5b6570" stroke-width="1.6"/><line x1="495" y1="183" x2="505" y2="173" stroke="#5b6570" stroke-width="1.6"/><text x="542" y="174" fill="#5b6570" font-size="11" font-weight="400" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Removed. Only LegacyCluster</text><text x="542" y="192" fill="#5b6570" font-size="11" font-weight="400" font-family="'Geist', system-ui, sans-serif" text-anchor="start">XRs from v1 XRDs keep it.</text><text x="406" y="236" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">All 17 Airframe XRDs are v2 and namespaced.</text></svg></div><figcaption><b>Figure 1</b>v1 needed a Claim in front of a cluster-scoped XR. v2 makes the XR itself namespaced, so the Claim has nothing left to do.</figcaption></figure>
+</section>
+
+<section>
+  <h2>Where the analysis was right, and where it slipped</h2>
+  <div class="cards">
+    <div class="card"><span class="eyebrow">Right</span><h3>The core point</h3><p>"Claim" signals v1 to anyone who knows Crossplane. The v2 docs say it plainly: namespaced XRs don't support claims.</p></div>
+    <div class="card"><span class="eyebrow">Overstated</span><h3>It's prose, not the model</h3><p>Nothing in Hangar was built on Claims. "Kubernetes API for AgentRun claims" in a README is wording, not an implementation choice.</p></div>
+    <div class="card"><span class="eyebrow">Missed</span><h3>Its favourite fix</h3><p>"Ephemeral runs are Crossplane XRs" doesn't separate the planes, because durable apps are XRs too. The difference is the path.</p></div>
+    <div class="card"><span class="eyebrow">Missed</span><h3>How far it went</h3><p>The word was all over the site: the glossary, the stack page, the cost essay's rule of thumb and the overview diagrams.</p></div>
+    <div class="card"><span class="eyebrow">Missed</span><h3>Two meanings in Autopilot</h3><p>One was the <code>AgentRun</code>. The other was the narrow-only request in code, which also applies to local sessions and child spawns. It needed its own name.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>The two planes, named by their path</h2>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="crossplane-v2-vocabulary-f2-t crossplane-v2-vocabulary-f2-d"><title id="crossplane-v2-vocabulary-f2-t">Hangar&#x27;s two planes</title><desc id="crossplane-v2-vocabulary-f2-d">Durable changes go from a person or agent through a reviewed git commit and Argo CD to an Airframe XR. Ephemeral runs go from an agent through the Clearance policy gate as a direct request to the Kubernetes API, creating an AgentRun XR with a deadline.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><rect x="24" y="24" width="712" height="116" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="28" width="204" height="12" rx="2" fill="#f2efe9"/><text x="138.0" y="37" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">DURABLE · REVIEWED AND REPLAYABLE</text><rect x="40" y="64" width="120" height="56" rx="6" fill="#f2efe9"/><rect x="40" y="64" width="120" height="56" rx="6" fill="rgba(46,123,166,0.10)" stroke="#2e7ba6" stroke-width="1"/><text x="100.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Person or agent</text><text x="100.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">proposes</text><rect x="212" y="64" width="136" height="56" rx="6" fill="#f2efe9"/><rect x="212" y="64" width="136" height="56" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><rect x="220" y="70" width="60" height="12" rx="2" fill="transparent" stroke="#b9791f" stroke-opacity="0.5" stroke-width="0.8"/><text x="250.0" y="79" fill="#b9791f" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">ONLY PATH</text><text x="280.0" y="102" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Reviewed commit</text><text x="280.0" y="118" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">git</text><rect x="400" y="64" width="104" height="56" rx="6" fill="#f2efe9"/><rect x="400" y="64" width="104" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="452.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Argo CD</text><text x="452.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">applies</text><rect x="556" y="64" width="176" height="56" rx="6" fill="#f2efe9"/><rect x="556" y="64" width="176" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="644.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">App XR</text><text x="644.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">Airframe, lives in git</text><path d="M160,92 L208,92" fill="none" stroke="#2e7ba6" stroke-width="1.2" marker-end="url(#arrow-link)"/><path d="M348,92 L396,92" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><path d="M504,92 L552,92" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="24" y="164" width="712" height="116" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="168" width="192" height="12" rx="2" fill="#f2efe9"/><text x="132.0" y="177" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">EPHEMERAL · BOUNDED AND AUDITED</text><rect x="40" y="204" width="120" height="56" rx="6" fill="#f2efe9"/><rect x="40" y="204" width="120" height="56" rx="6" fill="rgba(46,123,166,0.10)" stroke="#2e7ba6" stroke-width="1"/><text x="100.0" y="230.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Agent</text><text x="100.0" y="246.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">asks to run</text><rect x="212" y="204" width="136" height="56" rx="6" fill="#f2efe9"/><rect x="212" y="204" width="136" height="56" rx="6" fill="rgba(185,121,31,0.05)" stroke="rgba(185,121,31,0.50)" stroke-width="1" stroke-dasharray="4,4"/><text x="280.0" y="230.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Clearance</text><text x="280.0" y="246.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">policy gate</text><rect x="400" y="204" width="104" height="56" rx="6" fill="#f2efe9"/><rect x="400" y="204" width="104" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="452.0" y="230.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">K8s API</text><text x="452.0" y="246.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">direct request</text><rect x="556" y="204" width="176" height="56" rx="6" fill="#f2efe9"/><rect x="556" y="204" width="176" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="644.0" y="230.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">AgentRun XR</text><text x="644.0" y="246.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">deadline, then gone</text><path d="M160,232 L208,232" fill="none" stroke="#2e7ba6" stroke-width="1.2" marker-end="url(#arrow-link)"/><path d="M348,232 L396,232" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><path d="M504,232 L552,232" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="350" y="214" width="44" height="12" rx="2" fill="#f2efe9"/><text x="372.0" y="223" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">LIMITS</text><text x="40" y="304" fill="#5b6570" font-size="11" font-weight="400" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Both planes end in an XR. What differs is the path, so the principle names the path.</text></svg></div><figcaption><b>Figure 2</b>Why "Ephemeral runs are Crossplane XRs" doesn't work: durable apps are XRs too. A run is different because it skips the commit, so it's a direct request.</figcaption></figure>
+</section>
+
+<section>
+  <h2>What changed</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td>Ephemeral runs are claims to Crossplane.</td><td>Ephemeral runs are direct requests to Crossplane.</td></tr>
+      <tr><td>AgentRun claim</td><td>AgentRun XR, or just AgentRun</td></tr>
+      <tr><td>Glossary: Claim</td><td>Glossary: XR, with a note that v1 put a Claim in front of it</td></tr>
+      <tr><td>A claim says what you want; reconciliation keeps it true.</td><td>An XR says what you want; reconciliation keeps it true.</td></tr>
+      <tr><td>If you'd be upset that it changed back, it's a claim.</td><td>If you'd be upset that it changed back, it's an XR.</td></tr>
+      <tr><td><code>Claim</code> and <code>claim=</code> in Autopilot's code</td><td><code>LimitRequest</code> and <code>limits=</code>, called requested limits in prose</td></tr>
+      <tr><td>Diagram labels CLAIM and "claims · ttl"</td><td>API and "XRs · ttl"</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Left alone, because the word is plain English there: "every claim is labelled Built", the SLO compare-and-set claim, token and OIDC claims, <code>SandboxClaim</code> (a real agent-sandbox kind), and the dated Sep 27, 2026 architecture review, which is a point-in-time record.</p>
+</section>
+
+<section>
+  <h2>Tracking</h2>
+  <div class="track">
+    <div class="row"><h3>Site and Hangar docs</h3><span class="chip c-ok">Merged · hangar#32</span><p>Principle, glossary, stack page, cost essay, overview diagrams.</p></div>
+    <div class="row"><h3>Autopilot code and docs</h3><span class="chip c-ok">Merged · autopilot#5</span><p>AgentRun is an XR; <code>Claim</code> renamed <code>LimitRequest</code>, passed as <code>limits</code> on <code>session_open</code> and <code>run.spawn</code>.</p></div>
+    <div class="row"><h3>Airframe docs</h3><span class="chip c-ok">Merged · airframe#50</span><p>The Skyport demo walkthrough, plus a chart CI fix that rode along.</p></div>
+    <div class="row"><h3>Glossary note</h3><span class="chip c-ok">Merged · hangar#33</span><p>Why the code once said <code>claim</code>.</p></div>
+  </div>
+</section>
+
+
+<footer>Is &quot;claim&quot; the right word in a Crossplane v2 world? · October 5, 2026 · Part of the Hangar library at hangarplatform.dev/library/</footer>
+
+</div>
+</body>
+</html>
