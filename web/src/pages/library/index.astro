@@ -1,18 +1,15 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { bySet, diagrams, SET_LABELS, type Diagram } from '../../data/diagrams';
-import { byKind, KIND_BLURBS, KIND_LABELS, papers, type Kind, type Paper } from '../../data/library';
+import { byKind, KIND_LABELS, papers, type Kind } from '../../data/library';
 import { u } from '../../lib/url';
 import { shortDate } from '../../lib/date';
 
-const kinds: Kind[] = ['review', 'report', 'spec'];
+const kinds: Kind[] = ['review', 'report', 'spec', 'architecture'];
 const sets = [...new Set(diagrams.map((d) => d.set))] as Diagram['set'][];
 const done = papers.filter((p) => p.status.tone === 'done').length;
 const open = papers.filter((p) => p.status.tone === 'open').length;
 const latest = [...papers].sort((a, b) => b.date.localeCompare(a.date))[0];
-const link = (p: Paper) => (p.page && !p.href ? u(`library/${p.id}/`) : u(p.href!));
-const tone = { done: 'built', open: 'draft', info: 'proposal' } as const;
-const mark = (p: Paper) => u(`marks/${p.product === 'site' ? 'hangar' : p.product}-tile.svg`);
 ---
 <Base title="Library" description={`The flight bag: all ${diagrams.length} Hangar diagrams and ${papers.length} reviews, reports and specs, each with where it stands.`} section="library">
   <div class="wrap">
@@ -27,107 +24,46 @@ const mark = (p: Paper) => u(`marks/${p.product === 'site' ? 'hangar' : p.produc
     </section>
 
     <div class="shelves">
-      <a class="shelf" href={u('diagrams/')}>
+      <section class="shelf">
         <span class="eyebrow">Charts</span>
         <span class="count">{diagrams.length}</span>
-        <h2>Diagrams</h2>
+        <h2><a class="cover" href={u('diagrams/')}>Diagrams</a></h2>
         <p>{sets.length} sets, from the whole platform at a glance down to one SLO poll tick.</p>
+        <nav class="pills" aria-label="Diagram sets">
+          {sets.map((s) => <a href={u(`diagrams/#${s}`)}>{SET_LABELS[s]} <span>{bySet(s).length}</span></a>)}
+        </nav>
         <span class="go">Browse every diagram →</span>
-      </a>
-      <a class="shelf" href="#papers">
+      </section>
+      <section class="shelf">
         <span class="eyebrow">Paperwork</span>
         <span class="count">{papers.length}</span>
-        <h2>Reviews, reports and specs</h2>
-        <p>{kinds.map((k) => `${byKind(k).length} ${KIND_LABELS[k].split(' ')[0].toLowerCase()}`).join(', ')}. Newest: {shortDate(latest.date)}.</p>
-        <span class="go"><span class="chip built">{done} done</span> <span class="chip draft">{open} open</span></span>
-      </a>
+        <h2><a class="cover" href={u('library/papers/')}>Everything written down</a></h2>
+        <p>Every review, report, spec and architecture map, each saying where it stands today. Newest: {shortDate(latest.date)}.</p>
+        <p><span class="chip built">{done} done</span> <span class="chip draft">{open} open</span></p>
+        <nav class="pills" aria-label="Kinds of paper">
+          {kinds.map((k) => <a href={u(`library/papers/#${k}`)}>{KIND_LABELS[k]} <span>{byKind(k).length}</span></a>)}
+        </nav>
+        <span class="go">Browse every paper →</span>
+      </section>
     </div>
-
-    <nav class="sets" aria-label="Diagram sets">
-      {sets.map((s) => <a href={u(`diagrams/#${s}`)}>{SET_LABELS[s]} <span>{bySet(s).length}</span></a>)}
-    </nav>
-
-    <section id="papers" class="papers">
-      <h2>The paperwork</h2>
-      <p class="muted">Each paper carries its status: what happened to a review's findings, what a report showed, or where a spec stands today.</p>
-      <div class="filter" role="group" aria-label="Show">
-        <button type="button" data-kind="all" aria-pressed="true">All <span>{papers.length}</span></button>
-        {kinds.map((k) => <button type="button" data-kind={k} aria-pressed="false">{KIND_LABELS[k]} <span>{byKind(k).length}</span></button>)}
-      </div>
-      {kinds.map((k) => (
-        <section class="kind" id={k} data-kind={k}>
-          <h3>{KIND_LABELS[k]}</h3>
-          <p class="muted blurb">{KIND_BLURBS[k]}</p>
-          <ol class="list">
-            {byKind(k).map((p) => (
-              <li>
-                <a href={link(p)}>
-                  <img class="mark" src={mark(p)} width="28" height="28" alt="" />
-                  <span class="body">
-                    <span class="eyebrow">{shortDate(p.date)} · {p.product === 'site' ? 'This site' : p.product[0].toUpperCase() + p.product.slice(1)}{p.page && ' · Illustrated'}</span>
-                    <span class="t">{p.title}</span>
-                    <span class="dek">{p.dek}</span>
-                  </span>
-                  <span class={`chip ${tone[p.status.tone]}`}>{p.status.label}</span>
-                </a>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ))}
-    </section>
   </div>
 </Base>
-<script>
-  const buttons = document.querySelectorAll<HTMLButtonElement>('.filter button');
-  const kinds = document.querySelectorAll<HTMLElement>('.papers .kind');
-  buttons.forEach((b) =>
-    b.addEventListener('click', () => {
-      buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-      kinds.forEach((k) => (k.hidden = b.dataset.kind !== 'all' && k.dataset.kind !== b.dataset.kind));
-    }),
-  );
-</script>
 <style>
-  .shelves { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .shelves { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); margin-bottom: 4rem; }
   .shelf {
-    position: relative; display: flex; flex-direction: column; gap: 0.4rem; padding: 1.4rem 1.5rem 1.3rem;
+    position: relative; display: flex; flex-direction: column; gap: 0.5rem; padding: 1.4rem 1.5rem 1.3rem;
     background: var(--raised); border: 1px solid var(--rule); border-top: 3px solid var(--accent); border-radius: 8px;
-    color: inherit; text-decoration: none;
   }
-  .shelf:hover { border-color: var(--accent); color: inherit; }
-  .shelf h2 { margin: 0; font-size: 1.7rem; }
-  .shelf p { margin: 0; color: var(--muted); max-width: 40ch; }
+  .shelf:hover { border-color: var(--accent); }
+  .shelf h2 { margin: 0; font-size: 1.7rem; padding-right: 4rem; }
+  .shelf .cover { color: inherit; text-decoration: none; }
+  /* The whole card opens the shelf; the pills sit above that link and jump straight to a set or kind. */
+  .shelf .cover::after { content: ''; position: absolute; inset: 0; border-radius: 8px; }
+  .shelf p { margin: 0; color: var(--muted); max-width: 44ch; }
   .shelf .count { position: absolute; top: 1rem; right: 1.3rem; font-family: var(--font-serif); font-size: 3.2rem; line-height: 1; color: var(--accent); }
-  .shelf .go { margin-top: 0.6rem; font-size: 0.92rem; color: var(--sky); }
-  .sets { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.25rem 0 0; }
-  .sets a { padding: 0.3rem 0.65rem; border: 1px solid var(--rule); border-radius: 999px; text-decoration: none; color: var(--ink); background: var(--raised); font-size: 0.88rem; }
-  .sets a:hover { border-color: var(--accent); }
-  .sets span { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); margin-left: 0.2rem; }
-
-  .papers { margin: 4rem 0 3rem; scroll-margin-top: 70px; }
-  .papers > h2 { margin-bottom: 0.4rem; }
-  .filter { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1.25rem 0 0.5rem; }
-  .filter button {
-    font: inherit; font-size: 0.88rem; cursor: pointer; padding: 0.3rem 0.75rem; border-radius: 999px;
-    border: 1px solid var(--rule); background: transparent; color: var(--ink);
-  }
-  .filter button span { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); margin-left: 0.2rem; }
-  .filter button[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); }
-  .kind { margin-top: 2rem; scroll-margin-top: 70px; }
-  .kind h3 { margin: 0; font-size: 1.45rem; }
-  .blurb { margin: 0.3rem 0 0.8rem; max-width: 62ch; }
-  .list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
-  .list li { border-bottom: 1px solid var(--rule); }
-  .list a { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 0.3rem 1rem; align-items: start; padding: 1rem 0.25rem; color: inherit; text-decoration: none; }
-  .list a:hover .t { color: var(--sky); }
-  .list .mark { border-radius: 6px; box-shadow: 0 0 0 1px var(--rule); margin-top: 0.15rem; }
-  .list .body { display: flex; flex-direction: column; gap: 0.2rem; }
-  .list .t { font-family: var(--font-serif); font-size: 1.35rem; line-height: 1.2; }
-  .list .dek { color: var(--muted); font-size: 0.95rem; line-height: 1.5; max-width: 66ch; }
-  .list .chip { margin-top: 0.2rem; }
-  @media (max-width: 640px) {
-    .list a { grid-template-columns: 28px minmax(0, 1fr); }
-    .list .chip { grid-column: 2; justify-self: start; }
-  }
+  .shelf .go { margin-top: auto; padding-top: 0.6rem; font-size: 0.92rem; color: var(--sky); }
+  .pills { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+  .pills a { padding: 0.25rem 0.6rem; border: 1px solid var(--rule); border-radius: 999px; text-decoration: none; color: var(--ink); background: var(--paper); font-size: 0.84rem; }
+  .pills a:hover { border-color: var(--accent); }
+  .pills span { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); margin-left: 0.2rem; }
 </style>

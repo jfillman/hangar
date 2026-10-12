@@ -4,7 +4,7 @@
 // public/papers/ by scripts/sync-assets.mjs) and shown at /library/<id>/, or a page that
 // already lives elsewhere on the site (the docs, the scorecard), linked with `href`.
 // `status` is the tracking half: what happened to the paper's findings, or where the spec stands.
-export type Kind = 'review' | 'report' | 'spec';
+export type Kind = 'review' | 'report' | 'spec' | 'architecture';
 export type Tone = 'done' | 'open' | 'info';
 export type Paper = {
   id: string;
@@ -18,14 +18,57 @@ export type Paper = {
   status: { label: string; tone: Tone };
 };
 
-export const KIND_LABELS: Record<Kind, string> = { review: 'Reviews', report: 'Reports', spec: 'Specs and plans' };
+export const KIND_LABELS: Record<Kind, string> = { review: 'Reviews', report: 'Reports', spec: 'Specs and plans', architecture: 'Architecture' };
 export const KIND_BLURBS: Record<Kind, string> = {
   review: 'Someone, or something, looked hard at the work and said what they thought. Each one says what I did about it.',
   report: 'Measurements and findings: what a run, a test or an investigation actually showed.',
   spec: 'Designs, requirements and plans, written before the work and kept honest after it.',
+  architecture: 'How a product was actually wired on a given day, drawn from the code. Snapshots, so each one links to the living doc.',
 };
 
 export const papers: Paper[] = [
+  {
+    id: 'glidepath-sdlc-review', kind: 'review', product: 'glidepath', date: '2026-10-12',
+    title: 'Glidepath against the everyday software lifecycle',
+    dek: 'A CI/CD review read from the code: strong from merge to production, thin on the inner loop, and most of its governance advises rather than enforces.',
+    page: 'papers/2026-10-12-glidepath-sdlc-review.html',
+    status: { label: 'Open · roadmap written', tone: 'open' },
+  },
+  {
+    id: 'glidepath-production-roadmap', kind: 'spec', product: 'glidepath', date: '2026-10-12',
+    title: 'Glidepath, from the lab to production',
+    dek: 'The companion to the SDLC review: every weakness sorted by cause, and nine items in three lanes so a production install never waits on a feature it doesn\'t need.',
+    page: 'papers/2026-10-12-glidepath-production-roadmap.html',
+    status: { label: 'Proposed · 9 items', tone: 'info' },
+  },
+  {
+    id: 'tower-field-report-2', kind: 'report', product: 'tower', date: '2026-10-11',
+    title: 'Tower, judged again as my only console',
+    dek: 'Four weeks on: yes for looking, now yes for acting. What still sends me elsewhere is the platform under the console, not a missing button.',
+    page: 'papers/2026-10-11-tower-field-report-2.html',
+    status: { label: 'Open · 3 of 16 done', tone: 'open' },
+  },
+  {
+    id: 'autopilot-architecture-map', kind: 'architecture', product: 'autopilot', date: '2026-10-07',
+    title: 'Autopilot, drawn as Kubernetes resources',
+    dek: 'One request through every resource it touches, the five documents that make up an agent\'s contract, and six things the code said that the docs didn\'t.',
+    page: 'papers/2026-10-07-autopilot-architecture-map.html',
+    status: { label: 'Snapshot · Oct 7, 2026', tone: 'info' },
+  },
+  {
+    id: 'airframe-service-catalog', kind: 'architecture', product: 'airframe', date: '2026-09-20',
+    title: 'Airframe, the service catalog underneath',
+    dek: 'Eleven XRDs that turn a git commit into a running service, without any cluster ever holding credentials for another cluster\'s API.',
+    page: 'papers/2026-09-20-airframe-service-catalog.html',
+    status: { label: 'Snapshot · Sep 20, 2026', tone: 'info' },
+  },
+  {
+    id: 'tower-field-report-1', kind: 'report', product: 'tower', date: '2026-09-14',
+    title: 'Tower, judged as my only console',
+    dek: 'Would I give up kubectl, Argo CD and the Tekton dashboard for Tower? Mostly for looking, not yet for acting, and a backlog to close the gap.',
+    page: 'papers/2026-09-14-tower-field-report-1.html',
+    status: { label: '10 of 11 done', tone: 'done' },
+  },
   {
     id: 'airframe-crossplane-agent-api', kind: 'review', product: 'airframe', date: '2026-10-08',
     title: 'How well does Airframe use Crossplane, and can an agent drive it?',
