@@ -6,7 +6,9 @@
     "prepare-plugin": "sh prepare.sh",
     "dev": "vite --port 5173 --host 127.0.0.1",
     "record": "node record.mjs",
-    "encode": "sh encode.sh"
+    "encode": "sh encode.sh",
+    "record:breakglass": "node record-breakglass.mjs",
+    "encode:breakglass": "sh encode-breakglass.sh"
   },
   "dependencies": {
     "@backstage/catalog-model": "^1.10.1",
@@ -29,6 +31,8 @@
     "@material-ui/lab": "^4.0.0-alpha.61",
     "@types/react": "^18.3.31",
     "@vitejs/plugin-react": "^6.1.1",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
     "js-yaml": "^5.4.2",
     "playwright-core": "^1.63.0",
     "react": "^18.3.1",
