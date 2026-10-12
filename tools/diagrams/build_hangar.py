@@ -2,12 +2,12 @@
 
     python3 build_hangar.py [OUT_DIR]
 
-Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossplane (4), Service catalog (5), Testing (3), Expansion (3), SLO (4) and Overview (5) beside them. Needs only the Python standard library.
+Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossplane (4), Service catalog (5), Testing (3), Expansion (3), SLO (4), Break-glass (7) and Overview (5) beside them. Needs only the Python standard library.
 """
 import sys, os, re, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib
-import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, e_m, e_n, d123, d456, d789, d1011
+import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, e_m, e_n, e_o, d123, d456, d789, d1011
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '../../docs/autopilot/diagrams')
@@ -23,6 +23,8 @@ OUT_TESTING = os.path.join(OUT, '../../testing/diagrams')
 OUT_EXPANSION = os.path.join(OUT, '../../expansion/diagrams')
 # The SLO set (pictures for the SLO feature doc) lives in docs/slo/diagrams.
 OUT_SLO = os.path.join(OUT, '../../slo/diagrams')
+# The Break-glass set (pictures for the essay "Breaking the glass") lives in docs/breakglass/diagrams.
+OUT_BREAKGLASS = os.path.join(OUT, '../../breakglass/diagrams')
 # The Overview set (high-level Hangar pictures, the home page's diagram among them) lives in docs/overview/diagrams.
 # It uses its own kit, ov.py, for motion, product marks and click-through, so it is written whole here.
 OUT_OVERVIEW = os.path.join(OUT, '../../overview/diagrams')
@@ -44,6 +46,8 @@ OVERVIEW = [('change-road', e_l.o_change), ('product-family', e_l.o_family), ('t
             ('layer-stack', e_l.o_layers), ('lifecycle-wheel', e_l.o_wheel)]
 TESTING = [e_m.t_how_it_works, e_m.t_in_hangar, e_m.t_free_tier]
 EXPANSION = [e_n.g_many_targets, e_n.g_where_policy_lives, e_n.g_today_and_next]
+BREAKGLASS = [e_o.b_exec_vs_debug, e_o.b_how_it_works, e_o.b_two_people, e_o.b_layers, e_o.b_policies,
+              e_o.b_lifecycle, e_o.b_report_card]
 SLO = [e_k.s_pipeline, e_k.s_thresholds, e_k.s_state, e_k.s_tick]
 REFERENCE = [d123.d1, d123.d2, d123.d3, d456.d4, d456.d5, d456.d6, d789.d7, d789.d8, d789.d9, d1011.d10]
 
@@ -75,6 +79,7 @@ cat = build('catalog', CATALOG, '.', 'Hangar · Airframe · Service catalog', ro
 tst = build('testing', TESTING, '.', 'Hangar · Glidepath · Testing', root=OUT_TESTING)
 exp = build('expansion', EXPANSION, '.', 'Hangar · Airframe · Expansion', root=OUT_EXPANSION)
 slo = build('slo', SLO, '.', 'Hangar · SLOs', root=OUT_SLO)
+bg = build('breakglass', BREAKGLASS, '.', 'Hangar · Tower · Break-glass', root=OUT_BREAKGLASS)
 
 os.makedirs(OUT_OVERVIEW, exist_ok=True)
 for f in glob.glob(os.path.join(OUT_OVERVIEW, '[0-9][0-9]-*.html')):

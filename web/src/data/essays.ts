@@ -3,6 +3,13 @@ export type Essay = { slug: string; title: string; dek: string; date: string; mi
 
 export const essays: Essay[] = [
   {
+    slug: 'breaking-the-glass',
+    title: 'Breaking the glass',
+    dek: "Every platform team gets the pod exec finding, and every attempt to remove exec meets the same pushback. How I kept the capability in Tower and locked it down: a debug container instead of exec, no credential for anyone, a second person on production, six admission policies, a recording of every byte, and an honest grade of how secure it really is.",
+    date: '2026-10-12',
+    minutes: 14,
+  },
+  {
     slug: 'catalog-that-grows',
     title: 'A service catalog that grows with the company',
     dek: "Hangar is Kubernetes-native, but the people it serves don't all run on Kubernetes. In two days, its catalog learned to offer AWS Lambda functions, Azure Functions and three cloud deploy targets. Why an API in front of the cloud lets a catalog grow with a company, and how the architects' and security team's rules can live inside it as code.",
