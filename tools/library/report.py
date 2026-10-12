@@ -61,11 +61,21 @@ def chip(text, tone='info'):
     return f'<span class="chip c-{tone}">{esc(text)}</span>'
 
 
+# Status colours a figure may use beyond lib's palette (report.css --ok and --bad), with dark values.
+GOOD, BAD = '#2e7d4f', '#a3352b'
+STATUS_DARK = {GOOD: '#5fae84', BAD: '#ec8d82'}
+
+
+def tick(x, y, color=GOOD):
+    """A small check mark: the guarantee holds."""
+    return f'<path d="M{x - 4},{y} L{x - 1},{y + 3} L{x + 4},{y - 3}" fill="none" stroke="{color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+
+
 def _svg_dark(svg):
     """Dark-theme rules for the colours an SVG uses (the attribute half of lib.dark_css)."""
     rules = []
     for attr, val in sorted(set(re.findall(r'\b(fill|stroke)="([^"]+)"', svg))):
-        d = None if val == lib.PAPER else lib.dark_colour(val)
+        d = None if val == lib.PAPER else (STATUS_DARK.get(val) or lib.dark_colour(val))
         if d:
             rules.append(f'svg [{attr}="{val}"]{{{attr}:{d}}}')
     if not rules:

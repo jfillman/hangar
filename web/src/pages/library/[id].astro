@@ -15,7 +15,7 @@ const { p } = Astro.props;
 ---
 <Base title={p.title} description={p.dek} section="library">
   <div class="wrap">
-    <p class="crumbs"><a href={u('library/')}>Library</a> / <a href={u(`library/#${p.kind}`)}>{KIND_LABELS[p.kind]}</a></p>
+    <p class="crumbs"><a href={u('library/')}>Library</a> / <a href={u('library/papers/')}>Paperwork</a> / <a href={u(`library/papers/#${p.kind}`)}>{KIND_LABELS[p.kind]}</a></p>
     <Frame path={p.page!} title={p.title} eyebrow={`${KIND_LABELS[p.kind].replace(/s( and.*)?$/, '')} · ${longDate(p.date)}`} />
   </div>
 </Base>

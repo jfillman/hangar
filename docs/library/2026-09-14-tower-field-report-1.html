@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tower, judged as my only console</title>
+<meta name="description" content="Would I give up kubectl, Argo CD and the Tekton dashboard for Tower, for the apps I own? A field report from the app owner&#x27;s seat: four pillars scored, what works, what still sends me elsewhere, and a backlog.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The Hangar diagram profile (web/src/styles/global.css, tools/diagrams/lib.py): warm paper,
+   ink, amber accent, sky links; Instrument Serif, Geist, Geist Mono. Semantic colours mark
+   severity only. Theme follows the system unless <html data-theme> is set (the site sets it
+   when this page is embedded). */
+:root{
+  color-scheme:light;
+  --ground:#f2efe9; --paper:#fbfaf7; --ink:#1b1f24; --ink-2:#5b6570; --rule:rgba(27,31,36,.14);
+  --accent:#2e7ba6; --accent-soft:#dcebf4; --amber:#b9791f;
+  --ok:#2e7d4f; --ok-bg:#e1efe5; --warn:#9a6212; --warn-bg:#f4e6c9; --bad:#a3352b; --bad-bg:#f5e1dd; --info:#5b6570; --info-bg:#e8e3da;
+  --code-bg:#e8e3da;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+    --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+    --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+    --code-bg:#1b1f24;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+  --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+  --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+  --code-bg:#1b1f24;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,2.75rem)}
+h2{font-size:1.9rem;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+h3{font-size:1.3rem}
+p{margin:0}
+section{display:flex;flex-direction:column;gap:16px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+code{font-family:var(--mono);font-size:.85em;background:var(--code-bg);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.85rem;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:500}
+
+.verdict{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--warn);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.verdict .stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);padding:4px 10px;border-radius:3px}
+.verdict h2{border:0;padding:0;font-size:1.8rem}
+.verdict ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+
+.tbl{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--rule)}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:500;background:var(--ground)}
+tr:last-child td{border-bottom:0}
+td.area{font-weight:600;white-space:nowrap}
+.chip{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.04em;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.c-ok{color:var(--ok);background:var(--ok-bg)} .c-warn{color:var(--warn);background:var(--warn-bg)} .c-bad{color:var(--bad);background:var(--bad-bg)} .c-info{color:var(--info);background:var(--info-bg)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.card h3{font-size:1rem;font-family:var(--sans);font-weight:600}
+.card p{font-size:.92rem;color:var(--ink-2)}
+
+.finding{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);border-radius:4px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.finding.sev-high{border-left-color:var(--bad)} .finding.sev-med{border-left-color:var(--warn)} .finding.sev-low{border-left-color:var(--info)}
+.finding .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.finding .id{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.finding h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;flex:1 1 300px}
+.finding p{font-size:.94rem}
+.ev{font-size:.84rem;color:var(--ink-2)}
+.ev b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin-right:6px}
+.flist{display:flex;flex-direction:column;gap:10px}
+
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.rec{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.rec h3{display:flex;align-items:center;gap:8px}
+.rec ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:.92rem}
+.rec li b{font-weight:600}
+
+.gates{counter-reset:g;display:flex;flex-direction:column;gap:0;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.gate{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+.gate:last-child{border-bottom:0}
+.gate .n{font-family:var(--mono);font-size:.85rem;color:var(--accent);background:var(--accent-soft);border-radius:4px;height:28px;display:flex;align-items:center;justify-content:center}
+.gate p{font-size:.94rem}
+.gate .when{font-size:.82rem;color:var(--ink-2)}
+
+.phase{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.note{font-size:.85rem;color:var(--ink-2)}
+ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:16px}
+
+.fig{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.fig .scroll{overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:600px;max-width:760px;height:auto;margin:0 auto}
+.fig figcaption{font-size:.85rem;color:var(--ink-2)}
+.fig figcaption b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;color:var(--amber);margin-right:6px}
+.stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:3px}
+.verdict.ok{border-top-color:var(--ok)} .verdict.ok .stamp{color:var(--ok);background:var(--ok-bg)}
+.verdict.info{border-top-color:var(--accent)} .verdict.info .stamp{color:var(--accent);background:var(--accent-soft)}
+.verdict.bad{border-top-color:var(--bad)} .verdict.bad .stamp{color:var(--bad);background:var(--bad-bg)}
+.track{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.track .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;padding:14px 16px;border-bottom:1px solid var(--rule);align-items:baseline}
+.track .row:last-child{border-bottom:0}
+.track .row h3{font-family:var(--sans);font-size:1rem;font-weight:600}
+.track .row p{grid-column:1/-1;font-size:.92rem;color:var(--ink-2)}
+.track .row .chip{justify-self:end}
+.quote{border-left:3px solid var(--amber);padding:4px 0 4px 16px;font-family:var(--serif);font-size:1.35rem;line-height:1.3}
+p.prose{display:block}
+@media (max-width:560px){.track .row{grid-template-columns:1fr}.track .row .chip{justify-self:start}}
+
+svg rect[fill="#f2efe9"]{fill:var(--paper)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) svg [fill="#1b1f24"]{fill:#e8e4dc}:root:not([data-theme=light]) svg [fill="#2e7ba6"]{fill:#6fb2d9}:root:not([data-theme=light]) svg [fill="#2e7d4f"]{fill:#5fae84}:root:not([data-theme=light]) svg [fill="#5b6570"]{fill:#a1aab3}:root:not([data-theme=light]) svg [fill="#a3352b"]{fill:#ec8d82}:root:not([data-theme=light]) svg [fill="#b9791f"]{fill:#e8a33d}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root:not([data-theme=light]) svg [stroke="#5b6570"]{stroke:#a1aab3}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}}
+:root[data-theme=dark] svg [fill="#1b1f24"]{fill:#e8e4dc}:root[data-theme=dark] svg [fill="#2e7ba6"]{fill:#6fb2d9}:root[data-theme=dark] svg [fill="#2e7d4f"]{fill:#5fae84}:root[data-theme=dark] svg [fill="#5b6570"]{fill:#a1aab3}:root[data-theme=dark] svg [fill="#a3352b"]{fill:#ec8d82}:root[data-theme=dark] svg [fill="#b9791f"]{fill:#e8a33d}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root[data-theme=dark] svg [stroke="#5b6570"]{stroke:#a1aab3}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Tower · Field report I · The app owner&#x27;s seat</span>
+  <h1>Tower, judged as my only console</h1>
+  <p class="prose" style="color:var(--ink-2)">Tower set out to be the one place an app owner goes. So I sat in that seat and asked a blunt question: for the apps I own, end to end, would I actually give up kubectl, Argo CD, the Tekton dashboard and a release tool for this? I scored each one on three things: can I see it, can I change it, and does Tower give me enough to own the outcome without leaving.</p>
+  <div class="meta"><span><b>Report</b> September 14, 2026</span><span><b>Basis</b> a read of the Tower source, its git history and its handoff notes</span><span><b>Follow-up</b> <a target="_top" href="https://hangarplatform.dev/library/tower-field-report-2/">Field report II</a>, October 11, 2026</span></div>
+</header>
+
+
+<div class="verdict">
+  <span class="stamp">Mostly for looking · not yet for acting</span>
+  <h2>The visibility problem is solved. The authority problem is next.</h2>
+  <p>Tower already answers "where do I go to see what's happening": one URL, one app, nine tabs, real data from Kubernetes, Tekton, Argo CD, GitHub and Prometheus. The acting half is thinner. Promote and Config edits are real, careful write paths, but there's no rollback, no way to unstick Argo CD, no re-run of a failed pipeline, and no restart on a workload. Those are exactly the moments an owner reaches for a console under pressure.</p>
+</div>
+
+<section>
+  <h2>The instrument panel</h2>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tower-field-report-1-f1-t tower-field-report-1-f1-d"><title id="tower-field-report-1-f1-t">Four pillars, scored on see, change and own</title><desc id="tower-field-report-1-f1-d">Kubernetes access: full visibility, almost no change, half ownership. Argo CD: full, half, half. CI/CD: full, almost none, half. Release management: full, half, almost none.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><text x="300" y="32" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">SEE</text><text x="446" y="32" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">CHANGE</text><text x="592" y="32" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">OWN</text><line x1="24" y1="46" x2="736" y2="46" stroke="rgba(27,31,36,0.12)" stroke-width="0.8"/><text x="24" y="68" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Kubernetes cluster access</text><text x="24" y="84" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">replaces kubectl and cluster dashboards</text><text x="284" y="68" fill="#b9791f" font-size="8" font-weight="600" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end" letter-spacing="0.08em">PARTIAL</text><rect x="300" y="62" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="300" y="62" width="128" height="8" rx="4" fill="#2e7d4f"/><rect x="446" y="62" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="446" y="62" width="7.68" height="8" rx="4" fill="#a3352b"/><rect x="592" y="62" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="592" y="62" width="58.88" height="8" rx="4" fill="#b9791f"/><line x1="24" y1="102" x2="736" y2="102" stroke="rgba(27,31,36,0.12)" stroke-width="0.8"/><text x="24" y="124" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Argo CD</text><text x="24" y="140" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">replaces the Argo CD UI</text><text x="284" y="124" fill="#b9791f" font-size="8" font-weight="600" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end" letter-spacing="0.08em">PARTIAL</text><rect x="300" y="118" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="300" y="118" width="128" height="8" rx="4" fill="#2e7d4f"/><rect x="446" y="118" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="446" y="118" width="58.88" height="8" rx="4" fill="#b9791f"/><rect x="592" y="118" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="592" y="118" width="58.88" height="8" rx="4" fill="#b9791f"/><line x1="24" y1="158" x2="736" y2="158" stroke="rgba(27,31,36,0.12)" stroke-width="0.8"/><text x="24" y="180" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">CI/CD</text><text x="24" y="196" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">replaces the Tekton dashboard</text><text x="284" y="180" fill="#2e7d4f" font-size="8" font-weight="600" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end" letter-spacing="0.08em">STRONG</text><rect x="300" y="174" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="300" y="174" width="128" height="8" rx="4" fill="#2e7d4f"/><rect x="446" y="174" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="446" y="174" width="7.68" height="8" rx="4" fill="#a3352b"/><rect x="592" y="174" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="592" y="174" width="58.88" height="8" rx="4" fill="#b9791f"/><line x1="24" y1="214" x2="736" y2="214" stroke="rgba(27,31,36,0.12)" stroke-width="0.8"/><text x="24" y="236" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Release management</text><text x="24" y="252" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">replaces a release tool</text><text x="284" y="236" fill="#a3352b" font-size="8" font-weight="600" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end" letter-spacing="0.08em">GAP</text><rect x="300" y="230" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="300" y="230" width="128" height="8" rx="4" fill="#2e7d4f"/><rect x="446" y="230" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="446" y="230" width="58.88" height="8" rx="4" fill="#b9791f"/><rect x="592" y="230" width="128" height="8" rx="4" fill="rgba(27,31,36,0.05)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="592" y="230" width="7.68" height="8" rx="4" fill="#a3352b"/></svg></div><figcaption><b>Figure 1</b>Every pillar is fully visible. Change is where the gaps are: there was no exec, restart, sync, re-run or rollback anywhere in the module.</figcaption></figure>
+</section>
+
+<section>
+  <h2>Signal and noise</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Genuinely works</th><th>Still sends me elsewhere</th></tr></thead>
+    <tbody>
+      <tr><td><b>One app, one URL, nine tabs.</b> Overview, PRs, CI/CD, Releases, Topology, Images, SLOs, Notifications and Config, with no plugin-hopping.</td><td><b>No rollback.</b> A bad release only moves forward; reverting means a hand-built PR.</td></tr>
+      <tr><td><b>PR context everywhere.</b> State, CI and review status ride on the same button wherever a PR matters.</td><td><b>No exec, port-forward, restart or scale.</b> Every "act on the workload" moment means a terminal.</td></tr>
+      <tr><td><b>Config edits are real GitOps.</b> Form fields where they fit, a YAML editor where they don't, and every save checked against the chart's schema before it becomes a PR.</td><td><b>No manual sync or re-run.</b> Both are read-only observation decks.</td></tr>
+      <tr><td><b>SLOs are the real thing.</b> Multi-window burn rates from live Prometheus, with a plain-language explainer.</td><td><b>No app-level authorization.</b> Who may promote to prod is whatever branch protection says, invisible to Tower.</td></tr>
+      <tr><td><b>Shared plumbing.</b> One cluster-aware fetch backs Topology, logs, events and Tekton polling.</td><td><b>No single audit trail.</b> Config PRs, promotions and deploys each leave their own trace somewhere else.</td></tr>
+      <tr><td><b>A fleet view too.</b> The Fleet Grid and Ops Wall answer "how's everything doing".</td><td><b>Secrets, attached infrastructure and cost</b> stay out of scope.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>The backlog, and what happened to it</h2>
+  <p class="note">Ordered by how directly each item closed the gap between looking and acting. Every item extended a pattern the code already had. The "since" notes come from <a target="_top" href="https://hangarplatform.dev/library/tower-field-report-2/">Field report II</a>, four weeks later.</p>
+  <h3>Quick wins</h3><div class="track"><div class="row"><h3>Retire or wire up the Overview monitoring placeholder</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>The one visible "not wired up yet" left after the SLOs tab shipped past it. <b>Since:</b> Honest links to each environment's Grafana.</p></div><div class="row"><h3>Force sync wherever sync status already shows</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>The delivery timeline already tracks sync state with real care. Add the action Argo CD leads with. <b>Since:</b> Refresh, sync, force sync and terminate.</p></div><div class="row"><h3>Re-run a failed PipelineRun</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>The run list and DAG are there. One Tekton call is missing. <b>Since:</b> Re-run and cancel.</p></div></div><h3>Near-term</h3><div class="track"><div class="row"><h3>Rollback, as a mirror of Promote</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>The Release Matrix knows every past release per environment; point Promote at the previous row. <b>Since:</b> Rollback PRs, and pin restore for cloud targets.</p></div><div class="row"><h3>One "everything that changed" timeline per app</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>Fold config PRs and promotions into the release timeline that already exists. <b>Since:</b> Recent Activity covers release, config, rollout, rollback and images.</p></div><div class="row"><h3>Wire SLO burn-rate breaches to a notification</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>The math and the channel both exist; they'd never been connected. <b>Since:</b> SLO transition notifications, three signals.</p></div><div class="row"><h3>CPU and memory trends beside requests and limits</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>The Prometheus hook and the chart style already exist from SLOs. <b>Since:</b> Per-pod metrics in Topology.</p></div></div><h3>Strategic</h3><div class="track"><div class="row"><h3>A real per-app authorization model</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>Anyone signed in could Promote or edit Config. The only gate was GitHub review, which Tower couldn't see. <b>Since:</b> 18 permissions, owners and admins, grant-only Flight actions, audited.</p></div><div class="row"><h3>Pod exec, restart and scale, behind that model</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>The biggest reason an owner still opens a terminal, and the action with the most blast radius. <b>Since:</b> Break-glass debug containers instead of exec, two-person on Flight.</p></div><div class="row"><h3>Attached components (a database, a broker)</h3><span class="chip c-ok">Done by Oct 11, 2026</span><p>Left out of the Config tab's first version on purpose. <b>Since:</b> A Components sub-tab built from Airframe's XRD schemas.</p></div><div class="row"><h3>Secret rotation as an action</h3><span class="chip c-warn">Still open</span><p>Config rightly never shows a value, but there's no way to rotate one either. <b>Since:</b> still Infisical project links only.</p></div></div>
+</section>
+
+
+<footer>Tower, judged as my only console · September 14, 2026 · Part of the Hangar library at hangarplatform.dev/library/</footer>
+
+</div>
+</body>
+</html>
