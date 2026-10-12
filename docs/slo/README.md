@@ -212,10 +212,12 @@ kubelet's own `prober_probe_total`. Verified on 2026-10-01: lowering the objecti
 
 ## Limits
 
-- Only clusters where Backstage holds a service-account token are polled. A cluster with SLOs
-  but no token is silent.
-- Prometheus is reached through the Kubernetes API proxy, so the poller needs the `view` role on
-  `services/proxy`, which `backstage-ingestor` already has.
+- Only clusters whose Backstage entry names a credential (a token file or a token) are polled. The
+  in-cluster entry has neither, so a cluster with SLOs but no such entry is silent. On kiac-dev the
+  credential is the Backstage pod's projected, federated token (Tower `docs/credentials/index.md`).
+- Prometheus is reached through the Kubernetes API proxy, so the poller needs `get` on
+  `services/proxy` for that Service. On kiac-dev the federated reader
+  `hangar:kind-prod:backstage-ingestor` has it.
 - There is no deduplication across different SLOs. If two SLOs on one app both burn, you get
   two notifications.
 - The notification text is fixed. The thresholds are configurable (see below).
