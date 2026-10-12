@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Looking inside a production pod, without ever handing out exec</title>
+<meta name="description" content="The spec for break-glass in Tower: why a debug container beats exec, the two-person flow, the guardrails that live in the cluster rather than the portal, and the plan for testing it with two people.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The Hangar diagram profile (web/src/styles/global.css, tools/diagrams/lib.py): warm paper,
+   ink, amber accent, sky links; Instrument Serif, Geist, Geist Mono. Semantic colours mark
+   severity only. Theme follows the system unless <html data-theme> is set (the site sets it
+   when this page is embedded). */
+:root{
+  color-scheme:light;
+  --ground:#f2efe9; --paper:#fbfaf7; --ink:#1b1f24; --ink-2:#5b6570; --rule:rgba(27,31,36,.14);
+  --accent:#2e7ba6; --accent-soft:#dcebf4; --amber:#b9791f;
+  --ok:#2e7d4f; --ok-bg:#e1efe5; --warn:#9a6212; --warn-bg:#f4e6c9; --bad:#a3352b; --bad-bg:#f5e1dd; --info:#5b6570; --info-bg:#e8e3da;
+  --code-bg:#e8e3da;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+    --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+    --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+    --code-bg:#1b1f24;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+  --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+  --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+  --code-bg:#1b1f24;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,2.75rem)}
+h2{font-size:1.9rem;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+h3{font-size:1.3rem}
+p{margin:0}
+section{display:flex;flex-direction:column;gap:16px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+code{font-family:var(--mono);font-size:.85em;background:var(--code-bg);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.85rem;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:500}
+
+.verdict{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--warn);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.verdict .stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);padding:4px 10px;border-radius:3px}
+.verdict h2{border:0;padding:0;font-size:1.8rem}
+.verdict ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+
+.tbl{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--rule)}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:500;background:var(--ground)}
+tr:last-child td{border-bottom:0}
+td.area{font-weight:600;white-space:nowrap}
+.chip{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.04em;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.c-ok{color:var(--ok);background:var(--ok-bg)} .c-warn{color:var(--warn);background:var(--warn-bg)} .c-bad{color:var(--bad);background:var(--bad-bg)} .c-info{color:var(--info);background:var(--info-bg)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.card h3{font-size:1rem;font-family:var(--sans);font-weight:600}
+.card p{font-size:.92rem;color:var(--ink-2)}
+
+.finding{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);border-radius:4px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.finding.sev-high{border-left-color:var(--bad)} .finding.sev-med{border-left-color:var(--warn)} .finding.sev-low{border-left-color:var(--info)}
+.finding .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.finding .id{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.finding h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;flex:1 1 300px}
+.finding p{font-size:.94rem}
+.ev{font-size:.84rem;color:var(--ink-2)}
+.ev b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin-right:6px}
+.flist{display:flex;flex-direction:column;gap:10px}
+
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.rec{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.rec h3{display:flex;align-items:center;gap:8px}
+.rec ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:.92rem}
+.rec li b{font-weight:600}
+
+.gates{counter-reset:g;display:flex;flex-direction:column;gap:0;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.gate{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+.gate:last-child{border-bottom:0}
+.gate .n{font-family:var(--mono);font-size:.85rem;color:var(--accent);background:var(--accent-soft);border-radius:4px;height:28px;display:flex;align-items:center;justify-content:center}
+.gate p{font-size:.94rem}
+.gate .when{font-size:.82rem;color:var(--ink-2)}
+
+.phase{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.note{font-size:.85rem;color:var(--ink-2)}
+ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:16px}
+
+.fig{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.fig .scroll{overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:600px;max-width:760px;height:auto;margin:0 auto}
+.fig figcaption{font-size:.85rem;color:var(--ink-2)}
+.fig figcaption b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;color:var(--amber);margin-right:6px}
+.stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:3px}
+.verdict.ok{border-top-color:var(--ok)} .verdict.ok .stamp{color:var(--ok);background:var(--ok-bg)}
+.verdict.info{border-top-color:var(--accent)} .verdict.info .stamp{color:var(--accent);background:var(--accent-soft)}
+.verdict.bad{border-top-color:var(--bad)} .verdict.bad .stamp{color:var(--bad);background:var(--bad-bg)}
+.track{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.track .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;padding:14px 16px;border-bottom:1px solid var(--rule);align-items:baseline}
+.track .row:last-child{border-bottom:0}
+.track .row h3{font-family:var(--sans);font-size:1rem;font-weight:600}
+.track .row p{grid-column:1/-1;font-size:.92rem;color:var(--ink-2)}
+.track .row .chip{justify-self:end}
+.quote{border-left:3px solid var(--amber);padding:4px 0 4px 16px;font-family:var(--serif);font-size:1.35rem;line-height:1.3}
+p.prose{display:block}
+@media (max-width:560px){.track .row{grid-template-columns:1fr}.track .row .chip{justify-self:start}}
+
+svg rect[fill="#f2efe9"]{fill:var(--paper)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) svg [fill="#1b1f24"]{fill:#e8e4dc}:root:not([data-theme=light]) svg [fill="#2e7ba6"]{fill:#6fb2d9}:root:not([data-theme=light]) svg [fill="#5b6570"]{fill:#a1aab3}:root:not([data-theme=light]) svg [fill="#838b93"]{fill:#7f8891}:root:not([data-theme=light]) svg [fill="#b9791f"]{fill:#e8a33d}:root:not([data-theme=light]) svg [fill="#ffffff"]{fill:#1c2127}:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.05)"]{fill:rgba(232,163,61,0.065)}:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root:not([data-theme=light]) svg [fill="rgba(46,123,166,0.10)"]{fill:rgba(111,178,217,0.13)}:root:not([data-theme=light]) svg [stroke="#1b1f24"]{stroke:#e8e4dc}:root:not([data-theme=light]) svg [stroke="#2e7ba6"]{stroke:#6fb2d9}:root:not([data-theme=light]) svg [stroke="#5b6570"]{stroke:#a1aab3}:root:not([data-theme=light]) svg [stroke="#b9791f"]{stroke:#e8a33d}:root:not([data-theme=light]) svg [stroke="rgba(185,121,31,0.50)"]{stroke:rgba(232,163,61,0.65)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}}
+:root[data-theme=dark] svg [fill="#1b1f24"]{fill:#e8e4dc}:root[data-theme=dark] svg [fill="#2e7ba6"]{fill:#6fb2d9}:root[data-theme=dark] svg [fill="#5b6570"]{fill:#a1aab3}:root[data-theme=dark] svg [fill="#838b93"]{fill:#7f8891}:root[data-theme=dark] svg [fill="#b9791f"]{fill:#e8a33d}:root[data-theme=dark] svg [fill="#ffffff"]{fill:#1c2127}:root[data-theme=dark] svg [fill="rgba(185,121,31,0.05)"]{fill:rgba(232,163,61,0.065)}:root[data-theme=dark] svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root[data-theme=dark] svg [fill="rgba(46,123,166,0.10)"]{fill:rgba(111,178,217,0.13)}:root[data-theme=dark] svg [stroke="#1b1f24"]{stroke:#e8e4dc}:root[data-theme=dark] svg [stroke="#2e7ba6"]{stroke:#6fb2d9}:root[data-theme=dark] svg [stroke="#5b6570"]{stroke:#a1aab3}:root[data-theme=dark] svg [stroke="#b9791f"]{stroke:#e8a33d}:root[data-theme=dark] svg [stroke="rgba(185,121,31,0.50)"]{stroke:rgba(232,163,61,0.65)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Tower · Spec · Break-glass debug access</span>
+  <h1>Looking inside a production pod, without ever handing out exec</h1>
+  <p class="prose" style="color:var(--ink-2)">Tower's write actions are delegated and reviewed, so pod exec was never going to be a standing feature. But mid-incident an owner sometimes needs a process list, a DNS lookup from the pod's network, or a file the app wrote, and no log line answers it. This is the spec for doing that safely: short, approved, recorded, and enforced by the cluster itself.</p>
+  <div class="meta"><span><b>Spec</b> October 10, 2026</span><span><b>Status</b> phases 1 to 4 built and live on both clusters, Oct 12, 2026</span><span><b>Test plan</b> October 12, 2026</span><span><b>Docs</b> <a target="_top" href="https://hangarplatform.dev/docs/tower/break-glass/">Tower break-glass guide</a></span></div>
+</header>
+
+
+<div class="verdict ok">
+  <span class="stamp">Built · live on both clusters</span>
+  <h2>Never exec on Flight. Two debug modes, a second person, and a recording of every byte.</h2>
+  <ul>
+    <li><b>Copy mode</b> debugs a copy of the pod that takes no traffic. <b>Live mode</b> adds a debug container to the running pod, for problems a copy can't reproduce.</li>
+    <li>On Flight, a second person approves. An admin can "break the glass" alone, and that session is broadcast and owes a review.</li>
+    <li>Every guardrail that matters is an admission policy, so it holds even if Tower is wrong.</li>
+  </ul>
+</div>
+
+<section>
+  <h2>Exec or a debug container?</h2>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>exec into the app</th><th>ephemeral debug container</th></tr></thead>
+    <tbody>
+      <tr><td class="area">Admission control</td><td>allow or deny the whole thing</td><td>the policy sees the full container spec</td></tr>
+      <tr><td class="area">What runs</td><td>the app image's tools, as the app's user</td><td>an approved, pinned image as a fixed non-root user</td></tr>
+      <tr><td class="area">Writes</td><td>land in the app container</td><td>impossible: read-only root, read-only mounts</td></tr>
+      <tr><td class="area">Minimal images</td><td>often no shell at all</td><td>always works</td></tr>
+      <tr><td class="area">Trace in the pod</td><td>none</td><td>the container stays in the pod spec</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">A debug container is safer for these reasons, not inherently. Run as the app's user with a shared process namespace, it reaches the same secrets as exec. So process access is a separate, explicit option that the approver sees.</p>
+</section>
+
+<section>
+  <h2>The flow</h2>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tower-break-glass-f1-t tower-break-glass-f1-d"><title id="tower-break-glass-f1-t">The break-glass flow</title><desc id="tower-break-glass-f1-d">An owner requests a session with a reason, a second person approves, Tower creates a time-limited RoleBinding and attaches to a pinned debug container, the session is recorded, the pod is recycled at the end, and the record is reviewed.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><rect x="24" y="24" width="712" height="116" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="28" width="44" height="12" rx="2" fill="#f2efe9"/><text x="58.0" y="37" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">TOWER</text><rect x="40" y="64" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="40" y="64" width="116" height="56" rx="6" fill="rgba(46,123,166,0.10)" stroke="#2e7ba6" stroke-width="1"/><text x="98.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Request</text><text x="98.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">owner, reason</text><rect x="180" y="64" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="180" y="64" width="116" height="56" rx="6" fill="rgba(185,121,31,0.05)" stroke="rgba(185,121,31,0.50)" stroke-width="1" stroke-dasharray="4,4"/><text x="238.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Approve</text><text x="238.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">another person</text><path d="M156,92 L176,92" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="320" y="64" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="320" y="64" width="116" height="56" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="378.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Session</text><text x="378.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">recorded</text><path d="M296,92 L316,92" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><rect x="460" y="64" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="460" y="64" width="116" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="518.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">End</text><text x="518.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">pod recycled</text><path d="M436,92 L456,92" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="600" y="64" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="600" y="64" width="116" height="56" rx="6" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="658.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Review</text><text x="658.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">record and hash</text><path d="M576,92 L596,92" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="24" y="164" width="712" height="112" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="168" width="80" height="12" rx="2" fill="#f2efe9"/><text x="76.0" y="177" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">THE CLUSTER</text><rect x="100" y="200" width="196" height="52" rx="6" fill="#f2efe9"/><rect x="100" y="200" width="196" height="52" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="198.0" y="224.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">RoleBinding</text><text x="198.0" y="240.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">TTL, deleted at the end</text><rect x="320" y="200" width="168" height="52" rx="6" fill="#f2efe9"/><rect x="320" y="200" width="168" height="52" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="404.0" y="224.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Debug container</text><text x="404.0" y="240.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">pinned, signed image</text><path d="M238,120 L238,196" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><rect x="246" y="152.0" width="56" height="12" rx="2" fill="#f2efe9"/><text x="274.0" y="161.0" fill="#b9791f" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ACTIVATE</text><path d="M378,120 L378,196" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="386" y="152.0" width="44" height="12" rx="2" fill="#f2efe9"/><text x="408.0" y="161.0" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ATTACH</text><path d="M296,226 L316,226" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><text x="560" y="222" fill="#5b6570" font-size="10" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Admission policies</text><text x="560" y="238" fill="#5b6570" font-size="10" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">check every step</text></svg></div><figcaption><b>Figure 1</b>Outside an active grant, Tower holds none of the verbs a session needs. The RoleBinding carries a TTL, so it expires even if Tower dies mid-session.</figcaption></figure>
+</section>
+
+<section>
+  <h2>Guardrails that don't trust the portal</h2>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 236" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tower-break-glass-f2-t tower-break-glass-f2-d"><title id="tower-break-glass-f2-t">Four layers of guardrails</title><desc id="tower-break-glass-f2-d">Tower permissions, the Tower backend, admission policies in the cluster, and time-limited RBAC.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><rect x="24" y="24" width="712" height="40" rx="6" fill="rgba(46,123,166,0.10)" stroke="#2e7ba6" stroke-width="1"/><text x="44" y="49" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Tower permissions</text><text x="724" y="49" fill="#5b6570" font-size="10" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">who may request, approve, break the glass, end</text><rect x="24" y="74" width="712" height="40" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="44" y="99" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Tower backend</text><text x="724" y="99" fill="#5b6570" font-size="10" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">requester is never approver; refuses an unrecorded start</text><rect x="24" y="124" width="712" height="40" rx="6" fill="rgba(185,121,31,0.05)" stroke="rgba(185,121,31,0.50)" stroke-width="1" stroke-dasharray="4,4"/><text x="44" y="149" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Admission policies</text><text x="724" y="149" fill="#5b6570" font-size="10" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">binding shape, debug image, no exec on Flight</text><rect x="24" y="174" width="712" height="40" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="44" y="199" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">RBAC with a TTL</text><text x="724" y="199" fill="#5b6570" font-size="10" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">nothing standing; the grant expires on its own</text></svg></div><figcaption><b>Figure 2</b>Each layer assumes the one above it can fail. On Flight the validation runs as built-in admission policy inside the API server, so it's never down on its own.</figcaption></figure>
+  <div class="prose"><p>The first build used fail-closed Kyverno policies on Flight too. On the dev cluster they made break-glass unavailable every time Kyverno lost its lease on a busy node, and on Flight that would happen during the incident itself. So Flight validation moved to built-in ValidatingAdmissionPolicy, and a slim Kyverno keeps only the two jobs it's uniquely good at: the cleanup TTL and the debug image's signature check.</p></div>
+</section>
+
+<section>
+  <h2>How it was tested</h2>
+  <div class="prose"><p>The last piece is a plan for walking every feature in a browser with two people, one an admin and one an app owner, on a Skyport app's Ground and Flight environments. It covers the things a harness can't: the approval round trip, the notification deep links, a sensitive recording refused to the wrong person, and a "glass broken" session reviewed by someone else.</p></div>
+  <div class="track">
+    <div class="row"><h3>Ground: copy, held copy, live with process access</h3><span class="chip c-info">Plan</span><p>Non-root, no token, read-only; the recording's hash matches and is anchored in the Rekor transparency log.</p></div>
+    <div class="row"><h3>Flight with two people</h3><span class="chip c-info">Plan</span><p>Request, approve with "keep the pod", deny, end by the approver, and exec refused.</p></div>
+    <div class="row"><h3>Glass broken, then reviewed</h3><span class="chip c-ok">Partly verified Oct 12, 2026</span><p>Broadcast to everyone, review due, never self-reviewed, and a fallback reviewer.</p></div>
+    <div class="row"><h3>Recordings</h3><span class="chip c-ok">Verified Oct 12, 2026</span><p>A locked bucket refuses deletes, and the hash checks against the log without Tower.</p></div>
+    <div class="row"><h3>Cluster backstops</h3><span class="chip c-info">Plan</span><p>The TTL deletes a binding at fifteen minutes; process access is refused unless the session asked for it.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Still open</h2>
+  <ul class="plain">
+    <li>Is sixty minutes the right maximum, or should an extension need a second approval?</li>
+    <li>Should "glass broken" exist at all on a platform with one human? It's useful to exercise the path, and it's the weakest link.</li>
+  </ul>
+</section>
+
+
+<footer>Looking inside a production pod, without ever handing out exec · October 10, 2026 · Part of the Hangar library at hangarplatform.dev/library/</footer>
+
+</div>
+</body>
+</html>

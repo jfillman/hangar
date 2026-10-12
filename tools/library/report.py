@@ -100,10 +100,12 @@ class Page:
     def html(self):
         # Figures sit on the page's panel colour (var(--paper)), so the diagram paper maps to it.
         dark = _svg_dark(''.join(self.svgs))
-        # Site links open in the top window, since the site shows these pages in a frame.
-        self.parts = [p.replace('<a href="https://hangarplatform.dev', '<a target="_top" href="https://hangarplatform.dev') for p in self.parts]
         meta = ''.join(f'<span><b>{esc(k)}</b> {v}</span>' for k, v in self.meta)
         lede = f'<p class="prose" style="color:var(--ink-2)">{self.lede}</p>' if self.lede else ''
+        # Site links open in the top window, since the site shows these pages in a frame.
+        return self._page(dark, meta, lede).replace('<a href="https://hangarplatform.dev', '<a target="_top" href="https://hangarplatform.dev')
+
+    def _page(self, dark, meta, lede):
         return f"""<!doctype html>
 <html lang="en">
 <head>

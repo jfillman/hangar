@@ -27,6 +27,34 @@ export const KIND_BLURBS: Record<Kind, string> = {
 
 export const papers: Paper[] = [
   {
+    id: 'airframe-crossplane-agent-api', kind: 'review', product: 'airframe', date: '2026-10-08',
+    title: 'How well does Airframe use Crossplane, and can an agent drive it?',
+    dek: 'Twenty findings on the Crossplane layer and the agent-facing API, ranked, and what happened to each one in the two days after.',
+    page: 'papers/2026-10-08-airframe-crossplane-agent-api.html',
+    status: { label: '15 of 20 fixed', tone: 'done' },
+  },
+  {
+    id: 'glidepath-pipeline-performance', kind: 'report', product: 'glidepath', date: '2026-10-08',
+    title: 'Where does a Glidepath pipeline spend its time?',
+    dek: 'Three weeks of Tekton history, measured: most of the wall-clock was pods starting up to do almost nothing. Nine fixes, eight shipped.',
+    page: 'papers/2026-10-08-glidepath-pipeline-performance.html',
+    status: { label: '8 of 9 done', tone: 'done' },
+  },
+  {
+    id: 'tower-break-glass', kind: 'spec', product: 'tower', date: '2026-10-10',
+    title: 'Looking inside a production pod, without ever handing out exec',
+    dek: 'Break-glass in Tower: a debug container instead of exec, a second person, a recording of every byte, and guardrails the cluster enforces. With its two-person test plan.',
+    page: 'papers/2026-10-10-tower-break-glass.html',
+    status: { label: 'Built · live', tone: 'done' },
+  },
+  {
+    id: 'tower-cluster-credentials', kind: 'spec', product: 'tower', date: '2026-10-10',
+    title: 'No long-lived Kubernetes credential for Tower, anywhere',
+    dek: 'A never-expiring token replaced by federated ten-minute tokens, reads split from writes, and a bigger hole closed on the way.',
+    page: 'papers/2026-10-10-tower-cluster-credentials.html',
+    status: { label: 'Phases 0 to 4 live', tone: 'done' },
+  },
+  {
     id: 'crossplane-v2-vocabulary', kind: 'review', product: 'hangar', date: '2026-10-05',
     title: 'Is "claim" the right word in a Crossplane v2 world?',
     dek: 'ChatGPT\'s analysis of one word across the site and docs, checked against the v2 docs and every repo: what held up, what didn\'t, and what changed.',
@@ -88,13 +116,6 @@ export const papers: Paper[] = [
     dek: 'Environments as one config model, defined once in cicd.yaml, with Glidepath owning the folder and the chart contract.',
     href: 'docs/glidepath/admin/envs-overhaul-requirements/',
     status: { label: 'Approved · migration done', tone: 'done' },
-  },
-  {
-    id: 'break-glass-design', kind: 'spec', product: 'tower', date: '2026-10-11',
-    title: 'Break-glass design decisions',
-    dek: 'Emergency access to a cluster from Tower: short-lived, recorded, reviewed afterwards, and loud while it lasts.',
-    href: 'docs/tower/break-glass/admin/design/',
-    status: { label: 'Built', tone: 'done' },
   },
   {
     id: 'service-catalog-design', kind: 'spec', product: 'hangar', date: '2026-08-12',
