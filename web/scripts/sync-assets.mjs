@@ -76,6 +76,11 @@ const reviewsOut = join(pub, 'reviews');
 fresh(reviewsOut);
 for (const f of readdirSync(join(repo, 'docs/reviews')).filter((f) => f.endsWith('.html'))) cpSync(join(repo, 'docs/reviews', f), join(reviewsOut, f));
 
+// 4b. The Library's illustrated papers: built by tools/library into docs/library/, shown on /library/.
+const papersOut = join(pub, 'papers');
+fresh(papersOut);
+for (const f of readdirSync(join(repo, 'docs/library')).filter((f) => f.endsWith('.html'))) cpSync(join(repo, 'docs/library', f), join(papersOut, f));
+
 // 5. The manifest the pages render from.
 writeFileSync(join(web, 'src/data/diagrams.generated.json'), JSON.stringify([...overview, ...hangar, ...glidepath, ...crossplane, ...catalog, ...expansion, ...testing, ...slo], null, 2) + '\n');
 console.log(`sync-assets: ${overview.length + hangar.length + glidepath.length + crossplane.length + catalog.length + expansion.length + testing.length + slo.length} diagrams, marks copied`);

@@ -1,17 +1,17 @@
 ---
 import Base from '../layouts/Base.astro';
 import Frame from '../components/Frame.astro';
-import { gh } from '../lib/url';
+import { gh, u } from '../lib/url';
 import { longDate } from '../lib/date';
 
 // The review itself is a standalone page in docs/reviews/ (copied into public/reviews/ by
 // scripts/sync-assets.mjs), so it reads the same in TechDocs, on GitHub and here.
 const review = { path: 'reviews/2026-09-27-architecture-review.html', date: '2026-09-27' };
 ---
-<Base title="Architecture review" description="A staff platform architect's review of Hangar: would they approve it as the company's application and AI agent platform, and what would it take?" section="review">
+<Base title="Architecture review" description="A staff platform architect's review of Hangar: would they approve it as the company's application and AI agent platform, and what would it take?" section="library">
   <div class="wrap">
     <section class="hero">
-      <p class="eyebrow">Architecture review · {longDate(review.date)}</p>
+      <p class="eyebrow"><a href={u('library/#review')}>Library</a> · Architecture review · {longDate(review.date)}</p>
       <h1>Would a staff architect <em>approve</em> Hangar?</h1>
       <p class="lede">
         I asked for the review I'd want before a company bet its platform on this: read every repo, weigh the

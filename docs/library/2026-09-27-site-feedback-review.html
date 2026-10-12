@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What two reviews said about this site, and what I did about it</title>
+<meta name="description" content="Grok and ChatGPT reviewed hangarplatform.dev a day after launch. Eleven suggestions, checked against the live site, with what I agreed with, what I declined, and where each one landed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The Hangar diagram profile (web/src/styles/global.css, tools/diagrams/lib.py): warm paper,
+   ink, amber accent, sky links; Instrument Serif, Geist, Geist Mono. Semantic colours mark
+   severity only. Theme follows the system unless <html data-theme> is set (the site sets it
+   when this page is embedded). */
+:root{
+  color-scheme:light;
+  --ground:#f2efe9; --paper:#fbfaf7; --ink:#1b1f24; --ink-2:#5b6570; --rule:rgba(27,31,36,.14);
+  --accent:#2e7ba6; --accent-soft:#dcebf4; --amber:#b9791f;
+  --ok:#2e7d4f; --ok-bg:#e1efe5; --warn:#9a6212; --warn-bg:#f4e6c9; --bad:#a3352b; --bad-bg:#f5e1dd; --info:#5b6570; --info-bg:#e8e3da;
+  --code-bg:#e8e3da;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+    --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+    --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+    --code-bg:#1b1f24;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+  --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+  --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+  --code-bg:#1b1f24;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,2.75rem)}
+h2{font-size:1.9rem;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+h3{font-size:1.3rem}
+p{margin:0}
+section{display:flex;flex-direction:column;gap:16px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+code{font-family:var(--mono);font-size:.85em;background:var(--code-bg);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.85rem;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:500}
+
+.verdict{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--warn);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.verdict .stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);padding:4px 10px;border-radius:3px}
+.verdict h2{border:0;padding:0;font-size:1.8rem}
+.verdict ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+
+.tbl{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--rule)}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:500;background:var(--ground)}
+tr:last-child td{border-bottom:0}
+td.area{font-weight:600;white-space:nowrap}
+.chip{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.04em;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.c-ok{color:var(--ok);background:var(--ok-bg)} .c-warn{color:var(--warn);background:var(--warn-bg)} .c-bad{color:var(--bad);background:var(--bad-bg)} .c-info{color:var(--info);background:var(--info-bg)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.card h3{font-size:1rem;font-family:var(--sans);font-weight:600}
+.card p{font-size:.92rem;color:var(--ink-2)}
+
+.finding{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);border-radius:4px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.finding.sev-high{border-left-color:var(--bad)} .finding.sev-med{border-left-color:var(--warn)} .finding.sev-low{border-left-color:var(--info)}
+.finding .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.finding .id{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.finding h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;flex:1 1 300px}
+.finding p{font-size:.94rem}
+.ev{font-size:.84rem;color:var(--ink-2)}
+.ev b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin-right:6px}
+.flist{display:flex;flex-direction:column;gap:10px}
+
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.rec{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.rec h3{display:flex;align-items:center;gap:8px}
+.rec ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:.92rem}
+.rec li b{font-weight:600}
+
+.gates{counter-reset:g;display:flex;flex-direction:column;gap:0;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.gate{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+.gate:last-child{border-bottom:0}
+.gate .n{font-family:var(--mono);font-size:.85rem;color:var(--accent);background:var(--accent-soft);border-radius:4px;height:28px;display:flex;align-items:center;justify-content:center}
+.gate p{font-size:.94rem}
+.gate .when{font-size:.82rem;color:var(--ink-2)}
+
+.phase{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.note{font-size:.85rem;color:var(--ink-2)}
+ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:16px}
+
+.fig{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.fig .scroll{overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:600px;max-width:760px;height:auto;margin:0 auto}
+.fig figcaption{font-size:.85rem;color:var(--ink-2)}
+.fig figcaption b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;color:var(--amber);margin-right:6px}
+.stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:3px}
+.verdict.ok{border-top-color:var(--ok)} .verdict.ok .stamp{color:var(--ok);background:var(--ok-bg)}
+.verdict.info{border-top-color:var(--accent)} .verdict.info .stamp{color:var(--accent);background:var(--accent-soft)}
+.verdict.bad{border-top-color:var(--bad)} .verdict.bad .stamp{color:var(--bad);background:var(--bad-bg)}
+.track{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.track .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;padding:14px 16px;border-bottom:1px solid var(--rule);align-items:baseline}
+.track .row:last-child{border-bottom:0}
+.track .row h3{font-family:var(--sans);font-size:1rem;font-weight:600}
+.track .row p{grid-column:1/-1;font-size:.92rem;color:var(--ink-2)}
+.track .row .chip{justify-self:end}
+.quote{border-left:3px solid var(--amber);padding:4px 0 4px 16px;font-family:var(--serif);font-size:1.35rem;line-height:1.3}
+p.prose{display:block}
+@media (max-width:560px){.track .row{grid-template-columns:1fr}.track .row .chip{justify-self:start}}
+
+svg rect[fill="#f2efe9"]{fill:var(--paper)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) svg [fill="#1b1f24"]{fill:#e8e4dc}:root:not([data-theme=light]) svg [fill="#2e7ba6"]{fill:#6fb2d9}:root:not([data-theme=light]) svg [fill="#5b6570"]{fill:#a1aab3}:root:not([data-theme=light]) svg [fill="#b9791f"]{fill:#e8a33d}:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.03)"]{fill:rgba(232,228,220,0.03)}:root:not([data-theme=light]) svg [fill="rgba(91,101,112,0.10)"]{fill:rgba(161,170,179,0.1)}:root:not([data-theme=light]) svg [stroke="#2e7ba6"]{stroke:#6fb2d9}:root:not([data-theme=light]) svg [stroke="#5b6570"]{stroke:#a1aab3}:root:not([data-theme=light]) svg [stroke="#838b93"]{stroke:#7f8891}:root:not([data-theme=light]) svg [stroke="#b9791f"]{stroke:#e8a33d}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.20)"]{stroke:rgba(232,228,220,0.2)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.30)"]{stroke:rgba(232,228,220,0.3)}}
+:root[data-theme=dark] svg [fill="#1b1f24"]{fill:#e8e4dc}:root[data-theme=dark] svg [fill="#2e7ba6"]{fill:#6fb2d9}:root[data-theme=dark] svg [fill="#5b6570"]{fill:#a1aab3}:root[data-theme=dark] svg [fill="#b9791f"]{fill:#e8a33d}:root[data-theme=dark] svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.03)"]{fill:rgba(232,228,220,0.03)}:root[data-theme=dark] svg [fill="rgba(91,101,112,0.10)"]{fill:rgba(161,170,179,0.1)}:root[data-theme=dark] svg [stroke="#2e7ba6"]{stroke:#6fb2d9}:root[data-theme=dark] svg [stroke="#5b6570"]{stroke:#a1aab3}:root[data-theme=dark] svg [stroke="#838b93"]{stroke:#7f8891}:root[data-theme=dark] svg [stroke="#b9791f"]{stroke:#e8a33d}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.20)"]{stroke:rgba(232,228,220,0.2)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.30)"]{stroke:rgba(232,228,220,0.3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">hangarplatform.dev · Review · Site feedback</span>
+  <h1>What two reviews said about this site, and what I did about it</h1>
+  <p class="prose" style="color:var(--ink-2)">The day the site went live I asked Grok and ChatGPT what they thought of it. Both were kind, and both made the same three criticisms: it's dense, it's written for peers more than for hiring managers, and it tells more than it shows. Claude checked every point against the live site and the repo. Here's what I did with them.</p>
+  <div class="meta"><span><b>Review</b> September 27, 2026</span><span><b>Reviewers</b> Grok and ChatGPT, checked by Claude against the live site and repo</span><span><b>Scope</b> the website only, not Hangar's architecture</span></div>
+</header>
+
+
+<div class="verdict ok">
+  <span class="stamp">Done · eight changes live by Sep 28, 2026</span>
+  <h2>Show more, explain the jargon, and stay honest about what's built.</h2>
+  <p>I took eight of the eleven suggestions, kept one as optional and declined two. The ones I declined would have made the site weaker for the people it's written for, or less honest.</p>
+</div>
+<section><h2>Eleven suggestions, sorted</h2><figure class="fig"><div class="scroll"><svg viewBox="0 0 760 236" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="site-feedback-review-f1-t site-feedback-review-f1-d"><title id="site-feedback-review-f1-t">Eleven suggestions, sorted</title><desc id="site-feedback-review-f1-d">Two AI reviews plus one issue found while checking produced eleven items: four to do first and four next, all live by Sep 28, 2026; one optional; two declined.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><rect x="24" y="92" width="136" height="56" rx="6" fill="#f2efe9"/><rect x="24" y="92" width="136" height="56" rx="6" fill="rgba(91,101,112,0.10)" stroke="#838b93" stroke-width="1"/><text x="92.0" y="118.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Two reviews</text><text x="92.0" y="134.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+ one found checking</text><rect x="220" y="92" width="120" height="56" rx="6" fill="#f2efe9"/><rect x="220" y="92" width="120" height="56" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="280.0" y="118.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Do first</text><text x="280.0" y="134.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">4 items</text><rect x="352" y="92" width="120" height="56" rx="6" fill="#f2efe9"/><rect x="352" y="92" width="120" height="56" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="412.0" y="118.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Next</text><text x="412.0" y="134.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">4 items</text><rect x="484" y="92" width="120" height="56" rx="6" fill="#f2efe9"/><rect x="484" y="92" width="120" height="56" rx="6" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.20)" stroke-width="1" stroke-dasharray="4,3"/><text x="544.0" y="118.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Optional</text><text x="544.0" y="134.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">1 item</text><rect x="616" y="92" width="120" height="56" rx="6" fill="#f2efe9"/><rect x="616" y="92" width="120" height="56" rx="6" fill="rgba(27,31,36,0.03)" stroke="rgba(27,31,36,0.30)" stroke-width="1"/><text x="676.0" y="118.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Declined</text><text x="676.0" y="134.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">2 items</text><path d="M160,120 L216,120" fill="none" stroke="#2e7ba6" stroke-width="1.2" marker-end="url(#arrow-link)"/><rect x="212" y="24" width="268" height="40" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="282" y="28" width="128" height="12" rx="2" fill="#f2efe9"/><text x="346.0" y="37" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">LIVE BY SEP 28, 2026</text><path d="M280,64 L280,88" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><path d="M412,64 L412,88" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><text x="220" y="192" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">Eight shipped in a day.</text><text x="484" y="192" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">Three I kept to myself.</text></svg></div><figcaption><b>Figure 1</b>Eleven items, four piles. Everything in Do first and Next shipped the next day.</figcaption></figure></section><section><h2>Do first</h2><div class="track"><div class="row"><h3>1. Take the home-lab cluster names out of the published diagrams</h3><span class="chip c-ok">Done</span><p><span class="eyebrow" style="color:var(--ink-2)">Found while checking</span><br>Two Autopilot diagrams and the brand page still named the lab clusters. The fix went into the generators, not the built site, and they now say "dev cluster" and "prod cluster".</p></div><div class="row"><h3>2. Add a tech-stack view</h3><span class="chip c-ok">Done · /stack/</span><p><span class="eyebrow" style="color:var(--ink-2)">ChatGPT, Grok</span><br>ChatGPT had to list the tools itself and draw its own stack diagram, which told me a page was missing. Three mockups later, it became <a target="_top" href="https://hangarplatform.dev/stack/">the stack as decisions</a>: every tool, what I chose it over, and why.</p></div><div class="row"><h3>3. Show the running product on the home page</h3><span class="chip c-ok">Done · home page</span><p><span class="eyebrow" style="color:var(--ink-2)">ChatGPT</span><br>The Tower walkthrough was hidden behind a card on /tower/. It now plays just under the hero, so "is this real?" gets an answer in ten seconds.</p></div><div class="row"><h3>4. Bring the track record onto the home page</h3><span class="chip c-ok">Done, in part</span><p><span class="eyebrow" style="color:var(--ink-2)">ChatGPT, partly agreed</span><br>A short strip of facts from the About page went on the home page. I declined the other half, publishing DORA or MTTR numbers from past jobs: I don't have numbers I can share, and estimates would break the honesty the site is built on.</p></div></div></section><section><h2>Next</h2><div class="track"><div class="row"><h3>5. Record a "zero to running" walkthrough</h3><span class="chip c-ok">Done · /run/</span><p><span class="eyebrow" style="color:var(--ink-2)">ChatGPT</span><br>The most convincing thing I could add. Two services went from nothing to production on camera, one in the terminal and one in Tower, and the run found four real platform bugs. See <a target="_top" href="https://hangarplatform.dev/run/">Zero to running</a>.</p></div><div class="row"><h3>6. Write about what the stack costs</h3><span class="chip c-ok">Done · essay</span><p><span class="eyebrow" style="color:var(--ink-2)">ChatGPT, Grok</span><br>The sharpest critique in either review, and exactly what the site is for. It became the first Architecture essay, <a target="_top" href="https://hangarplatform.dev/architecture/cost-of-the-platform/">what Hangar costs, and where Crossplane stops</a>.</p></div><div class="row"><h3>7. Explain the jargon in plain words</h3><span class="chip c-ok">Done · /glossary/</span><p><span class="eyebrow" style="color:var(--ink-2)">ChatGPT, partly agreed</span><br>I didn't simplify the pages, because the depth is the point. Instead there's <a target="_top" href="https://hangarplatform.dev/glossary/">a glossary</a> and a short explainer on the first mention of each term.</p></div><div class="row"><h3>8. Mark Autopilot's maturity on the product cards</h3><span class="chip c-ok">Done · badges</span><p><span class="eyebrow" style="color:var(--ink-2)">ChatGPT, partly agreed</span><br>Every product card now carries a status, so Autopilot reads "Early: core built, runtime proposed" instead of looking as finished as Glidepath.</p></div></div></section><section><h2>Optional, or declined</h2><div class="track"><div class="row"><h3>9. A 30-second path for first-time visitors</h3><span class="chip c-info">Optional</span><p><span class="eyebrow" style="color:var(--ink-2)">Grok</span><br>"Start here" already did this, just too far down. Fine to move up, not worth a new section.</p></div><div class="row"><h3>10. Move more of the deep content onto the site</h3><span class="chip c-warn">Declined</span><p><span class="eyebrow" style="color:var(--ink-2)">Grok</span><br>Mostly done already: <a target="_top" href="https://hangarplatform.dev/docs/">the docs</a> sync from every repo. ADRs stay linked to GitHub, because the source of truth belongs next to the code.</p></div><div class="row"><h3>11. Rewrite the site for executives</h3><span class="chip c-warn">Declined</span><p><span class="eyebrow" style="color:var(--ink-2)">ChatGPT</span><br>The site is here to show the work and share opinions, and peers are the people who can judge both. Items 3 and 4 give a hiring manager what they need in ten seconds.</p></div></div></section>
+<section>
+  <h2>What the reviews got wrong</h2>
+  <ul class="plain">
+    <li>ChatGPT listed Airframe XRDs that don't exist, such as <code>OAuthServer</code> and <code>Queue</code>. The real ones are applications (Node, Spring Boot, Go, Python), ApplicationEnvironment, PostgreSQL, Redis, RabbitMQ, InfraService, SecretStore, SLO, RolloutWatch and TektonCICD.</li>
+    <li>ChatGPT's diagrams showed dev, stage and prod clusters. Hangar runs two: a dev cluster and a prod cluster.</li>
+    <li>Neither review is something to quote as a testimonial. If I ever want those, they'll come from people.</li>
+  </ul>
+</section>
+
+
+<footer>What two reviews said about this site, and what I did about it · September 27, 2026 · Part of the Hangar library at hangarplatform.dev/library/</footer>
+
+</div>
+</body>
+</html>

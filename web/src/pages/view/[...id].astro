@@ -14,9 +14,9 @@ export function getStaticPaths() {
 interface Props { d: Diagram; prev?: Diagram; next?: Diagram }
 const { d, prev, next } = Astro.props;
 ---
-<Base title={d.title} description={`${SET_LABELS[d.set]} diagram: ${d.title}`} section="diagrams">
+<Base title={d.title} description={`${SET_LABELS[d.set]} diagram: ${d.title}`} section="library">
   <div class="wrap">
-    <p class="crumbs"><a href={u('diagrams/')}>Diagrams</a> / <a href={u(`diagrams/#${d.set}`)}>{SET_LABELS[d.set]}</a></p>
+    <p class="crumbs"><a href={u('library/')}>Library</a> / <a href={u('diagrams/')}>Diagrams</a> / <a href={u(`diagrams/#${d.set}`)}>{SET_LABELS[d.set]}</a></p>
     <DiagramEmbed id={d.id} />
     <div class="pager">
       {prev ? <a href={u(`view/${prev.id}/`)}><span class="eyebrow">← Previous</span>{prev.title}</a> : <span />}

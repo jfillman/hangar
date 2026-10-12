@@ -1,0 +1,24 @@
+---
+import Base from '../../layouts/Base.astro';
+import Frame from '../../components/Frame.astro';
+import { KIND_LABELS, papers, type Paper } from '../../data/library';
+import { u } from '../../lib/url';
+import { longDate } from '../../lib/date';
+
+// Illustrated papers built by tools/library. Papers that already have a page elsewhere (the
+// architecture review, the scorecard, the docs) link there instead.
+export function getStaticPaths() {
+  return papers.filter((p) => p.page && !p.href).map((p) => ({ params: { id: p.id }, props: { p } }));
+}
+interface Props { p: Paper }
+const { p } = Astro.props;
+---
+<Base title={p.title} description={p.dek} section="library">
+  <div class="wrap">
+    <p class="crumbs"><a href={u('library/')}>Library</a> / <a href={u(`library/#${p.kind}`)}>{KIND_LABELS[p.kind]}</a></p>
+    <Frame path={p.page!} title={p.title} eyebrow={`${KIND_LABELS[p.kind].replace(/s( and.*)?$/, '')} · ${longDate(p.date)}`} />
+  </div>
+</Base>
+<style>
+  .crumbs { margin: 2rem 0 0; font-size: 0.9rem; color: var(--muted); }
+</style>
