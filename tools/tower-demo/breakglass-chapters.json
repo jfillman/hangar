@@ -1,0 +1,32 @@
+{
+  "video": "/media/breakglass-walkthrough.mp4",
+  "duration": "3:27",
+  "durationSeconds": 207.1,
+  "chapters": [
+    {
+      "start": "0:00",
+      "seconds": 0,
+      "title": "James asks for a live session on a prod pod"
+    },
+    {
+      "start": "0:42",
+      "seconds": 42.3,
+      "title": "Sam, another owner, approves it"
+    },
+    {
+      "start": "1:06",
+      "seconds": 66.9,
+      "title": "The recorded session: what the debug container can and can’t do"
+    },
+    {
+      "start": "2:12",
+      "seconds": 132.3,
+      "title": "The recording, checked against its hash"
+    },
+    {
+      "start": "2:31",
+      "seconds": 151.5,
+      "title": "Breaking the glass, and the review after"
+    }
+  ]
+}

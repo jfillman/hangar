@@ -1,13 +1,22 @@
 #!/bin/sh
 # Copies Tower's plugin source from a tower checkout into ./tower, adds the stand-in
-# modules the plugin imports from its host Backstage app, and swaps home-lab names
-# for the generic dev/prod ones the demo uses. Nothing here touches the tower repo.
+# modules the plugin imports from its host Backstage app (only where the checkout has
+# none of its own), and swaps home-lab names for the generic dev/prod ones the demo
+# uses. Nothing here touches the tower repo.
+#
+# The tower repo moved its plugin from plugin/src to src (and now carries brand/,
+# shared/ and pullRequests/ itself); both layouts are handled.
 set -eu
 TOWER=${TOWER:-../../../tower}
 rm -rf tower
 mkdir -p tower
-cp -r "$TOWER/plugin/src" tower/src
-cp -r stand-ins/brand stand-ins/shared stand-ins/pullRequests tower/
+if [ -d "$TOWER/src" ]; then SRC="$TOWER/src"; else SRC="$TOWER/plugin/src"; fi
+cp -r "$SRC" tower/src
+for d in brand shared pullRequests; do
+  [ -d "tower/src/$d" ] || cp -r "stand-ins/$d" "tower/src/$d"
+  cp -r "stand-ins/$d" "tower/$d"
+done
+mkdir -p tower/brand
 python3 - "$TOWER/brand/marks" > tower/brand/marks.json <<'PY'
 import json, os, re, sys
 d = sys.argv[1]

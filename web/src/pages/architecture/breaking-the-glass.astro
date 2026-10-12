@@ -11,7 +11,11 @@ const doc = (p: string) => gh('tower', `docs/break-glass/${p}`);
 
 // Chapters of the walkthrough video (seconds, label), from tools/tower-demo/breakglass-chapters.json.
 const chapters: [number, string][] = [
-  [0, 'Asking for a session'],
+  [0, 'A live session on a prod pod'],
+  [42, 'Another owner approves'],
+  [66, 'Inside the debug container'],
+  [132, 'The recording, checked against its hash'],
+  [151, 'Breaking the glass, and the review'],
 ];
 const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -215,6 +219,17 @@ const evidence = [
           <button type="button" data-t={t}><span class="t">{stamp(t)}</span>{label}</button>
         ))}
       </nav>
+
+      <div class="stills">
+        {[
+          ['03-approver-card.png', "The approver's view: who, why, the image, and a warning that it can read Secrets"],
+          ['04-terminal-readonly.png', 'Inside the session: looking works, changing anything does not'],
+          ['05-player-sha-match.png', 'The player hashes the recording in your browser and checks it against the record'],
+          ['07-glass-broken-review.png', 'A broken glass, waiting for someone else to review it'],
+        ].map(([f, c]) => (
+          <figure><a href={u(`media/breakglass/${f}`)} target="_blank" rel="noopener"><img src={u(`media/breakglass/${f}`)} alt={c} loading="lazy" /></a><figcaption>{c}</figcaption></figure>
+        ))}
+      </div>
 
       <div class="prose">
         <p>
@@ -478,6 +493,10 @@ const evidence = [
   }
   .chapters button:hover { border-color: var(--accent); }
   .chapters .t { font-family: var(--font-mono); color: var(--accent); margin-right: 0.45rem; font-size: 0.8rem; }
+  .stills { display: grid; gap: 1.25rem; margin: 1.5rem 0 2rem; }
+  .stills figure { margin: 0; }
+  .stills img { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--rule); background: var(--cockpit); }
+  .stills figcaption { margin-top: 0.45rem; color: var(--muted); font-size: 0.85rem; }
   .sign { font-family: var(--font-serif); font-size: 1.4rem; margin-top: 2rem; }
   .more { margin-top: 2rem; }
 </style>

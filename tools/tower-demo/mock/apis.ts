@@ -1,4 +1,5 @@
 import * as F from './fixtures';
+import { breakglassRoute } from './breakglass';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -45,6 +46,10 @@ async function route(input: string, init?: RequestInit): Promise<Response> {
 
   if (p.startsWith('/api/argocd/find/name/')) {
     return json(F.argoAppFor(decodeURIComponent(p.split('/').pop()!)));
+  }
+
+  if (p.startsWith('/api/glidepath/breakglass/')) {
+    return breakglassRoute(p.slice('/api/glidepath/breakglass'.length), q, method, body);
   }
 
   if (p.startsWith('/api/glidepath')) {
