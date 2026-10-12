@@ -202,6 +202,10 @@ both:**
   API server via a dedicated `backstage-ingestor` ServiceAccount (RBAC:
   `gitops-cluster-mgmt/60-backstage/backstage/rbac.yaml`) using the kubelet-
   projected, auto-rotating token — no ESO/Infisical hop, no long-lived Secret.
+  *(2026-10-12: the same is now true across clusters. Backstage on kind-prod reaches kiac-dev with
+  short-lived, federated ServiceAccount tokens: reads use the pod's projected token, writes a token
+  minted per action. No long-lived token exists. See Tower `docs/credentials/index.md` and apron
+  `docs/cluster-identity.md`.)*
   Only the 5 "Bootstrap-tier" XRDs a developer actually creates directly
   (`NodeJSApplication`/`SpringBootApplication`/`PythonApplication`/`GoApplication`/
   `ApplicationEnvironment`) are annotated `terasky.backstage.io/add-to-catalog: "true"`
