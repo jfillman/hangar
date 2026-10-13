@@ -33,26 +33,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # The other product repos, for the Docs section (all public, so no token is needed).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { repository: jfillman/glidepath, path: _docs/glidepath }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { repository: jfillman/airframe, path: _docs/airframe }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { repository: jfillman/tower, path: _docs/tower }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { repository: jfillman/autopilot, path: _docs/autopilot }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { repository: jfillman/apron, path: _docs/apron }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: web/package-lock.json
       - id: pages
         if: github.event_name != 'pull_request'
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - run: npm ci
         working-directory: web
       - run: npm run build
@@ -63,7 +63,7 @@ jobs:
           SITE_BASE: ${{ steps.pages.outputs.base_path }}
           DOCS_REPOS_DIR: ${{ github.workspace }}/_docs
       - if: github.event_name != 'pull_request'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: web/dist
 
@@ -79,4 +79,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
