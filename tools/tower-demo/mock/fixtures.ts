@@ -65,7 +65,7 @@ export const APPS: DemoApp[] = [
     port: 8000,
     versions: {
       dev: V('0.6.0', '71b8e2c', 40),
-      staging: V('0.5.4', 'e04d9a3', 3000),
+      staging: V('0.6.0', '71b8e2c', 31),
       prod: V('0.5.4', 'e04d9a3', 2900),
     },
     replicas: { dev: 1, staging: 1, prod: 2 },
@@ -400,7 +400,7 @@ const FINALLY = (stage: string) => [`end-${stage}-stage-span`, 'end-flow', 'noti
 
 const STEP_DUR: Record<string, number> = { 'clone-repo': 0.3, 'sast-scan': 1.4, 'unit-test': 2.2, 'build-source': 1.8, 'build-image': 2.6, 'image-scan': 1.1, 'generate-sbom': 0.6, 'run-testworkflow': 3.5, deploy: 1.2, 'open-release-pr': 0.5 };
 
-interface RunSpec {
+export interface RunSpec {
   pipeline: 'build' | 'deploy' | 'test' | 'release';
   app: DemoApp;
   ver: string;
@@ -417,7 +417,7 @@ interface RunSpec {
   branch?: string;
 }
 
-function makeRun(spec: RunSpec) {
+export function makeRun(spec: RunSpec) {
   const { pipeline, app } = spec;
   const tasks = { build: BUILD_TASKS, deploy: DEPLOY_TASKS, test: TEST_TASKS, release: RELEASE_TASKS }[pipeline];
   const stage = pipeline;
@@ -544,6 +544,13 @@ function runsFor(app: DemoApp) {
   }
   const built = specs.map(makeRun);
   return { items: built.map(b => b.pr), taskRuns: built.flatMap(b => b.taskRuns) };
+}
+
+export function allRunsFor(name: string) {
+  const app = appByName(name);
+  if (!app) return { items: [], taskRuns: [] };
+  if (!runCache.has(app.name)) runCache.set(app.name, runsFor(app));
+  return runCache.get(app.name)!;
 }
 
 const runCache = new Map<string, ReturnType<typeof runsFor>>();
@@ -723,7 +730,7 @@ export function demoPullRequests(appName: string) {
       { number: 209, repo: 'gitops', title: 'Release: flight-api to prod @ 1.7.2-b71e0d4', url: url('gitops-prod', 209), state: 'merged', author: 'glidepath-bot', labels: ['release'], createdAt: ago(1340), updatedAt: ago(1310), mergedAt: ago(1310), review: { state: 'approved' } },
     );
   } else if (app.name === 'baggage-api') {
-    prs.push({ number: 77, repo: 'gitops', title: 'Release: baggage-api to staging @ 0.6.0-71b8e2c', url: url('gitops-dev', 77), state: 'open', author: 'glidepath-bot', labels: ['release'], createdAt: ago(25), updatedAt: ago(3), review: { state: 'pending' }, ci: { state: 'pending', passedChecks: 5, totalChecks: 6, checks: checks('pending') } });
+    prs.push({ number: 219, repo: 'gitops', title: 'Release: baggage-api to prod @ 0.6.0-71b8e2c', url: url('gitops-prod', 219), state: 'open', author: 'glidepath-bot', labels: ['release'], createdAt: ago(25), updatedAt: ago(3), review: { state: 'pending' }, ci: { state: 'pending', passedChecks: 5, totalChecks: 6, checks: checks('pending') } });
   }
   return prs;
 }
@@ -853,10 +860,10 @@ export function cicdFor(appName: string) {
   const app = appByName(appName);
   const agent = { nodejs: 'nodejs-20', springboot: 'openjdk-21', go: 'go-1.23', python: 'python-3.12' }[app?.lang ?? 'nodejs'];
   const values: any = {
-    build: { agent, containerfile: './Containerfile', unitTest: { enabled: true, command: './test.sh' }, cache: { enabled: true, size: 'medium' } },
+    build: { agent, containerfile: './Containerfile', unitTest: { enabled: true, command: './test.sh' }, sonar: false, cache: { enabled: true, size: 'medium' }, sourceVolume: { size: 'small' } },
     test: { enabled: true, name: 'e2e-smoke' },
-    deploy: { lowerEnvironments: ['dev', 'staging'], upperEnvironments: [{ name: 'prod', cluster: 'prod' }], strategy: 'rollout', promotionOrder: ['dev', 'staging', 'prod'] },
-    ephemeralEnvironments: { pullRequest: { enabled: true, labels: ['preview'] }, ttl: '3d' },
+    deploy: { environments: [{ name: 'dev', tier: 'ground' }, { name: 'staging', tier: 'ground' }, { name: 'prod', tier: 'flight', cluster: 'prod' }], strategy: 'rollout' },
+    ephemeralEnvironments: { branch: { enabled: false, patterns: ['preview/*'] }, pullRequest: { enabled: true, labels: ['preview'] }, ttl: '3d' },
     governance: { sast: true, imageScan: true, policyCheck: true, sbom: true, allowedCommitSigners: ['jamie@example.com', 'priya@example.com', 'sam@example.com'] },
     notifications: { slack: { enabled: true, channel: '#skyport-releases', scanResults: true }, backstage: { enabled: true } },
     pipelines: {
@@ -892,6 +899,7 @@ export function appConfigFor(appName: string, env: string, cluster: string) {
     serviceMonitor: { enabled: true, path: '/metrics', interval: '30s' },
     networkPolicy: { enabled: true, allowIngressFromIngressController: true },
     serviceAccount: { create: true },
+    ...(app?.strategy === 'canary' ? { analysisTemplates: [{ name: 'success-rate', spec: { args: [{ name: 'canary-hash' }], metrics: [{ name: 'success-rate', interval: '1m', successCondition: 'result[0] >= 0.99', provider: { prometheus: { address: 'http://prometheus.monitoring:9090', query: 'sum(rate(http_requests_total{code!~"5.."}[2m])) / sum(rate(http_requests_total[2m]))' } } }] } }] } : {}),
     ...(appName === FEATURED ? { components: [{ type: 'postgresql', name: 'flight-db', spec: { instances: prod ? 3 : 1, storage: prod ? '20Gi' : '5Gi' } }] } : {}),
     notifications: { slack: { enabled: true, channel: '#skyport-releases' } },
     slos: [{ name: 'availability', objective: prod ? 99.9 : 99 }, { name: 'latency', objective: 99, thresholdSeconds: 0.3 }],

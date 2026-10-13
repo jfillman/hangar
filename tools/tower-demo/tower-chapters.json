@@ -1,0 +1,72 @@
+{
+  "video": "/media/tower-walkthrough.mp4",
+  "duration": "3:15",
+  "durationSeconds": 195.7,
+  "chapters": [
+    {
+      "start": "0:00",
+      "seconds": 0,
+      "title": "Provisioning a new service"
+    },
+    {
+      "start": "0:21",
+      "seconds": 21.8,
+      "title": "The Ops Wall"
+    },
+    {
+      "start": "0:46",
+      "seconds": 46.2,
+      "title": "One app at a glance"
+    },
+    {
+      "start": "0:59",
+      "seconds": 59.5,
+      "title": "Pull requests"
+    },
+    {
+      "start": "1:03",
+      "seconds": 63.6,
+      "title": "Pipelines"
+    },
+    {
+      "start": "1:14",
+      "seconds": 74.1,
+      "title": "Deployments and the canary"
+    },
+    {
+      "start": "1:34",
+      "seconds": 94.9,
+      "title": "Release matrix"
+    },
+    {
+      "start": "1:43",
+      "seconds": 103.1,
+      "title": "Promoting a release"
+    },
+    {
+      "start": "1:59",
+      "seconds": 119.2,
+      "title": "Release record"
+    },
+    {
+      "start": "2:23",
+      "seconds": 143.9,
+      "title": "Environments"
+    },
+    {
+      "start": "2:39",
+      "seconds": 159.5,
+      "title": "Topology"
+    },
+    {
+      "start": "2:50",
+      "seconds": 170.6,
+      "title": "SLOs"
+    },
+    {
+      "start": "2:54",
+      "seconds": 174.7,
+      "title": "Config as a pull request"
+    }
+  ]
+}

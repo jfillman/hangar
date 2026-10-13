@@ -9,6 +9,9 @@ baggage-api) across dev, staging and prod on two clusters called dev and prod. N
 
 - `mock/fixtures.ts`: the demo world (Kubernetes objects, Tekton runs, ArgoCD apps, PRs,
   provenance, Prometheus answers, notifications, config files).
+- `mock/fleet.ts`: the fleet-wide reads the Ops Wall makes (every PipelineRun on the Tekton cluster, Tekton Results
+  history, Glidepath's release records, dora-exporter's series) and checkin-api, a new service half-way through
+  provisioning, for the Services page's Provisioning tab.
 - `mock/apis.ts`: stand-ins for the Backstage APIs Tower calls, routing its fetches to the fixtures.
 - `mock/k8sReact.ts`: replaces `@backstage/plugin-kubernetes-react`'s hooks with fixture-backed ones.
 - `stand-ins/`: modules the plugin imports from its host app that aren't in the tower repo.
@@ -20,8 +23,9 @@ baggage-api) across dev, staging and prod on two clusters called dev and prod. N
   a fake attach WebSocket that plays a shell in the debug container (`debug / $`, uid 65532, read-only), and
   asciicast v2 recordings with a SHA-256 and a Rekor index on the session record.
 - `record-breakglass.mjs` / `encode-breakglass.sh`: the break-glass walkthrough and its encoder.
-- `record.mjs`: the scripted walkthrough (captions, cursor, scenes), recorded with Playwright.
-- `encode.sh`: turns the recording into the MP4, WebM and poster under `web/public/media/`.
+- `record.mjs`: the scripted walkthrough (captions, cursor, scenes, chapters), recorded with Playwright.
+- `encode.sh`: turns the recording into the MP4, WebM and poster under `web/public/media/`, and writes
+  `tower-chapters.json` from the recording's marks.
 
 ## Re-recording
 
@@ -29,12 +33,13 @@ baggage-api) across dev, staging and prod on two clusters called dev and prod. N
 npm install --legacy-peer-deps
 TOWER=../../../tower npm run prepare-plugin   # path to a tower checkout
 npm run dev                                   # leave running
-npm run record                                # about two minutes
+npm run record                                # about three and a half minutes; PACE=0.8 scales the pauses
 FFMPEG=/path/to/ffmpeg npm run encode         # needs libx264 and libvpx
 ```
 
-`SHOTS=1 npm run record` does a fast dry run that saves a screenshot per scene to `/tmp` instead
-of recording. If a scene's timing changes, update the chapter list in `web/src/pages/tower.astro`.
+`SHOTS=1 npm run record` does a fast dry run that saves a screenshot per scene to `/tmp/rec-shots` instead
+of recording. If a scene's timing changes, copy the times from `tower-chapters.json` into the chapter list in
+`web/src/pages/tower.astro`. Recording needs the same ffmpeg setup as the break-glass walkthrough below.
 
 ## The break-glass walkthrough
 
