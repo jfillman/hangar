@@ -4,6 +4,7 @@ import { notes } from '../../data/notes';
 import { u } from '../../lib/url';
 
 const note = notes.find((n) => n.slug === 'chasing-squirrels')!;
+const img = (f: string) => u(`media/notes/chasing-squirrels/${f}`);
 ---
 <Base title={note.title} description={note.dek} section="notes">
   <div class="wrap">
@@ -13,6 +14,11 @@ const note = notes.find((n) => n.slug === 'chasing-squirrels')!;
       <h1>Chasing <em>squirrels</em></h1>
       <p class="lede">{note.dek}</p>
     </header>
+
+    <figure class="shot">
+      <img src={img('riley-forest.webp')} alt="Riley, a tall, sandy-coloured dog, sits on a mossy forest floor and looks off to the side, with morning sun streaming between tall, thin trees behind him." width="1600" height="1200" />
+      <figcaption>Riley at his favourite spot, where the moss goes on forever and the squirrels always win.</figcaption>
+    </figure>
 
     <div class="prose">
       <p>
@@ -153,6 +159,9 @@ const note = notes.find((n) => n.slug === 'chasing-squirrels')!;
   </div>
 </Base>
 <style>
+  .shot { margin: 0 0 2.5rem; max-width: 60rem; }
+  .shot img { display: block; width: 100%; height: auto; border: 1px solid var(--rule-strong); border-radius: 8px; }
+  .shot figcaption { margin-top: 0.6rem; color: var(--muted); font-size: 0.9rem; max-width: 62ch; line-height: 1.5; }
   .prose h2 { margin-top: 3rem; }
   .pull {
     font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
