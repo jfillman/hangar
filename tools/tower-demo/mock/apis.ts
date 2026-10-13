@@ -1,5 +1,6 @@
 import * as F from './fixtures';
 import { breakglassRoute } from './breakglass';
+import * as FL from './fleet';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -27,9 +28,22 @@ async function route(input: string, init?: RequestInit): Promise<Response> {
     const kp = p.slice('/api/kubernetes/proxy'.length) + url.search;
     const cluster = (init?.headers as any)?.['Backstage-Kubernetes-Cluster'] ?? 'dev';
     if (method !== 'GET') return json({ metadata: { name: 'ok' } });
+    const prov = FL.provisioningRoute(kp);
+    if (prov) return json(prov);
+    if (kp.startsWith('/apis/tekton.dev/v1/pipelineruns')) return json(FL.fleetPipelineRuns());
+    if (kp.startsWith('/apis/tekton.dev/v1/taskruns')) return json(FL.fleetTaskRuns(decodeURIComponent(url.searchParams.get('labelSelector') ?? '')));
+    if (kp.includes('/parents/-/results')) return json(FL.fleetResults());
+    if (kp.startsWith('/api/v1/configmaps') && kp.includes('release-tracking')) return json(FL.fleetReleaseRecords());
+    if (kp.startsWith('/api/v1/events')) return json({ items: [] });
+    const nsEvents = kp.match(/^\/api\/v1\/namespaces\/app-([a-z-]+?)-(dev|staging|prod)\/events/);
+    if (nsEvents) return json({ items: eventsFor(nsEvents[1], nsEvents[2]) });
     if (kp.includes('/services/prometheus') || kp.includes(':9090/proxy')) {
       const inner = new URL('http://x' + kp.slice(kp.indexOf('/proxy') + 6));
       const query = inner.searchParams.get('query') ?? '';
+      if (query.includes('dora_')) {
+        if (inner.pathname.endsWith('query_range')) return json({ status: 'success', data: { resultType: 'matrix', result: FL.doraRange(query, Number(inner.searchParams.get('start')), Number(inner.searchParams.get('end')), Number(inner.searchParams.get('step'))) } });
+        return json({ status: 'success', data: { resultType: 'vector', result: FL.doraInstant(query) } });
+      }
       if (inner.pathname.endsWith('query_range')) {
         return json(F.promRange(query, Number(inner.searchParams.get('start')), Number(inner.searchParams.get('end')), Number(inner.searchParams.get('step'))));
       }
@@ -43,6 +57,14 @@ async function route(input: string, init?: RequestInit): Promise<Response> {
     if (raw) return json(raw);
     return miss(input);
   }
+
+  if (p === '/api/pull-requests/pull-requests') {
+    const app = q.get('appName') ?? '';
+    return json(app === FL.PROVISIONING_APP ? FL.provisioningPrs() : F.demoPullRequests(app));
+  }
+  if (p === '/api/pull-requests/request-pr') return json(q.get('name') === FL.PROVISIONING_APP ? FL.provisioningRequestPr() : { pr: null });
+  if (p === '/api/pull-requests/pending-requests') return json({ requests: [] });
+  if (p.startsWith('/api/provisioning-history/')) return method === 'GET' ? json(FL.provisioningHistory(p)) : json({ ok: true });
 
   if (p.startsWith('/api/argocd/find/name/')) {
     return json(F.argoAppFor(decodeURIComponent(p.split('/').pop()!)));
@@ -58,6 +80,30 @@ async function route(input: string, init?: RequestInit): Promise<Response> {
       case '/head': return json(F.repoHead(q.get('repo')!, q.get('ref') ?? undefined));
       case '/images': return json(F.imagesFor(q.get('repo')!));
       case '/pipeline-order': return json(F.pipelineOrder);
+      case '/pipeline-history/runs': return json({ runs: [] });
+      case '/argo/capabilities': {
+        const flight = q.get('cluster') === 'prod';
+        return json({ tier: flight ? 'flight' : 'ground', autoPrune: !flight, refresh: true, sync: true, force: !flight, terminate: true, podRestart: true });
+      }
+      case '/config/components': return json({ components: [{
+        type: 'postgresql', kind: 'PostgreSQLInstance', summary: 'A PostgreSQL database for the app, with its connection secret',
+        spec: { type: 'object', properties: { instances: { type: 'integer', minimum: 1, maximum: 5, default: 1 }, storage: { type: 'string', default: '5Gi' } } },
+        outputs: { url: { kind: 'secret', secret: '<name>-conn', key: 'uri' }, host: { kind: 'secret', secret: '<name>-conn', key: 'host' } },
+      }] });
+      case '/release/rollback-plan': return json({
+        current: { releaseId: 'c-4f9c', image: `ghcr.io/${F.OWNER}/flight-api:1.8.0-4f9c2ab`, state: 'progressing', stateAt: F.ago(9) },
+        targets: [
+          { releaseId: 'c-b71e', image: `ghcr.io/${F.OWNER}/flight-api:1.7.2-b71e0d4`, healthyAt: F.ago(1300), state: 'superseded' },
+          { releaseId: 'c-8e3f', image: `ghcr.io/${F.OWNER}/flight-api:1.7.1-8e3f1a0`, healthyAt: F.ago(4200), state: 'superseded' },
+        ] });
+      case '/release/rollback': return json({ prUrl: `https://github.com/${F.OWNER}/gitops-prod/pull/218`, alreadyOpen: false });
+      case '/argo/rollout-actions': {
+        if (method !== 'GET') return json({ ok: true });
+        const flight = q.get('cluster') === 'prod';
+        const a = (name: string, disabled = false) => ({ name, disabled, allowed: true, bypass: false });
+        return json({ tier: flight ? 'flight' : 'ground', env: q.get('appName')?.split('-').pop(), app: F.FEATURED, owner: F.OWNER, rollbackAllowed: true,
+          actions: [a('resume'), a('skip-current-step'), a('promote-full'), a('pause', true), a('abort'), a('retry', true), a('restart')] });
+      }
       case '/provenance': return json(F.provenanceFor(q.get('image')!));
       case '/deploy-history': return json(F.deployHistoryFor(body.appName, body.environments));
       case '/promote': return json(body?.targetEnv === 'prod'
@@ -75,7 +121,7 @@ async function route(input: string, init?: RequestInit): Promise<Response> {
         return json({ prUrl: `https://github.com/${F.OWNER}/gitops-${body?.env === 'prod' ? 'prod' : 'dev'}/pull/${body?.env === 'prod' ? 216 : 78}`, alreadyOpen: false });
       case '/config/platform-envs': return json({ envs: ['dev', 'staging'] });
       case '/config/platform-env':
-        if (method === 'GET') { const c = F.appConfigFor(q.get('appName') ?? F.FEATURED, q.get('env') ?? 'dev', 'dev'); return json({ repo: `${F.OWNER}/${q.get('appName')}`, path: `platform/${q.get('env') ? 'envs/' + q.get('env') : 'pr-env'}.yaml`, values: c.values, raw: c.raw }); }
+        if (method === 'GET') { const c = F.appConfigFor(q.get('appName') ?? F.FEATURED, q.get('env') ?? 'dev', 'dev'); return json({ repo: `${F.OWNER}/${q.get('appName')}`, path: q.get('file') === 'base' ? 'glidepath/base.yaml' : `platform/${q.get('env') ? 'envs/' + q.get('env') : 'pr-env'}.yaml`, values: c.values, raw: c.raw }); }
         return json({ prUrl: `https://github.com/${F.OWNER}/flight-api/pull/193`, alreadyOpen: false });
       case '/config/env-xr': return json({ env: q.get('env'), path: `envs/${q.get('env')}.yaml`, configMapGenerator: true });
       case '/config/configmap-files':
@@ -94,7 +140,10 @@ export const apis = {
   discovery: { getBaseUrl: async (id: string) => `/api/${id}` },
   fetch: { fetch: (input: any, init?: RequestInit) => route(typeof input === 'string' ? input : input.url, init) },
   catalog: {
-    getEntities: async () => ({ items: F.entities }),
+    getEntities: async (req?: any) => {
+      const name = req?.filter?.['metadata.name'];
+      return { items: name ? F.entities.filter(e => e.metadata.name === name) : F.entities };
+    },
     getEntityByRef: async (ref: any) => {
       const name = typeof ref === 'string' ? ref.split('/').pop() : ref.name;
       return F.entities.find(e => e.metadata.name === name);

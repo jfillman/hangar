@@ -2,23 +2,25 @@
 import Base from '../layouts/Base.astro';
 import { u, gh } from '../lib/url';
 
+// Chapters of the walkthrough video (seconds, label), from tools/tower-demo/tower-chapters.json.
 const chapters: [number, string][] = [
-  [0, 'Fleet dashboard'],
-  [19, 'One app at a glance'],
-  [29, 'Pipelines'],
-  [41, 'Deployments and the canary'],
-  [64, 'Release matrix'],
-  [78, 'Promoting a release'],
-  [92, 'Release log'],
-  [100, 'Release record'],
-  [134, 'Topology'],
-  [147, 'SLOs'],
-  [152, 'Config as a pull request'],
-  [168, 'Glidepath settings'],
+  [0, 'Provisioning a new service'],
+  [21, 'The Ops Wall'],
+  [46, 'One app at a glance'],
+  [59, 'Pull requests'],
+  [63, 'Pipelines'],
+  [74, 'Deployments and the canary'],
+  [94, 'Release matrix'],
+  [103, 'Promoting a release'],
+  [119, 'Release record'],
+  [143, 'Environments'],
+  [159, 'Topology'],
+  [170, 'SLOs'],
+  [174, 'Config as a pull request'],
 ]
 const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 ---
-<Base title="Tower" description="A three-minute walkthrough of Tower, the Backstage plugin at the front of Hangar: fleet views, pipelines, canary deployments, promotions, release records, SLOs and config changes as pull requests." section="platform">
+<Base title="Tower" description="A three-minute walkthrough of Tower, the Backstage plugin at the front of Hangar: provisioning a new service, the Ops Wall, pipelines, canary deployments, promotions, release records, environments, SLOs and config changes as pull requests." section="platform">
   <div class="wrap">
     <section class="hero">
       <p class="eyebrow"><img class="mark" src={u('marks/tower-tile.svg')} alt="" width="22" height="22" />Tower · The pane of glass, in motion</p>
@@ -54,20 +56,29 @@ const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2,
     <div class="prose">
       <h2>What you're watching</h2>
       <p>
-        <strong>It starts with the fleet.</strong> Every app, every environment, one glance. I care about this view more
-        than any other, because it's the one people leave open on a second screen. If it's calm, you can get on with
-        your day. If something's amber, it tells you which app and where.
+        <strong>It starts before there's anything to deploy.</strong> A new service is a request, then a Crossplane XR,
+        then repos, a pipeline namespace, secrets and a first build. In the video, checkin-api is ten minutes into that.
+        Tower lists every step, from the request PR to a healthy pod in dev, and times each one against the last few
+        provisions, so you can tell a slow step from a stuck one without asking anybody.
+      </p>
+      <p>
+        <strong>Then the whole fleet, on one screen.</strong> The Ops Wall is the view people leave open on a second
+        monitor, and in October it got a full rebuild. It answers a short list of questions: what's running, what's
+        deploying, what's waiting on a review, and what needs a person right now. That last list is ranked, so a paused
+        canary in prod sits above a failed build from last night. DORA sits underneath, from the same queries as
+        Glidepath's Grafana dashboards, so the two never disagree. If it's calm, you can get on with your day.
       </p>
       <p>
         <strong>Then one app, in the order a change lives.</strong> The tabs run from pull request to pipeline, to
-        deployment, to release, to where it's running and how it's performing afterwards. You shouldn't have to
+        deployment, to release, to its environments, to where it's running and how it's performing afterwards. You shouldn't have to
         remember Tekton, ArgoCD and Prometheus are three different systems. Tower stitches them to the same commit and
         the same image, so the story reads top to bottom.
       </p>
       <p>
         <strong>A canary should feel like a conversation, not a mystery.</strong> In the video, flight-api's prod rollout is paused at 40%
         traffic while a background analysis watches the error rate. Tower says so in plain words, shows the ramp and
-        the measurements, and draws the stable and canary ReplicaSets splitting traffic. Nobody has to decode a
+        the measurements, and draws the stable and canary ReplicaSets splitting traffic. The owners can resume, promote
+        or abort it from the same screen, within what their tier allows. Nobody has to decode a
         "Suspended" status at 5pm on a Friday.
       </p>
       <p>
@@ -76,6 +87,12 @@ const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2,
         that's where the promote button lives. For staging that's a direct commit to the app's config. For prod it's
         always a reviewed pull request. Either way it goes through Git, so ArgoCD deploys it and Tower never touches a
         cluster.
+      </p>
+      <p>
+        <strong>Environments are a list you can edit.</strong> Each one is Ground, which deploys on every push, or
+        Flight, which only takes an approved release. Adding one is a short form: a name, a tier and a deploy step in the
+        pipeline. Changes stage beside the table and go out together as one pull request, because an environment is
+        config like anything else.
       </p>
       <p>
         <strong>Every prod release leaves a record.</strong> Once a release reaches prod, Tower writes it up: the pull
