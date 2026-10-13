@@ -1,0 +1,166 @@
+---
+import Base from '../../layouts/Base.astro';
+import { notes } from '../../data/notes';
+import { u } from '../../lib/url';
+
+const note = notes.find((n) => n.slug === 'chasing-squirrels')!;
+---
+<Base title={note.title} description={note.dek} section="notes">
+  <div class="wrap">
+    <article>
+    <header class="hero">
+      <p class="eyebrow"><a href={u('notes/')}>Field notes</a> · {note.minutes} min read</p>
+      <h1>Chasing <em>squirrels</em></h1>
+      <p class="lede">{note.dek}</p>
+    </header>
+
+    <div class="prose">
+      <p>
+        Riley and I were at his favourite spot, a stretch of forest near home where the ground is a blanket of moss
+        and ferns. It's beautiful. It also has terrible cell coverage, so my podcast wouldn't start, and I was standing
+        on the trail staring at my phone, willing it to load.
+      </p>
+      <p>
+        Riley started barking at me. Not at a squirrel. At me.
+      </p>
+      <p>
+        You're right, I told him. I've been obsessing over Hangar, learning AI and looking for my next role so much
+        lately that I've been neglecting him a bit. I put the phone away. Time for a little walking meditation, and a
+        little squirrel hunting with my buddy.
+      </p>
+
+      <h2>The fabric of reality</h2>
+      <p>
+        A few moments later, a line from a podcast I'd heard a few days earlier popped into my head: <em>live your
+        life in accordance with the fabric of reality.</em> It's a very Stoic idea, and it stuck with me because it
+        describes how I already try to live. In my own words, it goes something like this:
+      </p>
+      <blockquote>
+        <p>
+          Live in accordance with reality. Accept what is true in front of me. Spend no time judging or criticizing
+          what I see, or looking for whom to blame. Instead, find the best path forward in light of what I see, not
+          despite it.
+        </p>
+      </blockquote>
+      <p>
+        That thought led to another thought, and I wanted to know what someone else thought of my thought. So, yes,
+        not long after putting my phone away, I took it back out and typed it into ChatGPT. Riley was not
+        impressed.
+      </p>
+
+      <h2>What came back</h2>
+      <p>
+        The conversation that followed was better than I expected, and a few ideas from it have stayed with me.
+      </p>
+      <p>
+        The first is that reality doesn't need your agreement to impose its consequences. You don't have to approve
+        of what happened, like it, or think it's fair. You just have to see it accurately if you want to respond well.
+        As it put it, you don't have to win an argument with reality before you can get on with your life.
+      </p>
+      <p>
+        The second is what I'd call the second cost. When something goes wrong, the problem itself costs you
+        something. Your reaction to it can cost you more: the hour spent being frustrated with whoever made the call,
+        replaying how anyone could have missed it. Judging and blaming feel like progress, but mostly they're a way
+        of revisiting a situation without changing it. Living in accordance with reality is, in part, refusing to pay
+        that second cost.
+      </p>
+      <p>
+        That isn't the same as switching off judgment. Noticing that a system is broken, or that someone can't be
+        trusted, is useful information. The trick is to stop getting stuck in the evaluation when there's something
+        you could be doing instead.
+      </p>
+      <p>
+        The third is about where agency actually lives. ChatGPT laid out three ways to meet a hard situation, and I
+        liked them enough to write them down:
+      </p>
+      <ul>
+        <li><strong>Passivity:</strong> things are the way they are, so there's nothing I can do.</li>
+        <li><strong>Denial:</strong> things are the way they are, but I'll act as if they aren't.</li>
+        <li><strong>Agency:</strong> things are the way they are. What can I do with that?</li>
+      </ul>
+      <p>
+        Acceptance isn't surrender. It's where useful action starts. A sailor doesn't demand that the wind blow from
+        somewhere else; they read it and trim the sails.
+      </p>
+      <p>
+        It also pushed back on me a little, which I appreciated. Accepting that something is <em>real</em> isn't the
+        same as accepting that it's <em>right</em>, or permanent. You can acknowledge that someone treated you badly
+        and still set a boundary or walk away. And what I see isn't necessarily what is. I have blind spots like
+        everyone else, so "accept what I see" only works if I'm willing to see more tomorrow and change course. It
+        offered a neat way to hold the difference between blame and responsibility, too. Blame asks who deserves to
+        be condemned for this. Responsibility asks what's mine to do about it now.
+      </p>
+
+      <h2>Nine years of squirrels</h2>
+      <p>
+        By then Riley was off the trail and deep in the ferns, after a squirrel. Which gave me another thought.
+      </p>
+      <p>
+        I've spent nine years watching Riley chase squirrels. He has never caught one. He never stood a chance. But
+        he doesn't know that, and he's as excited about the chase today as he was the first time. Isn't that what
+        life is like when you don't accept reality? Chasing something that isn't there, or isn't going to happen?
+      </p>
+      <p>
+        I typed that in too. The answer surprised me, because it defended Riley.
+      </p>
+      <p>
+        We all have our own squirrels: the job, the title, the number in the bank account, the recognition that will
+        finally make the work feel like it mattered. The trap isn't chasing them. It's making the catch a condition
+        for enjoying the walk, so that "I'll be happy when" becomes a way of judging today against a future that
+        doesn't exist yet. There's always another squirrel.
+      </p>
+      <p>
+        Riley doesn't do that. He isn't postponing anything until he catches one. The chase is the whole point, and
+        nine years of evidence hasn't made him cynical about it. He hasn't concluded that his time would be better
+        spent on something with higher odds. Every squirrel is just another reason to run.
+      </p>
+      <p class="pull">
+        It was never about the catch. It's about the chase.
+      </p>
+      <p>
+        There was one line in that conversation I keep coming back to. "I can't catch the squirrel, so I might as well
+        enjoy the chase" is resignation. "I enjoy the chase; catching the squirrel was never necessary" is freedom.
+        They sound alike, and they're nothing alike.
+      </p>
+      <p>
+        So where does that leave my first thought, about living in accordance with reality? I think it means two
+        things at once. See the world clearly enough not to fool yourself about what's possible, and be present
+        enough not to miss what's already happening. A squirrel you can't catch is different from one you haven't
+        caught yet, and part of the job is being honest about which one you're after. The rest is enjoying the run.
+      </p>
+
+      <h2>What I'm taking back to work</h2>
+      <p>
+        I build platforms, so of course I couldn't leave it in the forest. A lot of what I believe about the work is
+        this same idea wearing a hard hat. A good incident review starts from what actually happened, not from who
+        should have known better. A good platform starts from the systems a company really has, not the ones on the
+        architecture slide. It's why I label everything on this site as built, draft or proposal, and why the gaps are
+        written down in public. You can't find the best path forward from a place you're pretending to be.
+      </p>
+      <p>
+        And it's a fair description of this season of my life. Hangar, learning to build with AI, and the job search
+        are all squirrels, and good ones. I'm going to keep chasing them with everything I've got. I'm just not going
+        to make catching them the price of enjoying the walk.
+      </p>
+
+      <h2>Back on the trail</h2>
+      <p>
+        The squirrel got away, obviously. Riley came bounding back out of the ferns, covered in bits of moss and completely
+        delighted with himself, and we kept walking. The podcast never did load. I didn't miss it.
+      </p>
+    </div>
+    </article>
+  </div>
+</Base>
+<style>
+  .prose h2 { margin-top: 3rem; }
+  .pull {
+    font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem; margin: 2.5rem 0; max-width: 34ch;
+  }
+  .prose blockquote {
+    margin: 1.6rem 0; padding: 1rem 1.25rem; border-left: 3px solid var(--sky); background: var(--raised);
+    border-radius: 0 6px 6px 0;
+  }
+  .prose blockquote p { margin: 0; }
+</style>

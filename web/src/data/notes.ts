@@ -4,6 +4,14 @@ export type Note = { slug: string; title: string; dek: string; date: string; min
 
 export const notes: Note[] = [
   {
+    slug: 'chasing-squirrels',
+    title: 'Chasing squirrels',
+    dek: "A walk in the woods with Riley, a Stoic line from a podcast, and a conversation with ChatGPT about living in accordance with reality. On accepting what's in front of you, and what nine years of watching my dog chase squirrels he'll never catch has taught me about the chase.",
+    date: '2026-10-13',
+    minutes: 6,
+    tags: ['Life', 'Philosophy'],
+  },
+  {
     slug: 'origin',
     title: 'How Hangar started, and what AI taught me along the way',
     dek: "Two projects at once: rebuild my home lab into a real platform, and learn to build with AI while doing it. Five mockups, a Star Trek replicator moment, a name that changed jobs, and the token bills I didn't see coming. Plus the lessons I'd pass on first: how to manage your sessions, and how to use memory.",
