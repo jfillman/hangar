@@ -69,7 +69,7 @@ baseline is `tools/airframe-scorecard/baseline-2026-09-26.json`.
 | 9 | No live file mixes human and machine-owned keys | 4 of 4 mixed |
 | 10 | A shared base layer exists in the ApplicationSets | no |
 | 11 | `airframe.*` tools exist | no |
-| 12 | An AppSpec schema exists | **Draft** (`autopilot/schemas/appspec.schema.json`) |
+| 12 | An AppSpec schema exists | **Done** (`airframe/contract/appspec.schema.json`; `config` = the chart's human-owned values) |
 | 13 | Executable walkthroughs replace prose quickstarts | 0 |
 | 14 | Every live values file renders cleanly | **yes** |
 
@@ -234,7 +234,7 @@ and `airframe.describe`.
 - **Effort:** 1 week; rides along with each Skyport part.
 
 ### AF-8 Interaction surface (27 → A+)
-- **AppSpec** (`autopilot/schemas/appspec.schema.json`, Draft): desired state for an app and its environments in one place.
+- **AppSpec** (`airframe/contract/appspec.schema.json`, vendored byte-identical into autopilot): desired state for an app, its environments and its chart values in one place.
 - **Planner** (`autopilot/src/clearance/airframe_plan.py`, **Built and tested**): AppSpec to an ordered ChangeSet across the tenants, app and gitops repos, with gates, dependencies, assumptions and warnings.
 - Tools in Clearance: `airframe.capabilities`, `describe`, `explain`, `plan`, `apply` (opens PRs), `status`, `verify`, `diagnose` (via Holmes).
 - Idempotent (same spec, same change set, a no-op when converged) and resumable (state on the `task_id`, PR labels and the audit log).
@@ -280,7 +280,7 @@ in step by a shared conformance test.
 
 ## 6. AppSpec and the planner
 
-The parachute sentence, as the agent writes it (`autopilot/examples/parachute.appspec.yaml`):
+The parachute sentence, as the agent writes it (`airframe/contract/examples/parachute.appspec.yaml`):
 
 ```yaml
 apiVersion: airframe/v1
@@ -312,6 +312,44 @@ With the A+ features on, `ground-rollout` disappears and the config is written o
 Assumptions and warnings the planner surfaces instead of hiding: the only upper cluster is `prod`
 so both flight environments go there; two upper clusters and no choice is a **question**, not a guess;
 `test` collides with the `test` pipeline stage; a single 100% step promotes immediately.
+
+### The parachute sentence is one example, not the scope
+
+An agent can request a new app and configure it in any way the chart allows. AppSpec's `config` (every
+environment) and `overrides.<env>` (one environment, deep-merged over `config`, lists replace) are the
+`airframe-application` chart's values: every top-level key in `values.schema.json` with
+`x-hangar-owner: human` (rollout, env, autoscaling, podDisruptionBudget, httpRoute, ingress,
+networkPolicy, components, slos, jobs, ...), with the chart's own strictness, conditionals, component
+XRD schemas and `x-hangar-risk`. Airframe's `tools/gen_appspec_schema.py` generates that part of the
+schema from the chart, and CI fails if it drifts. These are not settable: platform-owned keys (appName,
+cluster, envName, ...), release-owned keys (release, releaseTracking), `appType`, and the deprecated
+`rollout.image`, because images come from releases.
+
+A second sentence holds it to that (`airframe/contract/examples/mynewpythonapp.appspec.yaml`):
+
+> provision a new python app with a dev, test ground envs, staging, pre-prod and prod flight envs,
+> port 1234, replicas 3, 4 canary steps: 25% weight, pause 30s, 50% weight, pause 30s. 100% weight,
+> a pdb enabled, an hpa enabled, a route called https://mynewpythonapp.hangar.io/.
+
+What the planner adds on top of passing values through:
+
+- **Per-environment validation.** Each environment's merged values are checked against the chart
+  again, because two valid halves can make an invalid whole.
+- **A hostname belongs to one environment.** The same hostname in more than one environment (for
+  example a route in `config`) is a **question** naming the environments, not a guess.
+- **Ports agree.** `stackOptions.port` sets the chart's `rollout.ports` to `http:<port>` unless
+  `config` sets ports itself. A list that leaves the port out is rejected; otherwise the Service would
+  miss the scaffolded server.
+- **Overrides must name a declared environment.**
+- **The HPA owns the count.** `rollout.replicas` above `autoscaling.min` with the HPA on is reported,
+  not silently "fixed".
+- **Critical-risk values gate the merge.** A critical-risk key (`extraManifests`) moves the app-repo
+  step from auto-merge to human merge.
+- **Verify checks every claim.** The verify step gets one check per claim: replicas, ports, HPA, PDB,
+  and the route per environment. An HTTPRoute has no scheme, so "https" in a
+  request depends on a TLS listener on the Gateway; kind-prod's `kiac` Gateway has only HTTP :80 today.
+
+The planner tests render every environment of the second sentence on the real chart.
 
 ## 7. Migration and safety
 
