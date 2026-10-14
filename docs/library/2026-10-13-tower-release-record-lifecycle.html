@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start the next release record when the last one ships</title>
+<meta name="description" content="A proposal to open Tower&#x27;s Release Record as a live draft the moment the previous release ships, move sign-off before the Flight merge, and keep the record open through a bake window, while it stays a sealed, git-backed receipt at the end.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The Hangar diagram profile (web/src/styles/global.css, tools/diagrams/lib.py): warm paper,
+   ink, amber accent, sky links; Instrument Serif, Geist, Geist Mono. Semantic colours mark
+   severity only. Theme follows the system unless <html data-theme> is set (the site sets it
+   when this page is embedded). */
+:root{
+  color-scheme:light;
+  --ground:#f2efe9; --paper:#fbfaf7; --ink:#1b1f24; --ink-2:#5b6570; --rule:rgba(27,31,36,.14);
+  --accent:#2e7ba6; --accent-soft:#dcebf4; --amber:#b9791f;
+  --ok:#2e7d4f; --ok-bg:#e1efe5; --warn:#9a6212; --warn-bg:#f4e6c9; --bad:#a3352b; --bad-bg:#f5e1dd; --info:#5b6570; --info-bg:#e8e3da;
+  --code-bg:#e8e3da;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+    --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+    --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+    --code-bg:#1b1f24;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+  --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+  --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+  --code-bg:#1b1f24;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,2.75rem)}
+h2{font-size:1.9rem;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+h3{font-size:1.3rem}
+p{margin:0}
+section{display:flex;flex-direction:column;gap:16px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+code{font-family:var(--mono);font-size:.85em;background:var(--code-bg);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.85rem;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:500}
+
+.verdict{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--warn);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.verdict .stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);padding:4px 10px;border-radius:3px}
+.verdict h2{border:0;padding:0;font-size:1.8rem}
+.verdict ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+
+.tbl{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--rule)}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:500;background:var(--ground)}
+tr:last-child td{border-bottom:0}
+td.area{font-weight:600;white-space:nowrap}
+.chip{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.04em;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.c-ok{color:var(--ok);background:var(--ok-bg)} .c-warn{color:var(--warn);background:var(--warn-bg)} .c-bad{color:var(--bad);background:var(--bad-bg)} .c-info{color:var(--info);background:var(--info-bg)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.card h3{font-size:1rem;font-family:var(--sans);font-weight:600}
+.card p{font-size:.92rem;color:var(--ink-2)}
+
+.finding{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);border-radius:4px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.finding.sev-high{border-left-color:var(--bad)} .finding.sev-med{border-left-color:var(--warn)} .finding.sev-low{border-left-color:var(--info)}
+.finding .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.finding .id{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.finding h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;flex:1 1 300px}
+.finding p{font-size:.94rem}
+.ev{font-size:.84rem;color:var(--ink-2)}
+.ev b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin-right:6px}
+.flist{display:flex;flex-direction:column;gap:10px}
+
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.rec{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.rec h3{display:flex;align-items:center;gap:8px}
+.rec ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:.92rem}
+.rec li b{font-weight:600}
+
+.gates{counter-reset:g;display:flex;flex-direction:column;gap:0;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.gate{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+.gate:last-child{border-bottom:0}
+.gate .n{font-family:var(--mono);font-size:.85rem;color:var(--accent);background:var(--accent-soft);border-radius:4px;height:28px;display:flex;align-items:center;justify-content:center}
+.gate p{font-size:.94rem}
+.gate .when{font-size:.82rem;color:var(--ink-2)}
+
+.phase{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.note{font-size:.85rem;color:var(--ink-2)}
+ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:16px}
+
+.fig{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.fig .scroll{overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:600px;max-width:760px;height:auto;margin:0 auto}
+.fig figcaption{font-size:.85rem;color:var(--ink-2)}
+.fig figcaption b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;color:var(--amber);margin-right:6px}
+.stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:3px}
+.verdict.ok{border-top-color:var(--ok)} .verdict.ok .stamp{color:var(--ok);background:var(--ok-bg)}
+.verdict.info{border-top-color:var(--accent)} .verdict.info .stamp{color:var(--accent);background:var(--accent-soft)}
+.verdict.bad{border-top-color:var(--bad)} .verdict.bad .stamp{color:var(--bad);background:var(--bad-bg)}
+.track{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.track .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;padding:14px 16px;border-bottom:1px solid var(--rule);align-items:baseline}
+.track .row:last-child{border-bottom:0}
+.track .row h3{font-family:var(--sans);font-size:1rem;font-weight:600}
+.track .row p{grid-column:1/-1;font-size:.92rem;color:var(--ink-2)}
+.track .row .chip{justify-self:end}
+.quote{border-left:3px solid var(--amber);padding:4px 0 4px 16px;font-family:var(--serif);font-size:1.35rem;line-height:1.3}
+p.prose{display:block}
+@media (max-width:560px){.track .row{grid-template-columns:1fr}.track .row .chip{justify-self:start}}
+
+svg rect[fill="#f2efe9"]{fill:var(--paper)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) svg [fill="#1b1f24"]{fill:#e8e4dc}:root:not([data-theme=light]) svg [fill="#2e7ba6"]{fill:#6fb2d9}:root:not([data-theme=light]) svg [fill="#5b6570"]{fill:#a1aab3}:root:not([data-theme=light]) svg [fill="#838b93"]{fill:#7f8891}:root:not([data-theme=light]) svg [fill="#b9791f"]{fill:#e8a33d}:root:not([data-theme=light]) svg [fill="#ffffff"]{fill:#1c2127}:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root:not([data-theme=light]) svg [stroke="#1b1f24"]{stroke:#e8e4dc}:root:not([data-theme=light]) svg [stroke="#5b6570"]{stroke:#a1aab3}:root:not([data-theme=light]) svg [stroke="#838b93"]{stroke:#7f8891}:root:not([data-theme=light]) svg [stroke="#b9791f"]{stroke:#e8a33d}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.20)"]{stroke:rgba(232,228,220,0.2)}}
+:root[data-theme=dark] svg [fill="#1b1f24"]{fill:#e8e4dc}:root[data-theme=dark] svg [fill="#2e7ba6"]{fill:#6fb2d9}:root[data-theme=dark] svg [fill="#5b6570"]{fill:#a1aab3}:root[data-theme=dark] svg [fill="#838b93"]{fill:#7f8891}:root[data-theme=dark] svg [fill="#b9791f"]{fill:#e8a33d}:root[data-theme=dark] svg [fill="#ffffff"]{fill:#1c2127}:root[data-theme=dark] svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root[data-theme=dark] svg [stroke="#1b1f24"]{stroke:#e8e4dc}:root[data-theme=dark] svg [stroke="#5b6570"]{stroke:#a1aab3}:root[data-theme=dark] svg [stroke="#838b93"]{stroke:#7f8891}:root[data-theme=dark] svg [stroke="#b9791f"]{stroke:#e8a33d}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.20)"]{stroke:rgba(232,228,220,0.2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Tower · Proposal · Release record lifecycle</span>
+  <h1>Start the next release record when the last one ships</h1>
+  <p class="prose" style="color:var(--ink-2)">Today a Release Record is a receipt: Tower writes it after an image is already healthy in a Flight environment. But most release work happens before that point. Someone gathers scope, writes notes, picks a candidate and makes the go or no-go call. The record should exist for all of it, and still be a sealed, git-backed receipt at the end.</p>
+  <div class="meta"><span><b>Proposal</b> October 13, 2026</span><span><b>Status</b> proposed; R1 approved to ship on its own, October 13, 2026</span><span><b>Grounded in</b> Tower v0.66.0 and Glidepath main, October 13, 2026</span><span><b>Docs</b> <a target="_top" href="https://hangarplatform.dev/docs/tower/">Tower docs</a></span></div>
+</header>
+
+
+<div class="verdict info">
+  <span class="stamp">Proposed · R1 approved to ship alone</span>
+  <h2>The record shows up after every decision it could have informed has already been made.</h2>
+  <ul>
+    <li>The next release's <b>draft</b> opens as soon as the previous one ships, before any PR exists. Open PRs show as incoming, and merged PRs are its scope.</li>
+    <li>Sign-off moves <b>before</b> the Flight merge, onto the release PR.</li>
+    <li>The record stays open through a bake window, then records the outcome.</li>
+    <li>The git seal, the layout, export, compare and the confidence score all stay as they are.</li>
+  </ul>
+</div>
+
+<section>
+  <h2>Where it stands</h2>
+  <div class="prose"><p>Release management is the part of Tower I trust most. The October 11 field report rated it Strong. So this isn't a rescue. It's about timing.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Piece</th><th>What it does today</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td class="area">Record sub-tab</td><td>List and detail views: what changed, what was built, what happened, then human context and a verification strip.</td><td><span class="chip c-ok">Shipped</span></td></tr>
+      <tr><td class="area">Export and compare</td><td>A self-contained HTML document that prints to PDF, and a diff of two records of the same app.</td><td><span class="chip c-ok">Shipped</span></td></tr>
+      <tr><td class="area">Saved to git</td><td>When a release goes Healthy in a Flight environment, a poller opens a PR adding <code>releases/&lt;app&gt;@&lt;tag&gt;.yaml</code> to the app's gitops repo. Cloud apps write theirs from the merged pin PR.</td><td><span class="chip c-ok">Shipped</span></td></tr>
+      <tr><td class="area">Human context</td><td>Summary, risk, notes, tags and approvals stamped with the signed-in identity. Every edit is a PR.</td><td><span class="chip c-ok">Shipped</span></td></tr>
+      <tr><td class="area">Build evidence</td><td>Archived pipeline runs, tests, scans, provenance, SBOM and the guardrail ledger, kept in the record so they outlive live data.</td><td><span class="chip c-ok">Shipped</span></td></tr>
+      <tr><td class="area">Confidence score</td><td>Starts at 50, with points for guardrails, provenance, approvals and "no incidents".</td><td><span class="chip c-ok">Shipped</span></td></tr>
+      <tr><td class="area">Outcome tracking</td><td>Status can only be healthy, degraded or superseded, and incidents can't be recorded, so every release gets the "no incidents" points. Glidepath knows about rollbacks; the record doesn't.</td><td><span class="chip c-bad">Gap</span></td></tr>
+      <tr><td class="area">Post-release SLO watch</td><td>Checks at +24h and +7d, blocked while the prod cluster's Prometheus is scaled to zero.</td><td><span class="chip c-info">Not started</span></td></tr>
+      <tr><td class="area">Approval gate</td><td>Block promotion without approvals, for apps that opt in.</td><td><span class="chip c-info">Parked</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>How teams run releases now</h2>
+  <div class="prose"><p>One idea runs through every tool I looked at: <b>a release is an object with a lifecycle, and a deploy is one event in it.</b> The tools that track releases well create the object early and attach work to it as it happens. The record is a byproduct.</p></div>
+  <div class="cards">
+    <div class="card"><h3>Linear Releases</h3><p>Releases are continuous or scheduled, and CI attaches issues as commits land. Make the release first and attach work at merge time.</p></div>
+    <div class="card"><h3>Jira and Keep a Changelog</h3><p>"Unreleased" is a state teams already use. Tower can show it with no extra input.</p></div>
+    <div class="card"><h3>Octopus, Kargo, GitLab</h3><p>The thing that moves between environments has one identity. Each image is a candidate for a release.</p></div>
+    <div class="card"><h3>Runway</h3><p>A release has a kickoff, one named pilot and a short checklist, mostly evidence the system already has.</p></div>
+    <div class="card"><h3>DORA and ServiceNow</h3><p>External approvals slow delivery and don't lower the change failure rate. Use a light peer sign-off backed by evidence, not a change board.</p></div>
+    <div class="card"><h3>LaunchDarkly</h3><p>Deploy and release are separate. The record isn't finished at Healthy: rollbacks and degradation have to flow back in, or the score can't be trusted.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Most of a release happens before Tower makes a record</h2>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 324" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tower-release-record-lifecycle-f1-t tower-release-record-lifecycle-f1-d"><title id="tower-release-record-lifecycle-f1-t">When the release record exists</title><desc id="tower-release-record-lifecycle-f1-d">A release timeline from the last Flight release to the bake window. Today Tower&#x27;s record appears only after Healthy. Glidepath&#x27;s tracking ConfigMap starts at the release PR, lives on the dev cluster and is swept after 14 days. The proposed record runs the whole way through Draft, Candidate, Ready, Rolling out and Released.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><line x1="64" y1="92" x2="64" y2="270" stroke="rgba(27,31,36,0.12)" stroke-dasharray="2,4" stroke-width="1"/><line x1="143" y1="92" x2="143" y2="270" stroke="rgba(27,31,36,0.12)" stroke-dasharray="2,4" stroke-width="1"/><line x1="222" y1="92" x2="222" y2="270" stroke="rgba(27,31,36,0.12)" stroke-dasharray="2,4" stroke-width="1"/><line x1="301" y1="92" x2="301" y2="270" stroke="rgba(27,31,36,0.12)" stroke-dasharray="2,4" stroke-width="1"/><line x1="380" y1="92" x2="380" y2="270" stroke="rgba(27,31,36,0.12)" stroke-dasharray="2,4" stroke-width="1"/><line x1="459" y1="92" x2="459" y2="270" stroke="rgba(27,31,36,0.12)" stroke-dasharray="2,4" stroke-width="1"/><line x1="538" y1="92" x2="538" y2="270" stroke="rgba(27,31,36,0.12)" stroke-dasharray="2,4" stroke-width="1"/><line x1="617" y1="92" x2="617" y2="270" stroke="rgba(27,31,36,0.12)" stroke-dasharray="2,4" stroke-width="1"/><line x1="696" y1="92" x2="696" y2="270" stroke="rgba(27,31,36,0.12)" stroke-dasharray="2,4" stroke-width="1"/><line x1="40" y1="84" x2="736" y2="84" stroke="#838b93" stroke-width="1.2"/><text x="64" y="50" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Last release</text><text x="64" y="66" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">prod @ previous</text><circle cx="64" cy="84" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><text x="143" y="50" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">PRs merge</text><text x="143" y="66" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">main · 1..n</text><circle cx="143" cy="84" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><text x="222" y="50" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Image built</text><text x="222" y="66" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">signed</text><circle cx="222" cy="84" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><text x="301" y="50" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Ground soak</text><text x="301" y="66" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">dev · test</text><circle cx="301" cy="84" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><text x="380" y="50" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Release PR</text><text x="380" y="66" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">proposed</text><circle cx="380" cy="84" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><text x="459" y="50" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Gates, merge</text><text x="459" y="66" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">guardrails</text><circle cx="459" cy="84" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><text x="538" y="50" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Canary</text><text x="538" y="66" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">progressing</text><circle cx="538" cy="84" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><text x="617" y="50" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Healthy</text><text x="617" y="66" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">healthy</text><circle cx="617" cy="84" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><text x="696" y="50" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Bake</text><text x="696" y="66" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+24h · +7d</text><circle cx="696" cy="84" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><text x="24" y="114" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">TOWER RECORD · TODAY</text><rect x="48" y="120" width="576" height="28" rx="4" fill="#f2efe9"/><rect x="48" y="120" width="576" height="28" rx="4" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.20)" stroke-width="1" stroke-dasharray="4,3"/><text x="336" y="138" fill="#5b6570" font-size="9" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">no record · scope, notes and sign-off have nowhere to live</text><rect x="632" y="120" width="104" height="28" rx="4" fill="#f2efe9"/><rect x="632" y="120" width="104" height="28" rx="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="684" y="138" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">sealed in git</text><text x="24" y="172" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">GLIDEPATH TRACKING CONFIGMAP</text><rect x="372" y="178" width="364" height="28" rx="4" fill="#f2efe9"/><rect x="372" y="178" width="364" height="28" rx="4" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="554" y="196" fill="#5b6570" font-size="9" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">proposed → healthy · dev cluster · swept at 14 days</text><text x="24" y="230" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">PROPOSED RECORD</text><rect x="48" y="236" width="688" height="28" rx="4" fill="#f2efe9"/><rect x="48" y="236" width="688" height="28" rx="4" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><line x1="222" y1="236" x2="222" y2="264" stroke="#b9791f" stroke-opacity="0.55" stroke-width="1"/><line x1="380" y1="236" x2="380" y2="264" stroke="#b9791f" stroke-opacity="0.55" stroke-width="1"/><line x1="459" y1="236" x2="459" y2="264" stroke="#b9791f" stroke-opacity="0.55" stroke-width="1"/><line x1="617" y1="236" x2="617" y2="264" stroke="#b9791f" stroke-opacity="0.55" stroke-width="1"/><text x="135.0" y="254" fill="#1b1f24" font-size="10.5" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Draft</text><text x="301.0" y="254" fill="#1b1f24" font-size="10.5" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Candidate</text><text x="419.5" y="254" fill="#1b1f24" font-size="10.5" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Ready</text><text x="538.0" y="254" fill="#1b1f24" font-size="10.5" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Rolling out</text><text x="676.5" y="254" fill="#1b1f24" font-size="10.5" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Released · bake</text><text x="24" y="304" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">Opens when the previous release ships. Seals into git at Healthy. Ends when the next one supersedes it.</text></svg></div><figcaption><b>Figure 1</b>One release, from the last Flight release to the bake window. Columns are events, not equal time. The dashed bar is where no Tower record exists today.</figcaption></figure>
+  <div class="prose">
+    <p><b>Approvals currently come after the fact.</b> An approval added once a release is already healthy in production is really an acknowledgement. Moving sign-off onto the release PR, while gates run, makes it a real decision.</p>
+    <p><b>Notes get written as work merges.</b> If the draft builds up from merged PRs, the notes are mostly written by release day.</p>
+    <p><b>Picking a candidate needs context.</b> A draft can show every image built since the last release, how long each has run on Ground, and its gate results, side by side.</p>
+    <p><b>The draft needs no storage.</b> Everything it shows comes from data Tower already fetches. A file is needed only for what people type, and only once they type it.</p>
+    <p><b>Not everything gets a record.</b> The unit is still a release to Flight. It just starts earlier. Every image is a candidate inside a release, not a release of its own.</p>
+  </div>
+</section>
+
+<section>
+  <h2>One branch, one next release</h2>
+  <div class="prose"><p>Each Skyport app builds Flight releases from <code>main</code>, with no release branches. Every merge builds an image tagged <code>&lt;version&gt;-&lt;sha&gt;</code> and deploys it to Ground, so every merge produces a candidate. A release is the candidate you choose to promote, plus everything merged before it. Work attaches to the draft at three levels: <b>planned</b> issues on a milestone (optional), <b>incoming</b> open PRs, and <b>scope</b>, the PRs merged since the last release.</p></div>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tower-release-record-lifecycle-f2-t tower-release-record-lifecycle-f2-d"><title id="tower-release-record-lifecycle-f2-t">Branches, merges and the draft</title><desc id="tower-release-record-lifecycle-f2-d">Main carries the previous release, BIRCH. Two developers&#x27; feature branches merge into main, and each merge builds a candidate image: quiet-heron, then amber-finch. A third branch is still an open PR, so it is incoming, not scope. The draft, CEDAR, spans everything on main after BIRCH.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><path d="M120,150 L120,96 Q120,88 128,88 L282,88 Q290,88 290,96 L290,144" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M150,150 L150,206 Q150,214 158,214 L422,214 Q430,214 430,206 L430,157" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M470,150 L470,96 Q470,88 478,88 L560,88" fill="none" stroke="#5b6570" stroke-width="1.2" stroke-dasharray="5,4"/><line x1="40" y1="150" x2="720" y2="150" stroke="#1b1f24" stroke-width="1.4"/><text x="720" y="140" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="end">main</text><circle cx="190" cy="88" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><circle cx="250" cy="88" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><circle cx="250" cy="214" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><circle cx="370" cy="214" r="4" fill="#ffffff" stroke="#1b1f24" stroke-width="1.2"/><circle cx="520" cy="88" r="4" fill="#ffffff" stroke="#5b6570" stroke-width="1.2"/><circle cx="560" cy="88" r="4" fill="#ffffff" stroke="#5b6570" stroke-width="1.2"/><circle cx="80" cy="150" r="6" fill="#1b1f24" stroke="#1b1f24" stroke-width="1.2"/><circle cx="290" cy="150" r="6" fill="#1b1f24" stroke="#1b1f24" stroke-width="1.2"/><circle cx="430" cy="150" r="7" fill="#b9791f" stroke="#b9791f" stroke-width="1.2"/><text x="128" y="78" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">feature/bag-reprint · dev 1</text><text x="158" y="234" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">feature/read-pref · dev 2</text><text x="478" y="78" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">feature/tz-cutoff · PR #221 open</text><text x="570" y="92" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">not merged · incoming, not scope</text><text x="80" y="176" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">BIRCH · on prod</text><text x="80" y="189" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">1.8.2-6f1c0aa</text><text x="298" y="174" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">quiet-heron</text><text x="298" y="187" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">1.8.2-4c1e9a0</text><text x="438" y="174" fill="#1b1f24" font-size="10" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="start">amber-finch</text><text x="438" y="187" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">1.9.0-a41f9c2 · promote →</text><path d="M92 246 V254 H720 V246" fill="none" stroke="#b9791f" stroke-width="1.5"/><text x="92" y="272" fill="#b9791f" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">NEXT RELEASE · CEDAR · DRAFT</text><text x="92" y="288" fill="#5b6570" font-size="10" font-weight="400" font-family="'Geist', system-ui, sans-serif" text-anchor="start">Opens when BIRCH ships. Scope is main after BIRCH. Promoting amber-finch ships both features.</text></svg></div><figcaption><b>Figure 2</b>Each dot on main is a merge, and each merge builds an image with its own slug. quiet-heron still says 1.8.2 because nobody had bumped the version yet.</figcaption></figure>
+  <div class="prose">
+    <p><b>Two developers, two features.</b> Both feed the same release. Because main is a single line, you can't ship the later feature without the earlier one. To hold one back, keep its PR open or merge it behind a feature flag, and the record notes the flag.</p>
+    <p><b>A nickname, and a version that settles later.</b> Each release gets a name when its draft opens, handed out alphabetically per app the way hurricanes are named: ASTER, BIRCH, CEDAR. It comes from a different word family than image slugs like <code>amber-finch</code>, so people say "CEDAR, shipped as amber-finch". The version is a label, not an identity. The Skyport apps' sealed records show both habits: gate-api bumped its version every release, while baggage-api and boarding-api each shipped the same version twice. So the draft suggests a version from the merged PRs, readiness flags one that hasn't moved, and the seal records the real one.</p>
+    <p class="note">A side finding: image slugs come from only four hex characters and a noun list with duplicates, about 1,600 combinations, so slugs will repeat across an app's history. Sequential release names never do.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Five phases on one record</h2>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 384" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tower-release-record-lifecycle-f3-t tower-release-record-lifecycle-f3-d"><title id="tower-release-record-lifecycle-f3-t">Release record lifecycle</title><desc id="tower-release-record-lifecycle-f3-d">Main phases Draft, Candidate, Ready, Rolling out and Released. Detours: Rework from Ready back to Candidate, and Aborted from Rolling out with a retry. Endings: Rolled back from Rolling out, and Superseded from Released when the next release is healthy.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><rect x="16" y="28" width="728" height="96" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="28" y="32" width="56" height="12" rx="2" fill="#f2efe9"/><text x="56.0" y="41" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">DETOURS</text><rect x="16" y="268" width="728" height="88" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="28" y="272" width="56" height="12" rx="2" fill="#f2efe9"/><text x="56.0" y="281" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">ENDINGS</text><rect x="24" y="170" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="24" y="170" width="116" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="82.0" y="196.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Draft</text><text x="82.0" y="212.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">opens at last ship</text><rect x="172" y="170" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="172" y="170" width="116" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="230.0" y="196.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Candidate</text><text x="230.0" y="212.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">soaking on Ground</text><path d="M140,198 L169,198" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="320" y="170" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="320" y="170" width="116" height="56" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="378.0" y="196.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Ready</text><text x="378.0" y="212.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">release PR, sign-off</text><path d="M288,198 L317,198" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="468" y="170" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="468" y="170" width="116" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="526.0" y="196.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Rolling out</text><text x="526.0" y="212.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">merged · canary</text><path d="M436,198 L465,198" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><rect x="616" y="170" width="116" height="56" rx="6" fill="#f2efe9"/><rect x="616" y="170" width="116" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="674.0" y="196.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Released</text><text x="674.0" y="212.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">healthy, baking</text><path d="M584,198 L613,198" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="138" y="232" width="36" height="12" rx="2" fill="#f2efe9"/><text x="156" y="241" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">BUILD</text><rect x="280" y="232" width="48" height="12" rx="2" fill="#f2efe9"/><text x="304" y="241" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">PROMOTE</text><rect x="434" y="232" width="36" height="12" rx="2" fill="#f2efe9"/><text x="452" y="241" fill="#b9791f" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">MERGE</text><rect x="576" y="232" width="48" height="12" rx="2" fill="#f2efe9"/><text x="600" y="241" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">HEALTHY</text><rect x="210" y="52" width="170" height="56" rx="6" fill="#f2efe9"/><rect x="210" y="52" width="170" height="56" rx="6" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.20)" stroke-width="1" stroke-dasharray="4,3"/><text x="295.0" y="78.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Rework</text><text x="295.0" y="94.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">candidate rejected</text><path d="M370,170 L370,112" fill="none" stroke="#5b6570" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><rect x="378" y="135.0" width="36" height="12" rx="2" fill="#f2efe9"/><text x="396.0" y="144.0" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">NO-GO</text><path d="M240,108 L240,166" fill="none" stroke="#5b6570" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><rect x="248" y="133.0" width="48" height="12" rx="2" fill="#f2efe9"/><text x="272.0" y="142.0" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">REBUILD</text><rect x="520" y="52" width="170" height="56" rx="6" fill="#f2efe9"/><rect x="520" y="52" width="170" height="56" rx="6" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.20)" stroke-width="1" stroke-dasharray="4,3"/><text x="605.0" y="78.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Aborted</text><text x="605.0" y="94.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">canary paused or failed</text><path d="M536,170 L536,112" fill="none" stroke="#5b6570" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><rect x="492" y="135.0" width="36" height="12" rx="2" fill="#f2efe9"/><text x="510.0" y="144.0" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ABORT</text><path d="M572,108 L572,166" fill="none" stroke="#5b6570" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><rect x="580" y="133.0" width="36" height="12" rx="2" fill="#f2efe9"/><text x="598.0" y="142.0" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">RETRY</text><rect x="456" y="292" width="140" height="52" rx="6" fill="#f2efe9"/><rect x="456" y="292" width="140" height="52" rx="6" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="526.0" y="316.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Rolled back</text><text x="526.0" y="332.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">from rollout or released</text><path d="M526,226 L526,288" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="462" y="258.0" width="56" height="12" rx="2" fill="#f2efe9"/><text x="490.0" y="267.0" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ROLLBACK</text><rect x="616" y="292" width="116" height="52" rx="6" fill="#f2efe9"/><rect x="616" y="292" width="116" height="52" rx="6" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="674.0" y="316.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Superseded</text><text x="674.0" y="332.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">next release healthy</text><path d="M674,226 L674,288" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="682" y="258.0" width="60" height="12" rx="2" fill="#f2efe9"/><text x="712.0" y="267.0" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">NEXT LIVE</text><text x="24" y="376" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">Ready is the new step: the release PR is open, gates run, and sign-off happens here.</text></svg></div><figcaption><b>Figure 3</b>Nine states and ten transitions. Ready and the merge out of it are highlighted, because that is the new decision point.</figcaption></figure>
+  <div class="cards">
+    <div class="card"><h3>Glidepath's states, folded in</h3><p>Ready is Glidepath's <code>proposed</code>. Rolling out covers merged, progressing and sync-failed. Aborted covers aborted and degraded. Released, Superseded and Rolled back keep their names.</p></div>
+    <div class="card"><h3>One identity across phases</h3><p>A record keyed on <code>app@imageTag</code> can't exist before the image does, so it becomes <code>baggage-api@CEDAR</code>. Existing records keep their file names and get nicknames in date order.</p></div>
+    <div class="card"><h3>Where state lives</h3><p>Draft and Candidate are computed. Typed fields go in a draft file once someone writes something. At Healthy the poller seals the record as it does today, and the outcome is added once, when the bake window ends.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>What it looks like in Tower</h2>
+  <div class="prose"><p>Sealed records keep their list and detail views. Above them goes one live card for the release in progress. This sketch uses illustrative values, not real data.</p></div>
+  
+<style>
+.tw{background:#0b0d10;color:#e9ecef;border:1px solid #232830;border-radius:10px;padding:16px;font-size:13px;min-width:700px}
+.tw .tabs{display:flex;gap:18px;font-weight:600;color:#96a2ac;border-bottom:1px solid rgba(233,236,239,.1);padding-bottom:8px;margin-bottom:14px}
+.tw .tabs .on{color:#e9ecef;box-shadow:inset 0 -2px 0 #e8a33d;padding-bottom:8px;margin-bottom:-9px}
+.tw .card{background:#171b21;border:1px solid rgba(233,236,239,.1);border-radius:6px;padding:12px 14px;margin-bottom:10px}
+.tw .card.draft{border:1px dashed rgba(232,163,61,.55)}
+.tw .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tw .ver{font-weight:600;font-size:16px;letter-spacing:.06em}
+.tw .m{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+.tw .d{color:#96a2ac}
+.tw .sp{flex:1}
+.tw .ch{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:3px;border:1px solid currentColor}
+.tw .amb{color:#e8a33d} .tw .sky{color:#6fb2d9} .tw .grn{color:#6cc08a}
+.tw .slug{font-family:var(--mono);font-size:11px;color:#6fb2d9;background:rgba(111,178,217,.1);border-radius:10px;padding:1px 8px;white-space:nowrap}
+.tw .grid{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:10px;margin-top:12px}
+.tw .col{background:#0b0d10;border:1px solid rgba(233,236,239,.1);border-radius:5px;padding:10px 12px}
+.tw .col h4{margin:0 0 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#96a2ac;font-weight:600}
+.tw .col ul{list-style:none;margin:0;padding:0}
+.tw .col li{display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:12.5px}
+.tw .btn{font-size:12px;background:#1f242c;border:1px solid rgba(233,236,239,.1);border-radius:4px;padding:5px 10px}
+.tw .btn.p{color:#0b0d10;background:#e8a33d;border-color:#e8a33d}
+.tw .meter{height:6px;background:#1f242c;border-radius:3px;overflow:hidden;margin:4px 0 6px}
+.tw .meter i{display:block;height:100%;width:75%;background:#e8a33d}
+pre.schema{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:.78rem;line-height:1.6;margin:0}
+pre.schema .c{color:var(--ink-2)} pre.schema .n{color:var(--amber)}
+</style>
+<div class="tbl" style="background:transparent;border:0" role="img" aria-label="Sketch of Tower's Record sub-tab with a Next release draft card above the sealed records">
+<div class="tw">
+  <div class="tabs"><span>Matrix</span><span>Log</span><span>Lead time</span><span>Preview</span><span class="on">Record</span></div>
+  <div class="card draft">
+    <div class="row"><span class="ch amb">Next release · draft</span><span class="ver">CEDAR</span><span class="d m">v1.9.0 suggested · 3 feat / 4 fix</span><span class="sp"></span><span class="d">Owner</span><span>@jfillman</span></div>
+    <div class="grid">
+      <div class="col"><h4>Scope · 7 PRs since v1.8.2</h4><ul>
+        <li><span class="ch sky">feat</span><span>Bag-tag reprint endpoint <span class="d m">#212</span></span></li>
+        <li><span class="ch sky">feat</span><span>Read preference per route <span class="d m">#215</span></span></li>
+        <li><span class="ch d">fix</span><span>Timezone on transfer cutoff <span class="d m">#217</span></span></li>
+        <li class="d">+ 4 more · 2 linked issues still open</li>
+        <li class="d" style="border-top:1px solid rgba(233,236,239,.1);margin-top:6px;padding-top:6px">Incoming · 2 open PRs <span class="m">#221 #224</span></li>
+      </ul></div>
+      <div class="col"><h4>Candidates</h4><ul>
+        <li><span class="grn">●</span><span class="m">1.9.0-a41f9c2</span><span class="slug">amber-finch</span><span class="d">test · 26h</span></li>
+        <li><span class="amb">!</span><span class="m">1.8.2-4c1e9a0</span><span class="slug">quiet-heron</span><span class="d">version not bumped</span></li>
+      </ul><div class="d" style="margin-top:8px;font-size:12px">amber-finch: build, test and scan passed · provenance verified · SBOM +2 packages.</div></div>
+      <div class="col"><h4>Readiness · 6 of 8</h4><div class="meter"><i></i></div><ul>
+        <li><span class="grn">✓</span>Version bumped since BIRCH</li>
+        <li><span class="grn">✓</span>Ground soak ≥ 24h</li>
+        <li><span class="grn">✓</span>Rollback target eligible</li>
+        <li><span class="amb">!</span>Release notes drafted</li>
+        <li><span class="amb">!</span>Sign-off on release PR</li>
+      </ul></div>
+    </div>
+    <div class="row" style="margin-top:12px"><span class="d" style="font-size:12px">Draft written from merged PRs · nothing saved until you edit</span><span class="sp"></span><span class="btn">Edit notes</span><span class="btn">Compare candidates</span><span class="btn p">Promote amber-finch →</span></div>
+  </div>
+  <div class="card"><div class="row"><span class="ch grn">Released · bake day 2 of 7</span><span class="ver">BIRCH</span><span class="d m">v1.8.2</span><span class="slug">north-tern</span><span class="d">prod · 2 days ago</span><span class="sp"></span><span class="d">Readiness</span><span class="m grn">92</span><span class="d">Outcome</span><span class="m d">pending</span></div></div>
+  <div class="card" style="opacity:.75"><div class="row"><span class="ch d">Superseded</span><span class="ver">ASTER</span><span class="d m">v1.8.1</span><span class="slug">calm-plover</span><span class="d">prod · 9 days ago</span><span class="sp"></span><span class="d">Readiness</span><span class="m">88</span><span class="d">Outcome</span><span class="m grn">clean</span></div></div>
+</div>
+</div>
+
+</section>
+
+<section>
+  <h2>Ten changes, in priority order</h2>
+  <div class="track"><div class="row"><h3>01 · "Next release" live draft</h3><span class="chip c-warn">R1</span><p>A card at the top of the Record list from the moment the previous release ships: nickname, suggested version, PRs merged since then sorted by the existing <code>classifyPr</code>, incoming open PRs, linked GitHub issues, candidate images and a notes preview.</p><p class="note">Mostly frontend, built from data Tower already fetches. No PRs and no files. Linked issues probably need GitHub's closing-issue references on each PR.</p></div><div class="row"><h3>02 · Candidates inside a release</h3><span class="chip c-warn">R1</span><p>Every image built since the last release, side by side: slug, Ground environments, time on Ground, gate results, provenance, and SBOM diff against the last release. Promote acts on a candidate.</p><p class="note">Reuses Tekton Results pipeline runs, deploy history and provenance. Kargo calls this Freight.</p></div><div class="row"><h3>03 · Sign-off before the Flight merge</h3><span class="chip c-info">R2</span><p>In Ready, an approval is a review on the gitops release PR from someone other than the author. Approvals after release are still allowed but labelled <i>acknowledged</i>, and only pre-merge ones earn score.</p><p class="note">DORA's peer-review finding. Decided October 13, 2026: sign-off is recorded, never blocking, for now.</p></div><div class="row"><h3>04 · Readiness checklist, go or no-go</h3><span class="chip c-info">R2</span><p>At most eight items, most filled in by the system: guardrails green, provenance verified, minimum Ground soak, rollback target eligible, no open release-blocker issues. A person confirms notes, data risk and sign-off.</p><p class="note">Runway's checklists. Rollback eligibility already exists in Glidepath.</p></div><div class="row"><h3>05 · Release notes with two audiences</h3><span class="chip c-info">R2</span><p>Keep a Changelog categories, an internal changelog and user-facing notes with Known issues. Sealing writes a GitHub Release and feeds a per-app Changelog view.</p><p class="note">Replaces the blank Summary field with a pre-filled draft.</p></div><div class="row"><h3>06 · A named release owner</h3><span class="chip c-info">R2</span><p>An owner on the draft, defaulting to whoever promotes, with an optional rotation in <code>cicd.yaml</code>. The owner makes the call; others add evidence.</p><p class="note">Runway's release pilot. The existing <code>authoredBy</code> field covers part of it.</p></div><div class="row"><h3>07 · Outcome loop and a two-part score</h3><span class="chip c-info">R3</span><p>Today's confidence score becomes <b>Readiness</b>, minus the constant "+5, no incidents". A new <b>Outcome</b> score: clean, degraded, aborted then recovered, or rolled back, plus SLO checks at +1h, +24h and +7d.</p><p class="note">Glidepath already emits rolled-back and superseded. SLO checks need the prod cluster's Prometheus running again.</p></div><div class="row"><h3>08 · Risk signals filled in automatically</h3><span class="chip c-info">R3</span><p>Batch size, migration files, Flight config changes, dependency changes from the SBOM diff and a changed rollout strategy suggest low, medium or high, which a person confirms.</p><p class="note">The existing risk fields. Batch size is the factor DORA links to change failure rate.</p></div><div class="row"><h3>09 · Scheduled releases, optional</h3><span class="chip c-info">R4</span><p>A target date and planned scope from a GitHub milestone, then Jira keys. Scope can freeze, and open items move to the next release when this one seals.</p><p class="note">Linear's scheduled pipelines and Jira fix versions. Continuous mode stays the default.</p></div><div class="row"><h3>10 · Fleet calendar and notifications</h3><span class="chip c-info">R4</span><p>An Ops Wall panel of each app's draft, ready and baking releases, messages at Ready and Released, and a signed read-only link for stakeholders.</p><p class="note">The Phase 3 distribution items, now with something worth sending before release.</p></div></div>
+</section>
+
+<section>
+  <h2>Schema v2 adds to v1</h2>
+  <div class="prose"><p>Every v1 field stays. A v1 file reads as a release with one candidate and no draft history.</p></div>
+<pre class="schema"><span class="c"># gitops-&lt;app&gt;/releases/&lt;app&gt;@&lt;release&gt;.yaml  (sealed at Healthy, as today)</span>
+schemaVersion: <span class="n">2</span>
+id: baggage-api@CEDAR             <span class="c"># assigned when the draft opens, never changes</span>
+version: { suggested: 1.9.0, shipped: 1.9.0 }
+phase: released                   <span class="c"># draft | candidate | ready | rolling-out | released | superseded | rolled-back</span>
+base:       { branch: main, commit: 6f1c0aa }   <span class="c"># scope = merged on main after this</span>
+scope:      { prs: [212, 215, 217, …], issues: ["#198", "#203"] }
+candidates:
+  - { tag: 1.9.0-a41f9c2, slug: amber-finch, groundSoak: 26h, chosen: true }
+  - { tag: 1.8.2-4c1e9a0, slug: quiet-heron, chosen: false }
+readiness:  { items: [{ id: guardrails, ok: true, auto: true }, …], score: 92 }
+signoffs:   [{ role: qa, via: "gitops PR review", before: merge }]
+notes:      { internal: …, public: …, knownIssues: […] }
+risk:       { suggested: medium, confirmed: low, rollbackTo: v1.8.2 }
+outcome:    { state: clean, slo24h: met, slo7d: met }
+<span class="c"># + every v1 field: deployments, promotionChain, guardrails, pipelineRuns, testResults, humanContext …</span></pre>
+  <p class="note">The draft file lives at <code>glidepath/releases/next.yaml</code> in the source repo, created only when someone edits the draft. Pushes that touch only <code>glidepath/</code> already skip builds. One thing to check first: the lower-environments ApplicationSet must not treat <code>releases/</code> as an environment folder.</p>
+</section>
+
+<section>
+  <h2>Four stages, cheapest and most valuable first</h2>
+  <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
+    <div class="card"><h3>R1 · Show the release before it ships</h3><p>The draft card with its nickname, scope, incoming PRs, suggested version, candidates and soak time, a display-only checklist and linked issues. Approved to ship alone, with no new storage.</p></div>
+    <div class="card"><h3>R2 · Sign off before merging</h3><p>Sign-off from PR reviews, an owner, a notes editor and draft file, and a seal that copies the draft in as schema v2.</p></div>
+    <div class="card"><h3>R3 · Record the outcome</h3><p>Rollbacks written back, Readiness and Outcome scores, bake-window SLO checks, and GitHub Releases with a Changelog view.</p></div>
+    <div class="card"><h3>R4 · For teams that plan</h3><p>Scheduled releases, Jira keys, a fleet calendar and messages at Ready and Released. The sign-off gate stays parked.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>What not to build, and what's decided</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Not building</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td class="area">An issue tracker</td><td>Link to GitHub Issues, Jira or Linear, and read keys from PR text. The backlog doesn't live in Tower.</td></tr>
+      <tr><td class="area">A change advisory board</td><td>One peer sign-off, backed by evidence.</td></tr>
+      <tr><td class="area">A record per Ground deploy</td><td>An image is a candidate. A release is what reaches Flight.</td></tr>
+      <tr><td class="area">A PR for every draft edit</td><td>Drafts are computed or committed straight to a build-exempt folder. PRs are for sealing and outcome only, which avoids the gate trouble record branches caused in glidepath#83.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Decided October 13, 2026</h3>
+  <ul class="plain">
+    <li><b>Naming.</b> Every release gets an alphabetical nickname per app; the version is suggested at draft time and taken from the promoted image at seal. The word list is still to be curated.</li>
+    <li><b>Blocking sign-off.</b> No, for now. Sign-off is recorded only.</li>
+    <li><b>Issue trackers.</b> GitHub Issues first through closing references in R1, Jira keys in R4.</li>
+    <li><b>Ship R1 alone first.</b> Yes: a read-only draft card, with no schema change and no new files.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Sources</h2>
+  <ul class="plain note">
+    <li><a href="https://linear.app/docs/releases">Linear: Releases</a></li>
+    <li><a href="https://www.atlassian.com/agile/tutorials/versions">Atlassian: Versions in Jira</a> · <a href="https://keepachangelog.com/">Keep a Changelog</a></li>
+    <li><a href="https://docs.gitlab.com/ee/user/project/releases/index.html">GitLab: Releases and release evidence</a> · <a href="https://octopus.com/docs/releases/lifecycles">Octopus Deploy: Lifecycles</a> · <a href="https://docs.kargo.io/user-guide/core-concepts/">Kargo: Core concepts</a></li>
+    <li><a href="https://docs.runway.team/using-runway/checklists">Runway: Checklists</a></li>
+    <li><a href="https://dora.dev/capabilities/streamlining-change-approval/">DORA: Streamlining change approval</a></li>
+    <li><a href="https://launchdarkly.com/docs/home/releases/release-pipelines">LaunchDarkly: Release pipelines</a></li>
+    <li><a href="https://slsa.dev/spec/v1.1/verification_summary">SLSA: Verification summary attestation</a></li>
+  </ul>
+</section>
+
+
+<footer>Start the next release record when the last one ships · October 13, 2026 · Part of the Hangar library at hangarplatform.dev/library/</footer>
+
+</div>
+</body>
+</html>

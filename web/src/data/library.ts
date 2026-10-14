@@ -28,6 +28,13 @@ export const KIND_BLURBS: Record<Kind, string> = {
 
 export const papers: Paper[] = [
   {
+    id: 'tower-release-record-lifecycle', kind: 'spec', product: 'tower', date: '2026-10-13',
+    title: 'Start the next release record when the last one ships',
+    dek: 'A proposal to open Tower\'s Release Record as a live draft the moment the previous release ships, with sign-off before the Flight merge and an outcome after the bake.',
+    page: 'papers/2026-10-13-tower-release-record-lifecycle.html',
+    status: { label: 'Proposed · R1 approved', tone: 'info' },
+  },
+  {
     id: 'glidepath-sdlc-review', kind: 'review', product: 'glidepath', date: '2026-10-12',
     title: 'Glidepath against the everyday software lifecycle',
     dek: 'A CI/CD review read from the code: strong from merge to production, thin on the inner loop, and most of its governance advises rather than enforces.',
