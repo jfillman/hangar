@@ -21,6 +21,7 @@ created — not batched up later.
 
 | Doc | Read this when... |
 |---|---|
+| [Business rules](policy/business-rules.md) | You want every rule Hangar applies, across every component, in one place: who may do what, what gates a release, what the clusters refuse, how strongly each rule holds, and which rules are not enforced yet. |
 | [service-catalog-design.md](service-catalog-design.md) | You want the full design history and open decisions behind Airframe — the running log, not the as-built summary. |
 | [gitops-strategy.md](gitops-strategy.md) | You want the repo topology, ArgoCD instance split, and the lower/upper env security boundary. |
 | [cluster-provisioning.md](cluster-provisioning.md) | You're standing up a new cluster. |
@@ -118,6 +119,8 @@ Tower's own documentation lives in the [tower repo's `docs/`](https://github.com
 | [Break-glass debugging](https://github.com/jfillman/tower/blob/main/docs/break-glass/index.md) | You need to look inside a running pod: a recorded, time-boxed debug shell without exec. Walkthroughs for Ground and Flight (two-person approval), breaking the glass and reviews, recordings, the guardrails layer by layer, troubleshooting. |
 | [Break-glass admin guide](https://github.com/jfillman/tower/blob/main/docs/break-glass/admin/index.md) | You run break-glass: architecture, setting it up on a cluster, configuration, the admission policies (Ground and Flight), the operations runbook, internals, design decisions, testing. |
 | [Environments](https://github.com/jfillman/tower/blob/main/docs/environments.md) | You're adding, configuring or removing an environment, or editing its values. |
+| [Release records](https://github.com/jfillman/tower/blob/main/docs/release-records/index.md) | You want the Releases tab's records: the next release's draft, release modes and sign-off, sealing, outcomes and the bake window, release names, GitHub Releases. |
+| [Supply chain](https://github.com/jfillman/tower/blob/main/docs/supply-chain.md) | You want to know what the supply-chain chips mean, why a step is green, amber, red or grey, and what to do about each result. |
 
 The illustrated design set below records how the tabs came to be:
 
