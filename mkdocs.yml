@@ -4,6 +4,7 @@ site_description: 'Home base for building, releasing, and watching every service
 nav:
   - Home: index.md
   - Table of contents: README.md
+  - Business rules: policy/business-rules.md
   - Design & strategy:
       - Service catalog design: service-catalog-design.md
       - GitOps strategy: gitops-strategy.md

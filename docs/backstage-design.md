@@ -277,6 +277,11 @@ verified across all 8 kinds (`NodeJSApplication`/`PythonApplication`/`GoApplicat
 
 ## Plugin set
 
+> **Superseded 2026-10-14 (backstage#144).** Backstage is now core plus Tower. Of the plugins below, only the
+> Kubernetes Ingestor and the Red Hat Argo CD *backend* remain; Tower replaced the Argo CD, Topology and Tekton
+> frontends, the pull-requests tab and the rest. What is installed today: the backstage repo's README, "What's
+> installed". The table is kept as the design history.
+
 User-provided list (real target list, replacing the first draft's generic
 placeholder), each landing as an npm dependency wired into `packages/app`/
 `packages/backend`, committed to the new Backstage source repo, image rebuilt — no
