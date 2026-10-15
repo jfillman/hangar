@@ -13,6 +13,8 @@ nav:
       - Backstage (Tower) design: backstage-design.md
   - SLOs:
       - Overview: slo/README.md
+  - Portability:
+      - Any forge, any registry: portability/README.md
   - Reviews:
       - Architecture reviews: reviews/README.md
   - Autopilot:

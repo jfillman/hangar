@@ -28,6 +28,13 @@ export const KIND_BLURBS: Record<Kind, string> = {
 
 export const papers: Paper[] = [
   {
+    id: 'forge-registry-portability', kind: 'spec', product: 'hangar', date: '2026-10-15',
+    title: 'Any forge, any registry',
+    dek: 'A plan to run Hangar on GitLab and Bitbucket as well as GitHub, and on any OCI registry as well as GHCR: where GitHub is load-bearing today, two Hangar contracts with a driver per vendor, and six phases over about 24 weeks.',
+    page: 'papers/2026-10-15-forge-registry-portability.html',
+    status: { label: 'Proposed · 7 decisions open', tone: 'info' },
+  },
+  {
     id: 'tower-release-record-lifecycle', kind: 'spec', product: 'tower', date: '2026-10-13',
     title: 'Start the next release record when the last one ships',
     dek: 'A proposal to open Tower\'s Release Record as a live draft the moment the previous release ships, with sign-off before the Flight merge and an outcome after the bake.',

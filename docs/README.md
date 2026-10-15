@@ -37,6 +37,14 @@ Added 2026-10-01. How an SLO is declared, measured, shown in Tower, and announce
 |---|---|
 | [slo/README.md](slo/README.md) | You want to declare an SLO, understand its three notification signals (budget exhausted, burning fast, no data), or work out why one did or didn't fire. |
 
+## Portability: any forge, any registry
+
+Added 2026-10-15. A proposal, nothing built: running Hangar on GitLab and Bitbucket as well as GitHub, and on any OCI registry as well as GHCR. Six diagrams, also in the [diagram gallery](https://hangarplatform.dev/diagrams/#portability).
+
+| Doc | Read this when... |
+|---|---|
+| [portability/README.md](portability/README.md) | You want to know where GitHub and GHCR are load-bearing today, the two Hangar contracts that replace them, the credential differences per forge, the migration of the live GitHub fleet, the 24-week roadmap and the seven decisions it needs. The illustrated version is in the [Library](https://hangarplatform.dev/library/forge-registry-portability/). |
+
 ## Architecture reviews
 
 Added 2026-09-27. Point-in-time reviews of the whole platform, each a standalone illustrated page under [`reviews/`](reviews/README.md).
