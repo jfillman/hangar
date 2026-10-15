@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moving 88 live resources without recreating a repo</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#f2efe9;--paper-2:#e8e3da;--ink:#1b1f24;--muted:#5b6570;--soft:#838b93;--accent:#b9791f;--link:#2e7ba6;--rule:rgba(27,31,36,0.12);
+--card:#fff;--font-sans:'Geist',system-ui,sans-serif;--font-serif:'Instrument Serif',serif;--font-mono:'Geist Mono',ui-monospace,monospace}
+body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);padding:2.5rem 2rem 2rem}
+.frame{max-width:1120px;margin:0 auto}
+.eyebrow{font-family:var(--font-mono);font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+h1{font-family:var(--font-serif);font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.15;margin-bottom:.5rem}
+.lede{color:var(--muted);font-size:.9rem;line-height:1.5;max-width:70ch;margin-bottom:1.25rem}
+.fig{overflow-x:auto}
+svg{width:100%;min-width:900px;display:block}
+.cards{display:grid;grid-template-columns:1.15fr 1fr 1.05fr;gap:.75rem;margin-top:1.25rem}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:1rem 1.1rem}
+.card .eyebrow{margin-bottom:.35rem}
+.card p,.card li{font-size:.8rem;line-height:1.5;color:var(--ink)}
+.card ul{padding-left:1rem}
+.card .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:.4rem;background:var(--muted)}
+.card .dot.accent{background:var(--accent)} .card .dot.link{background:var(--link)}
+.foot{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.06em;color:var(--soft);border-top:1px solid var(--rule);margin-top:1.25rem;padding-top:.6rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.foot a{color:var(--link);text-decoration:none}
+@media (max-width:900px){.cards{grid-template-columns:1fr}}
+@media print{@page{size:landscape;margin:10mm}body{padding:0}.cards{margin-top:.75rem}}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--paper:#131619;--paper-2:#1b1f24;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,0.14);--card:#1a1e23}
+:root:not([data-theme=light]) svg [fill="#1b1f24"]{fill:#e8e4dc}
+:root:not([data-theme=light]) svg [fill="#2e7ba6"]{fill:#6fb2d9}
+:root:not([data-theme=light]) svg [fill="#5b6570"]{fill:#a1aab3}
+:root:not([data-theme=light]) svg [fill="#b9791f"]{fill:#e8a33d}
+:root:not([data-theme=light]) svg [fill="#f2efe9"]{fill:#131619}
+:root:not([data-theme=light]) svg [fill="#ffffff"]{fill:#1c2127}
+:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.05)"]{fill:rgba(232,163,61,0.065)}
+:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}
+:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}
+:root:not([data-theme=light]) svg [stroke="#1b1f24"]{stroke:#e8e4dc}
+:root:not([data-theme=light]) svg [stroke="#5b6570"]{stroke:#a1aab3}
+:root:not([data-theme=light]) svg [stroke="#b9791f"]{stroke:#e8a33d}
+:root:not([data-theme=light]) svg [stroke="rgba(185,121,31,0.50)"]{stroke:rgba(232,163,61,0.65)}
+:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}
+:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}}
+:root[data-theme=dark]{--paper:#131619;--paper-2:#1b1f24;--ink:#e8e4dc;--muted:#a1aab3;--soft:#7f8891;--accent:#e8a33d;--link:#6fb2d9;--rule:rgba(232,228,220,0.14);--card:#1a1e23}
+:root[data-theme=dark] svg [fill="#1b1f24"]{fill:#e8e4dc}
+:root[data-theme=dark] svg [fill="#2e7ba6"]{fill:#6fb2d9}
+:root[data-theme=dark] svg [fill="#5b6570"]{fill:#a1aab3}
+:root[data-theme=dark] svg [fill="#b9791f"]{fill:#e8a33d}
+:root[data-theme=dark] svg [fill="#f2efe9"]{fill:#131619}
+:root[data-theme=dark] svg [fill="#ffffff"]{fill:#1c2127}
+:root[data-theme=dark] svg [fill="rgba(185,121,31,0.05)"]{fill:rgba(232,163,61,0.065)}
+:root[data-theme=dark] svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}
+:root[data-theme=dark] svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}
+:root[data-theme=dark] svg [stroke="#1b1f24"]{stroke:#e8e4dc}
+:root[data-theme=dark] svg [stroke="#5b6570"]{stroke:#a1aab3}
+:root[data-theme=dark] svg [stroke="#b9791f"]{stroke:#e8a33d}
+:root[data-theme=dark] svg [stroke="rgba(185,121,31,0.50)"]{stroke:rgba(232,163,61,0.65)}
+:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.12)"]{stroke:rgba(232,228,220,0.12)}
+:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">Portability · 05 of 06 · Migration</p>
+<h1>Moving 88 live resources without recreating a repo</h1>
+<p class="lede">The GitHub path has to move onto the new contract before GitLab can use it, and the old provider has already destroyed real files twice. So the move is adoption by name, one app first, and every step is measured against the repositories themselves.</p>
+<div class="fig">
+<svg viewBox="0 96 1000 416" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="moving-without-recreating-title moving-without-recreating-desc">
+<title id="moving-without-recreating-title">Moving 88 live resources without recreating a repo</title>
+<desc id="moving-without-recreating-desc">Five steps in a row. Step 1, freeze the old: every provider-upjet-github managed resource goes to Observe-only with an Orphan deletion policy. Step 2, adopt by name, highlighted: a new scm.hangar.io resource with the same external-name observes the existing repository or file. Step 3, canary one app, highlighted: one application moves to a copied Composition. Step 4, cut over: flip the apiVersion in every composition, tag and pin. Step 5, retire the old: delete the orphaned resources and remove the provider. Two exit checks are measured throughout: zero commits to any repository across steps 1 to 3, checked by diffing every repo, and GitHub API calls at or below today, sampled from the rate-limit endpoint every 30 seconds.</desc>
+<defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs>
+<rect width="100%" height="100%" fill="#f2efe9"/>
+<path d="M208,188 L232,188" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><path d="M392,188 L416,188" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><path d="M576,188 L600,188" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><path d="M760,188 L784,188" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="48" y="152" width="160" height="72" rx="6" fill="#f2efe9"/><rect x="48" y="152" width="160" height="72" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><rect x="56" y="158" width="44" height="12" rx="2" fill="transparent" stroke="#1b1f24" stroke-opacity="0.5" stroke-width="0.8"/><text x="78.0" y="167" fill="#1b1f24" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STEP 1</text><text x="128.0" y="190" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Freeze the old</text><text x="128.0" y="206" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">Observe · Orphan</text><rect x="232" y="152" width="160" height="72" rx="6" fill="#f2efe9"/><rect x="232" y="152" width="160" height="72" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><rect x="240" y="158" width="44" height="12" rx="2" fill="transparent" stroke="#b9791f" stroke-opacity="0.5" stroke-width="0.8"/><text x="262.0" y="167" fill="#b9791f" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STEP 2</text><text x="312.0" y="190" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Adopt by name</text><text x="312.0" y="206" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">same external-name</text><rect x="416" y="152" width="160" height="72" rx="6" fill="#f2efe9"/><rect x="416" y="152" width="160" height="72" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><rect x="424" y="158" width="44" height="12" rx="2" fill="transparent" stroke="#b9791f" stroke-opacity="0.5" stroke-width="0.8"/><text x="446.0" y="167" fill="#b9791f" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STEP 3</text><text x="496.0" y="190" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Canary one app</text><text x="496.0" y="206" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">copied Composition</text><rect x="600" y="152" width="160" height="72" rx="6" fill="#f2efe9"/><rect x="600" y="152" width="160" height="72" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><rect x="608" y="158" width="44" height="12" rx="2" fill="transparent" stroke="#1b1f24" stroke-opacity="0.5" stroke-width="0.8"/><text x="630.0" y="167" fill="#1b1f24" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STEP 4</text><text x="680.0" y="190" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Cut over</text><text x="680.0" y="206" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">flip apiVersion, pin</text><rect x="784" y="152" width="160" height="72" rx="6" fill="#f2efe9"/><rect x="784" y="152" width="160" height="72" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><rect x="792" y="158" width="44" height="12" rx="2" fill="transparent" stroke="#1b1f24" stroke-opacity="0.5" stroke-width="0.8"/><text x="814.0" y="167" fill="#1b1f24" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STEP 5</text><text x="864.0" y="190" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Retire the old</text><text x="864.0" y="206" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">remove the provider</text><rect x="24" y="264" width="952" height="120" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="268" width="180" height="12" rx="2" fill="#f2efe9"/><text x="126.0" y="277" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">WHAT MUST STAY TRUE, MEASURED</text><rect x="48" y="300" width="432" height="56" rx="6" fill="#f2efe9"/><rect x="48" y="300" width="432" height="56" rx="6" fill="rgba(185,121,31,0.05)" stroke="rgba(185,121,31,0.50)" stroke-width="1" stroke-dasharray="4,4"/><text x="264.0" y="326.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Zero commits to any repository</text><text x="264.0" y="342.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">diff every repo across steps 1 to 3</text><rect x="520" y="300" width="432" height="56" rx="6" fill="#f2efe9"/><rect x="520" y="300" width="432" height="56" rx="6" fill="rgba(185,121,31,0.05)" stroke="rgba(185,121,31,0.50)" stroke-width="1" stroke-dasharray="4,4"/><text x="736.0" y="326.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">API calls at or below today</text><text x="736.0" y="342.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">sample /rate_limit every 30 seconds</text><text x="24" y="428" fill="#5b6570" font-size="16" font-family="'Instrument Serif', serif" font-style="italic">Adopt, never recreate. A cluster can be rebuilt; a repository's history cannot.</text><line x1="24" y1="448" x2="976" y2="448" stroke="rgba(27,31,36,0.12)" stroke-width="0.8"/><text x="24" y="468" fill="#5b6570" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text><rect x="96" y="460" width="16" height="12" rx="3" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="120" y="469" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Where it can go wrong</text><rect x="245" y="460" width="16" height="12" rx="3" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="269" y="469" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Mechanical</text><rect x="339" y="460" width="16" height="12" rx="3" fill="rgba(185,121,31,0.05)" stroke="rgba(185,121,31,0.50)" stroke-width="1" stroke-dasharray="4,4"/><text x="363" y="469" fill="#5b6570" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="start">Exit check</text>
+</svg>
+</div>
+<div class="cards"><div class="card"><p class="eyebrow"><span class="dot accent"></span>Lessons already paid for</p><ul><li>A Delete policy on a file destroyed cicd.yaml in five repos.</li><li>A changed identity field re-identified every live file.</li><li>An external-name fight burned 16,000 calls an hour.</li></ul></div><div class="card"><p class="eyebrow"><span class="dot "></span>So, by construction</p><p>The new RepositoryFile treats only a 404 as gone, never writes on adopt, never deletes, and keeps whatever external-name it observed.</p></div><div class="card"><p class="eyebrow"><span class="dot link"></span>Order</p><p>Flip the apiVersion only after every caller is ready, test on a copied Composition first (Argo CD self-heal reverts hand edits), and canary on a Skyport app before the fleet.</p></div></div>
+<div class="foot"><span>Hangar · Portability</span><span></span></div>
+</div>
+</body>
+</html>
