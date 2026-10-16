@@ -28,6 +28,13 @@ export const KIND_BLURBS: Record<Kind, string> = {
 
 export const papers: Paper[] = [
   {
+    id: 'keyless-cloud-deploys', kind: 'spec', product: 'glidepath', date: '2026-10-16',
+    title: 'No stored AWS key for cloud deploys',
+    dek: 'Two never-expiring AWS keys replaced by one-hour roles a pod earns by proving who it is, one per Lambda function, with a hole in Crossplane\'s permissions closed on the way and the incident the switch caused.',
+    page: 'papers/2026-10-16-keyless-cloud-deploys.html',
+    status: { label: 'Phases 0 to 3 live', tone: 'done' },
+  },
+  {
     id: 'forge-registry-portability', kind: 'spec', product: 'hangar', date: '2026-10-15',
     title: 'Any forge, any registry',
     dek: 'A plan to run Hangar on GitLab and Bitbucket as well as GitHub, and on any OCI registry as well as GHCR: where GitHub is load-bearing today, two Hangar contracts with a driver per vendor, and six phases over about 24 weeks.',
