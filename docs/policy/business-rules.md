@@ -7,7 +7,7 @@ page, it is not a rule yet.
 Last checked against the code on 2026-10-14: backstage `6689352`, tower `855d8e4` (v0.71.2), glidepath `6d25259`,
 airframe `22aad95`, gitops-cluster-dev `22e1fa8`, gitops-cluster-kind-prod `3f26e81`. Cloud credentials (CRED-05,
 CRED-07 to CRED-09, POL-10) re-checked on 2026-10-16: glidepath `2579c9f`, airframe `aed778e` (v0.3.144),
-gitops-cluster-dev `0ac8856`.
+gitops-cluster-dev `02bb7f8`.
 
 ## How to read it
 
@@ -214,7 +214,7 @@ closed).
 | POL-06 | `tower-breakglass-no-exec` | kind-prod | No exec into app pods for anyone but operators. Attach only to a debug container. |
 | POL-07 | `no-long-lived-sa-tokens` | kiac-dev | No long-lived ServiceAccount token Secrets in `backstage-system`. |
 | POL-08 | `testkube-secret-usage` | kiac-dev | A tenant's TestWorkflow may reference only that tenant's own Secrets in the shared `testkube` namespace. |
-| POL-10 | `glidepath-cloud-deployer-pods`, `-taskruns`, `-pipelineruns`, `-jobs` | kiac-dev | Only a cloud deploy may run as `glidepath-cloud-deployer`, the one identity AWS deploy roles trust. Decided by who created the object, never by labels: pods only from Tekton's controller or the Job controller, TaskRuns only from Tekton, Jobs only from Crossplane, and a PipelineRun may give it only to the catalog `deploy` Pipeline's `deploy-aws-lambda`, not run-wide, with no pod-template `env` or volumes. |
+| POL-10 | `glidepath-cloud-deployer-pods`, `-taskruns`, `-pipelineruns`, `-jobs` | kiac-dev | Only a cloud deploy may run as `glidepath-cloud-deployer`, the one identity AWS deploy roles trust. Decided by who created the object, never by labels: pods only from Tekton's controller or the Job controller, TaskRuns only from Tekton, Jobs only from Crossplane, and only they may change a TaskRun's or Job's spec later (others may add metadata, as Chains, Results and the garbage collector do), and a PipelineRun may give it only to the catalog `deploy` Pipeline's `deploy-aws-lambda`, not run-wide, with no pod-template `env` or volumes. |
 | POL-09 | (how policies are written) | both | Every optional field is guarded with `has()`, and every policy is scoped by match conditions, so a CEL error can only refuse its own objects. A policy change widens before it narrows. |
 
 Full detail: [Tower break-glass admission policies](https://github.com/jfillman/tower/blob/main/docs/break-glass/admin/policies.md).
