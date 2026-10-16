@@ -32,7 +32,7 @@ export const papers: Paper[] = [
     title: 'No stored AWS key for cloud deploys',
     dek: 'Two never-expiring AWS keys replaced by one-hour roles a pod earns by proving who it is, one per Lambda function, with a hole in Crossplane\'s permissions closed on the way and the incident the switch caused.',
     page: 'papers/2026-10-16-keyless-cloud-deploys.html',
-    status: { label: 'Phases 0 to 3 live', tone: 'done' },
+    status: { label: 'Lambda keyless', tone: 'done' },
   },
   {
     id: 'forge-registry-portability', kind: 'spec', product: 'hangar', date: '2026-10-15',

@@ -9,7 +9,7 @@ P = Page(
     'How Hangar replaced two never-expiring AWS keys with one-hour roles that a pod earns by proving who it is: '
     'what was built, why it was built this way, a bigger hole closed on the way, and the incident the switch caused.',
     '2026-10-16',
-    meta=[('Status', 'phases 0 to 3 live, Oct 16, 2026; phase 4 (retire the old key) next'),
+    meta=[('Status', 'phases 0 to 4 live for Lambda, Oct 16, 2026; the old keys are deleted by hand; ECS, then Azure, next'),
           ('Docs', '<a href="https://hangarplatform.dev/docs/airframe/admin/cloud-credentials/">Airframe cloud credentials</a> · '
                    '<a href="https://hangarplatform.dev/docs/glidepath/admin/cloud-deploy-identity/">Glidepath cloud deploy identity</a>')],
     lede=('Hangar reached AWS with two access keys: passwords for machines that worked from anywhere until someone '
@@ -20,7 +20,7 @@ P = Page(
 
 P.add("""
 <div class="verdict ok">
-  <span class="stamp">Phases 0 to 3 live · Oct 16, 2026</span>
+  <span class="stamp">Lambda keyless · Oct 16, 2026</span>
   <h2>Crossplane and Lambda deploys keep no AWS key.</h2>
   <ul>
     <li><b>Earned, not stored.</b> A pod proves who it is with a token Kubernetes signed for it minutes ago, and AWS trades that for one hour of access.</li>
@@ -133,7 +133,7 @@ fig4 = P.fig(e, W4, H4, 'Six guardrails around a keyless deploy',
              'The boundary (05) was added because scoping this work showed Crossplane could create an administrator.')
 
 # Figure 5: the deploy step's decision.
-W5, H5 = 760, 612
+W5, H5 = 760, 400
 
 
 def diamond(cx, cy, l1, l2, hw=110, hh=40):
@@ -155,23 +155,20 @@ f = path([(380, 56), (380, 80)])
 f += path([(380, 164), (380, 192)]) + vlab(380, 164, 192, 'yes')
 f += path([(380, 276), (380, 300)]) + vlab(380, 276, 300, 'yes')
 f += path([(490, 344), (552, 344)], 'accent') + hlab(490, 552, 344, 'yes', lib.ACC)
-f += path([(270, 124), (110, 124), (110, 436)]) + hlab(110, 270, 124, 'no')
-f += path([(270, 236), (114, 236)]) + hlab(110, 270, 236, 'no')
-f += path([(270, 344), (114, 344)]) + hlab(110, 270, 344, 'no · warn')
-f += path([(200, 480), (256, 480)]) + hlab(200, 256, 480, 'yes')
-f += path([(110, 520), (110, 548)]) + vlab(110, 520, 548, 'no')
+f += path([(270, 124), (214, 124)]) + hlab(214, 270, 124, 'no')
+f += path([(256, 236), (214, 236)]) + hlab(214, 256, 236, 'no')
+f += path([(270, 344), (214, 344)]) + hlab(214, 270, 344, 'no')
 f += oval(300, 20, 160, 36, 'Deploy step starts')
 f += diamond(380, 124, 'Account ConfigMap', 'in the namespace?')
 f += diamond(380, 236, 'Token belongs to', 'glidepath-cloud-deployer?', hw=124)
 f += diamond(380, 344, 'STS accepts', 'the role?')
 f += node(556, 316, 180, 56, 'Assume the role', 'glidepath-deploy-<fn>', 'focal')
-f += diamond(110, 480, 'App key in', 'app-secrets?', hw=90)
-f += node(260, 452, 176, 56, "Use the app's key", 'the old path, until phase 4', 'store')
-f += oval(30, 552, 160, 44, 'Deploy fails', 'clear error')
-f += f'<circle cx="110" cy="236" r="4" fill="{lib.INK}"/><circle cx="110" cy="344" r="4" fill="{lib.INK}"/>'
-fig5 = P.fig(f, W5, H5, 'How the deploy step picks its credentials',
-             'The deploy step assumes the function\'s role when the namespace has the account ConfigMap, the pod\'s token belongs to glidepath-cloud-deployer and STS accepts the role; otherwise it uses the app\'s stored key, and fails only when there is none.',
-             'The "STS accepts the role?" check covers the minutes between switching an app over and Crossplane creating its role. Phase 4 removes the key path.')
+f += oval(30, 102, 180, 44, 'Deploy fails', 'names clusters.yaml')
+f += oval(30, 214, 180, 44, 'Deploy fails', 'names taskRunSpecs')
+f += oval(30, 322, 180, 44, 'Deploy fails', 'names the deploy Role')
+fig5 = P.fig(f, W5, H5, 'How the deploy step gets its AWS access',
+             'The deploy step checks that the namespace has the account ConfigMap, that the pod\'s token belongs to glidepath-cloud-deployer and that STS accepts the function\'s role. If all three hold it assumes the role; if one fails the deploy stops with an error naming that piece. There is no stored key to fall back to.',
+             'Until phase 4 a failed check fell back to the app\'s stored key. That covered the minutes between switching an app over and Crossplane creating its role, and was removed once every app had moved.')
 
 # Figure 6: the incident.
 W6, H6 = 760, 232
@@ -280,16 +277,17 @@ P.add(f"""
 
 <section>
   <h2>The migration</h2>
-  <div class="prose"><p>Switching every app at once would break any deploy that runs before its role exists, so the deploy
-  step decides per run and keeps the old key as a fallback until each app has moved. The log line says which path a
-  deploy took.</p></div>
+  <div class="prose"><p>Switching every app at once would break any deploy that runs before its role exists, so for the
+  switch the deploy step kept the old key as a fallback and logged which path it took. Once every app had deployed
+  through its role and no cluster held an AWS key any more, the fallback was removed (phase 4). Now a deploy either
+  assumes its role or stops and says what is missing.</p></div>
   {fig5}
   <div class="track">
     <div class="row"><h3>Phase 0 · close the hole</h3>{chip('Live', 'ok')}<p>Permissions boundary and Crossplane policy v3; every composed role carries the boundary.</p></div>
     <div class="row"><h3>Phase 1 · a deploy role per function</h3>{chip('Live', 'ok')}<p>The Lambda target creates <code>glidepath-deploy-&lt;fn&gt;</code>; its bootstrap Job uses it.</p></div>
     <div class="row"><h3>Phase 2 · Glidepath assumes it</h3>{chip('Live', 'ok')}<p>The ServiceAccount, the account ConfigMap, the deploy step and promote flows.</p></div>
     <div class="row"><h3>Phase 3 · who may use it</h3>{chip('Live', 'ok')}<p>Four admission policies, 16 of 16 live cases. The first real deploy showed they also refused Tekton's signing and history services, which only add a note to a run; fixed the same day.</p></div>
-    <div class="row"><h3>Phase 4 · retire the key</h3>{chip('Next', 'info')}<p>Remove the fallback and the scaffold's AWS secrets, delete the Infisical keys and the IAM user.</p></div>
+    <div class="row"><h3>Phase 4 · retire the key</h3>{chip('Live', 'ok')}<p>The fallback and the scaffold's AWS secrets are gone, and a test fails the build if the deploy step ever reads a stored key again. The old Infisical keys and IAM users are deleted by hand.</p></div>
     <div class="row"><h3>ECS, then Azure</h3>{chip('Planned', 'info')}<p>The same deploy role for ECS after its first live deploy; Azure through workload identity federation.</p></div>
   </div>
 </section>
@@ -320,8 +318,9 @@ P.add(f"""
       <tr><td class="area">Bootstrap Job</td><td>Ran as <code>glidepath-cloud-deployer</code> and logged in to the registry through the deploy role, with no key mounted.</td></tr>
       <tr><td class="area">Admission policies</td><td>16 of 16 live cases, 12 for creating objects and 4 for changing them, each test object checked to contain what its case claims.</td></tr>
       <tr><td class="area">A real deploy</td><td>smoke-fn promoted to production (<code>promote-prod-0-deploy-cc5kj</code>): the deploy step ran as <code>glidepath-cloud-deployer</code>, logged <code>credentials: assuming …/glidepath-deploy-glidepath-smoke-fn-prod (web identity, no stored key)</code> and updated the function.</td></tr>
+      <tr><td class="area">With no key path at all</td><td>After phase 4, the same promotion re-run (<code>promote-prod-0-deploy-t4n84</code>): the deploy step had no <code>app-secrets</code> volume, assumed the role, updated the function, and was signed and recorded.</td></tr>
     </tbody>
   </table></div>
-  <p class="note">The page's numbers are from kiac-dev and AWS account 700017004810 on October 16, 2026. Pull requests: hangar#55, glidepath#114 to #116, airframe#87 to #90, gitops-cluster-dev#96 to #106, apron#30 and #31; documentation in airframe#91, glidepath#117 and hangar#56.</p>
+  <p class="note">The page's numbers are from kiac-dev and AWS account 700017004810 on October 16, 2026. Pull requests: hangar#55, glidepath#114 to #116, airframe#87 to #90, gitops-cluster-dev#96 to #108, apron#30 and #31, and for phase 4 glidepath#118 and airframe#92 and #93; documentation in airframe#91, glidepath#117 and hangar#56.</p>
 </section>
 """)
