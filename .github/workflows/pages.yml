@@ -66,6 +66,9 @@ jobs:
         uses: actions/upload-pages-artifact@v5
         with:
           path: web/dist
+          # web/public/oidc/<cluster>/.well-known/openid-configuration is a ServiceAccount issuer's discovery
+          # document; AWS STS and other clusters' API servers fetch it. v4+ drops dotfiles unless told otherwise.
+          include-hidden-files: true
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -80,3 +83,21 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: web/public/oidc
+      # Every published issuer must serve a discovery document naming itself, or the clusters and AWS roles
+      # that trust it start refusing its tokens (web/public/oidc/README.md).
+      - name: Check the published ServiceAccount issuers
+        run: |
+          set -euo pipefail
+          for dir in web/public/oidc/*/; do
+            issuer="https://hangarplatform.dev/oidc/$(basename "$dir")"
+            for attempt in $(seq 1 12); do
+              got=$(curl -fsS "$issuer/.well-known/openid-configuration" | jq -r .issuer) && [ "$got" = "$issuer" ] \
+                && curl -fsS "$issuer/jwks.json" | jq -e '.keys | length > 0' >/dev/null && break
+              [ "$attempt" = 12 ] && { echo "::error::$issuer is not serving its discovery document and keys"; exit 1; }
+              sleep 10
+            done
+            echo "ok $issuer"
+          done
