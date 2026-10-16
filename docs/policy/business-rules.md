@@ -5,7 +5,9 @@ rule works and why; this page lists every rule, how strongly it holds, and what 
 page, it is not a rule yet.
 
 Last checked against the code on 2026-10-14: backstage `6689352`, tower `855d8e4` (v0.71.2), glidepath `6d25259`,
-airframe `22aad95`, gitops-cluster-dev `22e1fa8`, gitops-cluster-kind-prod `3f26e81`.
+airframe `22aad95`, gitops-cluster-dev `22e1fa8`, gitops-cluster-kind-prod `3f26e81`. Cloud credentials (CRED-05,
+CRED-07 to CRED-09, POL-10) re-checked on 2026-10-16: glidepath `2579c9f`, airframe `aed778e` (v0.3.144),
+gitops-cluster-dev `0ac8856`.
 
 ## How to read it
 
@@ -198,8 +200,9 @@ In short:
 ## 12. Cluster admission policies
 
 Rules the API servers themselves enforce, so a bug in Backstage, or a compromised Backstage, can't get around them.
-Every one is native ValidatingAdmissionPolicy that fails closed, and each is scoped to its own objects. The exception
-is the debug-image signature check, which needs Kyverno's webhook.
+Every one is native ValidatingAdmissionPolicy that fails closed, and each is scoped to its own objects. The exceptions
+are the debug-image signature check and `glidepath-cloud-deployer-pods`, which run in Kyverno's webhook (also fail
+closed).
 
 | ID | Policy | Cluster | Rule |
 |---|---|---|---|
@@ -211,6 +214,7 @@ is the debug-image signature check, which needs Kyverno's webhook.
 | POL-06 | `tower-breakglass-no-exec` | kind-prod | No exec into app pods for anyone but operators. Attach only to a debug container. |
 | POL-07 | `no-long-lived-sa-tokens` | kiac-dev | No long-lived ServiceAccount token Secrets in `backstage-system`. |
 | POL-08 | `testkube-secret-usage` | kiac-dev | A tenant's TestWorkflow may reference only that tenant's own Secrets in the shared `testkube` namespace. |
+| POL-10 | `glidepath-cloud-deployer-pods`, `-taskruns`, `-pipelineruns`, `-jobs` | kiac-dev | Only a cloud deploy may run as `glidepath-cloud-deployer`, the one identity AWS deploy roles trust. Decided by who created the object, never by labels: pods only from Tekton's controller or the Job controller, TaskRuns only from Tekton, Jobs only from Crossplane, and a PipelineRun may give it only to the catalog `deploy` Pipeline's `deploy-aws-lambda`, not run-wide, with no pod-template `env` or volumes. |
 | POL-09 | (how policies are written) | both | Every optional field is guarded with `has()`, and every policy is scoped by match conditions, so a CEL error can only refuse its own objects. A policy change widens before it narrows. |
 
 Full detail: [Tower break-glass admission policies](https://github.com/jfillman/tower/blob/main/docs/break-glass/admin/policies.md).
@@ -223,7 +227,10 @@ Full detail: [Tower break-glass admission policies](https://github.com/jfillman/
 | CRED-02 | People create credential material themselves, in Infisical. It is never pasted into a chat, a terminal transcript or a repo. | Convention | [Glidepath secrets-management.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/secrets-management.md) |
 | CRED-03 | Tower holds no long-lived cluster credential. Reads use the pod's projected token (600 s). Writes on kiac-dev use a `tower-actor` token minted for each action. | Enforced | [Tower credentials](https://github.com/jfillman/tower/blob/main/docs/credentials/index.md); POL-07 |
 | CRED-04 | The GitHub App's private key never leaves `platform-system`. A release gets an installation token for its own gitops repo only. | Enforced | `token-review-interceptor` |
-| CRED-05 | The platform has one credential per external system (GitHub, Infisical, AWS, Azure), in `crossplane-system`. Apps never hold one. Each app reads only its own Infisical project. | Enforced | Airframe provider configs, External Secrets |
+| CRED-05 | The platform has one identity per external system (GitHub, Infisical, AWS, Azure), in `crossplane-system`. Apps never hold one. Each app reads only its own Infisical project. On AWS that identity is an IAM role assumed with a projected ServiceAccount token; nothing is stored (since 2026-10-16). | Enforced | Airframe provider configs, External Secrets; [Airframe cloud-credentials.md](https://github.com/jfillman/airframe/blob/main/docs/admin/cloud-credentials.md#how-keyless-aws-access-works) |
+| CRED-07 | A Lambda deploy reaches AWS as `glidepath-deploy-<functionName>`, a role made for that one function: push to its repository and update its code, nothing else. It is assumed with a one-hour token for `glidepath-cloud-deployer`; no other pipeline step has AWS access. | Enforced; the stored-key fallback remains until phase 4 (section 16) | [Glidepath cloud-deploy-identity.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/cloud-deploy-identity.md); POL-10 |
+| CRED-08 | Every IAM role a cloud-target composition creates carries the permissions boundary `HangarCloudTargetBoundary`. The Crossplane identity can't create a role, or add rules to one, without it, and nothing may remove it. | Enforced (IAM) | `HangarCrossplaneCloudTargets` v3; [Airframe cloud-credentials.md](https://github.com/jfillman/airframe/blob/main/docs/admin/cloud-credentials.md) |
+| CRED-09 | A composition never removes something that already exists because a condition it was created under stopped holding. Conditions gate creation only; deleting the XR is the only way to delete its cloud resources. | Enforced (render tests) | Airframe v0.3.144; incident 2026-10-16 in [cloud-credentials.md](https://github.com/jfillman/airframe/blob/main/docs/admin/cloud-credentials.md#a-rule-for-composition-authors-never-gate-what-already-exists) |
 | CRED-06 | The image-prune token can only read and delete packages. The backend holds it, never the browser. | Enforced | IMG-01 |
 
 ## 14. Notifications
@@ -257,6 +264,7 @@ Every place where a rule above is weaker than it reads, in one list:
 | Image signatures aren't checked at admission. | SC-05 | An unsigned image could run if it got into git. GATE-07 is the only check. |
 | `airframe-validate` doesn't run on app repos or the tenants repo. | GATE-08, CRED-01 | Airframe roadmap AF-4b. |
 | Agent and security-review limits are convention. | AF-06, AF-07, AI-03 | Clearance isn't deployed, and no rule requires a security reviewer. |
+| Lambda deploys can still fall back to the shared deploy key, and ECS and Azure deploys use stored keys. | CRED-07 | A deploy that can't assume its function's role uses the app's `app-secrets` key. Phase 4 removes the fallback, the scaffold's AWS secrets and the `glidepath-deployer` user; ECS and Azure follow ([Glidepath known gap 43](https://github.com/jfillman/glidepath/blob/main/docs/admin/known-gaps.md)). |
 | Only admins can run software templates. | ACC-02 | App teams can't scaffold a new service themselves. Intentional for the lab; revisit before onboarding other teams. |
 
 ## 17. Keeping this page true
