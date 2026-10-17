@@ -27,6 +27,7 @@ created — not batched up later.
 | [cluster-provisioning.md](cluster-provisioning.md) | You're standing up a new cluster. |
 | [kind-prod-infisical-migration-plan.md](kind-prod-infisical-migration-plan.md) | You're moving the prod cluster onto the new airframe pin and retiring the Infisical operator (plan, not yet executed). |
 | [local-clusters.md](local-clusters.md) | You're running clusters locally and want the operational notes. |
+| [rebuild-lab.md](rebuild-lab.md) | You're rebuilding the lab clusters with Apron. |
 | [backstage-design.md](backstage-design.md) | You want Tower's own design rationale — self-service flows, the terasky ingestor, catalog structure. |
 
 ## SLOs
