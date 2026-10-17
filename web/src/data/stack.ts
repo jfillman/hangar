@@ -170,12 +170,12 @@ export const tools: Tool[] = [
   },
   {
     "layer": "delivery",
-    "name": "Kaniko",
+    "name": "BuildKit",
     "role": "Builds images.",
-    "why": "Rootless under Pod Security 'restricted', so the shared build identity never needs privilege on any cluster.",
-    "over": "Docker-in-Docker, privileged buildah",
+    "why": "Rootless and daemonless, one per build, under Pod Security 'baseline'. Builds both architectures in one step and cross-compiles from the build node's own platform instead of emulating it.",
+    "over": "kaniko (archived upstream, emulated every cross-arch build), Docker-in-Docker, a shared buildkitd",
     "status": "built",
-    "src": "https://github.com/jfillman/glidepath/blob/main/docs/admin/adr/0010-kaniko-rootless-builds.md"
+    "src": "https://github.com/jfillman/glidepath/blob/main/docs/admin/adr/0026-buildkit-image-builds.md"
   },
   {
     "layer": "delivery",
@@ -496,7 +496,7 @@ export const stages: Stage[] = [
       "Pipelines-as-Code",
       "Tekton",
       "CDEvents broker",
-      "Kaniko",
+      "BuildKit",
       "Semgrep",
       "Trivy",
       "Testkube"

@@ -85,12 +85,12 @@ export const stages: Stage[] = [
     body: [
       'Nobody should have to be a CI expert to ship software. The goal here is a pipeline that feels boring in the best way: it runs, it\'s fast, and when it fails it tells you why in plain words.',
       'The pipeline is a fixed superset DAG whose stages are switched on and parameterised by <code>cicd.yaml</code>, not an arbitrary graph compiled from user config. That is a deliberate limit: it keeps every tenant\'s pipeline recognisable and supportable, and a compiler is a heavier pattern than the problem has needed so far.',
-      'Images are built with kaniko under Pod Security Standards <code>restricted</code>: no privileged daemon, no host access, on any cluster. The shared Tekton catalog is a Helm release pinned by git tag, so upgrading a tenant is a reviewed change to a pin and a catalog change can be tried on a canary tenant first. Stages are separate PipelineRuns chained by events, which keeps each one small and independently re-runnable.',
+      'Images are built with rootless BuildKit, one daemon per build: no privileged container, no host access, and Pod Security <code>baseline</code>. It replaced kaniko in October 2026, which was archived upstream and emulated every cross-architecture build; the earlier claim that builds met <code>restricted</code> turned out never to have been true, and the docs now say so. The shared Tekton catalog is a Helm release pinned by git tag, so upgrading a tenant is a reviewed change to a pin and a catalog change can be tried on a canary tenant first. Stages are separate PipelineRuns chained by events, which keeps each one small and independently re-runnable.',
       'Tests run in Testkube, and that decision is a good example of the habit behind this site: the documented multi-namespace mode turned out, in the source code, to be gated to a paid edition. The design that shipped runs in one shared namespace and closes the resulting secret-isolation gap with an admission policy.',
     ],
     evidence: [
       { text: 'Tekton plus Pipelines-as-Code, one fixed DAG (ADR-0001)', status: 'built', href: adr('0001', 'tekton-pipelines-as-code') },
-      { text: 'Kaniko for rootless builds (ADR-0010)', status: 'built', href: adr('0010', 'kaniko-rootless-builds') },
+      { text: 'Rootless BuildKit image builds (ADR-0026, superseding ADR-0010)', status: 'built', href: adr('0026', 'buildkit-image-builds') },
       { text: 'A git-tag-pinned shared catalog (ADR-0013)', status: 'built', href: adr('0013', 'catalog-git-tag-pinned-distribution') },
       { text: 'Testkube in one shared namespace (ADR-0007)', status: 'built', href: adr('0007', 'testkube-shared-namespace') },
       { text: 'PR preview environments on the same chart, sha-only tags, TTL cleanup (ADR-0012)', status: 'built', href: adr('0012', 'ephemeral-environments-airframe-application') },

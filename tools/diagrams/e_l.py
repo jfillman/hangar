@@ -274,7 +274,7 @@ STAGES = [  # slug, name, sub, short (from web/src/data/sdlc.ts), spoke
 LONG = {
     'design': 'Every decision that shapes the platform is written down as an ADR, and every service starts as a contract (an Airframe XR) before it is code.',
     'onboard': 'A new service is one form in Tower. It becomes a pull request with a single cicd.yaml; nobody hand-writes pipelines.',
-    'build': 'Glidepath builds on Tekton with rootless Kaniko, pinned task catalogs, and real tests through Testkube.',
+    'build': 'Glidepath builds on Tekton with rootless BuildKit, pinned task catalogs, and real tests through Testkube.',
     'secure': 'Keyless signing, provenance that says what the build really did, and policy that checks both before release.',
     'release': 'Promotion is a pull request. Each cluster\'s ArgoCD pulls what merged, and Argo Rollouts runs the canary.',
     'operate': 'One OpenTelemetry trace per change from commit to canary, with SLOs and release records side by side in Tower.',
