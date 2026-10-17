@@ -17,19 +17,29 @@ kind (the second MacBook); that is a hardware choice, not a requirement.
    UI), store the exports encrypted and offline. Infisical starts fresh; the export is the only source for values
    that live nowhere else: the GitHub App private key, the classic PAT, the Backstage OAuth client secret, the
    MinIO break-glass keys and the anchor key. Key list: section 3 below.
-2. **Accept what is thrown away:** the Rekor transparency log and Fulcio root (old image signatures and receipts stop
+2. **Delete the cloud resources the old clusters own.** The dev tenants repo has cloud-target XRs: `smoke-ecs`
+   (`AwsEcsTarget` dev: VPC, subnets, ECS cluster and service, ECR repository, deploy role), `customs-api`
+   (`deployTarget: aws-ecs`, which composes an `AwsEcsTarget customs-api-dev`), `smoke-fn` (`AwsLambdaTarget`, dev
+   and prod) and `smoke-az-fn` (Azure). Delete those apps (or their XR requests) by PR and wait until the managed
+   resources are gone from AWS and Azure. A teardown first leaves them running and billing, with nothing left to manage them.
+   Recreate them on the new clusters, or not, as the walkthroughs need.
+3. **Accept what is thrown away:** the Rekor transparency log and Fulcio root (old image signatures and receipts stop
    verifying), Tekton Results history, MinIO/Thanos/Loki/Tempo data, Backstage's Postgres, Prometheus data.
-3. **Merge and tag, in this order** (each is a branch, already pushed):
+4. **Merge and tag, in this order** (each is a branch, already pushed and rebased onto main as of 2026-10-17):
    1. airframe: `no-hardcoded-cluster-names`, then `backstage-on-airframe` (rebased on it), then
-      `skyport-walkthroughs`. Cut the next tag.
+      `skyport-walkthroughs`. Cut the next tag (after v0.3.151). The composition expected outputs were not
+      re-rendered locally after the rebase; let `airframe-chart-ci` and the composition tests run on the PRs.
    2. glidepath: `no-hardcoded-cluster-names`. Apron pins Glidepath to `main`; tag it if you prefer a pin.
    3. tower: `no-hardcoded-cluster-names`; release per `RELEASING.md`.
-   4. apron: `apron-up` (`apron-cli` is already merged in; 101 + 17 tests passing).
+   4. apron: `apron-up` (`apron-cli` is already merged in; 101 + 17 tests passing). It carries the 2026-10-17
+      cluster changes: provider-aws-ecs/ec2, `managed-resource-activation.yaml` with the chart's catch-all off, and the
+      ECS deployer policy.
    5. apps, on `dex-tokens`: **boarding-api first**, then flight-api (run its `./test.sh`; it was never compiled
       here), then baggage-api.
    6. backstage: `airframe-app`.
-4. **Bump Apron's pins** in `versions.yaml` (`airframe.*` to the new Airframe tag) before `apron init`.
-5. **Make `ghcr.io/<owner>/function-dex` public** (the prod cluster pulls it without credentials).
+5. **Bump Apron's pins** in `versions.yaml` (`airframe.*` to the new Airframe tag; `catalog` is at v0.3.151 now) before
+   `apron init`.
+6. **Make `ghcr.io/<owner>/function-dex` public** (the prod cluster pulls it without credentials).
 
 ## 1. Teardown (point of no return)
 
@@ -83,7 +93,7 @@ Tower, project **`backstage-hangar-prod`**, env `prod`: the ten keys listed in t
 prune token, three break-glass keys).
 
 App projects (`<app>-hangar-dev`, `<app>-hangar-prod`): re-plant from each app project's export as the walkthroughs
-create them.
+create them. Include the apps onboarded since the inventory: `customs-api` and `smoke-ecs`.
 
 ## 4. hangar-prod (workloads, Tower)
 
