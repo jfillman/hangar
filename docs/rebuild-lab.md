@@ -125,8 +125,14 @@ start, set the GitHub OAuth App's homepage to `http://backstage.hangar-prod.loca
 
 ## 6. Outside Git (cloud targets only)
 
-If you use AWS cloud targets: add IAM OIDC providers for the two new issuer URLs and update the Crossplane role's
-trust (Airframe `docs/admin/cloud-credentials.md`).
+If you use AWS cloud targets (ECS or Lambda):
+1. Add IAM OIDC providers for the two new issuer URLs and update the Crossplane role's trust (Airframe
+   `docs/admin/cloud-credentials.md`).
+2. Copy the top-level `aws:` block (`accountId`, quoted, and `permissionsBoundaryPolicy`) from the old fleet file into
+   hangar-dev's `clusters.yaml`; `apron fleet add` doesn't write it. Without it the registry has no `awsAccountId`,
+   and every `AwsEcsTarget` and `AwsLambdaTarget` waits.
+3. Init hangar-dev with `--set components.cloudTargets=true --set 'aws.accountId="<12 digits>"'` (or set both in its
+   `cluster.yaml` and `apron render`). That adds provider-aws-ecs/ec2 and the rest of the cloud providers.
 
 ## 7. Skyport
 
