@@ -228,6 +228,14 @@ that owns the result.
 separate shared `platform-catalog` namespace.** Unchanged conclusion from the first
 pass, reached by a cleaner mechanism now (above) instead of a two-call workaround.
 
+*Amended 2026-10-17:* "`app-<name>-cicd`" here means the tenant's own `-cicd` control-plane
+namespace, which glidepath's tenant-onboarding names `<platformIdentity.type>-<name>-cicd`. For
+an `InfraService` tenant that is `infra-<name>-cicd`. The `xr-requests` ApplicationSet hardcoded
+`app-` until that date, so `skyport-auth` and `skyport-broker` had their XRs in a stray
+`app-skyport-*-cicd` namespace next to their real one. It now reads the prefix from
+`tenants/<name>/identity.yaml` (defaulting to `app` before that file exists), and the
+`idp-onboarding` AppProject allows both prefixes.
+
 **Does `-cicd` still fit, now that it also hosts provisioning objects, not just pipeline
 execution? Recommend keeping the name — the boundary it draws didn't actually move.**
 `naming-conventions.md` already defined `-cicd` as conceptually distinct from `dev`/
