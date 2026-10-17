@@ -43,7 +43,7 @@ def g_pipeline():
     b = []
     b += [zone(24, 100, 176, 300, 'you'), zone(224, 100, 752, 300, 'glidepath · the platform owns all of this')]
     xs = [248, 364, 480, 596, 712, 828]
-    names = [('PaC', 'reads .tekton/'), ('validate', 'fails fast'), ('build', 'kaniko · signed'), ('test', 'Testkube'), ('deploy', 'lower envs'), ('release', 'gitops PR')]
+    names = [('PaC', 'reads .tekton/'), ('validate', 'fails fast'), ('build', 'BuildKit · signs'), ('test', 'Testkube'), ('deploy', 'lower envs'), ('release', 'gitops PR')]
     for i in range(len(xs) - 1):
         b.append(path([(xs[i] + 96, 168), (xs[i + 1], 168)]))
     b += [path([(176, 168), (248, 168)]), hlab(176, 248, 168, 'WEBHOOK'),
@@ -72,7 +72,7 @@ def g_mapping():
     b = []
     b += [zone(24, 100, 360, 420, 'cicd.yaml · the one file you edit'), zone(440, 100, 536, 420, 'what the platform runs')]
     rows = [
-        (140, ['build:', '  agent: nodejs-22', '  script: ./build.sh'], 'build', 'validate · unit test · kaniko image · Chains signature'),
+        (140, ['build:', '  agent: nodejs-22', '  script: ./build.sh'], 'build', 'validate · unit test · BuildKit image · Chains signature'),
         (220, ['test:', '  name: integration'], 'test', 'Testkube TestWorkflow in the shared namespace'),
         (300, ['deploy:', '  lowerEnvironments: [dev]', '  upperEnvironments: [prod]'], 'deploy + release', 'commit the dev env file · open a PR per upper env'),
         (380, ['governance:', '  sast: true', '  imageScan: true'], 'governance gates', 'Semgrep · Trivy · SBOM · provenance'),
@@ -88,7 +88,7 @@ def g_mapping():
     b.append(legend(596, [('focal', 'The one required block'), ('backend', 'Platform stage')]))
     return dict(slug='cicd-yaml-mapping', eyebrow='Mapping · 03 of 07 · The contract',
       title='cicd.yaml, and what actually runs',
-      desc='Mapping from cicd.yaml blocks to what the platform runs. The build block (agent and optional script) drives validate, unit tests, a kaniko image build and a Chains signature. The test block names a Testkube TestWorkflow. The deploy block lists lower environments, which get a committed env file, and upper environments, which get a release pull request. The governance block switches on Semgrep, Trivy, SBOM and provenance gates. The pipelines block sets triggers and order through Pipelines-as-Code over a fixed stage DAG.',
+      desc='Mapping from cicd.yaml blocks to what the platform runs. The build block (agent and optional script) drives validate, unit tests, a BuildKit image build and a Chains signature. The test block names a Testkube TestWorkflow. The deploy block lists lower environments, which get a committed env file, and upper environments, which get a release pull request. The governance block switches on Semgrep, Trivy, SBOM and provenance gates. The pipelines block sets triggers and order through Pipelines-as-Code over a fixed stage DAG.',
       lede='Five blocks, each driving one part of the pipeline. Only build is required, and only its agent field inside it. The file is validated against a JSON Schema on every run.',
       body=''.join(b), W=1000, H=644, y0=76,
       cards=[('Scaffolded, not hand-written', '', P('Airframe commits a minimal, build-only cicd.yaml when an app is onboarded, so the first push already runs a pipeline (ADR-0017).')),

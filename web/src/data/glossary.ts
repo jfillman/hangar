@@ -27,7 +27,7 @@ export const glossary: Term[] = [
   { term: 'Fulcio', match: ['Fulcio'], what: "Sigstore's certificate authority: it issues a short-lived signing certificate to a proven identity.", why: 'Hangar runs its own so in-cluster build identities can sign.' },
   { term: 'Rekor', match: ['Rekor'], what: "Sigstore's transparency log: a tamper-evident public record of signatures.", why: "A signature you can't look up later is a claim, not evidence." },
   { term: 'gitsign', match: ['gitsign'], what: 'A tool that signs git commits with Sigstore, using your normal login instead of a key.', why: 'Release gates can check that a real, allowed person authorized the code.' },
-  { term: 'Kaniko', match: ['Kaniko', 'kaniko'], what: 'A tool that builds container images without needing a privileged Docker daemon.', why: "Builds run under Kubernetes' strictest pod security, on any cluster." },
+  { term: 'BuildKit', match: ['BuildKit', 'buildkit'], what: "Docker's image build engine, run here rootless and without a long-lived daemon.", why: 'Builds need no privileged container, and one step builds both CPU architectures without emulating the compiler.' },
   { term: 'TokenReview', match: ['TokenReview'], what: 'A Kubernetes API that confirms who a pod is from the token the cluster gave it.', why: 'Services can trust a caller without Hangar handing out any keys.' },
   { term: 'External Secrets', match: ['External Secrets'], what: 'An operator that copies secrets from a store like Infisical into Kubernetes, and keeps them in sync.', why: 'Nobody applies a raw Secret by hand, and nothing secret lives in git.' },
   { term: 'Infisical', match: ['Infisical'], what: 'An open-source secrets manager with an API.', why: "It is Hangar's single source for secret values." },
