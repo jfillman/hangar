@@ -161,7 +161,7 @@ pr() { gh pr view -R $OWNER/$1 $2 >/dev/null 2>&1 ||
    ```sh
    pr tower no-hardcoded-cluster-names
    cd $SRC/tower && git switch main && git pull --ff-only
-   npm pkg set version=0.73.3 && yarn install && yarn build
+   npm pkg set version=0.73.3 && yarn install && yarn tsc && yarn build      # tsc writes dist-types/, which build packages
    git add package.json dist && git commit -m "release: v0.73.3 (cluster names from app-config)"
    git tag v0.73.3 && git push origin main --tags
    ```
