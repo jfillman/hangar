@@ -140,7 +140,7 @@ then merge:
 ```sh
 pr() { gh pr view -R $OWNER/$1 $2 >/dev/null 2>&1 ||
     { gh pr create -R $OWNER/$1 --base main --head $2 --title "$2" --body "Lab rebuild (hangar docs/rebuild-lab.md)." && sleep 30; } || return 1
-  { gh pr checks -R $OWNER/$1 $2 --watch || { read -p "$1/$2: checks not green, or none. Merge anyway? [y/N] " a; [ "$a" = y ]; }; } &&
+  { gh pr checks -R $OWNER/$1 $2 --watch || { printf '%s' "$1/$2: checks not green, or none. Merge anyway? [y/N] "; read a; [ "$a" = y ]; }; } &&
   gh pr merge -R $OWNER/$1 $2 --merge; }
 ```
 
