@@ -336,6 +336,8 @@ curl -fsS http://infisical.hangar-dev.local/api/status | jq .
      --url http://hangar-dev.local:31800/api \
      --in-cluster-url http://infisical-infisical-standalone-infisical.infisical.svc.cluster.local:8080/api
    git -C $SRC/gitops-hangar-dev commit -am "Fleet: Infisical org" && git -C $SRC/gitops-hangar-dev push
+   sync hangar-dev cluster-registry       # the SecretStore XRs read infisicalUrl/orgId from this record
+   kubectl --context hangar-dev -n crossplane-system get configmap hangar-dev -o jsonpath='{.data.infisicalOrgId}{"\n"}'
    ```
 
 3. Create two machine identities, under Organization, Access Control, Identities, Create. Give both the org role
@@ -397,10 +399,19 @@ If `kubectl --context hangar-dev -n crossplane-system get externalsecret provide
 ownership error rather than `SecretSynced`, delete the hand-made Secret and External Secrets recreates it from
 Infisical: `kubectl --context hangar-dev -n crossplane-system delete secret provider-infisical-creds`.
 
+External Secrets checked `platform-secret-store` before the SecretStore XR wrote its credentials, and it waits a while
+before retrying. Nudge it, and the ExternalSecrets that read the keys above follow:
+
+```sh
+kubectl --context hangar-dev annotate clustersecretstore platform-secret-store force-sync=$(date +%s) --overwrite
+kubectl --context hangar-dev get clustersecretstore platform-secret-store                 # Valid, True
+kubectl --context hangar-dev get externalsecret,clusterexternalsecret -A | grep -v -E 'SecretSynced\s+True'
+```
+
 ### 2.8 The rest of the syncs
 
 ```sh
-sync hangar-dev argocd-platform-repo-creds cluster-registry minio-secrets minio kube-prometheus-stack loki tempo \
+sync hangar-dev argocd-platform-repo-creds minio-secrets minio kube-prometheus-stack loki tempo \
   thanos otel-collector holmesgpt-creds holmesgpt
 argocd app list --core --kube-context hangar-dev | grep -v 'Synced  *Healthy'     # what is still not green
 ```
