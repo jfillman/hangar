@@ -279,6 +279,21 @@ Then continue:
 ./apron up --out $SRC/gitops-hangar-dev --yes          # applies the root app-of-apps
 ```
 
+### 2.3a Pod limit (kiac)
+
+kiac has no kubelet setting, so its node starts at the kubelet default of 110 pods. The dev stack needs more than
+that, and past the limit new pods sit in `Pending` with `Too many pods`. `apron up` and `apron resume` raise it to
+`runtime.kiac.maxPods` (250) from Apron's `kiac-max-pods` change on. On a cluster built before that, or to check:
+
+```sh
+DEV_NODE=$(kubectl --context hangar-dev get nodes -o jsonpath='{.items[0].metadata.name}')
+kubectl --context hangar-dev get node $DEV_NODE -o jsonpath='{.status.capacity.pods}{"\n"}'      # want 250
+container exec -i $DEV_NODE sh -c "f=/var/lib/kubelet/config.yaml; if grep -q '^maxPods:' \$f; then sed -i 's/^maxPods:.*/maxPods: 250/' \$f; else echo 'maxPods: 250' >>\$f; fi; systemctl restart kubelet"
+sleep 20; kubectl --context hangar-dev get node $DEV_NODE -o jsonpath='{.status.capacity.pods}{"\n"}'
+```
+
+Recheck after every `kiac resume` until you've seen the value survive one.
+
 ### 2.4 Reach the cluster from Mac A and the LAN
 
 kiac's node IP changes on every VM boot. Traefik listens on NodePort 30080 because Apron never uses kiac's own
