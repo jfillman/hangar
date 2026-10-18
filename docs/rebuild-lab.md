@@ -102,6 +102,11 @@ Keep `infisical-export.tgz.enc` offline. Sections 2, 4 and 5 restore from it.
 resources. A teardown first leaves them running and billing, with nothing left to manage them. Their GitHub repos
 are safe: no app composition deletes a repo.
 
+Their requests are already gone from `gitops-cluster-dev-tenants` (2026-10-17, "deleting aws apps", "deleting azure
+function"). Onboarding then re-added a `secretstore.yaml` for all four, though, which means their XRs were still on
+the cluster at that point. The xr-requests ApplicationSet doesn't prune. The commands below find what is left and
+finish the job.
+
 Mac A. First stop both Argo CD instances so they don't recreate what you delete:
 
 ```sh
@@ -145,10 +150,10 @@ pr() { gh pr create -R $OWNER/$1 --base main --head $2 --fill 2>/dev/null
    pr airframe backstage-on-airframe
    pr airframe skyport-walkthroughs
    cd $SRC/airframe && git switch main && git pull --ff-only
-   git tag -a v0.3.152 -m "No hardcoded cluster names; Tower on Airframe; Skyport walkthroughs" && git push origin v0.3.152
+   git tag -a v0.3.154 -m "No hardcoded cluster names; Tower on Airframe; Skyport walkthroughs" && git push origin v0.3.154
    ```
 
-   Use the next free tag if v0.3.152 is taken.
+   v0.3.153 is the last tag as of 2026-10-17; use the next free one if v0.3.154 is taken by then.
 2. **glidepath:** `pr glidepath no-hardcoded-cluster-names`. Apron pins Glidepath to `main`, so no tag is needed.
 3. **tower**, then release it (`RELEASING.md`):
 
@@ -181,8 +186,8 @@ pr() { gh pr create -R $OWNER/$1 --base main --head $2 --fill 2>/dev/null
 
    ```sh
    cd $SRC/apron && git switch apron-up && git pull --ff-only
-   yq -i '.versions.airframe.catalog = "v0.3.152" | .versions.airframe.clusterRegistry = "v0.3.152" | .versions.airframe.defaultChart = "v0.3.152"' versions.yaml
-   bash tests/run.sh && bash tests/cli/test_cli.sh && git commit -am "Pin Airframe v0.3.152" && git push
+   yq -i '.versions.airframe.catalog = "v0.3.154" | .versions.airframe.clusterRegistry = "v0.3.154" | .versions.airframe.defaultChart = "v0.3.154"' versions.yaml
+   bash tests/run.sh && bash tests/cli/test_cli.sh && git commit -am "Pin Airframe v0.3.154" && git push
    cd $SRC && pr apron apron-up
    cd $SRC/apron && git switch main && git pull --ff-only
    ```
@@ -415,7 +420,20 @@ The GitHub App's webhook URL stays the same. Check that its webhook secret is th
 
 ### 2.11 Readiness flags
 
-Set each one only after checking it live:
+Glidepath builds images with rootless BuildKit (ADR-0026), which needs three things from the dev cluster. Apron sets
+up all three, so these only confirm them before `cicdReady` lets apps onboard:
+
+```sh
+kubectl --context hangar-dev -n kube-system rollout status ds/binfmt --timeout=5m
+container exec -i $DEV_NODE ls /proc/sys/fs/binfmt_misc/ | grep -c qemu          # handlers registered (amd64 builds on arm64)
+container exec -i $DEV_NODE grep -i seccompDefault /var/lib/kubelet/config.yaml   # no output, or false
+```
+
+`-cicd` namespaces get Pod Security `baseline` from Glidepath's tenant-onboarding ApplicationSet. `restricted`
+would break rootlesskit, and `seccompDefault: true` would need a Localhost seccomp profile on the build step
+(Glidepath `docs/admin/rootless-builds.md`). The first real build is Tower's (5.7).
+
+Set each flag only after checking it live:
 
 ```sh
 argocd app list --core --kube-context hangar-dev | grep -i glidepath           # all Synced/Healthy -> cicdReady
@@ -692,6 +710,16 @@ echo "release PR branch: $B"
 cd $SRC/gitops-backstage && git switch main && git pull --ff-only
 git fetch origin "$B" && git merge --ff-only FETCH_HEAD && git push origin main      # keeps the signed commit
 ```
+
+This is the new cluster's first BuildKit build. Check that it ran under `baseline`:
+
+```sh
+kubectl --context hangar-dev get ns app-backstage-cicd -o jsonpath='{.metadata.labels}' | jq 'with_entries(select(.key|startswith("pod-security")))'
+```
+
+A first build that logs `failed to configure registry cache importer ... not found` is expected: the
+`ghcr.io/$OWNER/backstage-buildcache` package doesn't exist yet. If the build step fails inside rootlesskit, see
+Glidepath `docs/admin/rootless-builds.md`, "Checking a cluster".
 
 Merge release PRs by fast-forward, never with GitHub's button: all three button strategies make an unsigned commit
 and `provenance` fails. Then, on Mac B:
