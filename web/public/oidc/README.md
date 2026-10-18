@@ -7,8 +7,8 @@ for IAM roles that trust the cluster through an IAM OIDC provider (IRSA without 
 
 | Cluster | Trusted by |
 |---|---|
-| `kind-prod` | kiac-dev's API server (Tower reads and writes) |
-| `kiac-dev` | Fulcio on kiac-dev (keyless signing); AWS IAM, for Crossplane's AWS providers (planned) |
+| `hangar-prod` | hangar-dev's API server (Tower reads and writes) |
+| `hangar-dev` | Fulcio on hangar-dev (keyless signing); AWS IAM, for Crossplane's AWS providers (planned) |
 
 The site workflow deploys these dotfiles only because `upload-pages-artifact` has `include-hidden-files: true`, and its
 deploy job fails if any issuer here stops serving a discovery document that names itself.
