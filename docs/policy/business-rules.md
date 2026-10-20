@@ -6,7 +6,8 @@ page, it is not a rule yet.
 
 Last checked against the code on 2026-10-19: backstage `e40008f` (+ branch tests-route), tower `2228fbc` (v0.80.0), glidepath `0e66378`,
 airframe `4b3cde1` (v0.3.157), gitops-hangar-dev `6a6f055`, gitops-hangar-prod `d751f6e`, check-rides `193afc2`.
-GATE-05, GATE-06 and GATE-15 to GATE-17 (release-signing policy, GitHub-merge path) re-checked on 2026-10-20: glidepath
+REL-17 and REL-18 (commit proof on the Release Record and in the score) added 2026-10-20 with Tower v0.83.0 and
+glidepath `36eb223`. GATE-05, GATE-06 and GATE-15 to GATE-17 (release-signing policy, GitHub-merge path) re-checked on 2026-10-20: glidepath
 `9c42d81` (ADR-0027), tower `be8111b` (v0.82.0), backstage `61634fb`, gitops-hangar-dev `0d48da0`, apron `24d23d0`,
 airframe `8aea2f6`.
 CRED-07 to CRED-09, POL-10) re-checked on 2026-10-17: glidepath `1ad8dae`, airframe `0710485` (v0.3.148),
@@ -167,6 +168,8 @@ The `itsm` gate wraps the company's change tool (ServiceNow first, a webhook ada
 | REL-14 | A GitHub Release is opt-in per release, published only once the release is healthy in production, and tagged `v<version>` at the image's commit. An existing tag is reused only at that commit, and a tag is never moved or replaced. | Enforced | `releaseOutcome.ts` |
 | REL-15 | Everyone hears when a release PR to production opens ("ready for prod") and when it merges ("released"). After a restart, nothing is announced twice. | Enforced | `release-signoff-poll` |
 | REL-16 | The backend writes only PRs, commit statuses, GitHub Releases and the draft commit. It never merges. | Enforced | [Tower security.md: release records](https://github.com/jfillman/tower/blob/main/docs/security.md#release-records-what-the-backend-does-on-its-own) |
+| REL-17 | The Release Record names how the released commit was proven: the gitsign signer, or the GitHub merge (PR, merger, web-flow key, approvers). It is shown green for every passing path, with a hint on a merge that the proof is GitHub's key and record, not a personal key, and frozen into the record when it is sealed. It is read only from the provenance gate's own PR comment posted by the platform's GitHub App (`glidepath.gateCommentApps`); a person's comment is never trusted for it. Records sealed before 2026-10-20 say "not recorded" (no backfill). The same proof shows on the record rows, the release cards, the pending-promotion task and the Release matrix. | Display | Tower `commitProof.ts`; backend `parseGateComments`; [Glidepath commit-signing.md: Evidence](https://github.com/jfillman/glidepath/blob/main/docs/admin/commit-signing.md#evidence-how-a-releases-commit-was-proven-2026-10-20-phase-3) |
+| REL-18 | The readiness score's **Commit proof** line weighs how the commit was proven: gitsign 6, GitHub merge strict 4, GitHub merge 2, nothing when not recorded or not required (cloud targets). It only adds points; no older record's score moves. | Display | Tower `computeConfidence` / `confidenceBreakdown` |
 
 Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main/docs/release-records/index.md).
 
