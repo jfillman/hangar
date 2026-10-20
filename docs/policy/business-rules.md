@@ -4,7 +4,7 @@ Every rule Hangar applies to people, releases and clusters, in one place. Each c
 rule works and why; this page lists every rule, how strongly it holds, and what holds it. If a rule is not on this
 page, it is not a rule yet.
 
-Last checked against the code on 2026-10-19: backstage `e40008f`, tower `8ece4ae` (v0.79.0), glidepath `0e66378`,
+Last checked against the code on 2026-10-19: backstage `e40008f` (+ branch tests-route), tower `2228fbc` (v0.80.0), glidepath `0e66378`,
 airframe `4b3cde1` (v0.3.157), gitops-hangar-dev `6a6f055`, gitops-hangar-prod `d751f6e`, check-rides `193afc2`.
 CRED-07 to CRED-09, POL-10) re-checked on 2026-10-17: glidepath `1ad8dae`, airframe `0710485` (v0.3.148),
 gitops-cluster-dev #108.
