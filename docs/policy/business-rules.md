@@ -4,8 +4,8 @@ Every rule Hangar applies to people, releases and clusters, in one place. Each c
 rule works and why; this page lists every rule, how strongly it holds, and what holds it. If a rule is not on this
 page, it is not a rule yet.
 
-Last checked against the code on 2026-10-14: backstage `6689352`, tower `855d8e4` (v0.71.2), glidepath `6d25259`,
-airframe `22aad95`, gitops-cluster-dev `22e1fa8`, gitops-cluster-kind-prod `3f26e81`. Cloud credentials (CRED-05,
+Last checked against the code on 2026-10-19: backstage `e40008f` (+ branch tests-route), tower `2228fbc` (v0.80.0), glidepath `0e66378`,
+airframe `4b3cde1` (v0.3.157), gitops-hangar-dev `6a6f055`, gitops-hangar-prod `d751f6e`, check-rides `193afc2`.
 CRED-07 to CRED-09, POL-10) re-checked on 2026-10-17: glidepath `1ad8dae`, airframe `0710485` (v0.3.148),
 gitops-cluster-dev #108.
 
@@ -31,19 +31,21 @@ the rule:
 2. [Access in the portal](#2-access-in-the-portal)
 3. [Environments and promotion](#3-environments-and-promotion)
 4. [Release gates](#4-release-gates)
-5. [Release records, modes and sign-off](#5-release-records-modes-and-sign-off)
-6. [Rollback](#6-rollback)
-7. [Supply chain](#7-supply-chain)
-8. [Live operations from Tower](#8-live-operations-from-tower)
-9. [Break-glass debug sessions](#9-break-glass-debug-sessions)
-10. [Images and retention](#10-images-and-retention)
-11. [Service catalog (Airframe)](#11-service-catalog-airframe)
-12. [Cluster admission policies](#12-cluster-admission-policies)
-13. [Credentials and secrets](#13-credentials-and-secrets)
-14. [Notifications](#14-notifications)
-15. [AI agents](#15-ai-agents)
-16. [Rules that are not enforced yet](#16-rules-that-are-not-enforced-yet)
-17. [Keeping this page true](#17-keeping-this-page-true)
+5. [Testing and the check ride](#5-testing-and-the-check-ride)
+6. [Change management (itsm)](#6-change-management-itsm)
+7. [Release records, modes and sign-off](#7-release-records-modes-and-sign-off)
+8. [Rollback](#8-rollback)
+9. [Supply chain](#9-supply-chain)
+10. [Live operations from Tower](#10-live-operations-from-tower)
+11. [Break-glass debug sessions](#11-break-glass-debug-sessions)
+12. [Images and retention](#12-images-and-retention)
+13. [Service catalog (Airframe)](#13-service-catalog-airframe)
+14. [Cluster admission policies](#14-cluster-admission-policies)
+15. [Credentials and secrets](#15-credentials-and-secrets)
+16. [Notifications](#16-notifications)
+17. [AI agents](#17-ai-agents)
+18. [Rules that are not enforced yet](#18-rules-that-are-not-enforced-yet)
+19. [Keeping this page true](#19-keeping-this-page-true)
 
 ## 1. People and roles
 
@@ -93,7 +95,7 @@ Full action-by-action table: [Tower security model](https://github.com/jfillman/
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
-| GATE-01 | Every release PR to a gitops repo runs every registered gate: `sast`, `image-scan`, `provenance`, `sbom` and `values` are real; `itsm`, `qa` and `policy-validation` are stubs. | Enforced (they run) | [Glidepath release-guardrails.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/release-guardrails.md) |
+| GATE-01 | Every release PR to a gitops repo runs every registered gate: `sast`, `image-scan`, `provenance`, `sbom`, `values` and `qa` are real; `itsm` is real once the catalog names a change tool (`itsm.provider`) and a stub until then; `policy-validation` is a stub. | Enforced (they run) | [Glidepath release-guardrails.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/release-guardrails.md) |
 | GATE-02 | A stub never reports a pass. It logs that no check exists, returns `stub`, and shows as a grey STUB everywhere. | Enforced | [Glidepath governance-stubs.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/governance-stubs.md), ADR-0003 |
 | GATE-03 | A gate stops a merge only through the gitops repo's GitHub ruleset: every gate a required check from the Pipelines as Code app, 2 approvals, no bypass actors. | **Off here** | [Glidepath github-ruleset.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/github-ruleset.md). Private repos on GitHub Free cannot enforce rulesets, so anyone with write access can merge past a red gate. |
 | GATE-04 | Merging past a failed or missing gate is a break-glass bypass. It is detected after the merge and alerted (not subject to notification settings), and the PR keeps its failed checks. | Soft | `bypass-check` (`detect-bypass-merge`) |
@@ -104,8 +106,42 @@ Full action-by-action table: [Tower security model](https://github.com/jfillman/
 | GATE-09 | A Release Record PR (`release-record-*` branch) is not a release, and the gates skip it. | Enforced | gate triggers |
 | GATE-10 | `/retest` re-runs a gate. It never skips one. | Enforced | Pipelines as Code |
 | GATE-11 | A new or removed gate goes in the `releaseGuardrails` registry, and the ruleset is regenerated from it in the same change. | Convention | `hack/apply-guardrail-ruleset.sh` |
+| GATE-12 | `qa` passes only when the promoted image's own test provenance (TEST-06) carries a **check ride** that is verified, `passed`, with `tests-failed: 0`, from the shared check-rides Application (`workflow-source: argocd:check-rides`), and younger than `qa.maxAge` (72h). It names what was missing otherwise. An eligible rollback is advisory. | Enforced as a check; **Soft** today (advisory, GATE-13) | `qa-gate`; [Glidepath testing.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/testing.md) |
+| GATE-13 | Every registry entry has `required` (default `true`). A gate with `required: false` is **advisory**: it runs and posts what it found, its check stays green, a merge past it is not a bypass, and the ruleset leaves it out. Only a glidepath PR (the chart default) or a cluster's catalog values (`releaseGuardrailOverrides`) change it: never `cicd.yaml`, never Tower, never per release. On hangar-dev `qa` is advisory until every app has a check ride. | Enforced | `glidepath-catalog.guardrails`; [release-guardrails.md: Required and advisory gates](https://github.com/jfillman/glidepath/blob/main/docs/admin/release-guardrails.md#required-and-advisory-gates-required-2026-10-19) |
+| GATE-14 | `sast` and `provenance` cannot be made advisory: a catalog that sets either to `required: false` fails to render. | Enforced | `glidepath-catalog` chart render |
 
-## 5. Release records, modes and sign-off
+## 5. Testing and the check ride
+
+The test stage, the shared check ride and the evidence a release carries: [Glidepath testing.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/testing.md), the check-rides repository's README, and the library paper *A test contract for Glidepath, and a QA gate that reads it*.
+
+| ID | Rule | Strength | Held by |
+|---|---|---|---|
+| TEST-01 | A `test` step runs the TestWorkflow it names with the platform's context as config (`app`, `env`, `image`, `url`, `revision`, `gitUrl`, `chain`, for the keys the workflow declares) and as execution tags. A workflow never hardcodes its target. | Enforced | `run-testworkflow` |
+| TEST-02 | A `test` or `execute` step whose workflow does not exist fails, naming the file. Only `test.enabled: false` skips, and it says `skipped`. | Enforced | `run-testworkflow` |
+| TEST-03 | A `check-ride` step runs `<app>-check-ride` exactly as Argo CD synced it from the check-rides repository, never a file from the app repo: it refuses a workflow without the sync annotation or with another app's `hangar.io/app` label. A flow has at most one, it takes no `testName`, and it is always required. | Enforced | `run-testworkflow`, `validateFlows` |
+| TEST-04 | The standard (`templates/`) is owned by SDETs **and** product owners; an app's ride (`apps/<app>/`) by its team **and** an SDET. The repo's own check requires the name, the label, a template from `templates/`, the declared config and only the app's own Secret. | Convention (code owners on a private repo on GitHub Free); Enforced with the ruleset | check-rides `CODEOWNERS`, `tools/check.py` |
+| TEST-05 | In the shared `testkube` namespace a tenant pipeline may reference only its own `<app>-app-secrets`, and a workflow synced by Argo CD only `<hangar.io/app label>-app-secrets`, in container env and `content.git.tokenFrom`. | Enforced | Kyverno `testkube-secret-usage` ([ADR-0008](https://github.com/jfillman/glidepath/blob/main/docs/admin/adr/0008-kyverno-testkube-secret-policy.md)) |
+| TEST-06 | Every completed test PipelineRun's SLSA provenance is signed by Tekton Chains onto the tested image's digest, carrying the run's results (`outcome`, `role`, test counts, `workflow-source`, `workflow-digest`, `execution-id`). Failed runs are attested too, so a reader selects by task name and reads the outcome, never presence. | Enforced | Chains; `test.yaml` type hints |
+| TEST-07 | The environment's NetworkPolicy admits same-namespace pods only; an app lets the `testkube` namespace in through its own `glidepath/base.yaml` (`networkPolicy.allowIngressFrom`). | Convention | airframe-application |
+| TEST-08 | Tower shows every attested test run on an image (the Tests step), the check ride first, each downloadable; the build provenance is the one whose pipeline ran `build-image`. | Display | Tower v0.79.0 `supplyChain.ts` |
+| TEST-09 | A release record carries the check ride the qa gate read (outcome, counts, source, execution, verdict, how many runs were attested) frozen in when the record is sealed; before that Tower reads it live from provenance. The run shown is the newest verified pass, else the newest check ride, else the newest run of any role, so a failure is never hidden behind an older pass and "the team's tests ran, no check ride" reads differently from "nothing ran". | Enforced (record) / Display (live) | backend `testEvidence.ts`; Tower v0.80.0 `findReleaseTestRun` |
+| TEST-10 | The Pipelines tab's Tests view lists every Testkube execution tagged with the app and downloads its JUnit report, read through the control plane's service proxy as Tower's read identity (read only; `testkube-api-server:8088`). An execution Testkube marked aborted although every step passed is shown as passed, with the note. | Display | backend `/tests`, `/tests/report`; `backstage-ingestor-testkube-proxy` Role |
+
+## 6. Change management (`itsm`)
+
+The `itsm` gate wraps the company's change tool (ServiceNow first, a webhook adapter for any other): [Glidepath change-management.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/change-management.md). Every rule below applies once the catalog names a provider; with none the gate is a loud stub and the hooks are no-ops. This lab runs the webhook provider against a mock change tool.
+
+| ID | Rule | Strength | Held by |
+|---|---|---|---|
+| CHG-01 | Every release PR creates a change request, or links one the caller or the PR body already names: a `normal` change for a promote, an `emergency` change for a rollback whose `parent` is the change it rolls back. The PR body and the release record carry it. | Enforced | `open-release-pr` |
+| CHG-02 | The `itsm` gate passes only when the change exists and is approved or scheduled, and fails naming the change, its state and its approval. | Enforced (subject to GATE-03 and GATE-13) | `itsm-gate` |
+| CHG-03 | The change follows the release: implementing on merge, closed successful when the release is healthy, closed unsuccessful when it is rolled back, with the rollback's emergency change related. A later rollback re-closes a successful change. | Enforced | `bypass-merge-check`, `release-outcome-notify`, `release-rollback-notify` |
+| CHG-04 | A change tool that is down stops a release PR from opening and fails the gate; the later hooks tolerate it visibly (a red TaskRun, the release flow continues). | Enforced | `onError: continue` on the hooks |
+| CHG-05 | Change-tool credentials come from a platform Secret in each `-cicd` namespace, fanned out from the platform's Infisical project; never a value. | Enforced | `itsm.credentials` ClusterExternalSecret |
+| CHG-06 | Glidepath never approves, creates or moves a change on the gate's behalf. A release is held by leaving its change unapproved; a merge past an unapproved change is a bypass (GATE-04). | Enforced | `itsm-gate` |
+| CHG-07 | A release record carries its change request (id, number, URL, state, approval, and the change that rolled it back), frozen in when sealed and read from the newest promote tracking record for the image before that; Tower shows it on the record and as a state chip in the list. | Display | backend `changeRequestOf`; Tower v0.80.0 `ReleaseRecordEvidence.tsx` |
+
+## 7. Release records, modes and sign-off
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
@@ -119,7 +155,7 @@ Full action-by-action table: [Tower security model](https://github.com/jfillman/
 | REL-08 | When a release is first healthy in a Flight environment, the backend opens the record PR (`releases/<app>@<tag>.yaml` in `gitops-<app>`) with the draft sealed into it, and clears `next.yaml`, within a few minutes. Nothing merges it. A record is history once a person merges it. | Enforced | `release-record-seal-poll` (2 min), `release-record-poll` (hourly) |
 | REL-09 | Release names are tree names given in order (ASPEN, BIRCH, CEDAR...), skipping U, V and X, with numerals after the last (ASPEN II). A name is the release's place in the app's committed records, so it never changes. | Enforced | `releaseNames.ts` (Tower and backend, kept identical) |
 | REL-10 | A release's scope is the PRs merged after the previous release's commit landed on main, up to its own. A PR is never in two releases. | Enforced | Tower |
-| REL-11 | **Readiness** checks the leading candidate: changes merged, running on Ground, 24 hours on Ground, build and scans passed, signed and attested, version bumped, and a healthy previous release to roll back to. A target date and closed planned issues are added when the draft has them. | **Display** | Tower `nextRelease.ts`. Nothing is blocked. |
+| REL-11 | **Readiness** checks the leading candidate: changes merged, running on Ground, 24 hours on Ground, build and scans passed, signed and attested, check ride passed (a verified, passed ride from the shared repository attested on the image: what the qa gate reads), version bumped, and a healthy previous release to roll back to. A target date and closed planned issues are added when the draft has them. | **Display** | Tower `nextRelease.ts`. Nothing is blocked. |
 | REL-12 | The suggested version is the last version plus the bump the merged PRs call for: breaking means major (minor before 1.0), a feature means minor, anything else patch. The real version is the image's tag. | Display | Tower |
 | REL-13 | A release's outcome is decided in the sign-off environment. **Clean** means healthy, then replaced or healthy through the 7-day bake. **Rolled back**, **replaced before healthy** and **stopped before production** are the other outcomes. It is written back once, by PR. | Enforced | `releaseOutcome.ts` (`BAKE_DAYS = 7`) |
 | REL-14 | A GitHub Release is opt-in per release, published only once the release is healthy in production, and tagged `v<version>` at the image's commit. An existing tag is reused only at that commit, and a tag is never moved or replaced. | Enforced | `releaseOutcome.ts` |
@@ -128,7 +164,7 @@ Full action-by-action table: [Tower security model](https://github.com/jfillman/
 
 Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main/docs/release-records/index.md).
 
-## 6. Rollback
+## 8. Rollback
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
@@ -136,7 +172,7 @@ Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main
 | RB-02 | The target must be one of the five newest releases of that app, environment and cluster that reached healthy. The gates work this out from the release records, never from the PR's text. | Enforced | `extract-promoted-image` `rollback-eligibility` |
 | RB-03 | On an eligible rollback, `sast`, `image-scan` and `sbom` are advisory, because that image already ran there. Provenance, values, commit signing and approvals still apply. | Enforced | [Glidepath release-state.md: rollback](https://github.com/jfillman/glidepath/blob/main/docs/admin/release-state.md#rollback-adr-0021-phase-4) |
 
-## 7. Supply chain
+## 9. Supply chain
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
@@ -146,7 +182,7 @@ Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main
 | SC-04 | Readiness's "Signed and attested" passes only on a verified attestation, never on one that is merely present. | Display | Tower `isSignedAndAttested` |
 | SC-05 | Image signatures are checked at release (GATE-07), not when a cluster admits an image. The exception is the Tower debug image (BG-04). | Enforced at release only | see [section 16](#16-rules-that-are-not-enforced-yet) |
 
-## 8. Live operations from Tower
+## 10. Live operations from Tower
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
@@ -158,7 +194,7 @@ Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main
 | OPS-06 | Re-running and cancelling a PipelineRun is for owners. The cluster admits only Glidepath's own run shape in an app's `-cicd` namespace, and on an existing run only a cancel. | Enforced | `tower-pipelinerun-shape` policy |
 | OPS-07 | Configuration changes (values, env XR, ConfigMap files, `cicd.yaml`) are PRs, never direct edits. | Enforced | `tower.config.edit` |
 
-## 9. Break-glass debug sessions
+## 11. Break-glass debug sessions
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
@@ -170,7 +206,7 @@ Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main
 | BG-06 | Every byte is recorded. A session that can't be recorded never starts. Recordings are object-locked for 365 days, their hashes anchored in Rekor, and the app's owners can read them. | Fails closed | [Tower break-glass guardrails](https://github.com/jfillman/tower/blob/main/docs/break-glass/guardrails.md) |
 | BG-07 | Admins can end anyone's session, and on Flight so can the session's approver. Anyone can end their own. | Enforced | `tower.breakglass.terminate` |
 
-## 10. Images and retention
+## 12. Images and retention
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
@@ -181,7 +217,7 @@ Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main
 | RET-02 | A release that is merged or progressing with no new fact for 45 minutes raises `ReleaseStalled`, once per state. | Enforced | `release-record-sweeper` |
 | RET-03 | A pipeline stage that hasn't started its next stage 10 minutes after finishing is reported as stalled. | Enforced | [stalled pipeline detector](https://github.com/jfillman/glidepath/blob/main/docs/admin/stalled-pipeline-detector.md) |
 
-## 11. Service catalog (Airframe)
+## 13. Service catalog (Airframe)
 
 Airframe is where policy turns into code. Its own register is the authority on these rules:
 [Airframe governance: what is enforced today](https://github.com/jfillman/airframe/blob/main/docs/admin/governance.md#what-is-enforced-today).
@@ -197,7 +233,7 @@ In short:
 | AF-06 | `extraManifests`, `networkPolicy` and `httpRoute` changes need a person. | Convention | `AGENTS.md` |
 | AF-07 | A security reviewer approves changes to XRDs and compositions. | Convention | not enforced |
 
-## 12. Cluster admission policies
+## 14. Cluster admission policies
 
 Rules the API servers themselves enforce, so a bug in Backstage, or a compromised Backstage, can't get around them.
 Every one is native ValidatingAdmissionPolicy that fails closed, and each is scoped to its own objects. The exceptions
@@ -219,7 +255,7 @@ closed).
 
 Full detail: [Tower break-glass admission policies](https://github.com/jfillman/tower/blob/main/docs/break-glass/admin/policies.md).
 
-## 13. Credentials and secrets
+## 15. Credentials and secrets
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
@@ -233,7 +269,7 @@ Full detail: [Tower break-glass admission policies](https://github.com/jfillman/
 | CRED-09 | A composition never removes something that already exists because a condition it was created under stopped holding, or because an observed value it was rendered from is missing for a reconcile. Conditions gate creation only; deleting the XR is the only way to delete its cloud resources. | Enforced (render tests) | Airframe v0.3.144 and v0.3.145; incident 2026-10-16 in [cloud-credentials.md](https://github.com/jfillman/airframe/blob/main/docs/admin/cloud-credentials.md#a-rule-for-composition-authors-never-gate-what-already-exists) |
 | CRED-06 | The image-prune token can only read and delete packages. The backend holds it, never the browser. | Enforced | IMG-01 |
 
-## 14. Notifications
+## 16. Notifications
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
@@ -241,7 +277,7 @@ Full detail: [Tower break-glass admission policies](https://github.com/jfillman/
 | NOT-02 | Release announcements, Rollout actions, analysis bypasses, broken glass, Flight pod restarts and image prunes go to everyone. | Enforced | Backstage notifications |
 | NOT-03 | A bypass merge (GATE-04) is alerted however notifications are set. | Enforced | `detect-bypass-merge` |
 
-## 15. AI agents
+## 17. AI agents
 
 | ID | Rule | Strength | Held by |
 |---|---|---|---|
@@ -249,7 +285,7 @@ Full detail: [Tower break-glass admission policies](https://github.com/jfillman/
 | AI-02 | Agent runs go only to clusters marked `autopilotReady` (AF-05). | Enforced | AgentRun composition |
 | AI-03 | Per-agent tool tiers, budgets and field allow/deny lists (Clearance) are built but not deployed. | Off here | [Autopilot design](../autopilot/design.md) |
 
-## 16. Rules that are not enforced yet
+## 18. Rules that are not enforced yet
 
 Every place where a rule above is weaker than it reads, in one list:
 
@@ -259,7 +295,10 @@ Every place where a rule above is weaker than it reads, in one list:
 | GitHub's merge button can't keep a gitsign signature. | GATE-05, GATE-06 | A PR merged on GitHub builds an image whose provenance gate fails. Proposed: accept a GitHub web-flow merge when GitHub's own signature verifies and every commit in the PR is signed by an allowed signer. **Open decision.** |
 | The ruleset assumes every PR is a release PR. | GATE-03 | Once enforced, non-release PRs would wait forever for gates that never run. Fix before enabling GATE-03 ([ruleset audit](https://github.com/jfillman/glidepath/blob/main/docs/admin/github-ruleset.md#problems-found-in-the-audit-2026-09-27)). |
 | App repos aren't gated. | ENV-02 | By design: Ground is self-service. Only gitops repos get gates. |
-| Three gates are stubs. | GATE-01 | `itsm`, `qa` and `policy-validation` say so, never pass. |
+| `policy-validation` is a stub. | GATE-01 | It says so, never passes. `itsm` is real only with a provider; this lab points it at a mock change tool (CHG-01 to CHG-06 hold against the mock). |
+| `qa` is advisory on hangar-dev. | GATE-12, GATE-13 | `required: false` until every app with a Flight environment has a check ride (boarding-api has one). The check runs and reports; a missing ride does not fail it. |
+| The check-rides repository's owners are not enforced. | TEST-04 | A private repo on GitHub Free: code-owner review is convention. The repo holds no secrets and can be made public. |
+| An app opens its NetworkPolicy to tests by hand. | TEST-07 | A platform default for the `testkube` namespace is on the test framework roadmap. |
 | Production SLO burn isn't measured. | REL-13 | kind-prod's Prometheus is off, so "clean" can't yet mean "no SLO burn during bake". |
 | Image signatures aren't checked at admission. | SC-05 | An unsigned image could run if it got into git. GATE-07 is the only check. |
 | `airframe-validate` doesn't run on app repos or the tenants repo. | GATE-08, CRED-01 | Airframe roadmap AF-4b. |
@@ -267,7 +306,7 @@ Every place where a rule above is weaker than it reads, in one list:
 | Azure deploys use a stored secret. | CRED-07 | Lambda and ECS deploys are keyless (2026-10-16/17). Azure Container Apps still logs in with a stored service principal secret; next is workload identity federation ([Glidepath known gap 43](https://github.com/jfillman/glidepath/blob/main/docs/admin/known-gaps.md)). |
 | Only admins can run software templates. | ACC-02 | App teams can't scaffold a new service themselves. Intentional for the lab; revisit before onboarding other teams. |
 
-## 17. Keeping this page true
+## 19. Keeping this page true
 
 - A change that adds, changes or removes a rule updates this page in the same change: here when the change is in
   this repo, or with a linked Hangar PR when it isn't. The component's own docs keep the detail.
