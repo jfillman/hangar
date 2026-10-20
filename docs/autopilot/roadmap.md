@@ -227,7 +227,8 @@ kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What move
    may configure it. `cicd.yaml` leaves `BASELINE_DENY_PATHS`; `.tekton/**` stays denied. These stay human-only
    (decided 2026-10-09):
    - Field-level deny (AF-9a `BASELINE_DENY_FIELDS` for `cicd.yaml`): `/governance` (the scan gates; an agent adding
-     itself to `allowedCommitSigners` would approve its own release), `/deploy/releaseFile`, `/deploy/chart` (another
+     itself to `allowedCommitSigners` would have approved its own release - since 2026-10-20, glidepath ADR-0027, the
+     signer list is admin-owned catalog values and `cicd.yaml`'s copy is ignored, so the deny is now belt and braces), `/deploy/releaseFile`, `/deploy/chart` (another
      chart renders anything, past the schema and chart guards), `/deploy/target` with `/deploy/ecs`, `/deploy/lambda`,
      `/deploy/azureContainerApps` and the same blocks on each environment (they point the cloud deployer elsewhere),
      and `/secrets` (with `build.script` editable, an entry is a path to exfiltrate any key in the app's store).
