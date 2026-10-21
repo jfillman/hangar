@@ -667,12 +667,15 @@ cat > /tmp/bg-policy.json <<'EOF'
 {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:PutObject","s3:GetObject","s3:GetObjectVersion"],"Resource":["arn:aws:s3:::tower-breakglass/*","arn:aws:s3:::tower-breakglass-v2/*"]}]}
 EOF
 kubectl --context hangar-dev -n observability run mc-breakglass --rm -i --restart=Never \
-  --image=quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z --command -- sh -c \
+  --image=docker.io/pgsty/silo:RELEASE.2026-10-15T00-00-00Z --command -- sh -c \
   "cat > /tmp/p.json; mc alias set m http://minio:9000 admin minioadmin123 >/dev/null && mc admin user svcacct add m admin --policy /tmp/p.json --json" \
   < /tmp/bg-policy.json > /tmp/bg-key.json
 MINIO_AK=$(jq -r .accessKey /tmp/bg-key.json); MINIO_SK=$(jq -r .secretKey /tmp/bg-key.json); rm /tmp/bg-key.json /tmp/bg-policy.json
 ANCHOR=$(openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt)
 ```
+
+MinIO no longer publishes images (Quay answers 401), so `mc` runs from the same `pgsty/silo` image the minio chart uses
+(gitops-hangar-dev `40-observability/minio/application.yaml`).
 
 `argocd-apps.hangar-prod.local` resolves on Mac A through the hosts entry from 2.4. If the argocd-apps chart named
 its admin Secret differently, `kubectl -n argocd-apps get secret` shows it.
