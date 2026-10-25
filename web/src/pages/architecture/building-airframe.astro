@@ -37,8 +37,8 @@ const evidence = [
   { text: 'No Delete on any tenant-owned file, after the gate flap that cost two apps their secrets', status: 'built' as const, href: commit('airframe', '40983c1') },
   { text: 'SecretStore never deletes the Infisical project or its environments', status: 'built' as const, href: commit('airframe', 'e5eaa8d') },
   { text: 'Contract bundle, agent summaries and llms.txt, so an agent can read the catalog', status: 'built' as const, href: commit('airframe', '8a6a86f') },
-  { text: 'Every API moved to the catalog.hangar.io group (twins added, migration under way)', status: 'draft' as const, href: commit('airframe', 'ba9c25b') },
-  { text: 'Scaffold new repositories with a one-time action instead of a reconciled resource', status: 'proposal' as const, href: u('architecture/cost-of-the-platform/') },
+  { text: 'Every API moved to the catalog.hangar.io group, and the old group retired', status: 'built' as const, href: commit('airframe', '1265191') },
+  { text: 'Scaffold files written once, then retired from the XR by a scaffold ledger, instead of reconciled forever', status: 'built' as const, href: commit('airframe', '924abfe') },
 ];
 ---
 <Base title={essay.title} description={essay.dek} section="architecture">

@@ -38,7 +38,7 @@ const fit = [
 ];
 
 const evidence = [
-  { text: 'Testkube CE installed on every cluster with the CI/CD platform, through Apron and ArgoCD', status: 'built' as const, href: gh('apron', '50-platform-cicd/testkube/application.yaml') },
+  { text: 'Testkube CE installed on every cluster with the CI/CD platform, through Apron and ArgoCD', status: 'built' as const, href: gh('apron', 'templates/50-glidepath/testkube/application.yaml') },
   { text: "Glidepath's test stage applies and runs an app's glidepath/<name>.yaml as a TestWorkflow", status: 'built' as const, href: gh('glidepath', 'docs/user/cicd-yaml-reference.md') },
   { text: 'One shared namespace, with secrets moved in for the run and blanked after (ADR-0007)', status: 'built' as const, href: adr('0007', 'testkube-shared-namespace') },
   { text: "A Kyverno policy so one app's tests can't mount another app's secrets (ADR-0008)", status: 'built' as const, href: adr('0008', 'kyverno-testkube-secret-policy') },

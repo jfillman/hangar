@@ -100,7 +100,7 @@ export const principles: Principle[] = [
     evidence: [
       { text: 'A CDEvents broker, authenticated with TokenReview (ADR-0002)', status: 'built', href: gh('glidepath', 'docs/admin/adr/0002-cdevents-broker-tokenreview.md') },
       { text: 'Outcomes from other clusters come back as events, not API calls (ADR-0005)', status: 'built', href: gh('glidepath', 'docs/admin/adr/0005-multicluster-per-cluster-argocd.md') },
-      { text: 'DORA exporter: a quiet listener on the same events', status: 'built', href: ghTree('glidepath', 'platform/dora-exporter') },
+      { text: 'DORA exporter: a quiet listener on the same events', status: 'built', href: ghTree('glidepath', 'glidepath/dora-exporter') },
       { text: 'Event-triggered agent workloads in Autopilot', status: 'proposal', href: gh('hangar', 'docs/autopilot/skyport-ai-workloads.md') },
     ],
     diagrams: ['glidepath/05-chaining-sequence', 'plan/08-skyport-event-to-team'],

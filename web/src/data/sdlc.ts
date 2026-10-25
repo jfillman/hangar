@@ -60,7 +60,7 @@ export const stages: Stage[] = [
     evidence: [
       { text: 'cicd.yaml scaffolded at onboarding (ADR-0017)', status: 'built', href: adr('0017', 'cicd-yaml-scaffolded-not-hand-authored') },
       { text: 'The cicd.yaml reference and schema', status: 'built', href: gh('glidepath', 'docs/user/cicd-yaml-reference.md') },
-      { text: 'Apron: a template for a new cluster repo, one config file and one script', status: 'built', href: gh('apron') },
+      { text: 'Apron: a CLI that renders and onboards a cluster repo from one config file', status: 'built', href: gh('apron') },
     ],
     diagrams: [
       { id: 'glidepath/04-onboarding-sequence' },

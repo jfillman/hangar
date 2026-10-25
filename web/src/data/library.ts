@@ -32,7 +32,7 @@ export const papers: Paper[] = [
     title: 'No stored AWS key for cloud deploys',
     dek: 'Two never-expiring AWS keys replaced by one-hour roles a pod earns by proving who it is, one per Lambda function, with a hole in Crossplane\'s permissions closed on the way and the incident the switch caused.',
     page: 'papers/2026-10-16-keyless-cloud-deploys.html',
-    status: { label: 'Lambda keyless', tone: 'done' },
+    status: { label: 'Lambda and ECS keyless', tone: 'done' },
   },
   {
     id: 'forge-registry-portability', kind: 'spec', product: 'hangar', date: '2026-10-15',
@@ -46,7 +46,7 @@ export const papers: Paper[] = [
     title: 'Start the next release record when the last one ships',
     dek: 'A proposal to open Tower\'s Release Record as a live draft the moment the previous release ships, with sign-off before the Flight merge and an outcome after the bake.',
     page: 'papers/2026-10-13-tower-release-record-lifecycle.html',
-    status: { label: 'Proposed · R1 approved', tone: 'info' },
+    status: { label: 'Built · R1 to R4 shipped', tone: 'done' },
   },
   {
     id: 'glidepath-sdlc-review', kind: 'review', product: 'glidepath', date: '2026-10-12',
@@ -60,14 +60,14 @@ export const papers: Paper[] = [
     title: 'Glidepath, from the lab to production',
     dek: 'The companion to the SDLC review: every weakness sorted by cause, and nine items in three lanes so a production install never waits on a feature it doesn\'t need.',
     page: 'papers/2026-10-12-glidepath-production-roadmap.html',
-    status: { label: 'Proposed · 9 items', tone: 'info' },
+    status: { label: 'Under way · T2 and P3 started', tone: 'open' },
   },
   {
     id: 'tower-field-report-2', kind: 'report', product: 'tower', date: '2026-10-11',
     title: 'Tower, judged again as my only console',
     dek: 'Four weeks on: yes for looking, now yes for acting. What still sends me elsewhere is the platform under the console, not a missing button.',
     page: 'papers/2026-10-11-tower-field-report-2.html',
-    status: { label: 'Open · 3 of 16 done', tone: 'open' },
+    status: { label: 'Open · 4 of 16 done', tone: 'open' },
   },
   {
     id: 'autopilot-architecture-map', kind: 'architecture', product: 'autopilot', date: '2026-10-07',
@@ -130,7 +130,7 @@ export const papers: Paper[] = [
     title: 'The Airframe A+ scorecard',
     dek: 'How ready Airframe is for agents to operate, scored by a tool against fourteen checks. Every committed run on one chart.',
     href: 'scorecard/',
-    status: { label: '84 · past the M2 target', tone: 'done' },
+    status: { label: '86.6 · past the M2 target', tone: 'done' },
   },
   {
     id: 'architecture-review', kind: 'review', product: 'hangar', date: '2026-09-27',
@@ -172,7 +172,7 @@ export const papers: Paper[] = [
     title: 'The Airframe A+ program',
     dek: 'What it would take for agents to operate Airframe safely, as milestones the scorecard measures.',
     href: 'docs/hangar/autopilot/airframe-ai-friendly/',
-    status: { label: 'M2 closed · 84 of 100', tone: 'done' },
+    status: { label: 'M2 closed · 86.6 of 100', tone: 'done' },
   },
   {
     id: 'envs-overhaul', kind: 'spec', product: 'glidepath', date: '2026-10-04',

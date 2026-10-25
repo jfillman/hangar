@@ -327,16 +327,16 @@ export const tools: Tool[] = [
   },
   {
     "layer": "ground",
-    "name": "Calico",
+    "name": "Calico and Cilium",
     "role": "Networking and network policy.",
-    "why": "The template installs it before anything else, because a NetworkPolicy is only as real as the CNI enforcing it.",
+    "why": "A kind cluster gets Calico before anything else and a kiac cluster brings Cilium, because a NetworkPolicy is only as real as the CNI enforcing it.",
     "status": "built",
     "src": "https://github.com/jfillman/apron"
   },
   {
     "layer": "ground",
-    "name": "Contour + Gateway API",
-    "role": "Ingress.",
+    "name": "Traefik + Gateway API",
+    "role": "Ingress, through one Gateway Apron installs on every cluster.",
     "why": "Gateway API is where ingress is going, and it separates the platform's listeners from each team's routes.",
     "status": "built",
     "src": "https://github.com/jfillman/apron"
@@ -352,7 +352,7 @@ export const tools: Tool[] = [
   {
     "layer": "ground",
     "name": "Apron template",
-    "role": "One cluster.yaml, one script, a known bootstrap order.",
+    "role": "One cluster.yaml, the apron CLI, a known bootstrap order.",
     "why": "Copying the last cluster's repo and hoping nothing diverged is how the first two clusters drifted apart.",
     "over": "Hand-copied cluster repos",
     "status": "built",

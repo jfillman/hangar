@@ -8,7 +8,7 @@ P = Page(
     'Start the next release record when the last one ships',
     'A proposal to open Tower\'s Release Record as a live draft the moment the previous release ships, move sign-off before the Flight merge, and keep the record open through a bake window, while it stays a sealed, git-backed receipt at the end.',
     '2026-10-13',
-    meta=[('Status', 'proposed; R1 approved to ship on its own, October 13, 2026'),
+    meta=[('Status', 'proposed and R1 approved October 13, 2026; R1 to R4 shipped in Tower v0.67.0 to v0.70.0, October 13 and 14, 2026'),
           ('Grounded in', 'Tower v0.66.0 and Glidepath main, October 13, 2026'),
           ('Docs', '<a href="https://hangarplatform.dev/docs/tower/">Tower docs</a>')],
     lede=('Today a Release Record is a receipt: Tower writes it after an image is already healthy in a Flight '
@@ -17,8 +17,8 @@ P = Page(
           'a sealed, git-backed receipt at the end.'))
 
 P.add("""
-<div class="verdict info">
-  <span class="stamp">Proposed · R1 approved to ship alone</span>
+<div class="verdict ok">
+  <span class="stamp">Built · R1 to R4 shipped in Tower v0.67 to v0.70</span>
   <h2>The record shows up after every decision it could have informed has already been made.</h2>
   <ul>
     <li>The next release's <b>draft</b> opens as soon as the previous one ships, before any PR exists. Open PRs show as incoming, and merged PRs are its scope.</li>

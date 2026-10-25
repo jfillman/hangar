@@ -136,7 +136,7 @@ svg rect[fill="#f2efe9"]{fill:var(--paper)}
   <span class="eyebrow">Airframe · Glidepath · Spec · Keyless cloud deploys</span>
   <h1>No stored AWS key for cloud deploys</h1>
   <p class="prose" style="color:var(--ink-2)">Hangar reached AWS with two access keys: passwords for machines that worked from anywhere until someone deleted them, one of them shared by every app. I wanted them gone, not rotated. Doing that also turned up a way for Crossplane to make itself an AWS administrator, and the switch itself deleted a function before I fixed the composition that allowed it. This page explains all three for someone meeting these ideas for the first time.</p>
-  <div class="meta"><span><b>Spec</b> October 16, 2026</span><span><b>Status</b> phases 0 to 4 live for Lambda, Oct 16, 2026; the old keys are deleted by hand; ECS, then Azure, next</span><span><b>Docs</b> <a target="_top" href="https://hangarplatform.dev/docs/airframe/admin/cloud-credentials/">Airframe cloud credentials</a> · <a target="_top" href="https://hangarplatform.dev/docs/glidepath/admin/cloud-deploy-identity/">Glidepath cloud deploy identity</a></span></div>
+  <div class="meta"><span><b>Spec</b> October 16, 2026</span><span><b>Status</b> phases 0 to 4 live for Lambda, Oct 16, 2026; ECS keyless the same day; the old keys are deleted by hand; Azure next</span><span><b>Docs</b> <a target="_top" href="https://hangarplatform.dev/docs/airframe/admin/cloud-credentials/">Airframe cloud credentials</a> · <a target="_top" href="https://hangarplatform.dev/docs/glidepath/admin/cloud-deploy-identity/">Glidepath cloud deploy identity</a></span></div>
 </header>
 
 
@@ -237,7 +237,8 @@ svg rect[fill="#f2efe9"]{fill:var(--paper)}
     <div class="row"><h3>Phase 2 · Glidepath assumes it</h3><span class="chip c-ok">Live</span><p>The ServiceAccount, the account ConfigMap, the deploy step and promote flows.</p></div>
     <div class="row"><h3>Phase 3 · who may use it</h3><span class="chip c-ok">Live</span><p>Four admission policies, 16 of 16 live cases. The first real deploy showed they also refused Tekton's signing and history services, which only add a note to a run; fixed the same day.</p></div>
     <div class="row"><h3>Phase 4 · retire the key</h3><span class="chip c-ok">Live</span><p>The fallback and the scaffold's AWS secrets are gone, and a test fails the build if the deploy step ever reads a stored key again. The old Infisical keys and IAM users are deleted by hand.</p></div>
-    <div class="row"><h3>ECS, then Azure</h3><span class="chip c-info">Planned</span><p>The same deploy role for ECS after its first live deploy; Azure through workload identity federation.</p></div>
+    <div class="row"><h3>ECS</h3><span class="chip c-ok">Live</span><p>Since Oct 16, 2026 the ECS target composes an ECR repository and a deploy role too, and the deploy assumes it with a ServiceAccount token and copies the image into ECR. No stored key, and no <code>app-secrets</code> mounted.</p></div>
+    <div class="row"><h3>Azure</h3><span class="chip c-info">Planned</span><p>Container Apps still log in with a stored service principal secret. Next: workload identity federation.</p></div>
   </div>
 </section>
 
