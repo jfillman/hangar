@@ -3,6 +3,13 @@ export type Essay = { slug: string; title: string; dek: string; date: string; mi
 
 export const essays: Essay[] = [
   {
+    slug: 'paving-the-cloud',
+    title: 'Paving the cloud',
+    dek: "Airframe can now hand an app a queue, a bucket or a managed PostgreSQL database on AWS or Azure, with the security already on. Why that's the point where a platform stops being a nicer way to talk to Kubernetes: what a paved road to a cloud resource is made of, why the missing field is the policy, why identity is the real road, and what's still open.",
+    date: '2026-10-25',
+    minutes: 10,
+  },
+  {
     slug: 'breaking-the-glass',
     title: 'Breaking the glass',
     dek: "Every platform team gets the pod exec finding, and every attempt to remove exec meets the same pushback. How I kept the capability in Tower and locked it down: a debug container instead of exec, no credential for anyone, a second person on production, six admission policies, a recording of every byte, and an honest grade of how secure it really is.",

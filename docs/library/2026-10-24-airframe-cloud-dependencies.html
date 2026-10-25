@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Managed cloud services an app can depend on, on AWS or Azure</title>
+<meta name="description" content="Three new Airframe kinds give a Hangar app a queue, object storage or a PostgreSQL database run by the cloud provider: what each creates on AWS and Azure, the guardrails with no field to turn them off, how a Lambda function gets access without a key, and what the live run on October 24, 2026 showed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* The Hangar diagram profile (web/src/styles/global.css, tools/diagrams/lib.py): warm paper,
+   ink, amber accent, sky links; Instrument Serif, Geist, Geist Mono. Semantic colours mark
+   severity only. Theme follows the system unless <html data-theme> is set (the site sets it
+   when this page is embedded). */
+:root{
+  color-scheme:light;
+  --ground:#f2efe9; --paper:#fbfaf7; --ink:#1b1f24; --ink-2:#5b6570; --rule:rgba(27,31,36,.14);
+  --accent:#2e7ba6; --accent-soft:#dcebf4; --amber:#b9791f;
+  --ok:#2e7d4f; --ok-bg:#e1efe5; --warn:#9a6212; --warn-bg:#f4e6c9; --bad:#a3352b; --bad-bg:#f5e1dd; --info:#5b6570; --info-bg:#e8e3da;
+  --code-bg:#e8e3da;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+    --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+    --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+    --code-bg:#1b1f24;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#131619; --paper:#1a1e23; --ink:#e8e4dc; --ink-2:#a1aab3; --rule:rgba(232,228,220,.14);
+  --accent:#6fb2d9; --accent-soft:#16262f; --amber:#e8a33d;
+  --ok:#5fae84; --ok-bg:#15291e; --warn:#e8a33d; --warn-bg:#3a2c15; --bad:#ec8d82; --bad-bg:#3a1c19; --info:#a1aab3; --info-bg:#1b1f24;
+  --code-bg:#1b1f24;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:32px 64px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,5vw,2.75rem)}
+h2{font-size:1.9rem;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+h3{font-size:1.3rem}
+p{margin:0}
+section{display:flex;flex-direction:column;gap:16px}
+.prose{max-width:68ch;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+code{font-family:var(--mono);font-size:.85em;background:var(--code-bg);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.85rem;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:500}
+
+.verdict{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--warn);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.verdict .stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);padding:4px 10px;border-radius:3px}
+.verdict h2{border:0;padding:0;font-size:1.8rem}
+.verdict ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+
+.tbl{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--rule)}
+th{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:500;background:var(--ground)}
+tr:last-child td{border-bottom:0}
+td.area{font-weight:600;white-space:nowrap}
+.chip{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.04em;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.c-ok{color:var(--ok);background:var(--ok-bg)} .c-warn{color:var(--warn);background:var(--warn-bg)} .c-bad{color:var(--bad);background:var(--bad-bg)} .c-info{color:var(--info);background:var(--info-bg)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.card h3{font-size:1rem;font-family:var(--sans);font-weight:600}
+.card p{font-size:.92rem;color:var(--ink-2)}
+
+.finding{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);border-radius:4px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.finding.sev-high{border-left-color:var(--bad)} .finding.sev-med{border-left-color:var(--warn)} .finding.sev-low{border-left-color:var(--info)}
+.finding .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.finding .id{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.finding h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;flex:1 1 300px}
+.finding p{font-size:.94rem}
+.ev{font-size:.84rem;color:var(--ink-2)}
+.ev b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin-right:6px}
+.flist{display:flex;flex-direction:column;gap:10px}
+
+.recs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.rec{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.rec h3{display:flex;align-items:center;gap:8px}
+.rec ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:.92rem}
+.rec li b{font-weight:600}
+
+.gates{counter-reset:g;display:flex;flex-direction:column;gap:0;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.gate{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+.gate:last-child{border-bottom:0}
+.gate .n{font-family:var(--mono);font-size:.85rem;color:var(--accent);background:var(--accent-soft);border-radius:4px;height:28px;display:flex;align-items:center;justify-content:center}
+.gate p{font-size:.94rem}
+.gate .when{font-size:.82rem;color:var(--ink-2)}
+
+.phase{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.note{font-size:.85rem;color:var(--ink-2)}
+ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:16px}
+
+.fig{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.fig .scroll{overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:600px;max-width:760px;height:auto;margin:0 auto}
+.fig figcaption{font-size:.85rem;color:var(--ink-2)}
+.fig figcaption b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;color:var(--amber);margin-right:6px}
+.stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:3px}
+.verdict.ok{border-top-color:var(--ok)} .verdict.ok .stamp{color:var(--ok);background:var(--ok-bg)}
+.verdict.info{border-top-color:var(--accent)} .verdict.info .stamp{color:var(--accent);background:var(--accent-soft)}
+.verdict.bad{border-top-color:var(--bad)} .verdict.bad .stamp{color:var(--bad);background:var(--bad-bg)}
+.track{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.track .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;padding:14px 16px;border-bottom:1px solid var(--rule);align-items:baseline}
+.track .row:last-child{border-bottom:0}
+.track .row h3{font-family:var(--sans);font-size:1rem;font-weight:600}
+.track .row p{grid-column:1/-1;font-size:.92rem;color:var(--ink-2)}
+.track .row .chip{justify-self:end}
+.quote{border-left:3px solid var(--amber);padding:4px 0 4px 16px;font-family:var(--serif);font-size:1.35rem;line-height:1.3}
+p.prose{display:block}
+@media (max-width:560px){.track .row{grid-template-columns:1fr}.track .row .chip{justify-self:start}}
+
+svg rect[fill="#f2efe9"]{fill:var(--paper)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) svg [fill="#1b1f24"]{fill:#e8e4dc}:root:not([data-theme=light]) svg [fill="#2e7ba6"]{fill:#6fb2d9}:root:not([data-theme=light]) svg [fill="#5b6570"]{fill:#a1aab3}:root:not([data-theme=light]) svg [fill="#838b93"]{fill:#7f8891}:root:not([data-theme=light]) svg [fill="#b9791f"]{fill:#e8a33d}:root:not([data-theme=light]) svg [fill="#ffffff"]{fill:#1c2127}:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.05)"]{fill:rgba(232,163,61,0.065)}:root:not([data-theme=light]) svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.03)"]{fill:rgba(232,228,220,0.03)}:root:not([data-theme=light]) svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root:not([data-theme=light]) svg [fill="rgba(91,101,112,0.10)"]{fill:rgba(161,170,179,0.1)}:root:not([data-theme=light]) svg [stroke="#1b1f24"]{stroke:#e8e4dc}:root:not([data-theme=light]) svg [stroke="#2e7ba6"]{stroke:#6fb2d9}:root:not([data-theme=light]) svg [stroke="#5b6570"]{stroke:#a1aab3}:root:not([data-theme=light]) svg [stroke="#838b93"]{stroke:#7f8891}:root:not([data-theme=light]) svg [stroke="#b9791f"]{stroke:#e8a33d}:root:not([data-theme=light]) svg [stroke="rgba(185,121,31,0.50)"]{stroke:rgba(232,163,61,0.65)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}:root:not([data-theme=light]) svg [stroke="rgba(27,31,36,0.30)"]{stroke:rgba(232,228,220,0.3)}}
+:root[data-theme=dark] svg [fill="#1b1f24"]{fill:#e8e4dc}:root[data-theme=dark] svg [fill="#2e7ba6"]{fill:#6fb2d9}:root[data-theme=dark] svg [fill="#5b6570"]{fill:#a1aab3}:root[data-theme=dark] svg [fill="#838b93"]{fill:#7f8891}:root[data-theme=dark] svg [fill="#b9791f"]{fill:#e8a33d}:root[data-theme=dark] svg [fill="#ffffff"]{fill:#1c2127}:root[data-theme=dark] svg [fill="rgba(185,121,31,0.05)"]{fill:rgba(232,163,61,0.065)}:root[data-theme=dark] svg [fill="rgba(185,121,31,0.08)"]{fill:rgba(232,163,61,0.104)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.02)"]{fill:rgba(232,228,220,0.02)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.03)"]{fill:rgba(232,228,220,0.03)}:root[data-theme=dark] svg [fill="rgba(27,31,36,0.05)"]{fill:rgba(232,228,220,0.05)}:root[data-theme=dark] svg [fill="rgba(91,101,112,0.10)"]{fill:rgba(161,170,179,0.1)}:root[data-theme=dark] svg [stroke="#1b1f24"]{stroke:#e8e4dc}:root[data-theme=dark] svg [stroke="#2e7ba6"]{stroke:#6fb2d9}:root[data-theme=dark] svg [stroke="#5b6570"]{stroke:#a1aab3}:root[data-theme=dark] svg [stroke="#838b93"]{stroke:#7f8891}:root[data-theme=dark] svg [stroke="#b9791f"]{stroke:#e8a33d}:root[data-theme=dark] svg [stroke="rgba(185,121,31,0.50)"]{stroke:rgba(232,163,61,0.65)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.16)"]{stroke:rgba(232,228,220,0.16)}:root[data-theme=dark] svg [stroke="rgba(27,31,36,0.30)"]{stroke:rgba(232,228,220,0.3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Airframe · Spec · Cloud dependencies</span>
+  <h1>Managed cloud services an app can depend on, on AWS or Azure</h1>
+  <p class="prose" style="color:var(--ink-2)">Until now an app on a cloud target could run in the cloud, but whatever it depended on had to come from somewhere else. Three new kinds in <code>catalog.hangar.io/v1alpha1</code> close that: a queue, object storage and a PostgreSQL database, each run by the cloud provider. You ask for one the way you ask for a cloud target, with a manifest in the app's <code>xr-requests/</code>, and you delete it the same way. One field picks the cloud. Everything else means the same thing on both.</p>
+  <div class="meta"><span><b>Spec</b> October 24, 2026</span><span><b>Status</b> AWS verified live, Oct 24, 2026; Azure render-tested, never run</span><span><b>Version</b> Airframe v0.3.165 · airframe#123, #124, #125</span><span><b>Docs</b> <a target="_top" href="https://hangarplatform.dev/docs/airframe/user/cloud-dependencies/">Cloud dependencies</a> · <a target="_top" href="https://hangarplatform.dev/docs/airframe/admin/cloud-credentials/">Airframe cloud credentials</a></span></div>
+</header>
+
+
+<div class="verdict ok">
+  <span class="stamp">AWS verified live · Oct 24, 2026</span>
+  <h2>A queue, a bucket and a database, asked for in git, with the guardrails already on.</h2>
+  <ul>
+    <li><b>One request, the right pieces.</b> <code>spec.cloud</code> is <code>aws</code> by default or <code>azure</code>, fixed at creation. The composition creates every supporting piece and deletes all of them with the XR.</li>
+    <li><b>Private and encrypted, with no field to change that.</b> No bucket can be made public, nothing is stored unencrypted, and the database refuses plaintext connections.</li>
+    <li><b>Grants, not keys.</b> On AWS a Lambda function gets a policy on its own role for this one queue or bucket, capped by the permissions boundary.</li>
+    <li><b>Status a script can branch on.</b> One condition, <code>DependencyReady</code>, with a fixed set of reasons.</li>
+  </ul>
+</div>
+
+<section>
+  <h2>Three kinds</h2>
+  <div class="cards">
+    <div class="card"><span class="eyebrow">Amazon SQS · Service Bus</span><h3>MessageQueue</h3><p>A durable queue with a dead-letter queue. On AWS it can trigger a Lambda function.</p></div>
+    <div class="card"><span class="eyebrow">Amazon S3 · Storage Account</span><h3>ObjectStorage</h3><p>A private, encrypted bucket for files and blobs, with access for Lambda functions.</p></div>
+    <div class="card"><span class="eyebrow">Amazon RDS · Flexible Server</span><h3>ManagedPostgreSQL</h3><p>One PostgreSQL database, TLS only, reachable only from the networks you list.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>One request, the right pieces on each cloud</h2>
+  <div class="prose"><p><code>spec.cloud</code> is <code>aws</code> by default and can't change after creation. The composition creates every supporting piece, and deletes all of them with the XR.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Kind</th><th>On AWS</th><th>On Azure</th></tr></thead>
+    <tbody><tr><td class="area">MessageQueue</td><td><ul class="plain"><li>SQS queue, server-side encryption with SQS-owned keys</li><li>Dead-letter queue <code>&lt;name&gt;-dlq</code>, kept 14 days</li><li>Per consumer: an IAM grant, and an event source mapping if it's a trigger</li></ul></td><td><ul class="plain"><li>Resource group, owned by the XR</li><li>Service Bus namespace (Basic) and queue</li><li>A listen and send policy for this queue only</li></ul></td></tr><tr><td class="area">ObjectStorage</td><td><ul class="plain"><li>S3 bucket</li><li>Block Public Access, ownership enforced, SSE-S3</li><li>Optional versioning</li><li>Per consumer: an IAM grant</li></ul></td><td><ul class="plain"><li>Resource group, owned by the XR</li><li>StorageV2 account, TLS 1.2, HTTPS only</li><li>One private blob container</li></ul></td></tr><tr><td class="area">ManagedPostgreSQL</td><td><ul class="plain"><li>Its own VPC, two subnets in two zones</li><li>Security group, one rule per allowed CIDR</li><li>RDS for PostgreSQL 16 or 17, encrypted</li></ul></td><td><ul class="plain"><li>Resource group, owned by the XR</li><li>Flexible Server and its database</li><li>One firewall rule per allowed CIDR</li></ul></td></tr></tbody>
+  </table></div>
+  <p class="note">Key fields:</p>
+  <ul class="plain"><li><b>MessageQueue</b>: <code>queueName</code>, <code>fifo</code>, <code>lockSeconds</code>, <code>retentionSeconds</code>, <code>deadLetter</code>, <code>consumers[]</code></li><li><b>ObjectStorage</b>: <code>bucketName</code>, <code>versioning</code>, <code>emptyOnDelete</code>, <code>consumers[]</code></li><li><b>ManagedPostgreSQL</b>: <code>size</code>, <code>version</code>, <code>storageGiB</code>, <code>databaseName</code>, <code>allowedCidrs</code>, <code>protect</code></li></ul>
+</section>
+
+<section>
+  <h2>Guardrails you get without asking</h2>
+  <div class="prose"><p>None of these has a field to turn it off. That's deliberate: the absence of the field is the policy.</p></div>
+  <div class="cards">
+    <div class="card"><span class="eyebrow">All kinds</span><h3>Private by default</h3><p>No field makes a bucket public. All four S3 public-access blocks are on and ACLs are disabled. An Azure account allows no public blobs. A database admits no network until <code>allowedCidrs</code> lists one.</p></div>
+    <div class="card"><span class="eyebrow">All kinds</span><h3>Encrypted, TLS only</h3><p>Queues, buckets and database storage are encrypted at rest. PostgreSQL refuses plaintext connections on both clouds. Storage accepts only HTTPS with TLS 1.2 or later.</p></div>
+    <div class="card"><span class="eyebrow">Consumers</span><h3>No access keys on AWS</h3><p>A Lambda consumer gets an inline policy on its own execution role for this one queue or bucket. The <code>HangarCloudTargetBoundary</code> permissions boundary caps every grant.</p></div>
+    <div class="card"><span class="eyebrow">Deletion</span><h3>No accidental data loss</h3><p>A bucket that holds objects is kept unless <code>emptyOnDelete</code> is set. Azure always deletes contents, so it has to say so. <code>protect</code> adds RDS deletion protection and a final snapshot.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>How a Lambda function gets access</h2>
+  <div class="prose"><p>List an <code>AwsLambdaTarget</code> in <code>consumers[]</code>. The composition looks it up in the same namespace and writes a scoped policy onto that function's execution role. With <code>trigger: true</code> it also connects the queue to the function.</p></div>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 372" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="airframe-cloud-dependencies-f1-t airframe-cloud-dependencies-f1-d"><title id="airframe-cloud-dependencies-f1-t">Grants and triggers, not keys</title><desc id="airframe-cloud-dependencies-f1-d">On the dev cluster, a MessageQueue XR named baggage-scans lists the AwsLambdaTarget baggage-api as a consumer. The composition looks the target up, creates an encrypted SQS queue with a dead-letter queue in AWS, connects the queue to the Lambda function with an event source mapping, and writes an inline policy for this queue only onto the function&#x27;s execution role, inside the permissions boundary. Messages that fail N times move to the dead-letter queue.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><rect x="24" y="24" width="224" height="300" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="36" y="28" width="208" height="12" rx="2" fill="#f2efe9"/><text x="140.0" y="37" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">DEV CLUSTER · APP-BAGGAGE-API-CICD</text><rect x="264" y="24" width="472" height="300" rx="8" fill="rgba(27,31,36,0.02)" stroke="rgba(27,31,36,0.16)" stroke-width="0.8"/><rect x="276" y="28" width="152" height="12" rx="2" fill="#f2efe9"/><text x="352.0" y="37" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">AWS ACCOUNT · ONE REGION</text><rect x="528" y="220" width="200" height="96" rx="8" fill="rgba(185,121,31,0.05)" stroke="rgba(185,121,31,0.50)" stroke-width="1" stroke-dasharray="4,4"/><text x="628" y="308" fill="#b9791f" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">PERMISSIONS BOUNDARY</text><path d="M228,92 L280,92" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="230" y="74" width="48" height="12" rx="2" fill="#f2efe9"/><text x="254.0" y="83" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">CREATES</text><path d="M464,92 L536,92" fill="none" stroke="#2e7ba6" stroke-width="1.2" marker-end="url(#arrow-link)"/><rect x="472" y="74" width="56" height="12" rx="2" fill="#f2efe9"/><text x="500.0" y="83" fill="#2e7ba6" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">TRIGGERS</text><path d="M374,120 L374,228" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><rect x="382" y="168.0" width="84" height="12" rx="2" fill="#f2efe9"/><text x="424.0" y="177.0" fill="#b9791f" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">AFTER N TRIES</text><path d="M628,232 L628,124" fill="none" stroke="#5b6570" stroke-width="1.2" marker-end="url(#arrow)"/><rect x="636" y="172.0" width="48" height="12" rx="2" fill="#f2efe9"/><text x="660.0" y="181.0" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">RUNS AS</text><path d="M134,120 L134,228" fill="none" stroke="#5b6570" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/><rect x="142" y="168.0" width="56" height="12" rx="2" fill="#f2efe9"/><text x="170.0" y="177.0" fill="#838b93" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">LOOKS UP</text><path d="M134,288 L134,336 Q134,344 142,344 L620,344 Q628,344 628,336 L628,280" fill="none" stroke="#b9791f" stroke-width="1.2" marker-end="url(#arrow-accent)"/><rect x="293" y="326" width="176" height="12" rx="2" fill="#f2efe9"/><text x="381.0" y="335" fill="#b9791f" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">A GRANT ON ITS ROLE, NOT A KEY</text><rect x="40" y="64" width="188" height="56" rx="6" fill="#f2efe9"/><rect x="40" y="64" width="188" height="56" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="134.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">MessageQueue</text><text x="134.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">baggage-scans · the XR</text><rect x="40" y="232" width="188" height="56" rx="6" fill="#f2efe9"/><rect x="40" y="232" width="188" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="134.0" y="258.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">AwsLambdaTarget</text><text x="134.0" y="274.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">baggage-api</text><rect x="284" y="64" width="180" height="56" rx="6" fill="#f2efe9"/><rect x="284" y="64" width="180" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="374.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">SQS queue</text><text x="374.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">encrypted · redrive</text><rect x="284" y="232" width="180" height="56" rx="6" fill="#f2efe9"/><rect x="284" y="232" width="180" height="56" rx="6" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="374.0" y="258.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Dead-letter queue</text><text x="374.0" y="274.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">baggage-scans-dlq</text><rect x="540" y="64" width="180" height="56" rx="6" fill="#f2efe9"/><rect x="540" y="64" width="180" height="56" rx="6" fill="rgba(27,31,36,0.03)" stroke="rgba(27,31,36,0.30)" stroke-width="1"/><text x="630.0" y="90.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Lambda function</text><text x="630.0" y="106.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">invoked with batches</text><rect x="540" y="232" width="176" height="48" rx="6" fill="#f2efe9"/><rect x="540" y="232" width="176" height="48" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="628.0" y="254.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">baggage-api-exec</text><text x="628.0" y="270.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">inline policy · this queue</text></svg></div><figcaption><b>Figure 1</b>ObjectStorage works the same way, without the trigger. Removing a consumer removes its grant and its trigger. A consumer that names a target that doesn't exist, or one in another region, gets nothing, and the status says which.</figcaption></figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Kind</th><th>access</th><th>Actions, on this queue or bucket only</th></tr></thead>
+    <tbody>
+      <tr><td class="area">MessageQueue</td><td><code>send</code></td><td><code>SendMessage</code></td></tr>
+      <tr><td class="area"></td><td><code>receive</code></td><td><code>ReceiveMessage</code>, <code>DeleteMessage</code>, <code>ChangeMessageVisibility</code></td></tr>
+      <tr><td class="area"></td><td><code>sendReceive</code></td><td>Both of the above (the default). Every queue grant also includes <code>GetQueueAttributes</code> and <code>GetQueueUrl</code>.</td></tr>
+      <tr><td class="area">ObjectStorage</td><td><code>read</code></td><td><code>ListBucket</code>, <code>GetBucketLocation</code>, <code>GetObject</code></td></tr>
+      <tr><td class="area"></td><td><code>readWrite</code></td><td>Also <code>PutObject</code>, <code>DeleteObject</code> and multipart uploads (the default)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Request one</h2>
+  <div class="prose"><p>Put the manifest in <code>tenants/&lt;app&gt;/xr-requests/</code> of the dev cluster's tenants repo. It lands in <code>app-&lt;app&gt;-cicd</code> on the dev cluster, where the cloud providers run. These are not <code>components:</code> entries. Here is Skyport's baggage-api asking for all three.</p></div>
+  <div class="tbl"><pre style="margin:0;padding:14px 16px;font-family:var(--mono);font-size:.8rem;line-height:1.5">apiVersion: catalog.hangar.io/v1alpha1
+kind: MessageQueue
+metadata:
+  name: baggage-scans
+spec:
+  lockSeconds: 60              # at least the function's timeout, for a trigger
+  deadLetter:
+    maxReceiveCount: 5         # then the message moves to baggage-scans-dlq
+  consumers:
+    - awsLambdaTarget: baggage-api   # an AwsLambdaTarget in the same namespace
+      access: receive
+      trigger: true                  # the queue invokes the function
+      batchSize: 10
+---
+apiVersion: catalog.hangar.io/v1alpha1
+kind: ObjectStorage
+metadata:
+  name: baggage-exports
+spec:
+  bucketName: skyport-baggage-exports   # S3 names are global across AWS
+  versioning: true
+  consumers:
+    - awsLambdaTarget: baggage-api
+      access: readWrite
+---
+apiVersion: catalog.hangar.io/v1alpha1
+kind: ManagedPostgreSQL
+metadata:
+  name: baggage-db
+spec:
+  size: small                 # db.t4g.micro on AWS, B_Standard_B1ms on Azure
+  version: "17"
+  storageGiB: 32
+  allowedCidrs:               # empty admits no one
+    - 203.0.113.0/24
+  protect: true               # deletion protection + final snapshot (AWS)</pre></div>
+  <p class="note">On Azure the same ObjectStorage says <code>cloud: azure</code>, a <code>location</code>, and <code>emptyOnDelete: true</code>, which Azure requires because it deletes an account with its contents. It creates a resource group, a storage account and one private container, and consumers read the connection string from the <code>&lt;name&gt;-credentials</code> Secret.</p>
+</section>
+
+<section>
+  <h2>What an app reads</h2>
+  <div class="prose"><p>Two objects, with the same names on every kind, both in the XR's own namespace. The XR's <code>status</code> repeats the non-secret values.</p></div>
+  <div class="cards">
+    <div class="card"><span class="eyebrow">ConfigMap</span><h3>&lt;name&gt;-connection</h3><p>Everything that isn't secret, written by the composition. A queue's name and endpoint (plus its ARN, region and dead-letter URL on AWS); a bucket's name and endpoint; a database's host, port, database, username and <code>sslmode</code>.</p></div>
+    <div class="card"><span class="eyebrow">Secret</span><h3>&lt;name&gt;-credentials</h3><p>Written by the cloud provider, never by the composition, and never in git. The database password, generated by the provider; on Azure, the queue's or account's connection string. On AWS a queue or bucket has no Secret at all: access is the consumer's role.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>DependencyReady, with a fixed set of reasons</h2>
+  <div class="prose"><p>Each kind reports one condition of its own beside Crossplane's <code>Ready</code> and <code>Synced</code>. Each reason has exactly one meaning, so a script or an agent can branch on it.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Reason</th><th>State</th><th>Means</th></tr></thead>
+    <tbody><tr><td class="area"><code>…Ready</code></td><td><span class="chip c-ok">Ready</span></td><td>Every piece is ready. The connection details are in the ConfigMap.</td></tr><tr><td class="area"><code>…Provisioning</code></td><td><span class="chip c-info">Working</span></td><td>Something is still being created. The message names what is pending.</td></tr><tr><td class="area"><code>…ConsumerUnresolved</code></td><td><span class="chip c-warn">Attention</span></td><td>Queue or storage only. It's ready, but a <code>consumers[]</code> entry names no target here, or one in another region.</td></tr><tr><td class="area"><code>MessageQueueNeedsAwsAccount</code></td><td><span class="chip c-warn">Attention</span></td><td>The cluster registry names no AWS account, so the queue's ARN is unknown and nothing is created.</td></tr><tr><td class="area"><code>ManagedPostgreSQLFailing</code></td><td><span class="chip c-bad">Failing</span></td><td>The provider can't create the server: a taken name, a quota, an unavailable instance class. The message carries its error.</td></tr></tbody>
+  </table></div>
+  <figure class="fig"><div class="scroll"><svg viewBox="0 0 760 196" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="airframe-cloud-dependencies-f2-t airframe-cloud-dependencies-f2-d"><title id="airframe-cloud-dependencies-f2-t">The life of a cloud dependency</title><desc id="airframe-cloud-dependencies-f2-d">Five steps: commit the XR into the app&#x27;s xr-requests folder; the composition creates every piece; DependencyReady reports with a fixed set of reasons; the app reads a ConfigMap and, where there is one, a Secret, both named after the XR; deleting the file removes all of it.</desc><defs><marker id="arrow-open" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polyline points="0 0, 8 3, 0 6" fill="none" stroke="#5b6570" stroke-width="1.2"/></marker><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#5b6570"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b9791f"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e7ba6"/></marker></defs><rect width="100%" height="100%" fill="#f2efe9"/><rect x="24" y="40" width="136" height="56" rx="6" fill="#f2efe9"/><rect x="24" y="40" width="136" height="56" rx="6" fill="rgba(91,101,112,0.10)" stroke="#838b93" stroke-width="1"/><text x="92.0" y="66.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Commit the XR</text><text x="92.0" y="82.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">xr-requests/ in git</text><rect x="168" y="40" width="136" height="56" rx="6" fill="#f2efe9"/><rect x="168" y="40" width="136" height="56" rx="6" fill="rgba(185,121,31,0.08)" stroke="#b9791f" stroke-width="1"/><text x="236.0" y="66.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Composition</text><text x="236.0" y="82.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">creates every piece</text><path d="M160,68 L167,68" fill="none" stroke="#b9791f" stroke-width="1.2"/><rect x="312" y="40" width="136" height="56" rx="6" fill="#f2efe9"/><rect x="312" y="40" width="136" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="380.0" y="66.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">DependencyReady</text><text x="380.0" y="82.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">a fixed set of reasons</text><path d="M304,68 L311,68" fill="none" stroke="#5b6570" stroke-width="1.2"/><rect x="456" y="40" width="136" height="56" rx="6" fill="#f2efe9"/><rect x="456" y="40" width="136" height="56" rx="6" fill="rgba(27,31,36,0.05)" stroke="#5b6570" stroke-width="1"/><text x="524.0" y="66.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">App reads it</text><text x="524.0" y="82.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">a ConfigMap, a Secret</text><path d="M448,68 L455,68" fill="none" stroke="#5b6570" stroke-width="1.2"/><rect x="600" y="40" width="136" height="56" rx="6" fill="#f2efe9"/><rect x="600" y="40" width="136" height="56" rx="6" fill="#ffffff" stroke="#1b1f24" stroke-width="1"/><text x="668.0" y="66.0" fill="#1b1f24" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Delete the file</text><text x="668.0" y="82.0" fill="#5b6570" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">removes all of it</text><path d="M592,68 L599,68" fill="none" stroke="#5b6570" stroke-width="1.2"/><text x="24" y="136" fill="#5b6570" font-size="11" font-weight="400" font-family="'Geist', system-ui, sans-serif" text-anchor="start">A queue or a bucket is ready in under a minute. A new database takes 5 to 15 minutes.</text><text x="24" y="156" fill="#5b6570" font-size="11" font-weight="400" font-family="'Geist', system-ui, sans-serif" text-anchor="start">A bucket with objects in it is kept unless emptyOnDelete says otherwise; protect adds RDS deletion protection.</text></svg></div><figcaption><b>Figure 2</b>The same lifecycle as every other Airframe request, so a person, a Backstage form or an agent asks for a database exactly the way it asks for a function.</figcaption></figure>
+</section>
+
+<section>
+  <h2>What was verified</h2>
+  <div class="prose"><p>On October 24, 2026, on the dev cluster against Hangar's AWS account, a throwaway Lambda target and one of each kind were requested through the tenants repo, checked, then removed the same way.</p></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Check</th><th>Result</th><th>What I saw</th></tr></thead>
+    <tbody><tr><td class="area">Ready</td><td><span class="chip c-ok">Pass</span></td><td>Queue, bucket and Lambda target ready in about 4 minutes, the database in about 7. <code>airframe-verify</code> passed every step for each kind.</td></tr><tr><td class="area">Grants</td><td><span class="chip c-ok">Pass</span></td><td>The IAM policy simulator, boundary included, allowed this queue and this bucket, and denied any other.</td></tr><tr><td class="area">Trigger</td><td><span class="chip c-ok">Pass</span></td><td>One message invoked the function twice, matching <code>maxReceiveCount: 2</code>. Both runs failed on purpose, because the placeholder image has no handler, and the message moved to the dead-letter queue.</td></tr><tr><td class="area">Bucket</td><td><span class="chip c-ok">Pass</span></td><td>All four public-access blocks on, ownership enforced. An object written and read back was encrypted with AES256.</td></tr><tr><td class="area">Database</td><td><span class="chip c-ok">Pass</span></td><td>PostgreSQL 17.9 on db.t4g.micro, encrypted, admitting one /32. <code>psql</code> connected over TLS 1.3. A connection with <code>sslmode=disable</code> was refused.</td></tr><tr><td class="area">Teardown</td><td><span class="chip c-ok">Pass</span></td><td>Removing the file deleted the queues, the bucket and its object, the instance, the VPC, the function, the repository, the roles and the password Secret. No snapshot was left.</td></tr></tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Limits to plan around</h2>
+  <div class="prose"><p>Airframe's known gaps 8 to 10, written down rather than discovered later.</p></div>
+  <div class="cards">
+    <div class="card"><span class="eyebrow">Gap 8</span><h3>Lambda is the only consumer</h3><p>An ECS service has no task role for app code yet. A Kubernetes app has no cloud identity. Azure consumers use the connection string.</p></div>
+    <div class="card"><span class="eyebrow">Gap 9</span><h3>The database is public-endpoint only</h3><p>A Lambda function outside a VPC has no fixed address, so reaching the database means <code>0.0.0.0/0</code>, with the password and TLS as the protection. There is no separate app role yet.</p></div>
+    <div class="card"><span class="eyebrow">Gap 10</span><h3>Azure hasn't run</h3><p>The Azure compositions are render-tested and schema-checked, but their three providers aren't installed on the dev cluster yet.</p></div>
+  </div>
+</section>
+
+
+<footer>Managed cloud services an app can depend on, on AWS or Azure · October 24, 2026 · Part of the Hangar library at hangarplatform.dev/library/</footer>
+
+</div>
+</body>
+</html>
