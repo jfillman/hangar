@@ -28,6 +28,13 @@ export const KIND_BLURBS: Record<Kind, string> = {
 
 export const papers: Paper[] = [
   {
+    id: 'airframe-cloud-dependencies', kind: 'spec', product: 'airframe', date: '2026-10-24',
+    title: 'Managed cloud services an app can depend on',
+    dek: 'Three new Airframe kinds give an app a queue, object storage or a PostgreSQL database run by AWS or Azure: what each creates on both clouds, the guardrails with no field to turn them off, how a Lambda function gets access without a key, and what the live run showed.',
+    page: 'papers/2026-10-24-airframe-cloud-dependencies.html',
+    status: { label: 'AWS live · Azure not run', tone: 'done' },
+  },
+  {
     id: 'keyless-cloud-deploys', kind: 'spec', product: 'glidepath', date: '2026-10-16',
     title: 'No stored AWS key for cloud deploys',
     dek: 'Two never-expiring AWS keys replaced by one-hour roles a pod earns by proving who it is, one per Lambda function, with a hole in Crossplane\'s permissions closed on the way and the incident the switch caused.',
