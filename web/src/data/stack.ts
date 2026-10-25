@@ -1,5 +1,5 @@
 // The Hangar tech stack: layers, tools, and why each one is there. Drawn on the homepage (FlightPath) and on /stack/.
-// Verified against the repos on 2026-09-27: apron's bootstrap groups, airframe's XRDs and compositions, glidepath's
+// Verified against the repos on 2026-09-27 (ground and observability layers again on 2026-10-25): apron's bootstrap groups, airframe's XRDs and compositions, glidepath's
 // catalog tasks and ADRs, and autopilot's README. Keep each status honest when the platform changes.
 import type { Status } from './principles';
 
@@ -403,24 +403,24 @@ export const tools: Tool[] = [
   {
     "layer": "observe",
     "name": "OpenTelemetry",
-    "role": "Traces every change from commit to release.",
-    "why": "One trace per flow means a slow release has an answer, not a guess.",
+    "role": "Traces every change from commit to release, and every app's calls at runtime.",
+    "why": "One trace per flow means a slow release has an answer, not a guess. The OpenTelemetry Operator injects the right agent into Node.js, Java and Python apps from their Airframe kind, so apps get traced with no code change, and Tower's Airspace draws who really calls whom.",
     "status": "built",
-    "src": "https://github.com/jfillman/glidepath"
+    "src": "https://github.com/jfillman/glidepath/blob/main/docs/admin/tracing.md"
   },
   {
     "layer": "observe",
     "name": "Prometheus + Thanos",
-    "role": "Metrics, kept long enough to matter.",
-    "why": "The standard, with Thanos so DORA and SLO history survive past local retention.",
+    "role": "Metrics on every cluster, kept long enough to matter, read in one place.",
+    "why": "The standard, with Thanos so DORA and SLO history survive past local retention. Every cluster labels its metrics with its name, the prod cluster sends its trace metrics to the hub's Thanos, and Tower reads the whole fleet from there.",
     "status": "built",
     "src": "https://github.com/jfillman/apron"
   },
   {
     "layer": "observe",
     "name": "Loki + Tempo",
-    "role": "Logs and traces.",
-    "why": "Same query model and same Grafana as the metrics, so one place to look.",
+    "role": "Logs and traces, and the service graph built from them.",
+    "why": "Same query model and same Grafana as the metrics, so one place to look. Tempo turns client and server spans into service-graph metrics, which is where Airspace's connections come from.",
     "status": "built",
     "src": "https://github.com/jfillman/apron"
   },

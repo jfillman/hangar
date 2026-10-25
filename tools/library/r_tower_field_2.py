@@ -68,7 +68,7 @@ def tier(name, items):
 
 backlog = tier('Quick wins', [
     ('Close the Kubernetes proxy hole first', 'The read token behind the portal could do far more than read, and any signed-in user could reach it through a generic proxy. Phase 0 of the credentials spec closed it.', 'done'),
-    ('Give Flight environments a Prometheus to read', 'Until then SLOs, pod metrics and canary analysis are empty for exactly the environments an owner cares about.', 'open'),
+    ('Give Flight environments a Prometheus to read', 'Until then SLOs, pod metrics and canary analysis are empty for exactly the environments an owner cares about. The prod profile now runs Prometheus and tracing, and Tower reads every cluster through the hub\'s Thanos.', 'done Oct 23, 2026'),
     ('Decide on scale, then close the question', 'Durable scale already exists as a values PR. My recommendation: no runtime scale, and say so.', 'open'),
     ('Finish break-glass hygiene on Flight', 'A signed debug image, an image policy scoped to debug containers, and a cleanup backstop in the cluster.', 'open'),
     ('Confirm the image cleanup token really synced', 'If it never did, the Images tab\'s one write action is dead on prod.', 'open'),
@@ -84,7 +84,7 @@ backlog = tier('Quick wins', [
     ('A GitHub organization, Apps and SSO', 'Retire the personal token, generate rulesets so gates block for real, and put sign-in in front of everything.', 'open'),
     ('Backup, restore, and a drill', 'Cluster state, databases, the audit bucket and the secrets store\'s root key. One drill a quarter.', 'open'),
     ('A production-readiness scorecard', 'The Airframe scorecard climbed because it was measured every week. Give SSO, DR and platform SLOs the same treatment.', 'open'),
-    ('Cloud targets to parity, or labelled preview', 'One live Lambda smoke test; the other targets are render-tested only.', 'open'),
+    ('Cloud targets to parity, or labelled preview', 'One live Lambda smoke test; the other targets are render-tested only. Since then Lambda and ECS have been tested end to end, with no stored key; Azure Container Apps is next.', 'open'),
 ])
 
 P.add(f"""

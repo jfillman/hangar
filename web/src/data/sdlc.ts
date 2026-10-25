@@ -29,7 +29,7 @@ export const stages: Stage[] = [
     body: [
       'Good platforms start with a shared understanding of what "good" looks like. When that lives in people\'s heads, every team ends up guessing, and the platform spends years quietly cleaning up after the guesses.',
       'Most platform drift starts at design time: every team decides for itself what a "service" is, and the platform spends years reconciling the differences. Hangar settles it once. Airframe\'s XRDs are the definition of a compliant service, and every other part of the platform (the portal, the pipeline, the chart, the agents) consumes that one contract rather than restating it.',
-      'Decisions are written down as they are made, dated, and never quietly rewritten. Glidepath has seventeen architecture decision records; Hangar\'s design docs are kept as dated narrative on purpose, including the first attempts that did not survive contact with a real cluster. Every claim carries a status (Built, Draft or Proposal), so a reader always knows whether they are looking at the platform or at a plan.',
+      'Decisions are written down as they are made, dated, and never quietly rewritten. Glidepath has twenty-seven architecture decision records; Hangar\'s design docs are kept as dated narrative on purpose, including the first attempts that did not survive contact with a real cluster. Every claim carries a status (Built, Draft or Proposal), so a reader always knows whether they are looking at the platform or at a plan.',
     ],
     evidence: [
       { text: 'Service catalog design: the running log behind Airframe', status: 'built', href: gh('hangar', 'docs/service-catalog-design.md') },
@@ -113,12 +113,19 @@ export const stages: Stage[] = [
     themes: ['paved-roads', 'honest'],
     body: [
       'Security works best when people barely notice it. If doing the right thing takes extra steps, people will eventually skip them, so the safe path has to be the default path.',
-      'Governance gates (SAST, image scanning, policy, SBOM) exist from day one as explicit extension points, and any gate that is still a stub says so loudly in its result and on the dashboard. Each is promoted to real enforcement on its own, and none is ever reported with more confidence than it has earned.',
+      'Every release PR meets the same gates, listed in one registry: static analysis (Semgrep), an image scan (Trivy), provenance (the commit signature plus the SLSA attestation, checked by Conforma), the SBOM, values validation, a change request in the company\'s change tool (ServiceNow, or any tool behind a webhook), API compatibility against the spec the target environment runs, and a check ride read from the test evidence signed onto the image. Two of them, the check ride and API compatibility, report without blocking until every app is ready for them, and say so. The change request gate is a stub until a cluster names a change tool, and admission-policy validation is still a stub, and a stub says so loudly in its result and on the dashboard. Each gate is promoted to real enforcement on its own, and none is ever reported with more confidence than it has earned.',
       'Identity comes from the platform, not from secrets the platform has to guard. The event broker authenticates callers with Kubernetes TokenReview against each pod\'s own projected token. Images and provenance are signed keylessly against a self-hosted Fulcio that trusts the cluster\'s own issuer, while commits are signed against public Sigstore, because a human\'s GitHub identity is what the public instance already trusts. Release policy validates the provenance attestation itself (which tasks really ran), in addition to the commit signature, not instead of it.',
       'Tenancy is structural: every app gets a CI namespace and one namespace per environment, as peers, so pipeline permissions and running workloads never share a blast radius. Secrets come through External Secrets from Infisical, with no persisted credentials, and an admission policy closes the case RBAC cannot express.',
     ],
     evidence: [
       { text: 'Governance gates as structurally loud extension points (ADR-0003)', status: 'built', href: adr('0003', 'governance-stubs') },
+      { text: 'Seven real release gates in one registry: SAST, image scan, provenance, SBOM, values, API compatibility and the check ride', status: 'built', href: gh('glidepath', 'docs/admin/release-guardrails.md') },
+      { text: 'A check ride signed onto the image, and a qa gate that verifies it', status: 'built', href: gh('glidepath', 'docs/admin/testing.md') },
+      { text: 'Change requests opened and closed by the release, in ServiceNow or behind a webhook', status: 'built', href: gh('glidepath', 'docs/admin/change-management.md') },
+      { text: 'API compatibility: the signed spec diffed against what the environment runs', status: 'built', href: gh('glidepath', 'docs/admin/api-compat.md') },
+      { text: 'GitHub-merge signatures under a signing policy platform admins own (ADR-0027)', status: 'built', href: adr('0027', 'github-merge-signatures-admin-owned-signing-policy') },
+      { text: 'Pod Security baseline enforced on every CI namespace', status: 'built', href: adr('0026', 'buildkit-image-builds') },
+      { text: 'Admission-policy validation of the rendered manifests (still a stub)', status: 'proposal', href: gh('glidepath', 'docs/admin/governance-stubs.md') },
       { text: 'Keyless signing with two trust roots (ADR-0014)', status: 'built', href: adr('0014', 'keyless-signing-two-trust-roots') },
       { text: 'Provenance policy validates the attestation as input (ADR-0015)', status: 'built', href: adr('0015', 'provenance-policy-validates-attestation-input') },
       { text: 'Two-namespace tenancy (ADR-0011)', status: 'built', href: adr('0011', 'two-namespace-tenancy-model') },

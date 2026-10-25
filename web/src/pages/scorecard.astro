@@ -153,6 +153,11 @@ const gain = latest.overall - first.overall;
           release-file split looked undone when it wasn't. I pointed the tool at the new paths. Each fix is in the same
           commit as its score, and snapshots before it were not re-scored.
         </p>
+        <p>
+          The run on {longDate('2026-10-25')} needed two more. The dev cluster's repo had been renamed in the October
+          rebuild, so I pointed the tool at both names before running it. Then it said 89.2, because it counted one docs
+          block as broken YAML when the block simply held two documents. The tool now accepts that, which made it 89.5.
+        </p>
       </div>
       <div class="card">
         <p class="eyebrow">Limits</p>

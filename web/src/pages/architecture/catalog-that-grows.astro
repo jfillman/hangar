@@ -173,7 +173,9 @@ const evidence = [
           that cross fields. Before it creates anything, an XR checks the cluster registry live, and if the cluster it
           was asked for isn't ready, it builds nothing and says why rather than half-succeeding. Deleting a request never
           deletes the repo behind it. Cloud credentials come from each app's own secret store, never from one platform-wide
-          account. And a Kyverno admission policy and Airframe's validator in CI catch what gets around the API.
+          account. <em>(Update: on AWS there is no stored credential at all any more. Since October 16, 2026 each Lambda
+          function and ECS service gets its own deploy role, which the pipeline assumes for an hour with a ServiceAccount
+          token. Azure still uses a stored secret, for now.)</em> And a Kyverno admission policy and Airframe's validator in CI catch what gets around the API.
         </p>
         <p>
           My favourite piece of governance from these two days is a refusal. In Hangar, an environment on the Flight tier,

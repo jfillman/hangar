@@ -43,6 +43,9 @@ const evidence = [
   { text: 'One shared namespace, with secrets moved in for the run and blanked after (ADR-0007)', status: 'built' as const, href: adr('0007', 'testkube-shared-namespace') },
   { text: "A Kyverno policy so one app's tests can't mount another app's secrets (ADR-0008)", status: 'built' as const, href: adr('0008', 'kyverno-testkube-secret-policy') },
   { text: 'An outcome and one line per step, written for the Release Record in Tower', status: 'built' as const, href: gh('glidepath', 'charts/glidepath-catalog/templates/tasks/run-testworkflow.yaml') },
+  { text: 'A test contract: every workflow gets the image, digest, environment and URL, and a missing workflow fails', status: 'built' as const, href: gh('glidepath', 'docs/admin/testing.md') },
+  { text: 'Check rides from a shared repository, signed onto the image and verified by the qa gate', status: 'built' as const, href: u('library/glidepath-test-contract/') },
+  { text: 'Test evidence in Tower: on the image, a Tests view under Pipelines, and the Release Record', status: 'built' as const, href: gh('tower') },
   { text: 'Parallel and sharded runs for the Skyport test suites', status: 'proposal' as const },
   { text: "Testkube's own CDEvents on the same event stream as Glidepath's", status: 'proposal' as const },
   { text: "Autopilot's Preflight evaluations running as TestWorkflows", status: 'proposal' as const, href: gh('autopilot', 'README.md') },
@@ -233,6 +236,24 @@ const evidence = [
           big enough to earn sharding. And the one I'm most curious about: Autopilot's Preflight cases, which score how
           an agent behaves, are tests in every way that matters. Running them as TestWorkflows would give agent
           evaluations the same home, the same history and the same policy fence as everything else.
+        </p>
+        <h2>Update: tests became evidence</h2>
+        <p>
+          Two weeks after I wrote this, I found that no Skyport app actually ran a test, and the gate on the release PR
+          that was meant to read the results read nothing at all. So between October 17 and 19, 2026, Glidepath grew a test
+          contract. Every workflow now gets the same context passed in: the app, the image and its digest, the environment
+          and its URL. A test step whose workflow is missing fails instead of quietly passing. And one test per app is
+          special: the <em>check ride</em>, named after the flight test a pilot passes to earn a rating. Its workflow lives
+          in a shared repository, where the test engineers and product owners set the standard in a template and the
+          team writes the steps, so neither can weaken it alone.
+        </p>
+        <p>
+          A passing check ride is signed onto the image digest, the same keyless way the build signs its provenance, so
+          the evidence travels with the image to every cluster. The <code>qa</code> gate on the release PR verifies that
+          signature instead of trusting a database. Tower shows every attested run on the image, a Tests view under
+          Pipelines, and the evidence on the Release Record. Testkube didn't change at all; Glidepath just started asking
+          it better questions. The gate only advises for now, until every app has a check ride, and the three ideas
+          above are still ideas. The <a href={u('library/glidepath-test-contract/')}>spec</a> is in the Library.
         </p>
         <p>
           Testing is the part of the lifecycle where platforms most often give up and hand teams a script. Testkube let

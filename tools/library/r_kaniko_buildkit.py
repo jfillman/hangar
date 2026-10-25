@@ -1,0 +1,253 @@
+"""Review: kaniko to BuildKit (Oct 17, 2026), ported from the claude.ai artifact."""
+from report import Page
+
+CSS = r'''.kaniko{--amber-soft:rgba(185,121,31,.08);display:flex;flex-direction:column;gap:40px}
+:root[data-theme="dark"] .kaniko{--amber-soft:rgba(232,163,61,.1)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kaniko{--amber-soft:rgba(232,163,61,.1)}}
+.kaniko .wrap>*,.kaniko section>*,.kaniko header>*{min-width:0;max-width:100%}
+.kaniko h2,.kaniko h3{font-family:var(--serif);font-weight:400;letter-spacing:-.01em;line-height:1.15;text-wrap:balance;margin:0}
+.kaniko h2{font-size:1.9rem;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.kaniko h3{font-size:1.3rem}
+.kaniko p{margin:0}
+.kaniko section{display:flex;flex-direction:column;gap:16px}
+.kaniko .prose{max-width:70ch;display:flex;flex-direction:column;gap:12px}
+.kaniko .eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+.kaniko code{font-family:var(--mono);font-size:.85em;background:var(--code-bg);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+.kaniko a{color:var(--accent)}
+.kaniko a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kaniko .meta{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.85rem;color:var(--ink-2)}
+.kaniko .verdict{background:var(--paper);border:1px solid var(--rule);border-top:4px solid var(--ok);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.kaniko .verdict .stamp{display:inline-flex;align-self:flex-start;font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ok);background:var(--ok-bg);padding:4px 10px;border-radius:3px}
+.kaniko .verdict h2{border:0;padding:0;font-size:1.8rem}
+.kaniko .verdict ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:80ch}
+.kaniko .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kaniko .kpi{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kaniko .kpi .v{font-family:var(--serif);font-size:2.1rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.kaniko .kpi .l{font-size:.84rem;color:var(--ink-2)}
+.kaniko .tbl{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.kaniko table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:640px}
+.kaniko th,.kaniko td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--rule)}
+.kaniko th{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-weight:500;background:var(--ground)}
+.kaniko tr:last-child td{border-bottom:0}
+.kaniko td.area{font-weight:600;white-space:nowrap}
+.kaniko .chip{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.04em;padding:2px 8px;border-radius:3px;white-space:nowrap;margin-bottom:4px}
+.kaniko .c-ok{color:var(--ok);background:var(--ok-bg)}
+.kaniko .c-warn{color:var(--warn);background:var(--warn-bg)}
+.kaniko .c-bad{color:var(--bad);background:var(--bad-bg)}
+.kaniko .c-info{color:var(--info);background:var(--info-bg)}
+.kaniko .finding{background:var(--paper);border:1px solid var(--rule);border-left:4px solid var(--rule);border-radius:4px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.kaniko .finding.sev-high{border-left-color:var(--bad)}
+.kaniko .finding.sev-med{border-left-color:var(--warn)}
+.kaniko .finding.sev-low{border-left-color:var(--info)}
+.kaniko .finding .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px}
+.kaniko .finding .id{font-family:var(--mono);font-size:.8rem;color:var(--ink-2)}
+.kaniko .finding h3{font-family:var(--sans);font-size:1.02rem;font-weight:600;flex:1 1 300px}
+.kaniko .finding p{font-size:.94rem;max-width:80ch}
+.kaniko .ev{font-size:.84rem;color:var(--ink-2)}
+.kaniko .ev b{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin-right:6px}
+.kaniko .flist{display:flex;flex-direction:column;gap:10px}
+.kaniko .lanes{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:18px;overflow-x:auto}
+.kaniko .lane{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:start;min-width:640px}
+.kaniko .lane .who{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding-top:10px}
+.kaniko .steps{display:flex;gap:8px;align-items:stretch}
+.kaniko .step{border:1px solid var(--ink);border-radius:6px;padding:8px 10px;background:var(--ground);display:flex;flex-direction:column;gap:2px;min-width:0}
+.kaniko .step b{font-size:.86rem;font-weight:600}
+.kaniko .step span{font-family:var(--mono);font-size:.7rem;color:var(--ink-2)}
+.kaniko .step.emu{border-color:var(--bad);background:var(--bad-bg)}
+.kaniko .step.emu span{color:var(--bad)}
+.kaniko .step.new{border-color:var(--amber);background:var(--amber-soft)}
+.kaniko .step.gone{border-style:dashed;opacity:.55}
+.kaniko .arrow{align-self:center;color:var(--ink-2);font-family:var(--mono)}
+.kaniko .lanes .cap{font-family:var(--serif);font-style:italic;font-size:1.1rem;color:var(--ink-2)}
+.kaniko .phases{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--rule);border-radius:6px}
+.kaniko .ph{display:grid;grid-template-columns:52px 1fr;gap:14px;padding:16px;border-bottom:1px solid var(--rule)}
+.kaniko .ph:last-child{border-bottom:0}
+.kaniko .ph .n{font-family:var(--mono);font-size:.8rem;color:var(--amber);border:1px solid var(--amber);border-radius:4px;height:28px;display:flex;align-items:center;justify-content:center}
+.kaniko .ph h3{font-family:var(--sans);font-size:1rem;font-weight:600}
+.kaniko .ph ul{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:.93rem;max-width:84ch}
+.kaniko .ph .exit{font-size:.85rem;color:var(--ink-2);margin-top:6px}
+.kaniko .ph .exit b{font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;font-weight:500;color:var(--ink)}
+.kaniko .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.kaniko .card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.kaniko .card h3{font-size:1rem;font-family:var(--sans);font-weight:600}
+.kaniko .card p{font-size:.92rem;color:var(--ink-2)}
+.kaniko ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:80ch}
+.kaniko .note{font-size:.85rem;color:var(--ink-2)}
+.kaniko footer{font-size:.82rem;color:var(--ink-2);border-top:1px solid var(--rule);padding-top:16px;display:flex;flex-direction:column;gap:6px}
+.kaniko footer ul{margin:0;padding-left:18px}
+@media (prefers-reduced-motion:reduce){}'''
+
+P = Page(
+    'kaniko-to-buildkit', 'Review', 'Glidepath · Review · Image builds',
+    'Kaniko to BuildKit',
+    'How Glidepath built images with kaniko, what rootless BuildKit would change, and a phased plan to switch: an archived builder, '
+    'fully emulated cross-architecture builds, and a privilege model that did not hold on the live cluster.',
+    '2026-10-17',
+    meta=[('Status', 'switched Oct 17, 2026 (ADR-0026); kaniko removed'),
+          ('Scope', '<code>build-image</code>, the catalog chart, Airframe scaffolds, docs'),
+          ('Basis', 'glidepath main, the live dev cluster, the Tekton Results performance review')],
+    lede='How Glidepath built images with kaniko, what rootless BuildKit would change, and a phased plan to switch.',
+    css=CSS)
+
+BODY = r'''
+<div class="kaniko">
+<p class="note"><b>Since then.</b> The switch happened the same day, faster than the five phases planned: <a href="https://github.com/jfillman/glidepath/blob/main/docs/admin/adr/0026-buildkit-image-builds.md">ADR-0026</a> was accepted on October 17, 2026, <code>build-image</code> now runs one rootless BuildKit step for every platform, kaniko and crane are gone, the Go scaffold cross-compiles from <code>$BUILDPLATFORM</code>, and every <code>-cicd</code> namespace enforces Pod Security <code>baseline</code>. This page is the review as written.</p>
+<section class="verdict">
+  <span class="stamp">Switch · 5 phases · canary first</span>
+  <h2>Kaniko is frozen, slow on amd64, and its security argument doesn't hold live.</h2>
+  <ul>
+    <li><b>Upstream is archived.</b> Google archived kaniko in June 2025. The pinned <code>v1.24.0-debug</code> is the last Google release, so there are no more CVE fixes. Chainguard's fork publishes no public images.</li>
+    <li><b>It causes the worst build cost.</b> Kaniko ignores <code>FROM --platform=$BUILDPLATFORM</code>, so every RUN step of the amd64 build runs under QEMU on the arm64 node. That breaks Go (known gap #37) and costs Backstage 11 of its 25 minutes.</li>
+    <li><b>The "PSS restricted" guarantee isn't real.</b> On the dev cluster the <code>app-*-cicd</code> build namespaces carry no pod-security enforce label, Tekton runs with <code>set-security-context=false</code>, and kaniko runs as root in the container. ADR-0010 and <code>security.md</code> need correcting whichever builder you keep.</li>
+  </ul>
+  <div class="prose"><p><b>Recommendation.</b> Move to rootless BuildKit, daemonless, one instance per TaskRun (no shared daemon, so tenant isolation holds). Roll it out inside the existing <code>build-image</code> Task behind a per-app <code>build.builder</code> flag, canary on four apps, then flip the default and remove kaniko and crane.</p></div>
+</section>
+
+<section>
+  <div class="kpis">
+    <div class="kpi"><span class="v">476s</span><span class="l">build stage p50, 1,596 PipelineRuns (Sep 17 to Oct 9)</span></div>
+    <div class="kpi"><span class="v">664s</span><span class="l">amd64 kaniko step p90 under QEMU (p50 106s)</span></div>
+    <div class="kpi"><span class="v">11 / 25</span><span class="l">Backstage minutes spent in <code>build-image</code></span></div>
+    <div class="kpi"><span class="v">~11 min</span><span class="l">Spring scaffold amd64 step, vs 5 min native arm64</span></div>
+    <div class="kpi"><span class="v">0 / 31</span><span class="l">app build namespaces with a pod-security enforce label</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>How build-image works today</h2>
+  <div class="lanes" role="img" aria-label="Today build-image runs resolve-build-config, a native arm64 kaniko step, an emulated amd64 kaniko step, a crane step that assembles the index, and a span step. With BuildKit it runs resolve-build-config, one buildctl step that builds both platforms and pushes the index, and the span step.">
+    <div class="lane"><span class="who">Today</span>
+      <div class="steps">
+        <div class="step"><b>resolve-build-config</b><span>bash · tag, platforms</span></div><span class="arrow">→</span>
+        <div class="step"><b>kaniko arm64</b><span>native · -arm64 tag</span></div><span class="arrow">→</span>
+        <div class="step emu"><b>kaniko amd64</b><span>every RUN under QEMU</span></div><span class="arrow">→</span>
+        <div class="step"><b>crane index</b><span>merge + digest</span></div><span class="arrow">→</span>
+        <div class="step"><b>emit span</b><span>results + OTel</span></div>
+      </div></div>
+    <div class="lane"><span class="who">BuildKit</span>
+      <div class="steps">
+        <div class="step"><b>resolve-build-config</b><span>unchanged</span></div><span class="arrow">→</span>
+        <div class="step new"><b>buildctl-daemonless</b><span>both platforms in one run · cross-compile natively · registry cache · pushes the index</span></div><span class="arrow">→</span>
+        <div class="step gone"><b>crane</b><span>removed</span></div><span class="arrow">→</span>
+        <div class="step"><b>emit span</b><span>digest from metadata file</span></div>
+      </div></div>
+    <p class="cap">The two legs run one after the other. The emulated one is where the time goes.</p>
+  </div>
+  <div class="prose">
+    <p>Each kaniko step uses a busybox gate script to skip itself when its arch isn't requested, because Tekton has no per-step <code>when:</code>. Each step also overrides <code>SSL_CERT_FILE</code>, since Tekton injects a CA directory that doesn't exist in the kaniko image. Labels and <code>HANGAR_VERSION</code>/<code>HANGAR_GIT_REVISION</code> build-args are set on both steps. The cache is kaniko's registry layer cache (<code>--cache=true</code>, 336h).</p>
+  </div>
+</section>
+
+<section>
+  <h2>Findings</h2>
+  <div class="flist">
+    <div class="finding sev-high"><div class="top"><span class="id">K-1</span><h3>The builder is unmaintained</h3><span class="chip c-bad">high</span></div>
+      <p>GoogleContainerTools/kaniko was archived in June 2025, and v1.24.0 was the last release. The pin in <code>build-image.yaml</code> carries no CVE fixes from here on. Chainguard's fork is maintained for security only and its images are for Chainguard customers. The osscontainertools fork is community-run.</p>
+      <p class="ev"><b>Evidence</b><code>image: gcr.io/kaniko-project/executor:v1.24.0-debug</code> on both build steps; the step comment already notes no newer tag exists.</p></div>
+    <div class="finding sev-high"><div class="top"><span class="id">K-2</span><h3>Cross-arch builds are fully emulated</h3><span class="chip c-bad">high</span></div>
+      <p>With <code>--custom-platform</code> set, kaniko runs every stage as the target arch and ignores a per-stage <code>--platform</code>. Go crashes under QEMU (two separate QEMU bugs, one with no mitigation). Java and Node builds inside a Containerfile run several times slower. The current workaround is to compile in <code>build.sh</code> and keep a thin Containerfile, which the Spring scaffold doesn't do yet.</p>
+      <p class="ev"><b>Evidence</b>known-gaps #37 (smoke-ecs, boarding-api); <code>pipeline-performance.md</code> "amd64 builds under QEMU"; flight-api Spring build 17 min with the two steps one after the other.</p></div>
+    <div class="finding sev-med"><div class="top"><span class="id">K-3</span><h3>The documented privilege model is wrong on the live cluster</h3><span class="chip c-warn">medium</span></div>
+      <p>ADR-0010, <code>rootless-builds.md</code> and <code>security.md</code> say builds run under PSS restricted. Live, only <code>autopilot-runs</code> and <code>autopilot-system</code> enforce restricted. Kaniko also needs root inside its container, so it could never pass restricted. Today the build pods are root containers with no admission control over their security context.</p>
+      <p class="ev"><b>Evidence</b><code>kubectl get ns</code> on the dev cluster: 31 <code>app-*</code> namespaces without <code>pod-security.kubernetes.io/enforce</code>; <code>feature-flags</code> <code>set-security-context=false</code>; no Kyverno policy covering pod security for builds.</p></div>
+    <div class="finding sev-low"><div class="top"><span class="id">K-4</span><h3>Multi-arch needs a second tool and leaves extra tags</h3><span class="chip c-info">low</span></div>
+      <p>Kaniko only produces single-platform images, so crane assembles the index and the <code>-arm64</code>/<code>-amd64</code> tags stay published. It works, but it is one more image pinned by digest to a floating <code>:debug</code> tag, plus a gate script per arch.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Pros and cons</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Area</th><th>Kaniko (today)</th><th>Rootless BuildKit</th></tr></thead>
+    <tbody>
+      <tr><td class="area">Maintenance</td><td><span class="chip c-bad">archived</span><br>v1.24.0 is the last Google release. Forks are security-only or community-run.</td><td><span class="chip c-ok">active</span><br>Maintained by moby/Docker; the engine behind buildx.</td></tr>
+      <tr><td class="area">Cross-arch</td><td><span class="chip c-bad">all emulated</span><br>Every stage runs as the target arch.</td><td><span class="chip c-ok">native compile</span><br><code>--platform=$BUILDPLATFORM</code> is honoured, so Go and Java cross-compile without QEMU. Only steps that truly run on the target arch are emulated.</td></tr>
+      <tr><td class="area">Multi-arch output</td><td>Two steps one after the other, then crane.</td><td>One run builds both platforms in parallel and pushes the index.</td></tr>
+      <tr><td class="area">Cache</td><td>Registry layer cache.</td><td>Registry cache in <code>mode=max</code>, <code>RUN --mount=type=cache</code>, stages run in parallel.</td></tr>
+      <tr><td class="area">Build features</td><td>No <code>RUN --mount=type=secret</code> or <code>ssh</code>.</td><td>Full Dockerfile frontend.</td></tr>
+      <tr><td class="area">Privilege</td><td><span class="chip c-warn">root</span><br>Passes baseline, fails restricted.</td><td><span class="chip c-warn">UID 1000, unconfined</span><br>Needs seccomp and AppArmor Unconfined (or Localhost profiles), so it fails baseline as shipped. <code>hostUsers: false</code> may close the gap; the spike tests it.</td></tr>
+      <tr><td class="area">Tekton fit</td><td><span class="chip c-ok">proven here</span><br>Every workaround is documented.</td><td>New step image. Re-check the CA path quirk; take the digest from <code>--metadata-file</code>.</td></tr>
+      <tr><td class="area">Supply chain</td><td>Chains reads <code>IMAGE_URL</code> and <code>IMAGE_DIGEST</code>.</td><td>Same results. <code>buildctl</code> adds no attestation manifests unless asked, so Conforma and <code>verify-image-provenance</code> are unaffected.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">The main con: on paper BuildKit's rootless default is less restricted than kaniko, because seccomp and AppArmor are unconfined. In practice you're trading a non-root user with no syscall filter for root with no filters. If you later enforce baseline on the cicd namespaces, BuildKit needs Localhost profiles or user namespaces.</p>
+</section>
+
+<section>
+  <h2>Alternatives considered</h2>
+  <div class="cards">
+    <div class="card"><h3>Rootless buildah</h3><p>ADR-0010's documented fallback. It needs the same privilege relaxations, and multi-arch through <code>buildah manifest</code> is clunkier. No reason to prefer it.</p></div>
+    <div class="card"><h3>Shared buildkitd Deployment</h3><p>Gives a warm local cache, but one daemon builds for every tenant, which breaks the ADR-0011 two-namespace isolation. Rejected.</p></div>
+    <div class="card"><h3>Native amd64 build node</h3><p>Removes QEMU for any builder, but there's no amd64 hardware for the dev cluster. It complements the switch; it doesn't replace it.</p></div>
+    <div class="card"><h3>Stay on kaniko, fix around it</h3><p>Derive platforms from the cluster registry <code>arch</code> and move every scaffold to <code>build.sh</code>. That helps, but the builder stays archived and Go multi-arch stays broken.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Migration plan</h2>
+  <div class="phases">
+    <div class="ph"><span class="n">P0</span><div><h3>Spike on the dev cluster, no shared changes</h3>
+      <ul>
+        <li>Scratch TaskRun in a cicd namespace with <code>moby/buildkit:&lt;pin&gt;-rootless</code> and <code>buildctl-daemonless.sh</code>.</li>
+        <li>Prove: push with <code>registry-credentials</code>; TLS under Tekton's injected <code>SSL_CERT_DIR</code>; one-run multi-arch index; digest from <code>--metadata-file</code>.</li>
+        <li>Time boarding-api (Go) and flight-api (Spring) cross-compiles against the kaniko numbers; measure a warm rebuild from the registry cache.</li>
+        <li>Confirm no extra attestation manifests, and record which pod-security level each variant passes (Unconfined vs <code>hostUsers: false</code>).</li>
+        <li>Correct ADR-0010, <code>rootless-builds.md</code> and <code>security.md</code> now, whatever the outcome.</li>
+      </ul>
+      <p class="exit"><b>Exit</b> Go/no-go for each item, with the exact working step YAML.</p></div></div>
+    <div class="ph"><span class="n">P1</span><div><h3>Both builders in one Task</h3>
+      <ul>
+        <li>Add a <code>build-and-push-buildkit</code> step to <code>build-image</code>, using the same <code>exit 0</code> gate as the arch steps.</li>
+        <li>New <code>build.builder: kaniko | buildkit</code> in <code>cicd.schema.json</code>, default <code>kaniko</code>. The schema change means a toolbox rebuild.</li>
+        <li>The Task name and results stay the same, so Chains, Conforma and Tower are unaffected.</li>
+        <li>Cache at <code>&lt;repo&gt;:buildcache</code>, <code>mode=max</code>, per app and per tenant.</li>
+      </ul>
+      <p class="exit"><b>Exit</b> A kaniko app and a buildkit app both pass build, sign and provenance checks.</p></div></div>
+    <div class="ph"><span class="n">P2</span><div><h3>Canary on four apps</h3>
+      <ul>
+        <li>boarding-api (Go, gap #37), flight-api (Spring), backstage (amd64-only, the biggest build), and one Node app (thin Containerfile).</li>
+        <li>Compare durations through Tekton Results.</li>
+        <li>Airframe: move the GoApplication and SpringBoot scaffold Containerfiles to <code>FROM --platform=$BUILDPLATFORM</code> with <code>GOARCH=$TARGETARCH</code>. Bump all three airframe chart pin locations.</li>
+      </ul>
+      <p class="exit"><b>Exit</b> Every canary is green with a measured improvement on the amd64 path.</p></div></div>
+    <div class="ph"><span class="n">P3</span><div><h3>Flip the default</h3>
+      <ul>
+        <li>Make <code>buildkit</code> the default. ADR-0026 supersedes ADR-0010 with the real privilege model.</li>
+        <li>Update <code>rootless-builds.md</code>, <code>security.md</code>, <code>pipeline-performance.md</code>, <code>cicd-yaml-reference.md</code> and the <code>build-image</code> header; close known-gap #37.</li>
+        <li>Fix the "kaniko builds it directly" text in Tower <code>GlidepathTab.tsx</code>.</li>
+        <li>Decide whether to enforce baseline (with Localhost profiles) on the cicd namespaces.</li>
+      </ul>
+      <p class="exit"><b>Exit</b> No app sets <code>builder: kaniko</code>, after a full week of builds.</p></div></div>
+    <div class="ph"><span class="n">P4</span><div><h3>Remove kaniko</h3>
+      <ul>
+        <li>Delete the two kaniko steps and the crane step; deprecate, then drop, <code>build.builder</code>.</li>
+        <li>The <code>-arm64</code>/<code>-amd64</code> tags stop being published. Grep the gitops repos for them first.</li>
+      </ul></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Risks to watch</h2>
+  <ul class="plain">
+    <li><b>Unconfined seccomp isn't allowed.</b> Fall back to Localhost profiles or <code>hostUsers: false</code>; containerd 2.3.1 and Kubernetes 1.36 on the dev cluster support user namespaces.</li>
+    <li><b>Peak memory per build pod goes up.</b> BuildKit runs stages in parallel on a node already at 86% memory. Revisit the 250m/256Mi request.</li>
+    <li><b>binfmt is still needed.</b> RUN steps that genuinely run on the target arch still emulate; keep the <code>kube-system/binfmt</code> DaemonSet.</li>
+    <li><b>Cache tags clutter the registry.</b> <code>:buildcache</code> needs to be excluded from Tower's image prune and from release tag lists.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <p>Sources</p>
+  <ul>
+    <li><a href="https://thenewstack.io/kaniko-lives-on-chainguard-forks-googles-dumped-tool/">The New Stack: Kaniko lives on, Chainguard forks Google's dumped tool</a></li>
+    <li><a href="https://pkg.go.dev/github.com/osscontainertools/kaniko">osscontainertools/kaniko</a></li>
+    <li><a href="https://crazymax.dev/buildkit/user-guides/rootless-mode/">BuildKit rootless mode</a></li>
+    <li><a href="https://v1-33.docs.kubernetes.io/docs/concepts/security/pod-security-standards/">Kubernetes Pod Security Standards</a></li>
+    <li><a href="https://code.fizz.buzz/mirror/catalog/src/branch/main/task/buildkit/0.1">Tekton catalog buildkit task (mirror)</a></li>
+  </ul>
+  <p>Glidepath sources: <code>charts/glidepath-catalog/templates/tasks/build-image.yaml</code>, <code>docs/admin/adr/0010-kaniko-rootless-builds.md</code>, <code>docs/admin/known-gaps.md</code>, <code>docs/admin/pipeline-performance.md</code>. Live state from the dev cluster on October 17, 2026.</p>
+</section>
+</div>
+'''
+
+P.add(BODY)
