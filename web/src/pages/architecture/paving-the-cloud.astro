@@ -66,10 +66,11 @@ const evidence = [
 
         <h2>More than a fancy Kubernetes front end</h2>
         <p>
-          There's a fair criticism of platforms built on Crossplane, and I think it deserves a straight answer. If all your platform does
-          is put a custom resource in front of a Helm chart, you've given developers YAML with extra steps. They're
-          right to shrug at that. A wrapper around <code>kubectl</code> isn't a product. It's an inconvenience with a
-          logo.
+          There's a fair criticism of a lot of internal platforms built on Kubernetes. If all yours does is put a
+          custom resource in front of a Helm chart, you've given developers YAML with extra steps, and they're right
+          to shrug at that. A wrapper around <code>kubectl</code> isn't a product. It's an inconvenience with a logo.
+          Crossplane was never the problem there. It was born to manage cloud resources, with providers for every
+          major cloud. The mistake is only ever pointing it back at the cluster.
         </p>
         <p>
           What Kubernetes actually gives a platform is the machinery for keeping promises. A schema the API server
