@@ -22,8 +22,8 @@ const evidence = [
   { text: 'Architecture review, September 27: "Operating surface is large for the team behind it"', status: 'built' as const, href: u('review/') },
   { text: 'Crossplane writing files to GitHub: the rate-limit incidents and the patched provider fork', status: 'built' as const, href: gh('airframe') },
   { text: 'Four bugs from one refactor, found only by running the whole path end to end', status: 'built' as const, href: u('run/') },
-  { text: 'Scaffold repository files once, from an onboarding task, instead of reconciling them forever', status: 'proposal' as const },
-  { text: 'A shared baseline chart so each cluster repo is a thin diff instead of a full copy', status: 'proposal' as const, href: gh('hangar', 'docs/gitops-strategy.md') },
+  { text: 'Scaffold repository files once, then stop reconciling them (built inside Crossplane as a scaffold ledger, not as a separate onboarding task)', status: 'built' as const, href: gh('airframe', 'compositions/_shared/README.md') },
+  { text: 'Each cluster repo rendered from one cluster.yaml by the Apron CLI, and re-rendered on day 2, instead of copied by hand', status: 'draft' as const, href: gh('apron', 'README.md') },
 ];
 ---
 <Base title={essay.title} description={essay.dek} section="architecture">

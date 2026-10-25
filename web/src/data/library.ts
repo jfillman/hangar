@@ -12,7 +12,7 @@ export type Paper = {
   title: string;
   dek: string;
   date: string;
-  product: 'hangar' | 'glidepath' | 'airframe' | 'tower' | 'autopilot' | 'site';
+  product: 'hangar' | 'glidepath' | 'airframe' | 'tower' | 'apron' | 'autopilot' | 'site';
   page?: string;
   href?: string;
   status: { label: string; tone: Tone };
@@ -35,11 +35,39 @@ export const papers: Paper[] = [
     status: { label: 'AWS live · Azure not run', tone: 'done' },
   },
   {
+    id: 'tower-airspace', kind: 'spec', product: 'tower', date: '2026-10-24',
+    title: 'Airspace: who a change will reach, before it ships',
+    dek: 'Every service\'s real connections from OpenTelemetry traces with no code changes, checked against what each environment declares, and the API spec signed onto each image, so the api-compat release check can say who a breaking change would reach.',
+    page: 'papers/2026-10-24-tower-airspace.html',
+    status: { label: 'Built · Tower v0.99 to v0.102', tone: 'done' },
+  },
+  {
+    id: 'glidepath-test-contract', kind: 'spec', product: 'glidepath', date: '2026-10-17',
+    title: 'A test contract for Glidepath, and a QA gate that reads it',
+    dek: 'Keep Glidepath a thin wrapper around Testkube, and own three things: the contract a test step passes in and records out, the evidence signed onto the image, and the fence around the check ride a release depends on.',
+    page: 'papers/2026-10-17-glidepath-test-contract.html',
+    status: { label: 'Built · phases 0 to 4 live', tone: 'done' },
+  },
+  {
+    id: 'kaniko-to-buildkit', kind: 'review', product: 'glidepath', date: '2026-10-17',
+    title: 'Kaniko to BuildKit',
+    dek: 'An archived builder, every cross-architecture build emulated in full, and a privilege model that didn\'t hold on the live cluster. The case for rootless BuildKit, and a five-phase plan that finished in a day.',
+    page: 'papers/2026-10-17-kaniko-to-buildkit.html',
+    status: { label: 'Done · ADR-0026, kaniko removed', tone: 'done' },
+  },
+  {
+    id: 'apron-next-shape', kind: 'review', product: 'apron', date: '2026-10-16',
+    title: "Apron's next shape: self-contained, built on kubara",
+    dek: 'Apron and kubara solve the same problem. Adopt kubara as the only renderer, keep Apron as one catalog plus the rules kubara can\'t express, and keep it installable on its own, under a cluster name you choose.',
+    page: 'papers/2026-10-16-apron-next-shape.html',
+    status: { label: 'Decided · CLI built, kubara port next', tone: 'open' },
+  },
+  {
     id: 'keyless-cloud-deploys', kind: 'spec', product: 'glidepath', date: '2026-10-16',
     title: 'No stored AWS key for cloud deploys',
     dek: 'Two never-expiring AWS keys replaced by one-hour roles a pod earns by proving who it is, one per Lambda function, with a hole in Crossplane\'s permissions closed on the way and the incident the switch caused.',
     page: 'papers/2026-10-16-keyless-cloud-deploys.html',
-    status: { label: 'Lambda keyless', tone: 'done' },
+    status: { label: 'Lambda and ECS keyless', tone: 'done' },
   },
   {
     id: 'forge-registry-portability', kind: 'spec', product: 'hangar', date: '2026-10-15',
@@ -53,7 +81,7 @@ export const papers: Paper[] = [
     title: 'Start the next release record when the last one ships',
     dek: 'A proposal to open Tower\'s Release Record as a live draft the moment the previous release ships, with sign-off before the Flight merge and an outcome after the bake.',
     page: 'papers/2026-10-13-tower-release-record-lifecycle.html',
-    status: { label: 'Proposed · R1 approved', tone: 'info' },
+    status: { label: 'Built · R1 to R4 shipped', tone: 'done' },
   },
   {
     id: 'glidepath-sdlc-review', kind: 'review', product: 'glidepath', date: '2026-10-12',
@@ -67,14 +95,14 @@ export const papers: Paper[] = [
     title: 'Glidepath, from the lab to production',
     dek: 'The companion to the SDLC review: every weakness sorted by cause, and nine items in three lanes so a production install never waits on a feature it doesn\'t need.',
     page: 'papers/2026-10-12-glidepath-production-roadmap.html',
-    status: { label: 'Proposed · 9 items', tone: 'info' },
+    status: { label: 'Under way · T2 and P3 started', tone: 'open' },
   },
   {
     id: 'tower-field-report-2', kind: 'report', product: 'tower', date: '2026-10-11',
     title: 'Tower, judged again as my only console',
     dek: 'Four weeks on: yes for looking, now yes for acting. What still sends me elsewhere is the platform under the console, not a missing button.',
     page: 'papers/2026-10-11-tower-field-report-2.html',
-    status: { label: 'Open · 3 of 16 done', tone: 'open' },
+    status: { label: 'Open · 5 of 16 done', tone: 'open' },
   },
   {
     id: 'autopilot-architecture-map', kind: 'architecture', product: 'autopilot', date: '2026-10-07',
@@ -137,7 +165,7 @@ export const papers: Paper[] = [
     title: 'The Airframe A+ scorecard',
     dek: 'How ready Airframe is for agents to operate, scored by a tool against fourteen checks. Every committed run on one chart.',
     href: 'scorecard/',
-    status: { label: '84 · past the M2 target', tone: 'done' },
+    status: { label: '89.5 · past the M3 target score', tone: 'done' },
   },
   {
     id: 'architecture-review', kind: 'review', product: 'hangar', date: '2026-09-27',
@@ -179,7 +207,7 @@ export const papers: Paper[] = [
     title: 'The Airframe A+ program',
     dek: 'What it would take for agents to operate Airframe safely, as milestones the scorecard measures.',
     href: 'docs/hangar/autopilot/airframe-ai-friendly/',
-    status: { label: 'M2 closed · 84 of 100', tone: 'done' },
+    status: { label: 'M2 closed · 89.5 of 100', tone: 'done' },
   },
   {
     id: 'envs-overhaul', kind: 'spec', product: 'glidepath', date: '2026-10-04',

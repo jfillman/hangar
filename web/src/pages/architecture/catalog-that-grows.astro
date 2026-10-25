@@ -29,8 +29,9 @@ const evidence = [
   { text: 'Per-environment cloud resources, so dev and test can deploy to different functions or services', status: 'built' as const, href: cicdRef },
   { text: "Tower's service classes, and a cloud Deployments tab read from the pipeline, with no cloud credential", status: 'built' as const, href: gh('tower', 'docs/service-classes.md') },
   { text: 'Lambda, Azure Functions, ECS and Container Apps, each tested end to end', status: 'built' as const, href: gaps },
-  { text: "The XR composes the function, its role and its registry, with the architects' and security team's rules built in", status: 'proposal' as const },
-  { text: 'An approval step for cloud production environments: a release pin PR on the source repo (ADR-0020)', status: 'proposal' as const, href: gh('glidepath', 'docs/admin/adr/0020-cloud-gated-promotion-by-release-pin.md') },
+  { text: 'Cloud target XRs compose the function or service, its roles and its registry, every IAM role inside the fleet\'s permissions boundary', status: 'built' as const, href: gh('airframe', 'docs/user/cloud-targets.md') },
+  { text: "More of the architects' and security team's rules inside those Compositions", status: 'proposal' as const },
+  { text: 'An approval step for cloud production environments: a release pin PR on the source repo (ADR-0020)', status: 'built' as const, href: gh('glidepath', 'docs/admin/adr/0020-cloud-gated-promotion-by-release-pin.md') },
   { text: 'Live health for cloud services in Tower', status: 'proposal' as const, href: gh('tower', 'docs/cloud-deploys.md') },
 ];
 ---
@@ -172,7 +173,9 @@ const evidence = [
           that cross fields. Before it creates anything, an XR checks the cluster registry live, and if the cluster it
           was asked for isn't ready, it builds nothing and says why rather than half-succeeding. Deleting a request never
           deletes the repo behind it. Cloud credentials come from each app's own secret store, never from one platform-wide
-          account. And a Kyverno admission policy and Airframe's validator in CI catch what gets around the API.
+          account. <em>(Update: on AWS there is no stored credential at all any more. Since October 16, 2026 each Lambda
+          function and ECS service gets its own deploy role, which the pipeline assumes for an hour with a ServiceAccount
+          token. Azure still uses a stored secret, for now.)</em> And a Kyverno admission policy and Airframe's validator in CI catch what gets around the API.
         </p>
         <p>
           My favourite piece of governance from these two days is a refusal. In Hangar, an environment on the Flight tier,
@@ -181,7 +184,8 @@ const evidence = [
           environment at all, rather than
           letting a cloud prod quietly deploy on every push. I'd much rather the platform say no than pretend. The design
           for the missing approval is written up as <a href={gh('glidepath', 'docs/admin/adr/0020-cloud-gated-promotion-by-release-pin.md')}>ADR-0020</a>,
-          and it isn't built yet.
+          and it isn't built yet. <em>(Update: it was built on October 7, 2026, two days after I wrote this. A cloud
+          service now gets a Flight environment, promoted by a reviewed pin PR.)</em>
         </p>
         <p>
           The rules I'd most like to see in here next are the ones every architecture and security team I've worked with
@@ -214,7 +218,9 @@ const evidence = [
           you onboard. Glidepath only updates them. I shipped it that way on purpose: it let the first cloud targets land
           in two days, and it meant the control plane didn't need to hold a single cloud credential. But it also means
           the most interesting rules from the last section don't have anywhere to live yet. Composing the cloud resource
-          is the next step, and the request won't change when it happens.
+          is the next step, and the request won't change when it happens. <em>(Update: since October 8, 2026, the cloud
+          target XRs stand up the function or service, its roles and its registry, and since October 16 an AWS deploy
+          needs no stored key at all.)</em>
         </p>
         <p>
           The good news is that all of it works. Lambda functions, Azure Functions and every one of the cloud deploy

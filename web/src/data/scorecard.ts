@@ -41,6 +41,11 @@ const labels: Record<string, { date: string; label: string; note: string }> = {
     label: 'AppSpec in the contract',
     note: 'The AppSpec schema (one document stating an app and its environments) moved into Airframe\'s contract bundle, where an agent reading the contract finds it. Interaction surface doubled; the airframe.* tools are what it still lacks.',
   },
+  'baseline-2026-10-25': {
+    date: '2026-10-25',
+    label: 'Cloud targets and the rebuild',
+    note: 'Three new XRDs (23 in all), cross-field CEL rules on 22 of them, fromComponent in nearly every env entry (2 literals left of 78), 23 chart guards and 48 chart tests, seven walkthroughs. Past the M3 target of 88, though M3 itself (the planner and airframe.* tools) is not built. The chart README got shorter when it was rewritten to describe today\'s chart, which cost a little discoverability.',
+  },
 };
 
 export type Snapshot = Raw & { id: string; date: string; label: string; note: string; passed: number };
@@ -71,31 +76,31 @@ export const aPlus = 97;
 // snapshot's own metrics; update these when a new snapshot moves a dimension.
 export const findings: Record<string, { found: string; next: string }> = {
   '1 Discoverability': {
-    found: 'AGENTS.md on all 20 components; every XRD is in the catalog or opts out with a reason',
-    next: 'held; every new component ships its AGENTS.md',
+    found: 'AGENTS.md on all 23 components and every XRD in the catalog; the chart README is down to 170 lines',
+    next: 'a chart README that documents every values key again',
   },
   '2 Schema precision': {
-    found: 'every schema node and XRD field is described; 46 of 82 objects strict; 8 of 20 XRDs carry a CEL rule',
+    found: 'every schema node is described; 49 of 83 objects strict; 22 of 23 XRDs carry a cross-field CEL rule',
     next: 'every object strict, tighter leaf fields, examples',
   },
   '3 Component contracts': {
-    found: 'every component declares outputs and verify checks; 33 of 46 env entries still hard-code a name',
-    next: 'fromComponent in every live env entry',
+    found: 'every component declares outputs and verify checks; 2 of 78 env entries still hard-code a name',
+    next: 'fromComponent in the last two env entries',
   },
   '4 Pre-merge validation': {
-    found: 'airframe validate is a required check, with 11 dead-end rules and 18 chart guards',
-    next: 'the last seven chart guards, with actionable messages',
+    found: 'airframe validate is a required check, with 23 chart guards that say what to fix',
+    next: 'the last two chart guards',
   },
   '5 Write safety': {
     found: 'every values field carries an owner and a risk class; no live file mixes owners',
     next: 'held; keep machine-owned data in the release file',
   },
   '6 Observe and verify': {
-    found: '17 of 20 XRDs declare status conditions and a closed set of reason codes',
+    found: '20 of 23 XRDs declare status conditions and a closed set of reason codes',
     next: 'the last three XRDs, a describe tool',
   },
   '7 Docs for agents': {
-    found: 'all three quickstarts replay as live walkthroughs, green',
+    found: 'seven walkthroughs replay live, and every YAML block in the user docs parses',
     next: 'held; every new component ships its walkthrough',
   },
   '8 Interaction surface': {
@@ -107,7 +112,7 @@ export const findings: Record<string, { found: string; next: string }> = {
     next: 'escape hatches (extraManifests) denied by default',
   },
   '10 Hygiene and determinism': {
-    found: 'helm lint, 30 chart tests and chart CI; all 21 live values files render',
+    found: 'helm lint, 48 chart tests and chart CI; all 17 live values files render',
     next: 'held; keep the fleet rendering clean',
   },
 };

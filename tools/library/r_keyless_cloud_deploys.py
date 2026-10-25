@@ -9,7 +9,7 @@ P = Page(
     'How Hangar replaced two never-expiring AWS keys with one-hour roles that a pod earns by proving who it is: '
     'what was built, why it was built this way, a bigger hole closed on the way, and the incident the switch caused.',
     '2026-10-16',
-    meta=[('Status', 'phases 0 to 4 live for Lambda, Oct 16, 2026; the old keys are deleted by hand; ECS, then Azure, next'),
+    meta=[('Status', 'phases 0 to 4 live for Lambda, Oct 16, 2026; ECS keyless the same day; the old keys are deleted by hand; Azure next'),
           ('Docs', '<a href="https://hangarplatform.dev/docs/airframe/admin/cloud-credentials/">Airframe cloud credentials</a> · '
                    '<a href="https://hangarplatform.dev/docs/glidepath/admin/cloud-deploy-identity/">Glidepath cloud deploy identity</a>')],
     lede=('Hangar reached AWS with two access keys: passwords for machines that worked from anywhere until someone '
@@ -288,7 +288,8 @@ P.add(f"""
     <div class="row"><h3>Phase 2 · Glidepath assumes it</h3>{chip('Live', 'ok')}<p>The ServiceAccount, the account ConfigMap, the deploy step and promote flows.</p></div>
     <div class="row"><h3>Phase 3 · who may use it</h3>{chip('Live', 'ok')}<p>Four admission policies, 16 of 16 live cases. The first real deploy showed they also refused Tekton's signing and history services, which only add a note to a run; fixed the same day.</p></div>
     <div class="row"><h3>Phase 4 · retire the key</h3>{chip('Live', 'ok')}<p>The fallback and the scaffold's AWS secrets are gone, and a test fails the build if the deploy step ever reads a stored key again. The old Infisical keys and IAM users are deleted by hand.</p></div>
-    <div class="row"><h3>ECS, then Azure</h3>{chip('Planned', 'info')}<p>The same deploy role for ECS after its first live deploy; Azure through workload identity federation.</p></div>
+    <div class="row"><h3>ECS</h3>{chip('Live', 'ok')}<p>Since Oct 16, 2026 the ECS target composes an ECR repository and a deploy role too, and the deploy assumes it with a ServiceAccount token and copies the image into ECR. No stored key, and no <code>app-secrets</code> mounted.</p></div>
+    <div class="row"><h3>Azure</h3>{chip('Planned', 'info')}<p>Container Apps still log in with a stored service principal secret. Next: workload identity federation.</p></div>
   </div>
 </section>
 

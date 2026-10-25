@@ -62,17 +62,17 @@ fig2 = P.fig(b, W, H, 'The floor under the console',
 def tier(name, items):
     out = f'<h3>{name}</h3><div class="track">'
     for t, why, st in items:
-        c = chip('Done Oct 12, 2026', 'ok') if st == 'done' else chip('Open', 'warn')
+        c = chip('Done ' + (st[5:] or 'Oct 12, 2026'), 'ok') if st.startswith('done') else chip('Open', 'warn')
         out += f'<div class="row"><h3>{t}</h3>{c}<p>{why}</p></div>'
     return out + '</div>'
 
 backlog = tier('Quick wins', [
     ('Close the Kubernetes proxy hole first', 'The read token behind the portal could do far more than read, and any signed-in user could reach it through a generic proxy. Phase 0 of the credentials spec closed it.', 'done'),
-    ('Give Flight environments a Prometheus to read', 'Until then SLOs, pod metrics and canary analysis are empty for exactly the environments an owner cares about.', 'open'),
+    ('Give Flight environments a Prometheus to read', 'Until then SLOs, pod metrics and canary analysis are empty for exactly the environments an owner cares about. The prod profile now runs Prometheus and tracing, and Tower reads every cluster through the hub\'s Thanos.', 'done Oct 23, 2026'),
     ('Decide on scale, then close the question', 'Durable scale already exists as a values PR. My recommendation: no runtime scale, and say so.', 'open'),
     ('Finish break-glass hygiene on Flight', 'A signed debug image, an image policy scoped to debug containers, and a cleanup backstop in the cluster.', 'open'),
     ('Confirm the image cleanup token really synced', 'If it never did, the Images tab\'s one write action is dead on prod.', 'open'),
-    ('Show test results where releases are judged', 'Testkube results belong on the Release Record and the pipeline row.', 'open'),
+    ('Show test results where releases are judged', 'Testkube results belong on the Release Record and the pipeline row. Tower v0.79 and v0.80 put every attested test run on the image, a Tests view on Pipelines, and the test evidence on the Release Record.', 'done Oct 19, 2026'),
 ]) + tier('Near-term', [
     ('Short-lived cluster credentials for Tower', 'Replace the never-expiring token with federated ten-minute tokens and split reads from writes.', 'done'),
     ('Verify image signatures at admission', 'If a merge can\'t be blocked, admission is the only place an unsigned image can be refused.', 'open'),
@@ -84,7 +84,7 @@ backlog = tier('Quick wins', [
     ('A GitHub organization, Apps and SSO', 'Retire the personal token, generate rulesets so gates block for real, and put sign-in in front of everything.', 'open'),
     ('Backup, restore, and a drill', 'Cluster state, databases, the audit bucket and the secrets store\'s root key. One drill a quarter.', 'open'),
     ('A production-readiness scorecard', 'The Airframe scorecard climbed because it was measured every week. Give SSO, DR and platform SLOs the same treatment.', 'open'),
-    ('Cloud targets to parity, or labelled preview', 'One live Lambda smoke test; the other targets are render-tested only.', 'open'),
+    ('Cloud targets to parity, or labelled preview', 'One live Lambda smoke test; the other targets are render-tested only. Since then Lambda and ECS have been tested end to end, with no stored key; Azure Container Apps is next.', 'open'),
 ])
 
 P.add(f"""

@@ -86,8 +86,9 @@ def _svg_dark(svg):
 
 
 class Page:
-    def __init__(self, slug, kind, eyebrow, title, description, date, meta=(), lede=''):
+    def __init__(self, slug, kind, eyebrow, title, description, date, meta=(), lede='', css=''):
         self.slug, self.kind, self.eyebrow, self.title = slug, kind, eyebrow, title
+        self.css = css  # extra rules for a paper ported from an artifact with its own components
         self.description, self.date, self.meta, self.lede = description, date, meta, lede
         self.parts, self.svgs, self.n = [], [], 0
 
@@ -127,7 +128,7 @@ class Page:
 <style>
 {CSS}{EXTRA}
 svg rect[fill="{lib.PAPER}"]{{fill:var(--paper)}}
-{dark}</style>
+{dark}{self.css}</style>
 </head>
 <body>
 <div class="wrap">

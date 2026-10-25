@@ -180,7 +180,9 @@ def collect(tech: Path) -> dict:
 
     # base layer / ownership split in the ApplicationSets
     # The lower-envs ApplicationSet moved into Glidepath's glidepath-app chart (ADR-0023, Oct 7, 2026).
-    appsets = glob.glob(str(tech / "gitops-cluster-dev" / "02-argocd-apps" / "**" / "*.yaml"), recursive=True) + \
+    # The dev cluster repo was renamed gitops-cluster-dev to gitops-hangar-dev in the Oct 17, 2026 rebuild.
+    appsets = [p for repo in ("gitops-cluster-dev", "gitops-hangar-dev")
+               for p in glob.glob(str(tech / repo / "02-argocd-apps" / "**" / "*.yaml"), recursive=True)] + \
         glob.glob(str(tech / "glidepath" / "charts" / "glidepath-app" / "templates" / "argocd" / "*.yaml"))
     text = "\n".join(Path(p).read_text() for p in appsets)
     m["base_layer"] = bool(re.search(r"valueFiles:[\s\S]{0,400}base", text))
@@ -256,7 +258,7 @@ def collect(tech: Path) -> dict:
         for b in re.findall(r"```ya?ml\n(.*?)```", Path(f).read_text(), flags=re.S):
             blocks += 1
             try:
-                yaml.safe_load(b)
+                list(yaml.safe_load_all(b))  # a block may hold several documents separated by ---
                 parsed += 1
             except Exception:
                 pass
