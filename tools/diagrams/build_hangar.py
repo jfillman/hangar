@@ -7,7 +7,7 @@ Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossp
 import sys, os, re, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib
-import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, e_m, e_n, e_o, e_p, d123, d456, d789, d1011
+import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, e_m, e_n, e_o, e_p, e_q, d123, d456, d789, d1011
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '../../docs/autopilot/diagrams')
@@ -21,6 +21,8 @@ OUT_CATALOG = os.path.join(OUT, '../../catalog/diagrams')
 OUT_TESTING = os.path.join(OUT, '../../testing/diagrams')
 # The Expansion set (pictures for the essay on growing the catalog) lives in docs/expansion/diagrams.
 OUT_EXPANSION = os.path.join(OUT, '../../expansion/diagrams')
+# The Paving set (pictures for the essay "Paving the cloud") lives in docs/paving/diagrams.
+OUT_PAVING = os.path.join(OUT, '../../paving/diagrams')
 # The Portability set (pictures for the forge and registry portability plan) lives in docs/portability/diagrams.
 OUT_PORTABILITY = os.path.join(OUT, '../../portability/diagrams')
 # The SLO set (pictures for the SLO feature doc) lives in docs/slo/diagrams.
@@ -48,6 +50,7 @@ OVERVIEW = [('change-road', e_l.o_change), ('product-family', e_l.o_family), ('t
             ('layer-stack', e_l.o_layers), ('lifecycle-wheel', e_l.o_wheel)]
 TESTING = [e_m.t_how_it_works, e_m.t_in_hangar, e_m.t_free_tier]
 EXPANSION = [e_n.g_many_targets, e_n.g_where_policy_lives, e_n.g_today_and_next]
+PAVING = [e_q.q_two_roads, e_q.q_road_parts, e_q.q_since_october]
 PORTABILITY = [e_p.q_coupling, e_p.q_contracts, e_p.q_tokens, e_p.q_release_on_gitlab, e_p.q_migration, e_p.q_roadmap]
 BREAKGLASS = [e_o.b_exec_vs_debug, e_o.b_how_it_works, e_o.b_two_people, e_o.b_layers, e_o.b_policies,
               e_o.b_lifecycle, e_o.b_report_card]
@@ -81,6 +84,7 @@ xp = build('crossplane', CROSSPLANE, '.', 'Hangar · Airframe · Crossplane', ro
 cat = build('catalog', CATALOG, '.', 'Hangar · Airframe · Service catalog', root=OUT_CATALOG)
 tst = build('testing', TESTING, '.', 'Hangar · Glidepath · Testing', root=OUT_TESTING)
 exp = build('expansion', EXPANSION, '.', 'Hangar · Airframe · Expansion', root=OUT_EXPANSION)
+pav = build('paving', PAVING, '.', 'Hangar · Airframe · Paving', root=OUT_PAVING)
 por = build('portability', PORTABILITY, '.', 'Hangar · Portability', root=OUT_PORTABILITY)
 slo = build('slo', SLO, '.', 'Hangar · SLOs', root=OUT_SLO)
 bg = build('breakglass', BREAKGLASS, '.', 'Hangar · Tower · Break-glass', root=OUT_BREAKGLASS)

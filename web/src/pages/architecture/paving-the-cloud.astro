@@ -1,0 +1,285 @@
+---
+import Base from '../../layouts/Base.astro';
+import Diagram from '../../components/Diagram.astro';
+import Evidence from '../../components/Evidence.astro';
+import { essays } from '../../data/essays';
+import { u } from '../../lib/url';
+const essay = essays.find((e) => e.slug === 'paving-the-cloud')!;
+const deps = u('docs/airframe/user/cloud-dependencies/');
+const gaps = u('docs/airframe/admin/known-gaps/');
+// The whole request for a managed database, as Airframe's ManagedPostgreSQL API takes it. The name is a Skyport app.
+const request = `apiVersion: catalog.hangar.io/v1alpha1
+kind: ManagedPostgreSQL
+metadata:
+  name: baggage-db
+spec:
+  size: small             # db.t4g.micro on AWS, B_Standard_B1ms on Azure
+  version: "17"
+  allowedCidrs:           # empty admits no one
+    - 203.0.113.0/24
+  protect: true           # deletion protection and a final snapshot`;
+// The queue half of the same app: who needs it, and how, never which IAM actions.
+const consumers = `  consumers:
+    - awsLambdaTarget: baggage-api
+      access: receive
+      trigger: true`;
+const evidence = [
+  { text: 'MessageQueue, ObjectStorage and ManagedPostgreSQL in catalog.hangar.io, on AWS or Azure from one field', status: 'built' as const, href: deps },
+  { text: 'Private, encrypted and TLS-only by construction, with no field to turn any of it off', status: 'built' as const, href: deps },
+  { text: 'Lambda consumers get a grant on their own role, capped by the permissions boundary, never a key', status: 'built' as const, href: u('docs/airframe/admin/cloud-credentials/') },
+  { text: 'Cloud targets that compose the function, the ECS service or the Container App, with keyless deploys', status: 'built' as const, href: u('docs/airframe/user/cloud-targets/') },
+  { text: 'All three kinds verified live on AWS on October 24, 2026, teardown included', status: 'built' as const, href: u('library/airframe-cloud-dependencies/') },
+  { text: 'The Azure versions run against a real subscription (known gap 10)', status: 'proposal' as const, href: gaps },
+  { text: 'ECS services and Kubernetes apps as consumers, with their own cloud identity (known gap 8)', status: 'proposal' as const, href: gaps },
+  { text: 'A private database network and a least-privilege app role (known gap 9)', status: 'proposal' as const, href: gaps },
+  { text: 'Live health for cloud services in Tower', status: 'proposal' as const, href: u('docs/tower/cloud-deploys/') },
+];
+---
+<Base title={essay.title} description={essay.dek} section="architecture">
+  <div class="wrap">
+    <article class="essay">
+      <header class="hero">
+        <p class="eyebrow"><a href={u('architecture/')}>Architecture</a> · {essay.minutes} min read</p>
+        <h1>Paving the <em>cloud</em></h1>
+        <p class="lede">{essay.dek}</p>
+      </header>
+
+      <div class="prose">
+        <p>
+          On October 24, 2026, I sent one message to a queue and watched it fail twice. That was the plan. The queue was
+          an Amazon SQS queue that Airframe had made a few minutes earlier, the function it triggered was running a
+          placeholder image with no handler in it, and the queue was set to give up after two tries. Two failed runs,
+          then the message turned up in the dead-letter queue, exactly where it should.
+        </p>
+        <p>
+          What made me smile wasn't the failure. It was everything I hadn't written to get there. No IAM policy, no
+          event source mapping, no redrive configuration, no encryption setting, no access key. I'd asked for a queue in
+          a few lines of YAML and said which function should read from it. Then I deleted the file, and the queue, the
+          bucket, the database, its network, its password and every grant went with it, with no snapshot left behind to
+          pay for.
+        </p>
+        <p>
+          That's the moment this essay is about. Airframe now offers a queue, object storage and a managed PostgreSQL
+          database on AWS or Azure, beside the functions and cloud targets it learned in October. I think that's the
+          point where a platform stops being a nicer way to talk to Kubernetes, and I want to say why.
+        </p>
+
+        <h2>More than a fancy Kubernetes front end</h2>
+        <p>
+          There's a fair criticism of platforms built on Crossplane, and I think it deserves a straight answer. If all your platform does
+          is put a custom resource in front of a Helm chart, you've given developers YAML with extra steps. They're
+          right to shrug at that. A wrapper around <code>kubectl</code> isn't a product. It's an inconvenience with a
+          logo.
+        </p>
+        <p>
+          What Kubernetes actually gives a platform is the machinery for keeping promises. A schema the API server
+          enforces. Versions. Access control. A status that says how things are going. A controller that notices when
+          the world has drifted from what was asked for, and puts it back. All of it driven from git, so every change is
+          a reviewed commit. None of that machinery cares whether the thing being promised is a pod on my cluster or a
+          database in somebody else's data centre.
+        </p>
+        <p>
+          So in Hangar, Kubernetes is where the contract is kept. It was never meant to be where every road ends. A
+          developer asks for a noun: a Python app, a cache, a queue, a database. Whether that noun becomes a pod or a
+          managed service is the platform's business, and the request, the status and the rules look the same either
+          way. Airframe has had a RabbitMQ broker and an in-cluster PostgreSQL for a while. It now has a
+          <code>MessageQueue</code> and a <code>ManagedPostgreSQL</code> too, and they answer the same three questions:
+          what can I ask for, what do I always get, and how do I know it worked.
+        </p>
+      </div>
+
+      <Diagram id="paving/01-two-roads-one-contract" />
+
+      <div class="prose">
+        <p class="pull">Kubernetes is where the contract is kept, not where every road has to end.</p>
+
+        <h2>What a paved road is made of, when it leads to a cloud</h2>
+        <p>
+          The fourth of my <a href={u('principles/')}>principles</a> is paved roads, with security built in. A golden
+          path is good advice. A paved road goes further: the recommended way is also the easiest one, and the checks
+          run whether anyone remembers them or not. For an app on the cluster, most of Hangar's road is one chart and one
+          <code>cicd.yaml</code>.
+        </p>
+        <p>
+          The cloud is a different kind of hard. Nobody struggles to click "create database" in a console. The hard part
+          is everything around it: which network, which subnets, which security group, which parameter group, whether
+          the storage is encrypted, whether plaintext connections are refused, where the password lives, who can reach
+          it, and what happens to the data when the thing is deleted. Those are exactly the questions a developer doesn't
+          want to learn on their first day, and that the security team is afraid they'll learn on their hundredth. Here's
+          everything Skyport's baggage-api has to say to get a database:
+        </p>
+        <pre><code>{request}</code></pre>
+        <p>
+          Four fields, and none of them is a networking or security decision a developer has to get right. The road is
+          everything the request doesn't have to say. I've come to think of it in five parts, and I'd use the same five
+          to judge any platform's offer of a cloud resource, Hangar's included.
+        </p>
+        <p>
+          <strong>A contract</strong>, which is the short list of things you can ask for, in your own words: a size,
+          a version, some storage, the networks allowed in. <strong>Defaults with no field</strong>, the things you
+          always get. <strong>An identity</strong>, so the app can use the thing without anyone handling a key.
+          <strong>An answer</strong>, a status a person and a script can both read. And <strong>a way out</strong>,
+          because a road you can't leave cleanly is just a slower way to make a mess.
+        </p>
+      </div>
+
+      <Diagram id="paving/02-what-a-road-is-made-of" />
+
+      <div class="prose">
+        <h2>The missing field is the policy</h2>
+        <p>
+          In <a href={u('architecture/catalog-that-grows/')}>A service catalog that grows with the company</a> I wrote
+          about where the architects' and security team's rules can live: in the schema, in the Composition, and in
+          admission and CI. Back then the cloud resources were bring your own, so that was mostly a promise. Now there's
+          something concrete to point at, and it taught me one thing I hadn't put into words.
+        </p>
+        <p>
+          The strongest guardrail isn't a safe default. It's a field that doesn't exist. Plenty of infrastructure modules
+          have a variable like <code>public = false</code>, and sooner or later somebody sets it to true for a
+          good reason on a bad day. Airframe's <code>ObjectStorage</code> has no such field. All four of S3's public
+          access blocks are on, ACLs are off, and there's no way to ask for anything else. A database admits no network at
+          all until you list one. PostgreSQL refuses plaintext connections on both clouds. You can't misconfigure a
+          setting you were never given.
+        </p>
+        <p>
+          The flip side is that when something really is dangerous, the API makes you say it out loud. Azure deletes a
+          storage account together with everything in it, so an Azure <code>ObjectStorage</code> isn't accepted unless it
+          says <code>emptyOnDelete: true</code>. On AWS, a bucket that still has objects in it is kept unless you've said
+          the same thing. I like that. The platform doesn't stop you doing the risky thing, it just won't let you do it
+          by accident.
+        </p>
+
+        <h2>Identity is the real road</h2>
+        <p>
+          If I had to pick the one part of a cloud road that matters most, it's identity, and it's the part that's
+          usually left as an exercise for the reader. The quickest way to let a function read a queue is an access key in
+          an environment variable. It works on the first try, it works from anywhere, and it works for whoever copies it,
+          for years.
+        </p>
+        <p>
+          In Airframe, the developer says who needs the queue and how, and nothing about IAM:
+        </p>
+        <pre><code>{consumers}</code></pre>
+        <p>
+          From that, the composition finds the function, writes a policy onto that function's own execution role for this
+          one queue and these actions, and connects the queue to it. Every role it touches carries the same permissions
+          boundary, so no grant can ever be wider than the ceiling the security team set. The function's deploys
+          already earn one-hour roles instead of stored keys, which I wrote up in
+          <a href={u('library/keyless-cloud-deploys/')}>No stored AWS key for cloud deploys</a>. Put together, there is
+          no AWS key anywhere in this picture. When I tested it, the IAM policy simulator allowed the function this queue
+          and this bucket, and denied it every other.
+        </p>
+        <p>
+          The part I care about is who that helps. The developer never had to learn IAM. The security team didn't have to
+          review a hand-written policy, because the policy is the same every time and lives in a Composition they can
+          read and approve once. Both of them got what they wanted from the same few lines.
+        </p>
+
+        <h2>One field picks the cloud, honestly</h2>
+        <p>
+          Each of the three kinds takes <code>spec.cloud</code>, <code>aws</code> or <code>azure</code>, fixed at
+          creation. I want to be careful about what that does and doesn't mean, because "multi-cloud" is a phrase that has
+          sold a lot of disappointment.
+        </p>
+        <p>
+          It doesn't mean the clouds are the same. An SQS queue and a Service Bus queue are different things underneath,
+          a Storage Account isn't an S3 bucket, and on Azure a queue's consumer still uses a connection string because
+          the managed identity work isn't done. What it means is that the contract means the same thing on both: a
+          private, encrypted, TLS-only resource, the same status, and the same two objects for the app to read, a
+          <code>-connection</code> ConfigMap and, where one is needed, a <code>-credentials</code> Secret. Where a field
+          only applies to one cloud, the XRD says so. I'd rather offer a little less on both than pretend.
+        </p>
+        <p>
+          And honestly, the Azure versions have never run. They're render-tested and checked against the providers'
+          schemas, but the providers aren't installed on my dev cluster yet. That's known gap 10, and it's on this page
+          because it would be easy to leave off.
+        </p>
+
+        <h2>Why it has to be an API</h2>
+        <p>
+          A lot of internal developer portals put a nice form in front of a ticket queue. You fill in the form, somebody
+          on another team picks up the ticket, and a few days later you have a database configured the way that person
+          configures databases. That's a better experience than email, and it's still a queue in a nicer outfit. It
+          can't be versioned, it can't be reviewed in a pull request, it can't be undone by deleting a file, and an agent
+          can't use it.
+        </p>
+        <p>
+          An API can be all of those. The third of my principles is an API-driven control plane ready for AI, and this
+          is where it stops being abstract. Every cloud dependency reports one condition, <code>DependencyReady</code>,
+          with a fixed set of reasons, and each reason has exactly one meaning. <code>ConsumerUnresolved</code> means the
+          queue is fine but one of its consumers names a function that isn't there. <code>ManagedPostgreSQLFailing</code>
+          carries the cloud provider's own error. A person reads that in Tower, a script branches on it, and an agent can
+          fix the request and try again, all from the same field. The front door doesn't move either: a Backstage form,
+          Tower, a pull request and an agent all create the same kind of resource, so adding three new kinds changed none
+          of them.
+        </p>
+        <p>
+          An IDP that's only a portal is a catalog of things you can request. An IDP with an API underneath is a catalog
+          of things the platform will keep true. The second one is the one that scales past the platform team's
+          inbox.
+        </p>
+
+        <h2>Three weeks of the wish list</h2>
+        <p>
+          The last essay ended with what I wanted next: let the XR make the cloud resource instead of bringing your own,
+          give cloud services a real production approval, keep every role inside a boundary, and grow the menu by asking,
+          maybe with a queue or a bucket. Looking back three weeks later, most of that list is built. The cloud targets
+          compose the function, the ECS service and the Container App now. Cloud production gets a reviewed release pin,
+          the same kind of approval a Kubernetes app has. The keys are gone. And the queue and the bucket arrived, with a
+          database as well.
+        </p>
+      </div>
+
+      <Diagram id="paving/03-three-weeks-of-the-wish-list" />
+
+      <div class="prose">
+        <p>
+          Building it turned up three new gaps, and I'd rather name them than have you find them. Only a Lambda function
+          can be a consumer today. An ECS service has no task role for the app's own code yet, and an app on the cluster
+          has no cloud identity at all (gap 8). The database is reachable only over a public endpoint, because a Lambda
+          function outside a VPC has no fixed address, so for now the password and TLS are doing more of the work than
+          I'd like, and there's no separate least-privilege role for the app (gap 9). And Azure, as I said, hasn't run
+          (gap 10). Tower still shows what was deployed to a cloud service but not whether it's healthy. Every one of
+          these is in <a href={gaps}>Airframe's known gaps</a> with a proposed fix, and the full spec, with what was
+          verified and how, is in the <a href={u('library/airframe-cloud-dependencies/')}>Library</a>.
+        </p>
+        <p>
+          Gap 8 is the one I'm most looking forward to. Giving apps on the cluster their own cloud identity means a
+          Python app in a pod can read the same queue a Lambda function does, with the same kind of grant and no key. At
+          that point the line between a Kubernetes road and a cloud road mostly disappears, which is rather the point.
+        </p>
+
+        <h2>The road should be boring</h2>
+        <p>
+          The best compliment a platform can get is "I didn't have to think about it." Not that it's clever, or fast,
+          or modern. Just that the thing they needed was there, it was safe, and they
+          got on with their actual work. That's what I'm after with the cloud. A team that needs a queue should get one
+          as easily as a team that needs a pod, with the same guardrails on and the same way out.
+        </p>
+        <p>
+          Kubernetes will always be where Hangar keeps its promises. What it promises can be anywhere.
+        </p>
+        <p class="sign">James</p>
+        <p class="more"><a href={u('architecture/')}>← All architecture essays</a></p>
+      </div>
+
+      <Evidence items={evidence} heading="Where Hangar does this, and where it doesn't yet" />
+    </article>
+  </div>
+</Base>
+<style>
+  .essay .hero .eyebrow a { color: inherit; }
+  .essay .hero h1 { max-width: 22ch; }
+  .prose h2 { margin-top: 3rem; }
+  .prose pre {
+    margin: 1.4rem 0; padding: 0.9rem 1rem; overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--raised); font-size: 0.84rem; line-height: 1.55;
+  }
+  .prose pre code { background: none; padding: 0; font-size: inherit; }
+  .pull {
+    font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem; margin: 2.5rem 0; max-width: 34ch;
+  }
+  .sign { font-family: var(--font-serif); font-size: 1.4rem; margin-top: 2rem; }
+  .more { margin-top: 2rem; }
+</style>
