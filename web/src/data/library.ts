@@ -28,6 +28,13 @@ export const KIND_BLURBS: Record<Kind, string> = {
 
 export const papers: Paper[] = [
   {
+    id: 'glidepath-api', kind: 'spec', product: 'glidepath', date: '2026-10-25',
+    title: 'A Glidepath API for people, Tower and agents',
+    dek: 'Give Glidepath the front end Airframe already has: a generated contract, a validator, a small API for runs and releases, and four tiers of action. Agents edit cicd.yaml through pull requests, limited by field, and Tower moves onto the API side by side, one group of routes at a time.',
+    page: 'papers/2026-10-25-glidepath-api.html',
+    status: { label: 'Proposed · P0 next', tone: 'open' },
+  },
+  {
     id: 'airframe-cloud-dependencies', kind: 'spec', product: 'airframe', date: '2026-10-24',
     title: 'Managed cloud services an app can depend on',
     dek: 'Three new Airframe kinds give an app a queue, object storage or a PostgreSQL database run by AWS or Azure: what each creates on both clouds, the guardrails with no field to turn them off, how a Lambda function gets access without a key, and what the live run showed.',
