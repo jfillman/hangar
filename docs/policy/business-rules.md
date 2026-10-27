@@ -308,7 +308,7 @@ Every place where a rule above is weaker than it reads, in one list:
 | `qa` is advisory on hangar-dev. | GATE-12, GATE-13 | `required: false` until every app with a Flight environment has a check ride (boarding-api has one). The check runs and reports; a missing ride does not fail it. |
 | The check-rides repository's owners are not enforced. | TEST-04 | A private repo on GitHub Free: code-owner review is convention. The repo holds no secrets and can be made public. |
 | An app opens its NetworkPolicy to tests by hand. | TEST-07 | A platform default for the `testkube` namespace is on the test framework roadmap. |
-| Production SLO burn isn't measured. | REL-13 | kind-prod's Prometheus is off, so "clean" can't yet mean "no SLO burn during bake". |
+| Production SLO burn isn't read during the bake. | REL-13 | Production's Prometheus is on and canary analysis uses it, but the outcome is still decided from the rollout alone, so "clean" can't yet mean "no SLO burn during bake". |
 | Image signatures aren't checked at admission. | SC-05 | An unsigned image could run if it got into git. GATE-07 is the only check. |
 | `airframe-validate` doesn't run on app repos or the tenants repo. | GATE-08, CRED-01 | Airframe roadmap AF-4b. |
 | Agent and security-review limits are convention. | AF-06, AF-07, AI-03 | Clearance isn't deployed, and no rule requires a security reviewer. |
