@@ -3,6 +3,13 @@ export type Essay = { slug: string; title: string; dek: string; date: string; mi
 
 export const essays: Essay[] = [
   {
+    slug: 'release-record',
+    title: "The release record, and the users I haven't met",
+    dek: "Tower's release record follows a release from its draft to its outcome and writes every decision into git. What it's trying to fix, how it works, and why I keep a release's story in the GitOps repo. And an honest admission: Hangar has no users, so every part of it rests on assumptions about customers I've never met. Here they are, with how I'd test each one.",
+    date: '2026-10-27',
+    minutes: 13,
+  },
+  {
     slug: 'paving-the-cloud',
     title: 'Paving the cloud',
     dek: "Airframe can now hand an app a queue, a bucket or a managed PostgreSQL database on AWS or Azure, with the security already on. Why that's the point where a platform stops being a nicer way to talk to Kubernetes: what a paved road to a cloud resource is made of, why the missing field is the policy, why identity is the real road, and what's still open.",

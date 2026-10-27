@@ -2,7 +2,7 @@ import all from './diagrams.generated.json';
 
 export type Diagram = {
   id: string;
-  set: 'overview' | 'plan' | 'autopilot' | 'reference' | 'glidepath' | 'crossplane' | 'catalog' | 'expansion' | 'paving' | 'portability' | 'testing' | 'slo' | 'breakglass';
+  set: 'overview' | 'plan' | 'autopilot' | 'reference' | 'glidepath' | 'crossplane' | 'catalog' | 'expansion' | 'paving' | 'portability' | 'testing' | 'slo' | 'breakglass' | 'releases';
   num: string;
   title: string;
   eyebrow: string;
@@ -25,6 +25,7 @@ export const SET_LABELS: Record<Diagram['set'], string> = {
   testing: 'Testing',
   slo: 'SLOs',
   breakglass: 'Break-glass',
+  releases: 'Release record',
 };
 
 export function diagram(id: string): Diagram {

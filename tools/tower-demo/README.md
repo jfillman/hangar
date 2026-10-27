@@ -23,6 +23,9 @@ baggage-api) across dev, staging and prod on two clusters called dev and prod. N
   a fake attach WebSocket that plays a shell in the debug container (`debug / $`, uid 65532, read-only), and
   asciicast v2 recordings with a SHA-256 and a Rekor index on the session record.
 - `record-breakglass.mjs` / `encode-breakglass.sh`: the break-glass walkthrough and its encoder.
+- `mock/releases.ts`: the release record routes (draft, release mode, sign-off, outcomes, the calendar) with
+  flight-api's invented history, ASPEN to DOGWOOD and ELM as the draft.
+- `stills-release-record.mjs`: 2x stills of the release record for the essay (`node stills-release-record.mjs <dir>`).
 - `record.mjs`: the scripted walkthrough (captions, cursor, scenes, chapters), recorded with Playwright.
 - `encode.sh`: turns the recording into the MP4, WebM and poster under `web/public/media/`, and writes
   `tower-chapters.json` from the recording's marks.

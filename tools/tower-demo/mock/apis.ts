@@ -1,6 +1,7 @@
 import * as F from './fixtures';
 import { breakglassRoute } from './breakglass';
 import * as FL from './fleet';
+import * as R from './releases';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -112,6 +113,14 @@ async function route(input: string, init?: RequestInit): Promise<Response> {
       case '/argo/refresh':
       case '/argo/sync': return json({ ok: true });
       case '/release-record': { const r: any = F.releaseRecordFor(q); return r._ok ? json(r) : json(r, 404); }
+      case '/release-records': return json(R.releaseRecordsFor(q.get('appName')));
+      case '/release-draft': return method === 'GET' ? json(R.draftFor(q.get('appName')))
+        : json({ commitUrl: `https://github.com/${F.OWNER}/${body?.appName}/commit/${F.shaFor('d41e7a2')}`, draft: body?.draft });
+      case '/release-mode': return method === 'GET' ? json(R.modeFor(q.get('appName')))
+        : json({ prUrl: `https://github.com/${F.OWNER}/gitops-cluster-dev-tenants/pull/41`, alreadyOpen: false });
+      case '/release-signoff': { const s = R.signoffRoute(q.get('imageTag')); return s ? json(s) : json({}, 404); }
+      case '/release-planned': return json(R.plannedFor());
+      case '/release-calendar': return json(R.calendar());
       case '/release-record/human-context': return json({ prUrl: `https://github.com/${F.OWNER}/gitops-prod/pull/217`, alreadyOpen: false });
       case '/config/cicd':
         if (method === 'GET') return json(F.cicdFor(q.get('repo') ?? q.get('appName') ?? F.FEATURED));
