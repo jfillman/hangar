@@ -7,13 +7,13 @@ const gh = (repo: string, kind: 'pull' | 'issues', n: number) => `https://github
 
 // flight-api's committed records, oldest first. The names (ASPEN, BIRCH, CEDAR, DOGWOOD) follow from this order.
 const HISTORY = [
-  { imageTag: '1.7.0-5d2c9b7', at: 7200, owner: 'jamie-dev', summary: 'Gates can be reassigned while boarding is open.',
+  { imageTag: '1.7.0-5d2c9b7', at: 7200, pr: 201, risk: 'low' as const, owner: 'jamie-dev', summary: 'Gates can be reassigned while boarding is open.',
     notes: { added: ['Reassign a gate during boarding (#176)'] }, outcome: 'clean' as const, closedBy: 'superseded' as const },
-  { imageTag: '1.7.1-8e3f1a0', at: 4200, owner: 'alex-m', summary: 'Departure board reads its gates from the cache first.',
+  { imageTag: '1.7.1-8e3f1a0', at: 4200, pr: 205, risk: 'medium' as const, owner: 'alex-m', summary: 'Departure board reads its gates from the cache first.',
     notes: { changed: ['Read gates from the cache before the database (#181)'] }, outcome: 'clean' as const, closedBy: 'superseded' as const },
-  { imageTag: '1.7.2-b71e0d4', at: 1300, owner: 'alex-m', summary: 'Boarding groups use the estimated departure time instead of the scheduled one.',
+  { imageTag: '1.7.2-b71e0d4', at: 1300, pr: 209, risk: 'low' as const, owner: 'alex-m', summary: 'Boarding groups use the estimated departure time instead of the scheduled one.',
     notes: { fixed: ['Use estimated departure for the boarding group (#185)'] }, outcome: 'clean' as const, closedBy: 'superseded' as const },
-  { imageTag: '1.8.0-4f9c2ab', at: 8, owner: 'jamie-dev', summary: 'Gate changes and their events now commit in one transaction, so the gate board can never show a gate the event stream never announced.',
+  { imageTag: '1.8.0-4f9c2ab', at: 8, pr: 214, risk: 'medium' as const, owner: 'jamie-dev', summary: 'Gate changes and their events now commit in one transaction, so the gate board can never show a gate the event stream never announced.',
     notes: { changed: ['Record a gate change and its event in one transaction (#187)'] } },
 ];
 
@@ -46,8 +46,9 @@ export function sealedReleaseFor(tag: string) {
   const sealed = tag === '1.8.0-4f9c2ab'
     ? { owner: h.owner, summary: h.summary, notes: h.notes, knownIssues: ['The gate board takes up to 30s to show a reassignment made during the rollout.'],
         risk: { level: 'medium' as const, notes: 'Touches the gate write path.', rollback: 'Safe to roll back to 1.7.2: the new outbox table is additive.' },
-        mode: 'hand-flown' as const, signoff: signoffFor(214, 10, 'priya-k', 14) }
-    : { owner: h.owner, summary: h.summary, notes: h.notes, mode: 'hand-flown' as const, signoff: signoffFor(209, h.at - 10, 'priya-k', h.at - 6) };
+        mode: 'hand-flown' as const, signoff: signoffFor(h.pr, 10, 'priya-k', 14) }
+    : { owner: h.owner, summary: h.summary, notes: h.notes, risk: { level: h.risk },
+        mode: 'hand-flown' as const, signoff: signoffFor(h.pr, h.at - 10, 'priya-k', h.at - 6) };
   return { schemaVersion: 2, release: sealed, outcome: outcomeOf(h, i) };
 }
 
@@ -76,9 +77,9 @@ export const modeFor = (app: string | null) => ({
 });
 
 export function signoffRoute(tag: string | null) {
-  if (tag === '1.8.0-4f9c2ab') return signoffFor(214, 10, 'priya-k', 14);
   const h = HISTORY.find(x => x.imageTag === tag);
-  return h ? signoffFor(209, h.at - 10, 'priya-k', h.at - 6) : undefined;
+  if (!h) return undefined;
+  return h.imageTag === '1.8.0-4f9c2ab' ? signoffFor(h.pr, 10, 'priya-k', 14) : signoffFor(h.pr, h.at - 10, 'priya-k', h.at - 6);
 }
 
 export const plannedFor = () => ({ issues: [] });
