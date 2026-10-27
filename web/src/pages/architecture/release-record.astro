@@ -46,7 +46,7 @@ const evidence = [
   { text: 'The lifecycle spec behind it, R1 to R4 shipped in Tower v0.67 to v0.70 on October 13 and 14, 2026', status: 'built' as const, href: spec },
   { text: 'Rollout state from the Rollout\'s own facts, in a tracking record on the dev cluster (ADR-0021)', status: 'built' as const, href: gh('glidepath', 'docs/admin/release-state.md') },
   { text: 'Autoland: releases that reach production with no human', status: 'proposal' as const, href: docs },
-  { text: 'SLO burn during the bake window, while the production cluster\'s Prometheus is off', status: 'proposal' as const, href: docs },
+  { text: 'SLO burn read during the bake window, so a clean outcome also means no burn', status: 'proposal' as const, href: docs },
   { text: 'Any measure of how people use the record, or any user but me', status: 'proposal' as const },
 ];
 ---
@@ -204,7 +204,7 @@ const evidence = [
         </p>
       </div>
 
-      <figure class="still"><a href={still('05-outcome.png')} target="_blank" rel="noopener"><img src={still('05-outcome.png')} alt="CEDAR's outcome, written back once it was final: clean, healthy until DOGWOOD replaced it. The record says plainly that SLO burn isn't measured yet." loading="lazy" /></a><figcaption>CEDAR's outcome, written back once it was final: clean, healthy until DOGWOOD replaced it. The record says plainly that SLO burn isn't measured yet.</figcaption></figure>
+      <figure class="still"><a href={still('05-outcome.png')} target="_blank" rel="noopener"><img src={still('05-outcome.png')} alt="CEDAR's outcome, written back once it was final: clean, healthy until DOGWOOD replaced it." loading="lazy" /></a><figcaption>CEDAR's outcome, written back once it was final: clean, healthy until DOGWOOD replaced it.</figcaption></figure>
 
       <div class="prose">
       </div>
@@ -327,9 +327,11 @@ const evidence = [
 
         <h2>What isn't built</h2>
         <p>
-          A few things are missing, and they're on the record's own docs page as well. Autoland doesn't exist yet: it
-          needs real test results and canary metrics before it could decide anything on its own. The bake doesn't watch
-          SLO burn, because the production cluster's Prometheus is off. Tower has never tracked incidents, so an outcome
+          A few things are missing, and they're on the record's own docs page as well. Autoland doesn't exist yet. The
+          inputs it would decide on are there now: the check ride is a real, signed test result, and canaries in
+          production are judged on the production cluster's own Prometheus metrics. What's missing is the decision
+          itself, and enough recorded outcomes to trust it. The bake doesn't read SLO burn yet either: the metrics are
+          there, but an outcome is still decided from the rollout alone, so "clean" doesn't yet mean "no burn". Tower has never tracked incidents, so an outcome
           can say rolled back but not "caused a page". Outcomes depend on Glidepath's tracking records, so releases older
           than 14 days and releases to cloud targets don't get one. Linked issues are only found through closing keywords
           like <code>Fixes #12</code>. Announcements go to Tower's activity feed, not to chat. The full detail is in
