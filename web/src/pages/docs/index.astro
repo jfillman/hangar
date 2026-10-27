@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { docSets, guides, productOf } from '../../data/docs';
 import { u } from '../../lib/url';
+import rules from '../../data/rules.generated.json';
 
 const total = docSets.reduce((n, d) => n + d.pages, 0);
 ---
@@ -16,6 +17,20 @@ const total = docSets.reduce((n, d) => n + d.pages, 0);
         architecture, the operations and the reasoning behind each decision.
       </p>
     </section>
+
+    <a class="card rules-card" href={u('docs/business-rules/')}>
+      <span class="doc-card-head">
+        <img class="mark" src={u('marks/hangar-tile.svg')} width="40" height="40" alt="" />
+        <span>
+          <strong>Business rules</strong>
+          <span class="muted">{rules.total} rules, across every product</span>
+        </span>
+      </span>
+      <p>
+        Every rule Hangar applies to people, releases and clusters, how strongly each one holds, and what holds it. Kept in
+        the Hangar repo next to the code and rebuilt with the site, so it never drifts.
+      </p>
+    </a>
 
     <div class="grid docs-grid">
       {docSets.map((d) => {
@@ -52,7 +67,9 @@ const total = docSets.reduce((n, d) => n + d.pages, 0);
   </div>
 </Base>
 <style>
-  .docs-grid { margin: 2rem 0 3rem; }
+  .docs-grid { margin: 1rem 0 3rem; }
+  .rules-card { display: block; margin-top: 2rem; color: var(--ink); text-decoration: none; border-top: 3px solid var(--accent); }
+  .rules-card p { max-width: 70ch; margin-top: 0.7rem; }
   .doc-card-head { display: flex; gap: 0.8rem; align-items: center; color: var(--ink); text-decoration: none; }
   .doc-card-head strong { display: block; font-size: 1.15rem; }
   .doc-card-head .muted { font-size: 0.85rem; }

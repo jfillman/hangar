@@ -24,6 +24,11 @@ npm run build    # writes dist/
   quickstarts in `airframe/docs/user/html/`) are copied to `public/docs-assets/` as they are. Fix a page in its own
   repo; the nightly build picks it up. `docs/archive`,
   `drafts`, `brand` and the three home-lab runbooks in `hangar/docs` are never published.
+- **Business rules are read, not copied.** `scripts/sync-rules.mjs` parses `docs/policy/business-rules.md` (its
+  strength legend, numbered sections and rule tables) into `src/data/rules.generated.json`, and
+  `/docs/business-rules/` renders that with search and a strength filter. Change a rule in the document; the page
+  follows on the next build. It expects the document's shape: a table whose first column is `ID` is a table of rules,
+  one whose first column is `Gap` is the list of rules weaker than they read.
 - **Reviews.** `scripts/sync-assets.mjs` also copies the standalone architecture reviews in `docs/reviews/*.html` into
   `public/reviews/`; `/review/` embeds the current one. Add a new review there and point `src/pages/review.astro` at it.
 - **Themes.** The site follows the system light or dark setting, and the header button overrides it (saved in

@@ -43,6 +43,9 @@ const name = product?.name ?? entry.data.product;
     </script>
     <article class="doc">
       <p class="eyebrow"><a href={u('docs/')}>Docs</a> · {name}</p>
+      {entry.data.route === 'docs/hangar/policy/business-rules/' && (
+        <p class="doc-alt">This document also has its own page, with every rule searchable by strength: <a href={u('docs/business-rules/')}>Business rules</a>.</p>
+      )}
       <Content />
       <footer class="doc-foot">
         <p>
@@ -83,3 +86,6 @@ const name = product?.name ?? entry.data.product;
     drawMermaid();
   </script>
 </Base>
+<style>
+  .doc-alt { font-size: 0.92rem; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 0.8rem; }
+</style>
