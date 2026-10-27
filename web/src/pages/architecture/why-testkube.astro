@@ -42,10 +42,10 @@ const evidence = [
   { text: "Glidepath's test stage applies and runs an app's glidepath/<name>.yaml as a TestWorkflow", status: 'built' as const, href: gh('glidepath', 'docs/user/cicd-yaml-reference.md') },
   { text: 'One shared namespace, with secrets moved in for the run and blanked after (ADR-0007)', status: 'built' as const, href: adr('0007', 'testkube-shared-namespace') },
   { text: "A Kyverno policy so one app's tests can't mount another app's secrets (ADR-0008)", status: 'built' as const, href: adr('0008', 'kyverno-testkube-secret-policy') },
-  { text: 'An outcome and one line per step, written for the Release Record in Tower', status: 'built' as const, href: gh('glidepath', 'charts/glidepath-catalog/templates/tasks/run-testworkflow.yaml') },
+  { text: 'An outcome and one line per step, written for the release record in Tower', status: 'built' as const, href: gh('glidepath', 'charts/glidepath-catalog/templates/tasks/run-testworkflow.yaml') },
   { text: 'A test contract: every workflow gets the image, digest, environment and URL, and a missing workflow fails', status: 'built' as const, href: gh('glidepath', 'docs/admin/testing.md') },
   { text: 'Check rides from a shared repository, signed onto the image and verified by the qa gate', status: 'built' as const, href: u('library/glidepath-test-contract/') },
-  { text: 'Test evidence in Tower: on the image, a Tests view under Pipelines, and the Release Record', status: 'built' as const, href: gh('tower') },
+  { text: 'Test evidence in Tower: on the image, a Tests view under Pipelines, and the release record', status: 'built' as const, href: gh('tower') },
   { text: 'Parallel and sharded runs for the Skyport test suites', status: 'proposal' as const },
   { text: "Testkube's own CDEvents on the same event stream as Glidepath's", status: 'proposal' as const },
   { text: "Autopilot's Preflight evaluations running as TestWorkflows", status: 'proposal' as const, href: gh('autopilot', 'README.md') },
@@ -169,7 +169,7 @@ const evidence = [
           namespace for the length of the run, renames the workflow to <code>&lt;app&gt;-&lt;test&gt;</code> so it can't
           collide with another app's, applies it through a Kyverno policy gate, runs it with the Testkube CLI, and blanks
           the secret again afterwards. The outcome and one line per step become results of the pipeline run, which is
-          what the Release Record in <a href={u('tower/')}>Tower</a> shows beside the build. Apps that haven't moved yet
+          what the release record in <a href={u('tower/')}>Tower</a> shows beside the build. Apps that haven't moved yet
           can still fall back to an <code>integration-test.sh</code>.
         </p>
         <p>
@@ -180,7 +180,7 @@ const evidence = [
         <p>
           And to be plain about what isn't there yet: Hangar doesn't use parallel or sharded runs today. The Skyport
           apps' suites are small enough that one worker is plenty. There's also no Testkube dashboard in my lab, so for
-          now the single pane of glass is Tower's Release Record. The day the suites grow, parallelism is a change to a
+          now the single pane of glass is Tower's release record. The day the suites grow, parallelism is a change to a
           YAML file, not to the platform.
         </p>
 
@@ -251,7 +251,7 @@ const evidence = [
           A passing check ride is signed onto the image digest, the same keyless way the build signs its provenance, so
           the evidence travels with the image to every cluster. The <code>qa</code> gate on the release PR verifies that
           signature instead of trusting a database. Tower shows every attested run on the image, a Tests view under
-          Pipelines, and the evidence on the Release Record. Testkube didn't change at all; Glidepath just started asking
+          Pipelines, and the evidence on the release record. Testkube didn't change at all; Glidepath just started asking
           it better questions. The gate only advises for now, until every app has a check ride, and the three ideas
           above are still ideas. The <a href={u('library/glidepath-test-contract/')}>spec</a> is in the Library.
         </p>

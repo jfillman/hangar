@@ -1,0 +1,375 @@
+---
+import Base from '../../layouts/Base.astro';
+import Diagram from '../../components/Diagram.astro';
+import Evidence from '../../components/Evidence.astro';
+import { essays } from '../../data/essays';
+import { gh, u } from '../../lib/url';
+
+const essay = essays.find((e) => e.slug === 'release-record')!;
+
+const docs = u('docs/tower/release-records/');
+const spec = u('library/tower-release-record-lifecycle/');
+
+// The two files a release leaves in git, trimmed to their shape. The app and its release are Skyport's.
+const draft = `# glidepath/releases/next.yaml, in the app repo
+owner: priya-k
+summary: The gate board shows each gate's change history, and the departure board stops mixing time zones.
+notes:
+  added:
+    - Gate change history endpoint (#189)
+  fixed:
+    - Departure board times in the airport's own time zone (#190)
+risk:
+  level: low
+  rollback: "Safe to roll back to 1.8.0: no schema change."
+targetDate: "2026-10-29"`;
+const record = `# releases/flight-api@1.8.0-4f9c2ab.yaml, in gitops-flight-api
+schemaVersion: 2
+appName: flight-api
+imageTag: 1.8.0-4f9c2ab
+release:      # the draft above, the mode it shipped under, and the sign-off
+guardrails:   # every release gate's result, frozen when the record was sealed
+testEvidence: # the check ride the qa gate read, and whether it verified
+changeRequest:
+humanContext: # after release: how it was checked, follow-ups
+outcome:      # added by a second pull request, once it is final`;
+
+// Stills from Tower running against the demo harness in tools/tower-demo: flight-api's invented history.
+const still = (f: string) => u(`media/release-record/${f}`);
+
+const evidence = [
+  { text: 'A draft for the next release from the moment the last one ships, with scope, candidates, readiness and a suggested version', status: 'built' as const, href: docs },
+  { text: 'Notes, owner and risk written before the release, saved as a commit to glidepath/releases/next.yaml', status: 'built' as const, href: docs },
+  { text: 'Three release modes; Hand-flown sign-off on the release PR as a soft gate, with a notification when one ships without it', status: 'built' as const, href: docs },
+  { text: 'The record sealed by a pull request to the app\'s gitops repo, with gates, commit proof, check ride and change request frozen in', status: 'built' as const, href: docs },
+  { text: 'An outcome after a seven-day bake, written back by a second pull request: clean, rolled back, replaced or stopped', status: 'built' as const, href: docs },
+  { text: 'The lifecycle spec behind it, R1 to R4 shipped in Tower v0.67 to v0.70 on October 13 and 14, 2026', status: 'built' as const, href: spec },
+  { text: 'Rollout state from the Rollout\'s own facts, in a tracking record on the dev cluster (ADR-0021)', status: 'built' as const, href: gh('glidepath', 'docs/admin/release-state.md') },
+  { text: 'Autoland: releases that reach production with no human', status: 'proposal' as const, href: docs },
+  { text: 'SLO burn during the bake window, while the production cluster\'s Prometheus is off', status: 'proposal' as const, href: docs },
+  { text: 'Any measure of how people use the record, or any user but me', status: 'proposal' as const },
+];
+---
+<Base title={essay.title} description={essay.dek} section="architecture">
+  <div class="wrap">
+    <article class="essay">
+      <header class="hero">
+        <p class="eyebrow"><a href={u('architecture/')}>Architecture</a> · {essay.minutes} min read</p>
+        <h1>The release record, and the <em>users</em> I haven't met</h1>
+        <p class="lede">{essay.dek}</p>
+      </header>
+
+      <div class="prose">
+        <p>
+          The part of Hangar I'm fondest of right now is a YAML file. Every time one of the Skyport apps ships to
+          production, Tower opens a pull request that adds a file like
+          <code>releases/flight-api@1.8.0-4f9c2ab.yaml</code> to the app's GitOps repo. It says what changed, who wrote
+          the notes, who signed off, how the commit was proven, what the tests found, and, a week later, how it went.
+          Months from now I can open it and get the whole story of that release in one place, without a single tool
+          having to still be running.
+        </p>
+        <p>
+          I want to show it off. But I also want to be honest about something the feature makes hard to ignore. Nobody
+          has used it but me.
+        </p>
+
+        <h2>Discovery, with nobody to discover</h2>
+        <p>
+          The first of my <a href={u('principles/')}>principles</a> is that the platform is a product, and a product is
+          shaped by the people who use it. In <a href={u('architecture/why-airframe/')}>Why a platform still needs a
+          service catalog</a> I said I'd start any platform with discovery: fifteen or twenty interviews, a couple of
+          onboardings shadowed end to end, and features that come out of what people actually said hurt.
+        </p>
+        <p>
+          Hangar doesn't get to do that. It's my lab. The Skyport apps are made up, and I play every part: the
+          developer who merges, the release owner who writes the notes, the reviewer who signs off, the person on call
+          when it goes wrong, and the auditor who turns up months later asking who approved what. Every feature in the
+          release record is built on what I think those people need. That's a lot of assumptions, made as if I
+          understood customers I've never met.
+        </p>
+        <p>
+          I don't think the answer is to stop building. A lab is where you can afford to be wrong. But I think the
+          honest thing is to treat each feature the way a product team treats an idea before it has data: as a
+          hypothesis, written down, with a way to find out if it's wrong. So that's how this essay goes. Here's the
+          problem I believe the release record solves, how it works, and then the guesses underneath it, out in the
+          open.
+        </p>
+
+        <h2>The problem: a release's story is everywhere</h2>
+        <p>
+          Ask a team what went out last Tuesday and how it went, and the answer usually lives in eight places. The pull
+          requests are in the forge. The builds were in the CI system until the runs were pruned. The approval is a
+          review on a PR nobody can find. The rollout state sat on a cluster until it was cleaned up. The change ticket
+          is in the change tool. The release notes were written the night before from <code>git log</code>, if they
+          were written at all. And how it went is in a chat thread, or in someone's head.
+        </p>
+        <p>
+          Each of those is fine on its own. Together they mean a release has no story, only scattered evidence. The
+          questions people ask about a release are simple, though, and I think there are about six of them.
+        </p>
+      </div>
+
+      <Diagram id="releases/02-six-questions-one-file" />
+
+      <div class="prose">
+        <p>
+          The left-hand column of that diagram is the first assumption. Those are the people I picture asking, and I've
+          never asked them.
+        </p>
+
+        <h2>The first version was a receipt</h2>
+        <p>
+          Tower's first release record was written after the fact. Once a release was healthy in its first Flight
+          environment, a poller opened a pull request with everything Tower knew about it, and people could add a
+          summary, a risk level and approvals afterwards. When I sat in an app owner's seat for the
+          <a href={u('library/tower-field-report-2/')}>second field report</a>, release management was the part of
+          Tower I trusted most.
+        </p>
+        <p>
+          But writing the <a href={spec}>lifecycle spec</a> on October 13, 2026, I noticed the record showed up after
+          every decision it could have informed. Scope had been gathered, notes written, a build picked and the go or
+          no-go made, all before Tower wrote anything down. An approval added once a release is already healthy in
+          production isn't really an approval. It's an acknowledgement. And the confidence score handed every release
+          five points for "no incidents", because Tower had no way to record one.
+        </p>
+        <p>
+          So the record moved earlier and ended later. The four changes in that spec shipped in Tower v0.67 to v0.70
+          over the next two days. It's a small example of the loop I'm describing, with the only user I have: I used
+          it, it was wrong in a way I could see, and I changed it.
+        </p>
+
+        <h2>How it works</h2>
+        <p>
+          Follow one release of Skyport's flight-api. The moment its last release, DOGWOOD, reaches Flight, a draft for
+          the next one exists. It's called ELM. Releases are named in order per app, the way hurricanes are, because
+          "DOGWOOD, shipped as amber-heron" is easier to say in a standup than an image tag.
+        </p>
+        <p>
+          <strong>The draft builds itself.</strong> Its scope is every pull request merged to main since DOGWOOD's commit
+          landed, with the issues they close. Open PRs show as incoming, not in scope, because no image contains them
+          yet. Every image built from main since then is a candidate, with where it's running on Ground and for how
+          long. Readiness checks the leading candidate: merged, running on Ground for 24 hours, built and scanned,
+          signed and attested, a passed check ride, a version bump, and a healthy release to roll back to. It suggests a
+          version from the kinds of change merged. None of that is stored. Tower computes it from what it already reads.
+        </p>
+      </div>
+
+      <figure class="still"><a href={still('01-three-cards.png')} target="_blank" rel="noopener"><img src={still('01-three-cards.png')} alt="The top of flight-api's Releases tab: the next release, ELM, as a draft; DOGWOOD live in prod; and how CEDAR, the one before, turned out. Screens from Hangar's Skyport demo, with invented data." loading="lazy" /></a><figcaption>The top of flight-api's Releases tab: the next release, ELM, as a draft; DOGWOOD live in prod; and how CEDAR, the one before, turned out. Screens from Hangar's Skyport demo, with invented data.</figcaption></figure>
+      <figure class="still"><a href={still('02-next-release-draft.png')} target="_blank" rel="noopener"><img src={still('02-next-release-draft.png')} alt="ELM's draft: two PRs in scope, two still open, one candidate build and the readiness checks, all computed. Nothing here is saved." loading="lazy" /></a><figcaption>ELM's draft: two PRs in scope, two still open, one candidate build and the readiness checks, all computed. Nothing here is saved.</figcaption></figure>
+
+      <div class="prose">
+        <p>
+          <strong>People write the rest, early.</strong> The one part a person types is the notes and the owner: a short
+          summary, release notes in Keep a Changelog sections, known issues, how to roll back, and a risk level. A button
+          fills empty sections from the merged PR titles. Saving makes a direct commit to one file in the app repo,
+          which builds nothing:
+        </p>
+        <pre><code>{draft}</code></pre>
+      </div>
+
+      <figure class="still"><a href={still('03-notes-and-owner.png')} target="_blank" rel="noopener"><img src={still('03-notes-and-owner.png')} alt="Notes and owner, the one part a person writes. Saving commits glidepath/releases/next.yaml and builds nothing." loading="lazy" /></a><figcaption>Notes and owner, the one part a person writes. Saving commits glidepath/releases/next.yaml and builds nothing.</figcaption></figure>
+
+      <div class="prose">
+        <p>
+          <strong>Sign-off moves onto the release PR.</strong> Promote sends the leading candidate through Glidepath's
+          normal release path, a pull request to the GitOps repo. What that PR needs depends on the app's release mode.
+          Assisted, the default, just records who merged and who reviewed. Hand-flown needs an approving review from one
+          of the app's owners or an admin, who isn't the person merging. GitHub's free plan can't require a check on a
+          private repo, so this is a soft gate: Tower sets a <code>hangar/release-signoff</code> status on the PR every
+          two minutes, and if it merges without a sign-off that counts, a high-severity notification says so and the
+          record says so forever. The modes themselves live in a platform-owned file, and changing one is a pull
+          request.
+        </p>
+        <p>
+          <strong>The record is sealed in git.</strong> Within a few minutes of the release being healthy in its first
+          Flight environment, Tower opens a pull request adding the record to the app's GitOps repo. The draft is copied
+          in and cleared for the next release. The evidence is frozen at the same time: every release gate's result,
+          how the commit was proven, the check ride the qa gate read, and the change request if the app has one. Those
+          sources don't last. Pipeline runs get pruned, and Glidepath sweeps its tracking records after 14 days. The
+          record keeps saying what was true when it shipped.
+        </p>
+        <pre><code>{record}</code></pre>
+      </div>
+
+      <figure class="still"><a href={still('04-notes-and-sign-off.png')} target="_blank" rel="noopener"><img src={still('04-notes-and-sign-off.png')} alt="DOGWOOD's sealed record: the notes written before it shipped, and a sign-off that counted, given on the release PR before the merge." loading="lazy" /></a><figcaption>DOGWOOD's sealed record: the notes written before it shipped, and a sign-off that counted, given on the release PR before the merge.</figcaption></figure>
+
+      <div class="prose">
+        <p>
+          <strong>Then it waits to hear how it went.</strong> The record stays open through a seven-day bake in
+          production. Once the outcome is final, a second pull request writes it into the same file: clean, rolled back
+          (naming the release it rolled back to and why), replaced before it was healthy, or stopped before production.
+          After that, anyone can add what they checked in production, follow-ups and acknowledgements, through a pull
+          request to the record. Opt in, and Tower also publishes a GitHub Release named <code>ELM · v1.9.0</code> with
+          the notes as its body.
+        </p>
+      </div>
+
+      <figure class="still"><a href={still('05-outcome.png')} target="_blank" rel="noopener"><img src={still('05-outcome.png')} alt="CEDAR's outcome, written back once it was final: clean, healthy until DOGWOOD replaced it. The record says plainly that SLO burn isn't measured yet." loading="lazy" /></a><figcaption>CEDAR's outcome, written back once it was final: clean, healthy until DOGWOOD replaced it. The record says plainly that SLO burn isn't measured yet.</figcaption></figure>
+
+      <div class="prose">
+      </div>
+
+      <Diagram id="releases/01-one-release-in-git" />
+
+      <div class="prose">
+        <p class="pull">Git gets every decision. The cluster keeps only what is still moving.</p>
+
+        <h2>Store everything in git</h2>
+        <p>
+          The second of my principles is that every change is a reviewed commit, and the release record is that idea
+          applied to a release's history rather than its config. The draft is a commit. The release mode is a pull
+          request. The record is a pull request, and so is its outcome. Even the sign-off is a review on a pull request.
+          Tower writes all of them through Backstage's backend and owns none of them.
+        </p>
+        <p>
+          Why go to that trouble when a database would be simpler? Because of who might need it, and when. If Tower were
+          deleted tomorrow, every release's story would still be in the repo, readable with nothing more than
+          <code>git log</code>. Each record is diffable, so comparing two releases is comparing two files. It sits right
+          next to the thing it describes: the GitOps repo that says what's deployed also says how it got there. An
+          auditor already knows how to read a git history and trusts it in a way they'd never trust a dashboard. And an
+          agent can read a YAML file without learning Tower's API. The readiness score is worked out only from what the
+          committed record carries, so a release scores the same in the list, in a comparison and when you open it.
+        </p>
+        <p>
+          It isn't everything, though, and I'd rather draw the line clearly than pretend. A release that's rolling out
+          changes every few seconds. That state lives in a tracking record on the dev cluster, fed by the facts each
+          Rollout posts (Glidepath's ADR-0021), because nobody should review a pull request every time a canary step
+          moves. The draft's scope and candidates are computed and never saved. The bake is read live. The rule I've
+          ended up with is that git gets every decision and every final answer, and the cluster keeps what is still
+          moving. When it stops moving, Tower writes the end of the story into git.
+        </p>
+        <p>
+          There's a cost. One release can mean a commit and three pull requests, and on a busy team that's a lot of
+          noise in a GitOps repo. Tower keeps record PRs out of the release gates, but whether real teams would find
+          that history precious or annoying is another thing I don't know.
+        </p>
+
+        <h2>What it's trying to fix</h2>
+        <p>
+          Pulled together, these are the problems I built the release record to solve. Each one comes from releases I've
+          lived through in my career, not from Hangar's users, because it hasn't got any.
+        </p>
+        <p>
+          <strong>Notes written the night before.</strong> The draft exists from the moment the last release ships and
+          fills itself from merged work, so notes can grow as the release does.
+        </p>
+        <p>
+          <strong>Approvals that come after the fact.</strong> Sign-off sits on the release PR, before the merge, where
+          it can still stop something.
+        </p>
+        <p>
+          <strong>Evidence that disappears.</strong> Gate results, commit proof, test evidence and the change request
+          are frozen into a file that outlives the systems they came from.
+        </p>
+        <p>
+          <strong>"Which build was that?"</strong> A release has a name people can say. The image slug still says
+          which build went out.
+        </p>
+        <p>
+          <strong>Scores that flatter.</strong> Readiness says how ready a release was when it shipped. The outcome says
+          what happened next. They sit side by side and never get folded into one number, and the free "no incidents"
+          points are gone.
+        </p>
+        <p>
+          <strong>Releases that end in silence.</strong> Every record gets an outcome, and a rollback says what it went
+          back to and why.
+        </p>
+        <p>
+          <strong>Change management without a change board.</strong> An app that goes through change management gets its
+          change request number and state on the record, beside a light peer sign-off. External approval boards slow
+          delivery without lowering the change failure rate, which is one of the clearer findings in the DORA research,
+          so I'd rather have the evidence travel with the release.
+        </p>
+
+        <h2>The guesses underneath</h2>
+        <p>
+          Here's the part I promised. Every one of those fixes rests on something I believe about how teams release
+          software. I've written the main ones down, with what I built on each, and the test I'd run if I had a team to
+          run it with.
+        </p>
+      </div>
+
+      <Diagram id="releases/03-built-on-assumptions" />
+
+      <div class="prose">
+        <p>
+          Some of the numbers are pure judgment. Twenty-four hours on Ground before readiness is happy. A seven-day bake.
+          Autoland eligibility at five recorded outcomes, under 15% rolled back and an average readiness of 80. They're
+          sensible-sounding, and they're mine. Some of the design is taste: I like the tree names, and a real team might
+          find them twee within a week. And some of it might be aimed at the wrong person entirely. I've assumed the
+          release owner is the one who cares most, when it might really be the person on call, who just wants to know
+          what changed in the last hour.
+        </p>
+        <p>
+          What I'm fairly sure of is the shape: a release is something with a lifecycle, and a deploy is just one event
+          in it. Nearly every release tool I looked at for the spec has landed somewhere near that. Which parts of the
+          lifecycle people actually care about is the bit I'd expect to be wrong.
+        </p>
+
+        <h2>What I'd do with real users</h2>
+        <p>
+          If I took this into a company tomorrow, I wouldn't roll it out to everyone. I'd find one team that releases
+          often and sit beside them for a release or two, end to end, before showing them anything. Then I'd talk to each
+          of the people in that second diagram on their own, the owner, the reviewer, whoever's on call and whoever does
+          the audits, and ask what they looked for the last time a release went badly, and where they found it.
+        </p>
+        <p>
+          Then I'd measure, because interviews tell you what people think they do. Do notes exist before Promote, and
+          does anyone change the pre-fill? How long is it between a sign-off and the merge, and is it ever under a
+          minute? Does anyone open a record after its outcome is written? Does the export ever leave the building?
+          Tower records none of that today, and it would be the first thing I'd add. Then I'd keep what's used, change
+          what's used wrongly, and retire what nobody touches, even the parts I'm fond of.
+        </p>
+        <p>
+          And I'd keep going back. The release record I've built is my best guess at a first version, which means it's
+          really a draft of the second one. The second one should be written with someone else.
+        </p>
+
+        <h2>What isn't built</h2>
+        <p>
+          A few things are missing, and they're on the record's own docs page as well. Autoland doesn't exist yet: it
+          needs real test results and canary metrics before it could decide anything on its own. The bake doesn't watch
+          SLO burn, because the production cluster's Prometheus is off. Tower has never tracked incidents, so an outcome
+          can say rolled back but not "caused a page". Outcomes depend on Glidepath's tracking records, so releases older
+          than 14 days and releases to cloud targets don't get one. Linked issues are only found through closing keywords
+          like <code>Fixes #12</code>. Announcements go to Tower's activity feed, not to chat. The full detail is in
+          <a href={docs}>Tower's release record docs</a>.
+        </p>
+
+        <h2>Why I still like it</h2>
+        <p>
+          For all the guessing, I keep coming back to that YAML file. Software teams lose so much of their own history,
+          and most of it isn't lost through carelessness. It's lost because the story was spread across tools that were
+          each built to answer something else. Writing it down in one place, in git, as it happens, feels like a kindness
+          to whoever comes next, even if that's just me in six months, wondering why a release was rolled back one Tuesday afternoon.
+        </p>
+        <p>
+          I'd love to find out which of my guesses are wrong. That would mean someone was using it.
+        </p>
+        <p class="sign">James</p>
+        <p class="more"><a href={u('architecture/')}>← All architecture essays</a></p>
+      </div>
+
+      <Evidence items={evidence} heading="Where Hangar does this, and where it doesn't yet" />
+    </article>
+  </div>
+</Base>
+<style>
+  .essay .hero .eyebrow a { color: inherit; }
+  .essay .hero h1 { max-width: 22ch; }
+  .prose h2 { margin-top: 3rem; }
+  .prose pre {
+    margin: 1.4rem 0; padding: 0.9rem 1rem; overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px;
+    background: var(--raised); font-size: 0.84rem; line-height: 1.55;
+  }
+  .prose pre code { background: none; padding: 0; font-size: inherit; }
+  .pull {
+    font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem; margin: 2.5rem 0; max-width: 34ch;
+  }
+  .still { margin: 2rem 0; }
+  .still img { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--rule); background: var(--cockpit); }
+  .still figcaption { margin-top: 0.45rem; color: var(--muted); font-size: 0.85rem; }
+  .sign { font-family: var(--font-serif); font-size: 1.4rem; margin-top: 2rem; }
+  .more { margin-top: 2rem; }
+</style>

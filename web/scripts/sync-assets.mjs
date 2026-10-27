@@ -47,9 +47,10 @@ for (const file of readdirSync(glidepathSrc).filter((f) => f.endsWith('.html')).
 // docs/testing/diagrams, Expansion (the essay on growing the catalog) in docs/expansion/diagrams, Paving (the essay "Paving the cloud") in docs/paving/diagrams, Portability (the forge and
 // registry plan) in docs/portability/diagrams, and
 // SLOs (the SLO feature doc) in docs/slo/diagrams, and Overview (high-level pictures, the home page's among them)
-// in docs/overview/diagrams, and Break-glass (the Breaking the glass essay) in docs/breakglass/diagrams.
+// in docs/overview/diagrams, Break-glass (the Breaking the glass essay) in docs/breakglass/diagrams, and Release record (the release record essay) in
+// docs/releases/diagrams.
 const essaySets = {};
-for (const set of ['overview', 'crossplane', 'catalog', 'testing', 'expansion', 'paving', 'portability', 'slo', 'breakglass']) {
+for (const set of ['overview', 'crossplane', 'catalog', 'testing', 'expansion', 'paving', 'portability', 'slo', 'breakglass', 'releases']) {
   const src = join(repo, `docs/${set}/diagrams`);
   cpSync(src, join(diagramsOut, set), { recursive: true });
   essaySets[set] = [];
@@ -61,7 +62,7 @@ for (const set of ['overview', 'crossplane', 'catalog', 'testing', 'expansion', 
     essaySets[set].push({ id: `${set}/${slug}`, set, num: slug.slice(0, 2), title: decode(title), eyebrow: decode(eyebrow), path: `diagrams/${set}/${file}` });
   }
 }
-const { overview, crossplane, catalog, testing, expansion, paving, portability, slo, breakglass } = essaySets;
+const { overview, crossplane, catalog, testing, expansion, paving, portability, slo, breakglass, releases } = essaySets;
 
 // 3. Brand marks.
 const marksOut = join(pub, 'marks');
@@ -83,8 +84,8 @@ fresh(papersOut);
 for (const f of readdirSync(join(repo, 'docs/library')).filter((f) => f.endsWith('.html'))) cpSync(join(repo, 'docs/library', f), join(papersOut, f));
 
 // 5. The manifest the pages render from.
-writeFileSync(join(web, 'src/data/diagrams.generated.json'), JSON.stringify([...overview, ...hangar, ...glidepath, ...crossplane, ...catalog, ...expansion, ...paving, ...portability, ...testing, ...breakglass, ...slo], null, 2) + '\n');
-console.log(`sync-assets: ${overview.length + hangar.length + glidepath.length + crossplane.length + catalog.length + expansion.length + paving.length + portability.length + testing.length + breakglass.length + slo.length} diagrams, marks copied`);
+writeFileSync(join(web, 'src/data/diagrams.generated.json'), JSON.stringify([...overview, ...hangar, ...glidepath, ...crossplane, ...catalog, ...expansion, ...paving, ...portability, ...testing, ...breakglass, ...releases, ...slo], null, 2) + '\n');
+console.log(`sync-assets: ${overview.length + hangar.length + glidepath.length + crossplane.length + catalog.length + expansion.length + paving.length + portability.length + testing.length + breakglass.length + releases.length + slo.length} diagrams, marks copied`);
 
 function decode(s) {
   return s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;|&rsquo;/g, "'").replace(/&quot;/g, '"').trim();

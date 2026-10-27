@@ -1,4 +1,5 @@
 import { dump as yamlDump } from 'js-yaml';
+import { sealedReleaseFor } from './releases';
 // Demo data for the Tower walkthrough harness. The apps are the Skyport demo
 // services from airframe/examples/skyport; everything Tower shows about them
 // (versions, runs, PRs, metrics) is invented, across generic dev, staging and
@@ -725,6 +726,8 @@ export function demoPullRequests(appName: string) {
       { number: 214, repo: 'gitops', title: 'Release: flight-api to prod @ 1.8.0-4f9c2ab', url: url('gitops-prod', 214), state: 'merged', author: 'glidepath-bot', labels: ['release'], createdAt: ago(20), updatedAt: ago(10), mergedAt: ago(10), mergeCommitSha: fullSha('aa12bc3'), review: { state: 'approved' }, ci: { state: 'success', passedChecks: 6, totalChecks: 6, checks: checks('success') } },
       { number: 188, repo: 'source', title: 'Publish flight events to the broker', url: url('flight-api', 188), state: 'open', author: 'sam-r', labels: ['preview'], createdAt: ago(300), updatedAt: ago(250), review: { state: 'changes_requested' }, ci: { state: 'failure', passedChecks: 3, totalChecks: 4, checks: [] } },
       { number: 191, repo: 'source', title: 'Page the flight events endpoint', url: url('flight-api', 191), state: 'open', author: 'priya-k', labels: [], createdAt: ago(90), updatedAt: ago(5), review: { state: 'pending' }, ci: { state: 'pending', passedChecks: 2, totalChecks: 4, checks: [] } },
+      { number: 189, repo: 'source', title: 'feat: gate change history endpoint', url: url('flight-api', 189), state: 'merged', author: 'priya-k', labels: [], createdAt: ago(200), updatedAt: ago(70), mergedAt: ago(70), mergeCommitSha: fullSha('3c7d1b9'), review: { state: 'approved' } },
+      { number: 190, repo: 'source', title: 'fix: departure board times in the airport time zone', url: url('flight-api', 190), state: 'merged', author: 'alex-m', labels: [], createdAt: ago(150), updatedAt: ago(52), mergedAt: ago(52), mergeCommitSha: fullSha('6a0e5d2'), review: { state: 'approved' } },
       { number: 187, repo: 'source', title: 'Record a gate change and its event in one transaction', url: url('flight-api', 187), state: 'merged', author: 'jamie-dev', labels: [], createdAt: ago(600), updatedAt: ago(110), mergedAt: ago(110), mergeCommitSha: fullSha('4f9c2ab'), review: { state: 'approved' } },
       { number: 185, repo: 'source', title: 'Use estimated departure for the boarding group', url: url('flight-api', 185), state: 'merged', author: 'alex-m', labels: [], createdAt: ago(1700), updatedAt: ago(1510), mergedAt: ago(1510), mergeCommitSha: fullSha('b71e0d4'), review: { state: 'approved' } },
       { number: 209, repo: 'gitops', title: 'Release: flight-api to prod @ 1.7.2-b71e0d4', url: url('gitops-prod', 209), state: 'merged', author: 'glidepath-bot', labels: ['release'], createdAt: ago(1340), updatedAt: ago(1310), mergedAt: ago(1310), review: { state: 'approved' } },
@@ -850,7 +853,9 @@ export function releaseRecordFor(params: URLSearchParams) {
     cluster: 'prod',
     env: 'prod',
     generatedAt: ago(tag.startsWith('1.8.0') ? 8 : 1300),
-    humanContext: hc,
+    // A v2 record carries its summary and risk in the release block, written before it shipped.
+    humanContext: { ...hc, summary: undefined, risk: undefined, riskNotes: undefined },
+    ...sealedReleaseFor(tag),
     _ok: true,
   };
 }

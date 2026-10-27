@@ -95,11 +95,13 @@ const stamp = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2,
         config like anything else.
       </p>
       <p>
-        <strong>Every prod release leaves a record.</strong> Once a release reaches prod, Tower writes it up: the pull
-        requests that went in, the pipeline runs that built and tested it, every gate it passed and when it moved
-        between environments. The confidence score shows its working. Then there's the part only people can add: a
-        plain summary, how risky it felt, how it was checked and who signed off. That's committed through a PR as well,
-        and the whole thing exports as a PDF or HTML page for whoever asks later.
+        <strong>Every release leaves a record, and it starts early.</strong> The next release has a named draft from the
+        moment the last one ships: the pull requests merged since, the builds that could carry them, a readiness check
+        and the notes its owner writes as the work lands. Sign-off happens on the release PR, before the merge. Once the
+        release is healthy in Flight, Tower seals the record into the app's GitOps repo through a PR, with the evidence it
+        shipped with frozen in, and a week later adds how it went. The whole thing exports as a PDF or HTML page for
+        whoever asks later. I wrote about why in <a href={u('architecture/release-record/')}>an essay on the release
+        record</a>.
       </p>
       <p>
         <strong>The evidence travels with the release.</strong> Provenance, SBOM, signature and the transparency log

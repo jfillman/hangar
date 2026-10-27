@@ -2,12 +2,12 @@
 
     python3 build_hangar.py [OUT_DIR]
 
-Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossplane (4), Service catalog (5), Testing (3), Expansion (3), Portability (6), SLO (4), Break-glass (7) and Overview (5) beside them. Needs only the Python standard library.
+Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossplane (4), Service catalog (5), Testing (3), Expansion (3), Portability (6), SLO (4), Break-glass (7), Release record (3) and Overview (5) beside them. Needs only the Python standard library.
 """
 import sys, os, re, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib
-import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, e_m, e_n, e_o, e_p, e_q, d123, d456, d789, d1011
+import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, e_m, e_n, e_o, e_p, e_q, e_r, d123, d456, d789, d1011
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '../../docs/autopilot/diagrams')
@@ -29,6 +29,8 @@ OUT_PORTABILITY = os.path.join(OUT, '../../portability/diagrams')
 OUT_SLO = os.path.join(OUT, '../../slo/diagrams')
 # The Break-glass set (pictures for the essay "Breaking the glass") lives in docs/breakglass/diagrams.
 OUT_BREAKGLASS = os.path.join(OUT, '../../breakglass/diagrams')
+# The Release record set (pictures for the release record essay) lives in docs/releases/diagrams.
+OUT_RELEASES = os.path.join(OUT, '../../releases/diagrams')
 # The Overview set (high-level Hangar pictures, the home page's diagram among them) lives in docs/overview/diagrams.
 # It uses its own kit, ov.py, for motion, product marks and click-through, so it is written whole here.
 OUT_OVERVIEW = os.path.join(OUT, '../../overview/diagrams')
@@ -54,6 +56,7 @@ PAVING = [e_q.q_two_roads, e_q.q_road_parts, e_q.q_since_october]
 PORTABILITY = [e_p.q_coupling, e_p.q_contracts, e_p.q_tokens, e_p.q_release_on_gitlab, e_p.q_migration, e_p.q_roadmap]
 BREAKGLASS = [e_o.b_exec_vs_debug, e_o.b_how_it_works, e_o.b_two_people, e_o.b_layers, e_o.b_policies,
               e_o.b_lifecycle, e_o.b_report_card]
+RELEASES = [e_r.r_lifecycle, e_r.r_six_questions, e_r.r_assumptions]
 SLO = [e_k.s_pipeline, e_k.s_thresholds, e_k.s_state, e_k.s_tick]
 REFERENCE = [d123.d1, d123.d2, d123.d3, d456.d4, d456.d5, d456.d6, d789.d7, d789.d8, d789.d9, d1011.d10]
 
@@ -88,6 +91,7 @@ pav = build('paving', PAVING, '.', 'Hangar · Airframe · Paving', root=OUT_PAVI
 por = build('portability', PORTABILITY, '.', 'Hangar · Portability', root=OUT_PORTABILITY)
 slo = build('slo', SLO, '.', 'Hangar · SLOs', root=OUT_SLO)
 bg = build('breakglass', BREAKGLASS, '.', 'Hangar · Tower · Break-glass', root=OUT_BREAKGLASS)
+rel = build('releases', RELEASES, '.', 'Hangar · Tower · Release record', root=OUT_RELEASES)
 
 os.makedirs(OUT_OVERVIEW, exist_ok=True)
 for f in glob.glob(os.path.join(OUT_OVERVIEW, '[0-9][0-9]-*.html')):

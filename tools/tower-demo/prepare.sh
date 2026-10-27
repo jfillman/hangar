@@ -30,4 +30,6 @@ PY
 grep -rl "kind-dev\|kind-prod\|kiac" tower/src | xargs sed -i \
   -e 's/kind-dev/dev/g' -e 's/kind-prod/prod/g' -e 's/kiac-dev/dev/g' -e 's/kiac-prod/prod/g' \
   -e 's/kiac\.local/example.internal/g' -e 's/kiac/hangar/g'
+# js-yaml 5 has no default export; Tower's own build tolerates `import yaml from 'js-yaml'`, Vite does not.
+grep -rl "import yaml from 'js-yaml'" tower/src | xargs -r sed -i "s/import yaml from 'js-yaml'/import * as yaml from 'js-yaml'/"
 echo "tower/ is ready; run npm run dev"
