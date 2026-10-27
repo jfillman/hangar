@@ -1,0 +1,243 @@
+---
+import Base from '../../layouts/Base.astro';
+import rules from '../../data/rules.generated.json';
+import { u } from '../../lib/url';
+import { longDate } from '../../lib/date';
+
+// Everything below comes from docs/policy/business-rules.md, read by scripts/sync-rules.mjs when the site builds.
+// To change a rule, change the document.
+const order = rules.legend.map((l) => l.key).filter((k) => (rules.counts as Record<string, number>)[k] > 0);
+const count = (k: string) => (rules.counts as Record<string, number>)[k] ?? 0;
+const label = (k: string) => rules.legend.find((l) => l.key === k)?.label ?? k;
+const ruleCount = (s: (typeof rules.sections)[number]) =>
+  s.blocks.reduce((n, b) => n + (b.type === 'rules' ? (b.rules ?? []).length : 0), 0);
+const held = count('enforced') + count('fails-closed');
+---
+<Base title="Business rules" description="Every rule Hangar applies to people, releases and clusters, how strongly it holds, and what holds it." section="docs">
+  <div class="wrap">
+    <section class="hero">
+      <p class="eyebrow"><a href={u('docs/')}>Docs</a> · Business rules</p>
+      <h1>The rules Hangar <em>plays by</em></h1>
+      <p class="lede">
+        Who can do what, what a release has to prove, and what the clusters refuse, all in one list. Each rule says how
+        strongly it holds, because a rule that only lives in a doc isn't the same as one a system enforces, and I'd rather
+        you knew which is which.
+      </p>
+      <p class="meta">
+        {rules.total} rules · {held} held by a system ·
+        {rules.checkedOn && <>last checked against the code {longDate(rules.checkedOn)} · </>}
+        <a href={rules.source}>source on GitHub ↗</a>
+      </p>
+    </section>
+
+    <section class="strength" aria-labelledby="strength-h">
+      <h2 id="strength-h" class="eyebrow">How strongly each rule holds</h2>
+      <div class="bar" role="img" aria-label={order.map((k) => `${count(k)} ${label(k)}`).join(', ')}>
+        {order.map((k) => <span class={`seg s-${k}`} style={`flex-grow:${count(k)}`} title={`${count(k)} ${label(k)}`}></span>)}
+      </div>
+      <dl class="legend">
+        {rules.legend.map((l) => (
+          <div>
+            <dt><span class={`chip s-${l.key}`}>{l.label}</span> <span class="n">{count(l.key)}</span></dt>
+            <dd set:html={l.meaning} />
+          </div>
+        ))}
+      </dl>
+    </section>
+
+    <div class="filters" hidden>
+      <label class="search">
+        <span class="sr">Find a rule</span>
+        <input type="search" placeholder="Find a rule: GATE-05, break-glass, signing…" autocomplete="off" />
+      </label>
+      <div class="pick" role="group" aria-label="Show rules by strength">
+        {order.map((k) => <button type="button" class={`chip s-${k}`} data-key={k} aria-pressed="false">{label(k)}</button>)}
+      </div>
+      <p class="shown" aria-live="polite"></p>
+    </div>
+
+    <div class="layout">
+      <nav class="toc" aria-label="Sections">
+        <ol>
+          {rules.sections.map((s) => (
+            <li><a href={`#${s.id}`}><span set:html={s.title} />{ruleCount(s) > 0 && <span class="n">{ruleCount(s)}</span>}</a></li>
+          ))}
+        </ol>
+      </nav>
+
+      <div class="sections">
+        {rules.sections.map((s) => (
+          <section class="rule-section" id={s.id} data-rules={ruleCount(s)}>
+            <h2><span class="num">{s.n}</span> <span set:html={s.title} /></h2>
+            {s.blocks.map((b) => {
+              if (b.type === 'rules') return (
+                <ol class="rules">
+                  {(b.rules ?? []).map((r) => (
+                    <li class:list={['br-rule', { retired: r.retired }]} id={r.id.toLowerCase()} data-key={r.key} data-text={`${r.id} ${r.text}`.toLowerCase()}>
+                      <a class="rid" href={`#${r.id.toLowerCase()}`}>{r.id}</a>
+                      <div class="body">
+                        <p set:html={r.rule} />
+                        {r.policy && <p class="by">Policy <span set:html={r.policy} />{r.cluster && <> on <span set:html={r.cluster} /></>}</p>}
+                        {r.heldBy && <p class="by">Held by <span set:html={r.heldBy} /></p>}
+                        {r.strength.replace(/<[^>]+>/g, '').trim().toLowerCase() !== label(r.key).toLowerCase() && (
+                          <p class="by">Strength: <span set:html={r.strength} /></p>
+                        )}
+                      </div>
+                      <span class={`chip s-${r.key}`}>{label(r.key)}</span>
+                    </li>
+                  ))}
+                </ol>
+              );
+              if (b.type === 'gaps') return (
+                <ul class="gaps">
+                  {(b.gaps ?? []).map((g) => (
+                    <li>
+                      <p class="gap" set:html={g.gap} />
+                      <p class="refs">{g.rules.map((id) => <a class="rule-ref" href={`#${id.toLowerCase()}`}>{id}</a>)}</p>
+                      <p set:html={g.today} />
+                    </li>
+                  ))}
+                </ul>
+              );
+              return <div class="prose" set:html={b.html} />;
+            })}
+          </section>
+        ))}
+
+        <details class="checked">
+          <summary>What these rules were last checked against</summary>
+          <div class="prose" set:html={rules.checked} />
+        </details>
+
+        <p class="foot">
+          This page is built from <a href={rules.source}>docs/policy/business-rules.md</a> in the Hangar repo every time
+          the site builds{rules.commit && <> (this build: <code>{rules.commit}</code>)</>}, so it says exactly what the
+          document says. A change that adds or changes a rule updates the document in the same change as the code. You
+          can also <a href={u(rules.docsRoute)}>read it as a plain document</a> with the rest of the Hangar docs.
+        </p>
+      </div>
+    </div>
+  </div>
+</Base>
+<script>
+  const box = document.querySelector<HTMLElement>('.filters')!;
+  const input = box.querySelector('input')!;
+  const buttons = [...box.querySelectorAll<HTMLButtonElement>('button[data-key]')];
+  const rows = [...document.querySelectorAll<HTMLElement>('li.br-rule')];
+  const sections = [...document.querySelectorAll<HTMLElement>('.rule-section')];
+  const shown = box.querySelector('.shown')!;
+  box.hidden = false;
+
+  function apply() {
+    const q = input.value.trim().toLowerCase();
+    const keys = buttons.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.key);
+    const active = q !== '' || keys.length > 0;
+    let n = 0;
+    for (const r of rows) {
+      const hit = (!keys.length || keys.includes(r.dataset.key)) && (!q || r.dataset.text!.includes(q));
+      r.hidden = !hit;
+      if (hit) n++;
+    }
+    for (const s of sections) {
+      const any = s.querySelector('li.br-rule:not([hidden])');
+      s.hidden = active && !any;
+      s.classList.toggle('filtered', active);
+    }
+    shown.textContent = active ? `Showing ${n} of ${rows.length} rules` : '';
+  }
+  input.addEventListener('input', apply);
+  for (const b of buttons) b.addEventListener('click', () => {
+    b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
+    apply();
+  });
+  // Opening a link to one rule (#gate-05) clears the filters so the row is there to land on.
+  addEventListener('hashchange', () => {
+    const el = document.getElementById(location.hash.slice(1));
+    if (el && el.closest('[hidden]')) {
+      input.value = '';
+      buttons.forEach((b) => b.setAttribute('aria-pressed', 'false'));
+      apply();
+      el.scrollIntoView();
+    }
+  });
+</script>
+<style>
+  .hero .meta { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); margin-top: 1.2rem; }
+
+  /* Strength colours: a system holds it (green), it's flagged (amber), it informs (sky), it's written down (grey). */
+  .s-enforced, .s-fails-closed { color: var(--good); }
+  .s-soft { color: var(--accent); }
+  .s-display { color: var(--sky); }
+  .s-convention, .s-off-here { color: var(--soft); }
+  .chip.s-fails-closed { background: var(--good); color: var(--paper); border-color: var(--good); }
+  .chip.s-off-here { border-style: dashed; }
+
+  .strength { margin: 1rem 0 2.5rem; }
+  .strength h2 { margin: 0 0 0.8rem; }
+  .bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; gap: 2px; background: var(--rule); }
+  .seg { display: block; min-width: 4px; background: currentColor; }
+  .seg.s-enforced { opacity: 0.6; }
+  .seg.s-off-here { background: repeating-linear-gradient(135deg, currentColor 0 3px, transparent 3px 6px); }
+  .legend { display: grid; gap: 0.9rem 2rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); margin: 1.2rem 0 0; }
+  .legend dt { display: flex; align-items: center; gap: 0.5rem; }
+  .legend .n { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+  .legend dd { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+
+  .filters { z-index: 4; background: var(--paper); padding: 0.8rem 0; border-bottom: 1px solid var(--rule); display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; }
+  .filters[hidden] { display: none; }
+  /* Under the site header, which is sticky too. On a phone the header is taller, so the filters scroll away. */
+  @media (min-width: 760px) { .filters { position: sticky; top: 61px; } }
+  .search { flex: 1 1 260px; }
+  .search input { width: 100%; font: inherit; font-size: 0.95rem; padding: 0.5rem 0.7rem; border: 1px solid var(--rule-strong); border-radius: 6px; background: var(--raised); color: var(--ink); }
+  .pick { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .pick button { cursor: pointer; background: transparent; font-size: 0.7rem; padding: 0.3rem 0.55rem; }
+  .pick button[aria-pressed='true'] { background: color-mix(in srgb, currentColor 18%, transparent); box-shadow: inset 0 0 0 1px currentColor; }
+  .pick button.s-fails-closed { background: transparent; color: var(--good); }
+  .pick button.s-fails-closed[aria-pressed='true'] { background: color-mix(in srgb, currentColor 18%, transparent); }
+  .shown { flex-basis: 100%; margin: 0; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+  .shown:empty { display: none; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  .layout { display: grid; gap: 2rem; margin: 2rem 0 4rem; }
+  @media (min-width: 960px) { .layout { grid-template-columns: 15rem 1fr; } .toc { position: sticky; top: 150px; align-self: start; max-height: calc(100vh - 170px); overflow-y: auto; } }
+  .toc ol { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc a { display: flex; gap: 0.5rem; padding: 0.3rem 0; color: var(--muted); text-decoration: none; border-top: 1px solid var(--rule); }
+  .toc a::before { content: counter(t); font-family: var(--font-mono); font-size: 0.75rem; color: var(--soft); min-width: 1.3rem; padding-top: 0.15rem; }
+  .toc a:hover { color: var(--ink); }
+  .toc .n { margin-left: auto; font-family: var(--font-mono); font-size: 0.75rem; color: var(--soft); }
+  @media (max-width: 959px) { .toc ol { columns: 2 14rem; column-gap: 1.5rem; } .toc li { break-inside: avoid; } }
+
+  .rule-section { scroll-margin-top: 150px; margin-bottom: 2.8rem; }
+  .rule-section[hidden] { display: none; }
+  .rule-section h2 { margin: 0 0 0.8rem; }
+  .rule-section h2 .num { font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent); vertical-align: 0.3em; }
+  .rule-section.filtered > .prose, .rule-section.filtered > .gaps { display: none; }
+  .rule-section .prose { margin: 0.8rem 0; color: var(--muted); }
+
+  .rules { list-style: none; padding: 0; margin: 0.6rem 0; }
+  .br-rule { display: grid; grid-template-columns: 5.5rem 1fr auto; gap: 0.3rem 1rem; padding: 0.85rem 0; border-top: 1px solid var(--rule); scroll-margin-top: 150px; }
+  .br-rule[hidden] { display: none; }
+  .br-rule:target { background: var(--accent-soft); box-shadow: -0.6rem 0 0 var(--accent-soft), 0.6rem 0 0 var(--accent-soft); }
+  .rid { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); text-decoration: none; padding-top: 0.2rem; }
+  .br-rule .body p { margin: 0; line-height: 1.5; }
+  .br-rule .body .by { margin-top: 0.35rem; font-size: 0.85rem; color: var(--muted); }
+  .br-rule > .chip { align-self: start; justify-self: end; margin-top: 0.2rem; }
+  .br-rule.retired .body { text-decoration: line-through; color: var(--soft); }
+  @media (max-width: 640px) {
+    .br-rule { grid-template-columns: 1fr auto; }
+    .br-rule .body { grid-column: 1 / -1; grid-row: 2; }
+  }
+
+  .gaps { list-style: none; padding: 0; margin: 0.6rem 0; display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+  .gaps li { background: var(--raised); border: 1px solid var(--rule); border-top: 3px solid var(--accent); border-radius: 8px; padding: 0.9rem 1.1rem; }
+  .gaps p { margin: 0; font-size: 0.92rem; line-height: 1.5; color: var(--muted); }
+  .gaps .gap { color: var(--ink); font-weight: 500; }
+  .gaps .refs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.4rem 0; }
+  :global(.rule-ref) { font-family: var(--font-mono); font-size: 0.85em; white-space: nowrap; }
+  .gaps .refs .rule-ref { font-size: 0.75rem; }
+
+  .checked { margin: 1rem 0; border-top: 1px solid var(--rule); padding-top: 0.8rem; }
+  .checked summary { cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+  .foot { color: var(--muted); font-size: 0.92rem; max-width: var(--prose); margin-top: 1.5rem; }
+</style>

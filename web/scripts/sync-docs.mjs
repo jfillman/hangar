@@ -16,6 +16,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statS
 import { dirname, join, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
+import { scrubLabNames } from './lab-names.mjs';
 
 const web = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const hangarRoot = resolve(web, '..');
@@ -158,20 +159,6 @@ function firstHeading(md) {
     if (!fenced && /^# /.test(line)) return line.slice(2).replace(/[`*]/g, '').trim();
   }
   return '';
-}
-
-// The home lab's cluster names are an implementation detail of where Hangar happens to run, so the site says
-// "dev" and "prod" instead. Link targets are left alone so they still resolve.
-function scrubLabNames(md) {
-  const LAB_NAMES = [
-    [/gitops-cluster-kind-prod/g, 'gitops-cluster-prod'],
-    [/kind-prod/g, 'prod'],
-    [/kiac-dev/g, 'dev'],
-    [/kind-man/g, 'mgmt'],
-    [/\bkiac\.local\b/g, 'lab.internal'],
-  ];
-  return md.split(/(\]\([^)]*\)|\b(?:src|href)="[^"]*")/).map((part, i) =>
-    i % 2 ? part : LAB_NAMES.reduce((t, [re, to]) => t.replace(re, to), part)).join('');
 }
 
 // Rewrites link and image targets outside fenced code blocks.

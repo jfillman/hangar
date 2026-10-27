@@ -15,3 +15,4 @@ web/public/papers/
 web/public/docs-assets/
 web/src/docs.generated/
 web/src/data/docs.generated.json
+web/src/data/rules.generated.json
