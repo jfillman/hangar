@@ -1,0 +1,191 @@
+---
+import Layout from '../../layouts/Clearance.astro';
+import Packet from '../../components/clearance/Packet.astro';
+import Closer from '../../components/clearance/Closer.astro';
+import { u } from '../../lib/url';
+const c = (p = '') => u(`clearance/${p}`);
+const fields = [
+  ['Identities', 'Agent identity and tool version; initiating human; approver subjects and issuers'],
+  ['Source', 'Repository, revision, image and manifest digests'],
+  ['Target', 'Cluster, environment, Argo application'],
+  ['Provenance', 'Confidence level and the signals behind it, each tagged verified or claimed'],
+  ['Decision', 'Tier, policy version, rules fired, plain-language reason, approval channel, token reference'],
+  ['Outcome', 'Deployment result, observed revision, health check, rollback if any'],
+  ['Coverage', 'Authorized and verified · observed, not attributed · out-of-band detected · coverage unavailable'],
+  ['Intent', 'A task reference and a secret-scrubbed summary by default; full text only where a repo opts in'],
+  ['Integrity', 'Timestamps, signature, checkpoint reference, verification status'],
+];
+---
+<Layout title="Evidence and ledger" page="ledger" description="Clearance's evidence record, in-toto attestations, the audit packet, and a ledger anchored where nobody can quietly rewrite it.">
+  <section class="page-hero">
+    <div class="clr-wrap">
+      <p class="kicker">Evidence and the Clearance Ledger</p>
+      <h1 class="display">A record <em>nobody</em> can quietly rewrite.</h1>
+      <p class="sub">Not you, not us, not a database admin having a bad week. Every clearance event is signed with keys your administrators don't hold, anchored in an append-only transparency log, and co-signed by independent witnesses. Anyone can check it with an open tool.</p>
+    </div>
+  </section>
+
+  <section class="clr-wrap" data-reveal>
+    <figure class="fig">
+      <svg viewBox="0 0 1000 380" role="img" aria-label="Records are signed, batched into checkpoints and anchored in a transparency log that witnesses co-sign. If a database admin rewrites a record, its signature and the anchored checkpoint no longer match, and clearance verify fails.">
+        <defs><marker id="lg-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+        <marker id="lg-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--bad)"/></marker></defs>
+        <text x="20" y="34" font-size="17" font-weight="500" fill="var(--ink)">Why a rewritten database fails verification</text>
+        <text x="20" y="74" font-size="11" class="mono" fill="var(--soft)">RECORDER · YOUR CLUSTER OR HOSTED</text>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <g transform={`translate(${20 + i * 92} 90)`}>
+            <rect width="80" height="64" rx="8" fill={i === 2 ? 'color-mix(in srgb, var(--bad) 10%, var(--raised))' : 'var(--raised)'} stroke={i === 2 ? 'var(--bad)' : 'var(--rule-strong)'} stroke-width="1.3"/>
+            <text x="10" y="20" font-size="10.5" class="mono" fill="var(--muted)">rec {412 + i}</text>
+            <rect x="10" y="30" width="44" height="5" rx="2" fill="var(--paper-2)"/><rect x="10" y="40" width="58" height="5" rx="2" fill="var(--paper-2)"/>
+            <text x="10" y="58" font-size="10" class="mono" fill={i === 2 ? 'var(--bad)' : 'var(--clr)'}>{i === 2 ? 'sig ✕' : 'sig ✓'}</text>
+            {i < 4 && <path d="M80 32 H92" stroke="var(--rule-strong)" stroke-width="1.5"/>}
+          </g>
+        ))}
+        <path d="M244 204 V160" fill="none" stroke="var(--bad)" stroke-width="1.3" marker-end="url(#lg-r)"/>
+        <rect x="128" y="206" width="160" height="40" rx="8" fill="none" stroke="var(--bad)" stroke-dasharray="4 4"/>
+        <text x="208" y="222" text-anchor="middle" font-size="11.5" fill="var(--bad)">admin edits rec 414</text>
+        <text x="208" y="238" text-anchor="middle" font-size="10.5" fill="var(--muted)">and recomputes the chain</text>
+        <path d="M480 122 H548" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#lg-a)"/>
+        <text x="514" y="112" text-anchor="middle" font-size="11" fill="var(--muted)">batch</text>
+        <rect x="552" y="90" width="150" height="64" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="627" y="116" text-anchor="middle" font-size="13" fill="var(--ink)" font-weight="500">Checkpoint</text>
+        <text x="627" y="134" text-anchor="middle" font-size="10.5" class="mono" fill="var(--muted)">root 7c41… · n=416</text>
+        <path d="M702 122 H770" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#lg-a)"/>
+        <text x="736" y="112" text-anchor="middle" font-size="11" fill="var(--muted)">anchor</text>
+        <rect x="774" y="70" width="206" height="104" rx="10" fill="color-mix(in srgb, var(--sky) 9%, var(--raised))" stroke="var(--sky)" stroke-width="1.6"/>
+        <text x="790" y="94" font-size="11" class="mono" fill="var(--sky)">TRANSPARENCY LOG</text>
+        <text x="790" y="116" font-size="12.5" fill="var(--ink)">Append-only, public later</text>
+        {[0, 1, 2, 3, 4, 5, 6].map((i) => <rect x={790 + i * 26} y="130" width="20" height="28" rx="3" fill={i === 6 ? 'var(--sky)' : 'color-mix(in srgb, var(--sky) 35%, transparent)'} />)}
+        {[0, 1, 2].map((i) => (
+          <g>
+            <circle cx={806 + i * 70} cy="236" r="18" fill="var(--raised)" stroke="var(--rule-strong)" stroke-width="1.3"/>
+            <path d={`M${799 + i * 70} 236 l5 5 l9 -10`} fill="none" stroke="var(--clr)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d={`M${806 + i * 70} 218 V178`} stroke="var(--rule-strong)" stroke-dasharray="2 3"/>
+          </g>
+        ))}
+        <text x="876" y="276" text-anchor="middle" font-size="11.5" fill="var(--muted)">independent witnesses co-sign</text>
+        <rect x="430" y="300" width="550" height="60" rx="10" fill="var(--cockpit, #0b0d10)"/>
+        <text x="450" y="326" font-size="12" class="mono" fill="#5fae84">$ clearance verify packet.json</text>
+        <text x="450" y="346" font-size="12" class="mono" fill="#d9796c">✕ rec 414: signature invalid · checkpoint root mismatch</text>
+        <path d="M208 246 V330 H426" fill="none" stroke="var(--bad)" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#lg-r)"/>
+      </svg>
+      <figcaption>Integrity · Signed, anchored, witnessed</figcaption>
+    </figure>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">The record</p>
+        <h2 class="h2">One versioned record per clearance event. <em>Verified</em> or <em>claimed</em>, field by field.</h2>
+        <p class="sub">The record is a first-class data model, not a report stitched from logs after the fact. Every field says whether Clearance checked it (a signature it verified) or an integration asserted it (a header GitHub forwarded). The distinction survives into the packet.</p>
+      </div>
+      <div class="cmp table-wrap" data-reveal>
+        <table>
+          <thead><tr><th>Field group</th><th>Contents</th></tr></thead>
+          <tbody>{fields.map(([k, v]) => <tr><td>{k}</td><td>{v}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="feature" data-reveal>
+        <div>
+          <p class="kicker">Attestations</p>
+          <h2 class="h2">The next link in a chain that <em>already exists</em>.</h2>
+          <p class="sub">Every cleared change emits a Clearance Change Attestation as an in-toto Statement. Its subject is the digest that landed; its predicate carries the control assertions, approvals, policy version, outcome, and a scope-and-limitations block naming what wasn't verified.</p>
+          <ul class="points">
+            <li><b>Signed with Sigstore</b>, keyless, beside the SLSA provenance Tekton Chains already emits in Glidepath.</li>
+            <li><b>One walk</b> from build to clearance to deployment, for any verifier.</li>
+            <li><b>Limitations in the payload,</b> so a coverage gap travels with the claim.</li>
+          </ul>
+        </div>
+        <div class="cockpit" role="img" aria-label="An in-toto Statement for a cleared skyport-broker change">
+          <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="crumb">attestation · <b>change-attestation/v1</b></span></div>
+<div class="code">{'{'}
+  <span class="k">"_type"</span>: <span class="s">"https://in-toto.io/Statement/v1"</span>,
+  <span class="k">"subject"</span>: [{'{'} <span class="k">"name"</span>: <span class="s">"ghcr.io/jfillman/skyport-broker"</span>,
+                <span class="k">"digest"</span>: {'{'} <span class="k">"sha256"</span>: <span class="s">"9f1c…e04a"</span> {'}'} {'}'}],
+  <span class="k">"predicateType"</span>: <span class="s">"https://clearance.hangarplatform.dev/change-attestation/v1"</span>,
+  <span class="k">"predicate"</span>: {'{'}
+    <span class="k">"tier"</span>: <span class="n">2</span>,
+    <span class="k">"policy"</span>: {'{'} <span class="k">"ref"</span>: <span class="s">"clearance.yaml@7e2d"</span>, <span class="k">"verdict"</span>: <span class="g">"pass"</span> {'}'},
+    <span class="k">"approvals"</span>: [{'{'} <span class="k">"sub"</span>: <span class="s">"okta|00u9…"</span>, <span class="k">"verified"</span>: <span class="g">true</span> {'}'}],
+    <span class="k">"provenance"</span>: {'{'} <span class="k">"level"</span>: <span class="s">"probable-agent"</span>,
+                    <span class="k">"claimed"</span>: [<span class="s">"agent-header"</span>] {'}'},
+    <span class="k">"outcome"</span>: {'{'} <span class="k">"applied"</span>: <span class="g">true</span>, <span class="k">"health"</span>: <span class="g">"healthy"</span> {'}'},
+    <span class="k">"coverage"</span>: <span class="g">"authorized-and-verified"</span>,
+    <span class="k">"limitations"</span>: [<span class="s">"drift observed at 60 s intervals"</span>]
+  {'}'}
+{'}'}</div>
+        </div>
+      </div>
+      <div class="feature flip" data-reveal>
+        <div>
+          <p class="kicker">The audit packet</p>
+          <h2 class="h2">A PDF is the <em>cover</em>, not the product.</h2>
+          <p class="sub">For any date range: JSON as the canonical form, CSV and PDF as presentation layers. Counts by provenance, the share cleared by policy versus by a person, every tier 2 and 3 change with its approver and token, every exception, policy changes in the period, and instructions for verifying it all.</p>
+          <ul class="points">
+            <li><b>Control mappings ship as data.</b> SOC 2 CC8.1 first. PCI DSS 6.5.1 and ISO 27001 A.8.32 after an auditor has reviewed them.</li>
+            <li><b>Always a coverage statement.</b> What the record does and doesn't include, in plain words.</li>
+          </ul>
+        </div>
+        <Packet />
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Three levels of trust</p>
+        <h2 class="h2">Different claims, kept <em>apart</em>.</h2>
+        <p class="sub">The operator of a control doesn't certify its own work. Clearance keeps these three distinct because they carry different claims and different liability.</p>
+      </div>
+      <div class="status-band" data-reveal>
+        <div><span class="chip built" style="color:var(--muted)">Level 1</span><h3 style="font-family:var(--font-serif);font-size:1.5rem;margin:0.8rem 0 0">Signed record</h3><p>"Clearance issued this statement, and it hasn't changed since signing." A technical capability.</p></div>
+        <div style="border-color:var(--clr);box-shadow:0 0 0 1px var(--clr)"><span class="chip built">Level 2 · the product</span><h3 style="font-family:var(--font-serif);font-size:1.5rem;margin:0.8rem 0 0">Verified control evidence</h3><p>"Within this declared scope, we verified these control events and found these exceptions."</p></div>
+        <div><span class="chip proposal">Level 3</span><h3 style="font-family:var(--font-serif);font-size:1.5rem;margin:0.8rem 0 0">Independent assurance</h3><p>"An independent assessor evaluated the control against a stated criterion." Through audit partners only, never self-issued.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Your data</p>
+        <h2 class="h2">Three layers, written into the <em>agreement</em> before the first install.</h2>
+      </div>
+      <div class="cmp table-wrap" data-reveal>
+        <table>
+          <thead><tr><th>Layer</th><th>Contents</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td>Customer evidence</td><td>Individual records, approvers, outcomes, policies</td><td>Tenant-isolated: one database and one signing identity per tenant, never cross-tenant</td></tr>
+            <tr><td>Derived customer intelligence</td><td>Your patterns, bottlenecks, exception rates</td><td>Yours, under your subscription</td></tr>
+            <tr><td>Shared intelligence</td><td>Aggregated benchmarks and change patterns</td><td>Opt-in, aggregate only, with thresholds before anything is published</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Prompts and intent are redacted by default to a task reference and a secret-scrubbed summary. Full text is opt-in, per repository, with its own retention.</p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="cols" data-reveal>
+        <div>
+          <p class="kicker">Why the ledger matters</p>
+          <h2 class="h2" style="font-size:clamp(1.8rem,2.6vw + 0.6rem,2.6rem)">The gate can be copied. <em>Being believed</em> can't.</h2>
+        </div>
+        <div>
+          <p>Any platform team with a free sprint can build an approval gate. What a copy starts without is a verified link between authorization and deployment that third parties already rely on, explicit statements of what was and wasn't covered, and, over time, a dataset relating change shapes to control outcomes.</p>
+          <p>So verification is free and open, forever. The authority comes from the log's immutability and its witnesses, not from Clearance's word. An auditor who has verified one anchored packet tends to ask the next client why theirs isn't.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Closer />
+</Layout>

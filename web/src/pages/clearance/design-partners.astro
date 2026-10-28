@@ -1,0 +1,98 @@
+---
+import Layout from '../../layouts/Clearance.astro';
+import { u } from '../../lib/url';
+const mail = `mailto:james@hangarplatform.dev?subject=${encodeURIComponent('Clearance design partner pilot')}&body=${encodeURIComponent('Company:\nHow agents reach production today:\nUpcoming audit or security review:\nPlatform lead and GRC lead:\n')}`;
+---
+<Layout title="Design partners" page="partners" description="Fly a six-week Clearance pilot on your own GitHub and Argo CD, with success criteria agreed before day one.">
+  <section class="page-hero">
+    <div class="clr-wrap">
+      <p class="kicker">Design partner program · now boarding</p>
+      <h1 class="display">Three pilots. Six weeks each. <em>One</em> at a time.</h1>
+      <p class="sub">Clearance is taking on three design partners from early 2027, each recruited from conversations that start in November 2026. You bring an agent-driven pipeline and a GRC lead willing to read the packet. You get the gate on your own cluster, a packet from your own changes, and a say in what ships.</p>
+      <div class="hero-actions" style="justify-content:flex-start">
+        <a class="btn btn-solid" href={mail}>Request a pilot <span class="arr">→</span></a>
+        <a class="btn btn-ghost" href={u('clearance/how-it-works/')}>How it works</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Who fits</p>
+        <h2 class="h2">A good pilot has a gap on <em>both</em> sides of the table.</h2>
+        <p class="sub">The platform team has a real control or evidence gap, and the security or GRC lead agrees it's material. If only one side cares, that's worth learning in week two, for both of us.</p>
+      </div>
+      <div class="personas" data-reveal>
+        <div class="persona"><span class="eyebrow">You deploy</span><h3>Through GitHub and Argo CD.</h3><p>Production lands by GitOps sync. Kyverno or OPA is a bonus, not a requirement.</p></div>
+        <div class="persona"><span class="eyebrow">Agents</span><h3>Open or change deploy-bound code.</h3><p>Coding agents or automation already create or materially modify changes that reach production.</p></div>
+        <div class="persona"><span class="eyebrow">You must show</span><h3>Authorization and traceability.</h3><p>Evidence is split today across GitHub, CI, Argo, the cluster, the IdP and chat.</p></div>
+        <div class="persona"><span class="eyebrow">Someone owns it</span><h3>A named sponsor.</h3><p>A platform or security leader who will sponsor the pilot. An audit inside two quarters helps; it isn't required.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">The six weeks</p>
+        <h2 class="h2">Walk the route, then try to <em>break</em> it.</h2>
+      </div>
+      <div class="steps" data-reveal>
+        <div class="step"><span class="n">WEEK 1 · DISCOVERY</span><h3>Map the route</h3><p>How an agent-authored pull request becomes a production deployment today: evidence kept, approval rules, known bypasses, the control objectives that apply.</p></div>
+        <div class="step"><span class="n">WEEKS 2–3 · PROTOTYPE</span><h3>Install and clear</h3><p>Helm install in a controlled environment, GitHub and Argo connected, tiers and identity configured. A routine change passes; a sensitive one holds until it's cleared.</p></div>
+        <div class="step"><span class="n">WEEKS 4–5 · VALIDATION</span><h3>Try to break it</h3><p>A push after approval, a direct cluster change, a revoked approver, a controller outage, a rollback, an emergency bypass. Then a packet from the real events.</p></div>
+        <div class="step"><span class="n">WEEK 6 · DECISION</span><h3>Each side decides</h3><p>The platform lead judges operational fit. The GRC lead takes the packet to the audit firm. The economic buyer decides whether to continue.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="cols" data-reveal>
+        <div>
+          <p class="kicker">Success, written before day one</p>
+          <h2 class="h2" style="font-size:clamp(1.8rem,2.6vw + 0.6rem,2.6rem)">We agree what <em>passing</em> looks like first.</h2>
+        </div>
+        <div>
+          <ol class="practices" style="margin-top:0">
+            <li><p>A sensitive change can't reach protected production without the required authorization, through the supported deployment paths.</p></li>
+            <li><p>The record holds the actual change, the policy version, the approver's identity and the deployment outcome.</p></li>
+            <li><p>Out-of-band changes and degraded operation are detected, or explicitly reported, within the agreed scope.</p></li>
+            <li><p>Your GRC lead uses the export with no substantive rework.</p></li>
+            <li><p>Your platform team runs it without new incidents or unacceptable delay.</p></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">The one-page agreement</p>
+        <h2 class="h2">Short, plain, and <em>no</em> promises we can't keep.</h2>
+      </div>
+      <div class="bento" data-reveal>
+        <div class="tile span-2"><p class="kicker">Scope</p><h3>Systems and people</h3><p>The systems in scope, the named participants, and the test cases.</p></div>
+        <div class="tile span-2"><p class="kicker">Data</p><h3>Your records stay yours</h3><p>Redacted intent, tenant-local records, and opt-in aggregates only.</p></div>
+        <div class="tile span-2"><p class="kicker">Terms</p><h3>Support and pricing</h3><p>The support provided, whether the pilot is paid, and the offer if the criteria are met.</p></div>
+        <div class="tile span-3"><p class="kicker">References</p><h3>Optional, and asked separately</h3><p>Being a reference is never a condition of the pilot.</p></div>
+        <div class="tile span-3"><p class="kicker">What we won't promise</p><h3>Audit passage, or complete provenance</h3><p>Nobody can honestly promise either. Clearance tells you what it verified, what it didn't, and why.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="clr-wrap closer" data-reveal>
+    <div class="cockpit">
+      <img src={u('marks/clearance-tile.svg')} width="56" height="56" alt="" />
+      <p class="kicker mt-2">Request a pilot</p>
+      <h2>Tell me how your changes <em>reach production</em>.</h2>
+      <p>Write a few lines about your pipeline, the agents in it, and any audit on the horizon. Every note is read by the person building it.</p>
+      <div class="hero-actions">
+        <a class="btn btn-solid" href={mail}>Email james@hangarplatform.dev <span class="arr">→</span></a>
+      </div>
+      <p style="font-size:0.85rem">James Fillman, building Clearance as part of Hangar.</p>
+    </div>
+  </section>
+</Layout>

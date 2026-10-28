@@ -1,0 +1,57 @@
+---
+// The first page of an audit packet: the summary a GRC lead forwards.
+import { u } from '../../lib/url';
+const rows: [string, string, number][] = [
+  ['Confirmed agent', '231', 56], ['Probable agent', '64', 16], ['Confirmed human', '98', 24], ['Unknown, treated as agent', '19', 5],
+];
+---
+<div class="packet" role="img" aria-label="The summary page of a Clearance audit packet for January 2027: 412 production changes by provenance, the share cleared by policy and by a person, exceptions, and a coverage statement">
+  <div class="pk-head">
+    <img src={u('marks/clearance-tile.svg')} width="28" height="28" alt="" />
+    <div><b>Change-management evidence</b><span>skyport-broker-prod, skyport-auth-prod · Jan 1 to Jan 31, 2027</span></div>
+    <span class="pk-map">SOC 2 CC8.1</span>
+  </div>
+  <div class="pk-body">
+    <div class="pk-big"><b>412</b><span>production changes, every one with a record</span></div>
+    <div class="pk-split">
+      <div><b>78%</b><span>cleared by policy</span></div>
+      <div><b>22%</b><span>cleared by a named human</span></div>
+      <div><b>0</b><span>self-cleared</span></div>
+    </div>
+    <p class="pk-label">By provenance</p>
+    {rows.map(([k, n, w]) => (
+      <div class="pk-row"><span>{k}</span><i><b style={`width:${w}%`}></b></i><em>{n}</em></div>
+    ))}
+    <p class="pk-label">Exceptions</p>
+    <div class="pk-ex"><span>Out-of-band change detected</span><em>1</em></div>
+    <div class="pk-ex"><span>Break-glass, named and timed</span><em>1</em></div>
+    <div class="pk-ex"><span>Degraded-mode auto-clear</span><em>0</em></div>
+    <p class="pk-label">Coverage statement</p>
+    <p class="pk-cov">Covered: GitHub to Argo CD to Kubernetes for the two environments above. Not covered: the admission webhook was absent Jan 3 to Jan 4, so direct applies in that window were detected by drift scan only.</p>
+  </div>
+</div>
+<style>
+  .packet { background: #fbfaf7; color: #1b1f24; border-radius: 10px; border: 1px solid rgba(27,31,36,0.14); box-shadow: 0 30px 70px -35px rgba(11,13,16,0.5); font-size: 0.85rem; overflow: hidden; }
+  .pk-head { display: flex; gap: 0.7rem; align-items: center; padding: 0.9rem 1.1rem; border-bottom: 1px solid rgba(27,31,36,0.12); }
+  .pk-head img { border-radius: 6px; }
+  .pk-head b { display: block; font-family: var(--font-serif); font-weight: 400; font-size: 1.2rem; line-height: 1.1; }
+  .pk-head span { color: #5b6570; font-size: 0.74rem; }
+  .pk-map { margin-left: auto; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; border: 1px solid #2e8b57; color: #2e8b57; padding: 0.2rem 0.45rem; border-radius: 3px; white-space: nowrap; }
+  .pk-body { padding: 1rem 1.1rem 1.2rem; }
+  .pk-big b { font-family: var(--font-serif); font-weight: 400; font-size: 2.6rem; line-height: 1; }
+  .pk-big span { color: #5b6570; margin-left: 0.5rem; }
+  .pk-split { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin: 0.9rem 0 0.4rem; }
+  .pk-split div { border-top: 2px solid #2e8b57; padding-top: 0.4rem; }
+  .pk-split div:nth-child(2) { border-color: #b9791f; }
+  .pk-split div:nth-child(3) { border-color: #838b93; }
+  .pk-split b { font-family: var(--font-serif); font-weight: 400; font-size: 1.5rem; display: block; line-height: 1.1; }
+  .pk-split span { color: #5b6570; font-size: 0.75rem; }
+  .pk-label { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #838b93; margin: 1rem 0 0.4rem; }
+  .pk-row { display: grid; grid-template-columns: 170px 1fr 34px; gap: 0.6rem; align-items: center; margin: 0.25rem 0; }
+  .pk-row i { height: 8px; background: #e8e3da; border-radius: 4px; overflow: hidden; display: block; }
+  .pk-row i b { display: block; height: 100%; background: #2e8b57; border-radius: 4px; }
+  .pk-row em, .pk-ex em { font-style: normal; font-family: var(--font-mono); text-align: right; }
+  .pk-ex { display: flex; justify-content: space-between; border-bottom: 1px dashed rgba(27,31,36,0.14); padding: 0.25rem 0; }
+  .pk-cov { margin: 0; color: #5b6570; font-size: 0.8rem; line-height: 1.5; background: #f4e6c9; border-radius: 6px; padding: 0.55rem 0.7rem; }
+  @container (max-width: 440px) { .pk-row { grid-template-columns: 120px 1fr 30px; } }
+</style>

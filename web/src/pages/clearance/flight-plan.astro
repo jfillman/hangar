@@ -1,0 +1,175 @@
+---
+import Layout from '../../layouts/Clearance.astro';
+import Closer from '../../components/clearance/Closer.astro';
+import { u } from '../../lib/url';
+// Fourteen months, November 2026 to December 2027. x = 170 + month * 55.
+const months = ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const X = (m: number) => 170 + m * 55;
+const legs: [string, number, number, string][] = [
+  ['Discovery', 0, 1, 'var(--muted)'],
+  ['The gate', 1, 2, 'var(--clr)'],
+  ['Recorder and packet', 2, 3, 'var(--clr)'],
+  ['Design-partner pilots', 3, 6, 'var(--accent)'],
+  ['Generally available', 6, 9, 'var(--sky)'],
+  ['Autonomy and intelligence', 9, 14, 'var(--sky)'],
+];
+---
+<Layout title="Flight plan" page="plan" description="Clearance's flight plan from November 2026 to December 2027: six legs, each closed by an exit test rather than a date.">
+  <section class="page-hero">
+    <div class="clr-wrap">
+      <p class="kicker">Flight plan</p>
+      <h1 class="display">Six legs. Each one ends with a <em>test</em>, not a date.</h1>
+      <p class="sub">Clearance is built in the open on the Hangar lab, and it moves to the next leg only when the last one passes its exit test. The order is deliberate: a real packet before partners, a forwarded packet and a paid pilot before anything is sold, and no expansion before revenue.</p>
+    </div>
+  </section>
+
+  <section class="clr-wrap" data-reveal>
+    <figure class="fig">
+      <svg viewBox="0 0 960 360" role="img" aria-label="Timeline from November 2026 to December 2027: discovery in November, the gate in December, recorder and packet in January, three design-partner pilots from February to April, general availability from May to July, and autonomy and intelligence from August to December 2027.">
+        <text x="170" y="26" font-size="11" class="mono" fill="var(--muted)">2026</text>
+        <text x={X(2)} y="26" font-size="11" class="mono" fill="var(--muted)">2027</text>
+        {months.map((m, i) => (
+          <g>
+            <line x1={X(i)} y1="52" x2={X(i)} y2="300" stroke="var(--rule)" />
+            <text x={X(i) + 27.5} y="46" text-anchor="middle" font-size="11" class="mono" fill="var(--soft)">{m}</text>
+          </g>
+        ))}
+        <line x1={X(14)} y1="52" x2={X(14)} y2="300" stroke="var(--rule)" />
+        {legs.map(([name, a, b, col], i) => (
+          <g>
+            <text x="16" y={88 + i * 38} font-size="13" fill="var(--ink)">{name}</text>
+            <rect x={X(a) + 2} y={74 + i * 38} width={X(b) - X(a) - 4} height="20" rx="5" fill={col} opacity="0.85" />
+            <path d={`M${X(b)} ${76 + i * 38} l8 8 l-8 8 l-8 -8z`} fill="var(--raised)" stroke={col} stroke-width="2" />
+          </g>
+        ))}
+        {[0, 1, 2].map((k) => <rect x={X(3 + k) + 6} y="193" width="43" height="8" rx="2" fill="var(--raised)" opacity="0.8" />)}
+        <line x1={X(6)} y1="52" x2={X(6)} y2="312" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="4 4" />
+        <text x={X(6) + 8} y="326" font-size="12" fill="var(--accent)">the decisive checkpoint: one forwarded packet, one paid pilot</text>
+        <g font-size="11.5" fill="var(--muted)">
+          <path d="M24 342 l6 6 l-6 6 l-6 -6z" fill="var(--raised)" stroke="var(--clr)" stroke-width="2"/><text x="38" y="352">exit test</text>
+          <rect x="120" y="343" width="40" height="8" rx="2" fill="var(--accent)"/><text x="168" y="352">three pilots, one at a time</text>
+        </g>
+      </svg>
+      <figcaption>Flight plan · Nov 2026 to Dec 2027</figcaption>
+    </figure>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="legs">
+        <div class="leg" data-reveal>
+          <div class="when"><b>Leg 0</b>Nov 2026</div><div class="node"><i></i></div>
+          <div class="body">
+            <h3>Discovery and foundation</h3>
+            <p>Two weeks of zero code: ten conversations with platform and GRC leads, each asked the same question, each asked to show their current evidence. An auditor reads the draft evidence schema. Then the <code>clearance</code> repository, Apache 2.0, the design record for two boundaries, and a frozen schema and token format.</p>
+            <div class="gate"><b>Exit test</b>Ten interviews documented with a named budget owner and a real gap in at least five. Auditor feedback on the schema in writing. Schema frozen.</div>
+          </div>
+        </div>
+        <div class="leg" data-reveal>
+          <div class="when"><b>Leg 1</b>Dec 2026</div><div class="node"><i></i></div>
+          <div class="body">
+            <h3>The gate</h3>
+            <p>The provenance detector, deterministic tier rules, the PreSync hook with the admission webhook behind it, bypass detection, approvals in the pull request, and registration as a GitHub deployment protection rule. Clearance's own releases go through the gate from the first install.</p>
+            <div class="gate"><b>Exit test</b>An agent pull request to prod is held, cleared by a person and synced. The same change to dev clears in under a second. A force-push after approval is refused. A direct apply shows up as an exception. An outage lets a dev change through and holds a secret rotation, both recorded.</div>
+          </div>
+        </div>
+        <div class="leg" data-reveal>
+          <div class="when"><b>Leg 2</b>Jan 2027</div><div class="node"><i></i></div>
+          <div class="body">
+            <h3>Recorder, ledger and the first packet</h3>
+            <p>The flight recorder with signed, append-only rows. Attestations signed with Sigstore and checkpoints anchored in Rekor. A listener on Glidepath's CDEvents stream so sync results and rollbacks land without another integration. Chat approvals. Packet v1 for SOC 2 change management.</p>
+            <div class="gate"><b>Exit test</b>A 30-day lab packet, including failures, rollbacks and a deliberate bypass, verifies independently with the open tool. The auditor's gap list is under ten items, and none of them is "wrong shape".</div>
+          </div>
+        </div>
+        <div class="leg key" data-reveal>
+          <div class="when"><b>Leg 3</b>Feb to Apr 2027</div><div class="node"><i></i></div>
+          <div class="body">
+            <h3>Design-partner pilots</h3>
+            <p>Three partners of three kinds, one after another, six weeks each, with success written down before day one: an audit-driven SaaS team, a mature GitOps team asked to estimate building it themselves, and a company that sells to regulated customers. Meanwhile: a one-hour Helm install, all four tiers, and OIDC approver identity.</p>
+            <div class="gate"><b>Exit test</b>Three pilots complete. At least one GRC lead forwards a packet to their auditor unchanged. At least one partner pays or signs a conditional purchase.</div>
+          </div>
+        </div>
+        <div class="leg" data-reveal>
+          <div class="when"><b>Leg 4</b>May to Jul 2027</div><div class="node"><i></i></div>
+          <div class="body">
+            <h3>Generally available, and the ledger goes public</h3>
+            <p>A multi-tenant hosted recorder with keys tenants' admins don't hold. A public transparency log with independent witnesses, the open verifier and a hosted endpoint for auditors. PCI DSS and ISO mappings after auditor review. The Tower console. Evidence push to GRC platforms. Community, Team and Business plans.</p>
+            <div class="gate"><b>Exit test</b>A first paying customer. One packet accepted in completed Type II fieldwork. One auditor using the verification endpoint on their own.</div>
+          </div>
+        </div>
+        <div class="leg" data-reveal>
+          <div class="when"><b>Leg 5</b>Aug to Dec 2027</div><div class="node"><i></i></div>
+          <div class="body">
+            <h3>Earned autopilot, intelligence and fleet hygiene</h3>
+            <p>Policy-controlled autonomy: you decide which change classes may auto-clear, and Clearance recommends a promotion only with the evidence attached. A person approves; a rollback demotes the class automatically. With ten or more opted-in tenants, benchmarks and a change-pattern library. Fleet hygiene finds services nobody has approved a change to in 90 days. The native Autopilot entry point goes live on the lab.</p>
+            <div class="gate"><b>Exit test</b>One customer promotes a change class on the strength of the record. One intelligence or fleet-hygiene sale.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Earned autopilot</p>
+        <h2 class="h2">The product never widens its <em>own</em> authority.</h2>
+        <p class="sub">Zero rollbacks isn't proof of safety: the changes may have been low-risk, or monitoring may have missed a failure. So a recommendation always shows what was and wasn't observed, and a person decides.</p>
+      </div>
+      <figure class="fig" data-reveal>
+        <svg viewBox="0 0 960 300" role="img" aria-label="A loop: your policy defines which change classes auto-clear; Clearance enforces and records outcomes; Clearance recommends a policy change with evidence; an authorized person approves or declines; and the loop returns to policy.">
+          <defs><marker id="lp-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
+          <g fill="var(--raised)" stroke="var(--rule-strong)" stroke-width="1.3">
+            <rect x="60" y="30" width="260" height="64" rx="12"/><rect x="640" y="30" width="260" height="64" rx="12"/>
+            <rect x="60" y="196" width="260" height="64" rx="12"/>
+          </g>
+          <rect x="640" y="196" width="260" height="64" rx="12" fill="var(--clr-soft)" stroke="var(--clr)" stroke-width="1.8"/>
+          <g fill="none" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#lp-a)">
+            <path d="M320 62 H636"/><path d="M770 94 V192"/><path d="M640 228 H324"/><path d="M190 196 V98"/>
+          </g>
+          <g font-size="14" fill="var(--ink)" text-anchor="middle">
+            <text x="190" y="58">Your policy defines</text><text x="190" y="78">which classes auto-clear</text>
+            <text x="770" y="58">Clearance enforces and</text><text x="770" y="78">records the outcomes</text>
+            <text x="770" y="224">Clearance recommends a change,</text><text x="770" y="244">with the evidence attached</text>
+            <text x="190" y="224">An authorized person</text><text x="190" y="244">approves, or declines</text>
+          </g>
+          <g font-size="12" fill="var(--muted)">
+            <text x="478" y="52" text-anchor="middle">policy version in every record</text>
+            <text x="784" y="140">a rollback demotes</text><text x="784" y="156">the class automatically</text>
+            <text x="478" y="218" text-anchor="middle">a recommendation, never a decision</text>
+            <text x="30" y="140">the approval is itself</text><text x="30" y="156">a recorded clearance</text>
+          </g>
+          <text x="480" y="292" text-anchor="middle" font-size="12" class="mono" fill="var(--accent)">ZERO ROLLBACKS IS NOT PROOF OF SAFETY</text>
+        </svg>
+        <figcaption>Loop · Policy-controlled autonomy</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Part of the family</p>
+        <h2 class="h2">Hangar is the reference deployment, and the <em>first customer</em>.</h2>
+        <p class="sub">Clearance stands alone, installs alone and works without Hangar. On Hangar it plugs into the products already flying.</p>
+      </div>
+      <div class="bento" data-reveal>
+        {[
+          ['autopilot', 'Autopilot', 'The agent runtime. Its runs become the native entry point, and its gateway is where Clearance began.'],
+          ['glidepath', 'Glidepath', 'CDEvents for sync results and rollbacks; Tekton Chains provenance that Clearance attestations extend.'],
+          ['tower', 'Tower', 'The console: pending clearances, record search, packet download, tier rules per app.'],
+          ['airframe', 'Airframe', "Clearance's own services deploy as Airframe applications, the same way Tower does."],
+          ['apron', 'Apron', 'Installs Clearance as a cluster component on every governed cluster.'],
+          ['hangar', 'Hangar', 'The lab: a dev and a prod cluster, the first two governed environments.'],
+        ].map(([k, n, t]) => (
+          <div class="tile span-2">
+            <span class="eyebrow" style="display:flex;gap:0.55rem;align-items:center"><img src={u(`marks/${k}-tile.svg`)} width="26" height="26" alt="" style="border-radius:6px" />{n}</span>
+            <p>{t}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <Closer />
+</Layout>

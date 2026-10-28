@@ -1,0 +1,17 @@
+---
+import { u } from '../../lib/url';
+interface Props { title?: string; text?: string }
+const { title = 'Cleared for <em>production</em>.', text = 'Clearance is taking on three design partners, one at a time, for six-week pilots on your own GitHub and Argo CD. Bring an agent-driven pipeline and a GRC lead who will read the packet.' } = Astro.props;
+---
+<section class="clr-wrap closer" data-reveal>
+  <div class="cockpit">
+    <img src={u('marks/clearance-tile.svg')} width="56" height="56" alt="" />
+    <p class="kicker mt-2">Design partner program</p>
+    <h2 set:html={title} />
+    <p>{text}</p>
+    <div class="hero-actions">
+      <a class="btn btn-solid" href={u('clearance/design-partners/')}>Request a pilot <span class="arr">→</span></a>
+      <a class="btn btn-ghost" href={u('clearance/pricing/')}>See pricing</a>
+    </div>
+  </div>
+</section>

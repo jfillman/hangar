@@ -1,0 +1,28 @@
+---
+// A one-tap approval in chat. Identity still resolves through the identity provider.
+import { u } from '../../lib/url';
+---
+<div class="cockpit" role="img" aria-label="A chat approval: Clearance asks the on-call engineer to clear a tier 2 change, and they clear it with one tap">
+  <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="crumb"># <b>skyport-oncall</b></span></div>
+  <div class="chat">
+    <div class="msg">
+      <span class="av"><img src={u('marks/clearance-tile.svg')} alt="" /></span>
+      <div>
+        <div class="nm">Clearance <small>APP · 09:41</small></div>
+        <div class="card-c">
+          <p><b>Tier 2 · skyport-broker-prod</b> is holding for you.</p>
+          <p>Raise replica floor to 3 · PR #209 · proposed by an agent</p>
+          <p>Diff 14 lines · CI green · policy pass · expires in 60 min</p>
+          <div class="acts"><span class="ok">Clear</span><span>Deny</span><span>Open diff</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="msg">
+      <span class="av">MR</span>
+      <div>
+        <div class="nm">Maya R. <small>09:43</small></div>
+        <div class="reply"><b>Cleared</b> · signed in as maya@skyport (Okta) · token bound to sha256:9f1c…e04a</div>
+      </div>
+    </div>
+  </div>
+</div>

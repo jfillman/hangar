@@ -1,0 +1,136 @@
+---
+// Clearance's product site. A Hangar-family product with its own header, nav and footer, kept off the
+// main site on purpose: no page links here, it is not in the nav, the Log, the Library or any list,
+// and every page asks search engines not to index it.
+import '../styles/global.css';
+import '../styles/clearance.css';
+import { u } from '../lib/url';
+
+interface Props {
+  title: string;
+  description: string;
+  page?: string;
+}
+const { title, description, page } = Astro.props;
+const fullTitle = title === 'Clearance' ? 'Clearance · Change assurance for AI-enabled engineering' : `${title} · Clearance`;
+const c = (path = '') => u(`clearance/${path}`);
+const nav = [
+  { href: 'product/', label: 'Product', key: 'product' },
+  { href: 'how-it-works/', label: 'How it works', key: 'how' },
+  { href: 'ledger/', label: 'Ledger', key: 'ledger' },
+  { href: 'flight-plan/', label: 'Flight plan', key: 'plan' },
+  { href: 'pricing/', label: 'Pricing', key: 'pricing' },
+];
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const year = 2026;
+---
+<!doctype html>
+<html lang="en" class="clr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="googlebot" content="noindex, nofollow" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={u('marks/clearance-tile.svg')} />
+    <meta name="theme-color" content="#f2efe9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131619" media="(prefers-color-scheme: dark)" />
+    <script is:inline>
+      try {
+        const t = localStorage.getItem('hangar-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="clr-head">
+      <div class="clr-wrap clr-bar">
+        <a class="clr-brand" href={c()} aria-label="Clearance home">
+          <img src={u('marks/clearance-tile.svg')} width="30" height="30" alt="" />
+          <span class="name">Clearance</span>
+          <span class="by">a Hangar product</span>
+        </a>
+        <nav aria-label="Clearance">
+          {nav.map((n) => (
+            <a href={c(n.href)} aria-current={page === n.key ? 'page' : undefined}>{n.label}</a>
+          ))}
+        </nav>
+        <button class="theme" type="button" aria-label="Switch between light and dark" title="Light or dark">
+          <svg class="sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+        <a class="btn btn-solid btn-sm cta" href={c('design-partners/')}>Request a pilot</a>
+      </div>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="clr-foot">
+      <div class="clr-wrap">
+        <div class="foot-grid">
+          <div class="foot-brand">
+            <a class="clr-brand" href={c()}>
+              <img src={u('marks/clearance-tile.svg')} width="30" height="30" alt="" />
+              <span class="name">Clearance</span>
+            </a>
+            <p>Change assurance for AI-enabled engineering. Every production change cleared under your own policy, bound to the exact artifact that landed, and on a record anyone can verify.</p>
+            <p class="family">
+              <img src={u('marks/hangar-tile.svg')} width="18" height="18" alt="" />
+              <span>Part of the <a href={u('')}>Hangar</a> family, alongside Tower, Glidepath, Airframe, Apron and Autopilot.</span>
+            </p>
+          </div>
+          <div>
+            <p class="eyebrow">Product</p>
+            <a href={c('product/')}>Tour</a>
+            <a href={c('how-it-works/')}>How it works</a>
+            <a href={c('ledger/')}>Evidence and ledger</a>
+            <a href={c('pricing/')}>Pricing</a>
+          </div>
+          <div>
+            <p class="eyebrow">Company</p>
+            <a href={c('flight-plan/')}>Flight plan</a>
+            <a href={c('design-partners/')}>Design partners</a>
+            <a href="mailto:james@hangarplatform.dev?subject=Clearance">Contact</a>
+          </div>
+          <div>
+            <p class="eyebrow">Open source</p>
+            <span class="soon">Controller <em>Apache 2.0</em></span>
+            <span class="soon"><code>clearance verify</code></span>
+            <span class="soon">Evidence schema</span>
+          </div>
+        </div>
+        <div class="foot-base">
+          <span>&copy; {year} James Fillman. The runtime gateway is built; the deployment gate is in design with its first partners.</span>
+          <span class="muted">Clearance helps you enforce your own change policy and assemble evidence. It is not an auditor and does not certify anything.</span>
+        </div>
+      </div>
+    </footer>
+    <script>
+      const root = document.documentElement;
+      const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+      document.querySelector('button.theme')?.addEventListener('click', () => {
+        const next = isDark() ? 'light' : 'dark';
+        root.dataset.theme = next;
+        try { localStorage.setItem('hangar-theme', next); } catch {}
+      });
+      // Reveal sections as they scroll in; everything is visible without JS or with reduced motion.
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+        const els = document.querySelectorAll('[data-reveal]');
+        root.classList.add('reveal-on');
+        const io = new IntersectionObserver((entries) => {
+          for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+        }, { rootMargin: '0px 0px -8% 0px' });
+        els.forEach((el) => io.observe(el));
+      }
+    </script>
+  </body>
+</html>

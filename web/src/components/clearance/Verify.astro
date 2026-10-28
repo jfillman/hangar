@@ -1,0 +1,19 @@
+---
+// clearance verify on a machine that cannot reach Clearance or the customer's database.
+---
+<div class="cockpit" role="img" aria-label="A terminal running clearance verify on a 30-day packet: signatures, ledger inclusion and witnesses all pass, with one exception and one coverage gap stated">
+  <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="crumb">auditor@laptop · <b>offline</b></span></div>
+<div class="term"><span class="p">$</span> clearance verify packet-skyport-2027-01.json
+<span class="c"># no network to Clearance or to the customer's recorder</span>
+<span class="dim">scope</span>          skyport-broker-prod, skyport-auth-prod
+<span class="dim">period</span>         Jan 1, 2027 to Jan 31, 2027
+<span class="dim">records</span>        412 clearance events
+<span class="ok">✓</span> signatures     412 of 412 valid, issuer clearance.hangar-prod
+<span class="ok">✓</span> ledger         31 checkpoints included in the log
+<span class="ok">✓</span> witnesses      3 of 3 co-signed every checkpoint
+<span class="ok">✓</span> chain          no gaps, no reorder, tail matches checkpoint
+<span class="wa">!</span> exceptions     1 out-of-band change, 1 break-glass
+<span class="wa">!</span> coverage       admission webhook absent Jan 3 to Jan 4
+<span class="ok">verified</span> within declared scope · see coverage statement
+<span class="p">$</span> <span class="cur"></span></div>
+</div>

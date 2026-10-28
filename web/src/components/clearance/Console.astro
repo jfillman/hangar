@@ -1,0 +1,83 @@
+---
+// The hero's product shot: Clearance's console in Tower, drawn as flight progress strips.
+import { u } from '../../lib/url';
+---
+<div class="cockpit" role="img" aria-label="The Clearance console in Tower: a list of production changes, each a flight strip showing who proposed it, its tier and whether it is cleared, holding or denied">
+  <div class="chrome">
+    <span class="dots"><i></i><i></i><i></i></span>
+    <span class="crumb">tower / <b>clearance</b> / skyport-broker-prod</span>
+  </div>
+  <div class="console">
+    <aside aria-hidden="true">
+      <p class="grp">Clearances</p>
+      <a class="on" href="#">Active <span>1</span></a>
+      <a href="#">Cleared today <span>23</span></a>
+      <a href="#">Exceptions <span>1</span></a>
+      <p class="grp">Evidence</p>
+      <a href="#">Records</a>
+      <a href="#">Packets</a>
+      <a href="#">Ledger checkpoints</a>
+      <p class="grp">Policy</p>
+      <a href="#">Tiers</a>
+      <a href="#">Outage policy</a>
+      <a href="#">Approvers</a>
+    </aside>
+    <div class="pane">
+      <div class="pane-head">
+        <h4>Change traffic</h4>
+        <span class="meta">policy clearance.yaml@7e2d · kyverno</span>
+        <span class="live">LIVE</span>
+      </div>
+      <div class="strips">
+        <div class="strip holding">
+          <span class="bar"></span>
+          <span class="who"><b>Rotate broker signing secret</b><small>skyport-broker · PR #212 · agent, confirmed</small></span>
+          <span class="tier" data-t="3"><i><b></b><b></b><b></b></i>Tier 3</span>
+          <span class="k"><b>prod</b>skyport-broker-prod</span>
+          <span class="k"><b>1 of 2 humans</b>platform-leads, security</span>
+          <span class="st a">Holding short</span>
+        </div>
+        <div class="strip cleared">
+          <span class="bar"></span>
+          <span class="who"><b>Raise replica floor to 3</b><small>skyport-broker · PR #209 · agent, probable</small></span>
+          <span class="tier" data-t="2"><i><b></b><b></b><b></b></i>Tier 2</span>
+          <span class="k"><b>prod</b>skyport-broker-prod</span>
+          <span class="k"><b>Cleared by</b>platform-oncall</span>
+          <span class="st g">Cleared</span>
+        </div>
+        <div class="strip cleared">
+          <span class="bar"></span>
+          <span class="who"><b>Bump image sha-3b53cc3</b><small>skyport-auth · PR #88 · agent, confirmed</small></span>
+          <span class="tier" data-t="1"><i><b></b><b></b><b></b></i>Tier 1</span>
+          <span class="k"><b>prod</b>skyport-auth-prod</span>
+          <span class="k"><b>By policy</b>in 312 ms</span>
+          <span class="st g">Cleared</span>
+        </div>
+        <div class="strip cleared">
+          <span class="bar"></span>
+          <span class="who"><b>Tidy README and runbook links</b><small>skyport-broker · PR #211 · human, confirmed</small></span>
+          <span class="tier" data-t="0"><i><b></b><b></b><b></b></i>Tier 0</span>
+          <span class="k"><b>dev</b>skyport-broker-dev</span>
+          <span class="k"><b>By policy</b>in 88 ms</span>
+          <span class="st g">Cleared</span>
+        </div>
+        <div class="strip denied">
+          <span class="bar"></span>
+          <span class="who"><b>Widen egress to 0.0.0.0/0</b><small>skyport-broker · PR #207 · unknown origin</small></span>
+          <span class="tier" data-t="2"><i><b></b><b></b><b></b></i>Tier 2</span>
+          <span class="k"><b>prod</b>skyport-broker-prod</span>
+          <span class="k"><b>Denied</b>R014 egress</span>
+          <span class="st r">Denied</span>
+        </div>
+        <div class="strip except">
+          <span class="bar"></span>
+          <span class="who"><b>Direct apply: ConfigMap broker-env</b><small>kubectl · no clearance found</small></span>
+          <span class="tier" data-t="2"><i><b></b><b></b><b></b></i>Tier 2</span>
+          <span class="k"><b>prod</b>skyport-broker-prod</span>
+          <span class="k"><b>Out of band</b>found in 54 s</span>
+          <span class="st r">Exception</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
