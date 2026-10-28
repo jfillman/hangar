@@ -32,23 +32,26 @@ def load_yaml(p):
     return yaml.safe_load(Path(p).read_text())
 
 
-def walk_schema(node, fn):
-    """Call fn(node) on every subschema in a JSON-schema-ish tree."""
+def walk_schema(node, fn, cond=False):
+    """Call fn(node, cond) on every subschema in a JSON-schema-ish tree. cond is True under if/then/else/not:
+    those are constraints on an object already counted, not objects of their own."""
     if not isinstance(node, dict):
         return
-    fn(node)
+    fn(node, cond)
     for k, c in node.items():
         if k == "properties" and isinstance(c, dict):
             for c2 in c.values():
-                walk_schema(c2, fn)
-        elif k in ("items", "additionalProperties", "if", "then", "else", "not") and isinstance(c, dict):
-            walk_schema(c, fn)
+                walk_schema(c2, fn, cond)
+        elif k in ("items", "additionalProperties") and isinstance(c, dict):
+            walk_schema(c, fn, cond)
+        elif k in ("if", "then", "else", "not") and isinstance(c, dict):
+            walk_schema(c, fn, True)
         elif k in ("oneOf", "anyOf", "allOf") and isinstance(c, list):
             for c2 in c:
-                walk_schema(c2, fn)
+                walk_schema(c2, fn, cond)
         elif k == "definitions" and isinstance(c, dict):
             for c2 in c.values():
-                walk_schema(c2, fn)
+                walk_schema(c2, fn, cond)
 
 
 def frac(a, b):
@@ -87,12 +90,17 @@ def collect(tech: Path) -> dict:
     st = dict(nodes=0, desc=0, objects=0, addl_false=0, passthrough=0, constrained=0, leaves=0, examples=0,
               xhangar=0, owner=0, risk=0)
 
-    def rec(n):
+    def rec(n, cond):
         st["nodes"] += 1
         st["desc"] += "description" in n
-        if n.get("type") == "object" or "properties" in n:
+        if cond and n.get("type") != "object":
+            pass  # an if/then fragment constrains its object; it is not one (2026-10-28)
+        elif n.get("type") == "object" or "properties" in n:
             st["objects"] += 1
-            if n.get("additionalProperties") is False:
+            # A typed map (no properties, additionalProperties is a schema: labels, annotations, configMaps data)
+            # takes arbitrary keys by design and rejects a wrong value type, so a key typo cannot exist there.
+            typed_map = isinstance(n.get("additionalProperties"), dict) and not n.get("properties")
+            if n.get("additionalProperties") is False or typed_map:
                 st["addl_false"] += 1
             if n.get("x-hangar-passthrough"):
                 st["passthrough"] += 1
@@ -130,7 +138,7 @@ def collect(tech: Path) -> dict:
         x["summary"] += "hangar.io/agent-summary" in ann
         sch = d["spec"]["versions"][0]["schema"]["openAPIV3Schema"]
 
-        def r2(n):
+        def r2(n, cond=False):
             x["nodes"] += 1
             x["desc"] += "description" in n
             x["cel"] += "x-kubernetes-validations" in n
@@ -266,7 +274,14 @@ def collect(tech: Path) -> dict:
     m["doc_yaml_validated_in_ci"] = 0 if not (af / "docs" / "walkthroughs").exists() else 1
     # Clearance moved into the autopilot repo (DX-0); the loose ~/tech/clearance copy is stale
     clearance = [tech / "autopilot" / "src" / "clearance", tech / "clearance" / "src" / "clearance"]
-    m["mcp_tools"] = sum(len(list(c.glob("airframe_tools.py"))) for c in clearance)
+    # airframe.* tools registered with Clearance's tier table, not a file name (a file alone used to pass).
+    tiers = next((c / "tiers.py" for c in clearance if (c / "tiers.py").exists()), None)
+    names = set(re.findall(r'"(airframe\.[a-z_.]+)"', tiers.read_text())) if tiers else set()
+    m["mcp_tools"] = len(names)
+    m["describe_status_tools"] = {"airframe.describe", "airframe.status"} <= names
+    profile = next((c / "profile.py" for c in clearance if (c / "profile.py").exists()), None)
+    m["escape_hatch_denied"] = bool(profile) and bool(
+        re.search(r"BASELINE_DENY_FIELDS[^=]*=\s*\([^)]*\"/extraManifests\"", profile.read_text(), re.S))
     scope = next((c / "scope.py" for c in clearance if (c / "scope.py").exists()), None)
     m["field_scope_gate"] = bool(scope) and "def field_violations" in scope.read_text()
     return m
@@ -337,7 +352,7 @@ def score(m: dict) -> dict:
         (3, frac(x["status_conditions"], x["count"]), "XRDs declaring status conditions"),
         (3, frac(x["status_reason"], x["count"]), "XRDs with reason codes"),
         (3, float(m["verify_meta"] > 0), "verify contracts"),
-        (2, float(m["mcp_tools"] > 0), "a describe/status tool")],
+        (2, float(m["describe_status_tools"]), "a describe/status tool")],
         "can an agent tell whether it worked, and why not")
     dim("7 Docs for agents", [
         (3, 1.0, "walked-live quickstarts (true docs)"),
@@ -356,7 +371,7 @@ def score(m: dict) -> dict:
         (3, frac(s["risk"], max(1, m["schema_top_keys"])), "risk-classed fields"),
         (3, float(m["field_scope_gate"]), "field-level agent-scope gate"),
         (2, 1.0, "secrets referenced, never inlined"),
-        (2, 0.0, "escape hatches (extraManifests) denied by default")],
+        (2, float(m["escape_hatch_denied"]), "escape hatches (extraManifests) denied by default")],
         "tiers that reach down to individual fields")
     dim("10 Hygiene and determinism", [
         (3, float(m["helm_lint_ok"]), "helm lint passes"),
