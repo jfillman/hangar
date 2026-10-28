@@ -218,7 +218,7 @@ test is the parachute sentence live, and nothing on that path runs yet.
 - **Clearance is now its own product** (Clearance Brief, Architecture and Roadmap, 2026-10-27/28; what it changes here is
   [design.md section 0.1](design.md)). It has two boundaries: the runtime gateway, which is what M3 builds, and a deployment gate
   on its own roadmap (Nov 2026 to Dec 2027, with go/stop gates). The gateway gets built whatever those gates decide: it is Hangar's AI
-  gateway. Its code moves to a `clearance` repo (D16); the split line is proposed in design.md 0.1.
+  gateway. Its code moves to a `clearance` repo (D16), along the split line in design.md 0.1, which the owner accepted on 2026-10-28.
 - **AP-A2 is built here.** The owner will not build it in the lab (2026-10-28). Nothing of it is deployed: `server.py` is stdio, every
   backend but glidepath-api is a fake, and sessions live in memory. `platform-system/clearance` exists on hangar-dev
   (gitops-hangar-dev#35), but only as glidepath-api's reader identity.
@@ -346,7 +346,7 @@ repo setup, Modelplane reading. Do not parallelize the ownership split with Clea
 | D10 | Strictness rollout dates | **Decided 2026-09-26: option A, enforce now** (the fleet sweep is clean). `airframe validate` becomes a required check on gitops PRs. **Built 2026-09-26, not yet required:** Airframe publishes `ghcr.io/jfillman/airframe-validate` (multi-arch, on release tags; contract `validate-values`), Glidepath has the generic `validate-values` Task, `values-check` Pipeline and a gitops onboarding template. Rollout: resync PRs deliver `.tekton/pull-request-values.yaml` to each gitops repo (baggage-api's is #3; boarding-api, flight-api and skyport-broker were triggered), then register `values-validation` in `releaseGuardrails` to make it required. Ground (app repo) env edits are not gated yet: direct commits to main have no PR to block | M1 |
 | D11 | Debugging a run without pod exec | accept: debug via output, logs and audit | M3 |
 | D12 | Where agent code lives | `airframe/examples/skyport/agents/` | M4 |
-| D16 | Clearance's repo | **Decided 2026-10-28** (Clearance architecture): its own `clearance` repo; supersedes D8 for the package. The split line (design.md 0.1) is a proposal | AP-A2 |
+| D16 | Clearance's repo | **Decided 2026-10-28** (Clearance architecture): its own `clearance` repo; supersedes D8 for the package. The split line (design.md 0.1) was accepted on 2026-10-28 | AP-A2 |
 | D17 | Runtime boundary: Clearance as an AuthZEN PDP behind Traefik Hub's Sovereign Trust Plane, or its own gateway | **Open.** Recommendation: PDP, own gateway as fallback. Hangar runs Traefik Proxy v3.7.6, not Hub (verified 2026-10-28), so the own gateway ships now, with the decision refactored into a pure, AuthZEN-shaped function | before AP-B2 |
 | D18 | AF-8a before AP-A3 | **Decided 2026-10-28** | M3 |
 

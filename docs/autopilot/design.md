@@ -58,7 +58,7 @@ in a separate lab.
 | Consoles | Autopilot plugin (fleet-wide) plus a Tower Agent tab (section 8, 3a) | Unchanged, plus Clearance's own Tower plugin (pending clearances, record search, packet download) in Clearance phase 4 |
 | GitHub Apps | One agents' App (D4) | Two Apps with different jobs: the **agents' App** writes PRs as agents (D4, AP-B1); the **Clearance provenance App** reads PRs and commits, posts checks and is a deployment protection rule (checks, pull requests, contents read, deployments; never administration or workflows). Keep them separate: the App that authors a change must not be the one that attests its provenance, and each needs its own rate-limit bucket. The interceptor outer bound (section 5.5) applies to both |
 
-### Proposed repo split (D16, confirm before moving code)
+### Repo split (D16, accepted by the owner 2026-10-28)
 
 | `clearance` (the product) | `autopilot` (Hangar's agent runtime) |
 |---|---|
