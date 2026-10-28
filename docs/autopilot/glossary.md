@@ -18,10 +18,28 @@ The aviation vocabulary is the brand's rule (see the Hangar Brand System): names
 | **Glidepath** | CI/CD and release guardrails. |
 | **Tower** | The Backstage command-center UI. |
 | **Autopilot** | The sixth product: governed, bounded AI agent workloads. Accepted name. |
-| **Clearance** | Autopilot's tool gateway and policy: every agent action is checked and audited here. Accepted name. Like Tower's *Ground Control* it is a feature of a product, so it has no mark. |
+| **Clearance** | Change assurance for AI-enabled engineering, and since 2026-10-28 a Hangar product of its own (D16). Two boundaries: the **runtime gateway** (every tool call an agent makes is checked and audited; Autopilot's gateway) and the **deployment gate** (may this change land in a protected environment, and can we prove it did under policy). Accepted name; as a product it needs a mark. |
 | **Flight recorder** | Autopilot's audit and correlation: one `task_id` on every record, plus a tamper-evident chain. Accepted name. Records both tiers, although "Flight" also names the upper tier. |
 | **Preflight** | Autopilot's evaluation harness: cases run against an agent definition before promotion. Decided name (D7). |
 | **Skyport** | The demo system (an airport). |
+
+## Clearance concepts (2026-10-28)
+| Term | Meaning |
+|---|---|
+| **Runtime gateway** | Clearance's first boundary: tool tiers T0 to T3, scope, narrow-only limits, CEL policy, audit. Built. |
+| **Deployment gate** | Clearance's second boundary: a change to a protected environment needs a clearance bound to it. Proposal. |
+| **Deployment tier 0 to 3** | Routine, Standard, Sensitive, Critical. Decides who may clear a change. Shares names with runtime T0 to T3, not rules. |
+| **Clearance (token)** | A signed, short-lived authorization bound to one rendered change: the git commit, the manifest-tree digest and per-object hashes, plus target, policy version, tier and approvers. |
+| **ClearanceGrant** | The in-cluster resource the controller materializes from a verified token; a ValidatingAdmissionPolicy checks writes against it. |
+| **Evidence record** | One versioned record per clearance event or tool call, every field tagged *verified* or *claimed*. |
+| **Coverage state** | authorized-and-verified, observed-not-attributed, out-of-band-detected, or coverage-unavailable. |
+| **Assurance state** | checkpointed, recorded-not-checkpointed, or not-recorded: whether a record's hash has reached a witnessed checkpoint. |
+| **Clearance Ledger** | A Tessera transparency log holding record hashes only, with C2SP checkpoints countersigned by witnesses. |
+| **Witness** | A server run by a party the log operator does not control; it countersigns a checkpoint only if the tree extends the last one it saw. |
+| **Provenance confidence** | confirmed agent, probable agent, confirmed human, unknown. Unknown never resolves to human. |
+| **Gate provider** | A path a change can take (Argo CD native; Infisical, Spacelift federated; cloud audit logs observed), each filling one contract. |
+| **Packet** | The evidence export for a date range: JSON first, CSV and PDF as presentation, with a coverage statement. |
+| **AuthZEN PDP** | Policy decision point speaking OpenID AuthZEN; the proposed future shape of the runtime gateway behind Traefik's Sovereign Trust Plane. |
 
 ## Autopilot concepts
 | Term | Meaning |

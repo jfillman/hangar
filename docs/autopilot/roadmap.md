@@ -16,6 +16,11 @@ Diagrams: `diagrams/plan/01-hangar-family.html`, `02-roadmap.html`, `03-dependen
    Skyport AI workloads (parts 6-11) ─────────┘   depends on Autopilot phases A and B
 ```
 
+**Since 2026-10-28, Clearance runs its own product track** beside this plan (the Clearance Roadmap: discovery in Nov 2026, the
+deployment gate on hangar-prod in Dec 2026, recorder, ledger and packet in Jan 2027, partner pilots, go/stop at the end of Apr 2027).
+This plan builds Clearance's runtime gateway, which Autopilot needs either way. The deployment gate is that track's work, and the
+Hangar lab is its reference deployment. [design.md section 0.1](design.md) records what it changes here.
+
 **Why this order.** Three reasons, each of which would cost weeks if ignored:
 
 1. **Build the contract before the next components.** MongoDB and OAuth are next in Skyport. If they
@@ -180,14 +185,15 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 | Task | Notes |
 |---|---|
 | **AP-A1** apron `components.autopilot` toggle, registry `autopilotReady`, network-policy canary | refused on `type: upper`; the canary must pass before `autopilotReady` flips (kiac-dev enforces NetworkPolicy: Cilium, verified 2026-10-09) |
-| **AP-A2** Clearance as an InfraService; T0 tools with real adapters | Backstage MCP, ArgoCD read-only account |
+| **AP-A2** Clearance's runtime gateway deployed on hangar-dev from the `clearance` repo, as an Airframe app; a durable session store; audit written in the draft evidence schema; T0 tools with real adapters | Backstage MCP, ArgoCD read-only account; built here (owner, 2026-10-28) |
 | **AP-A3** `AgentRun` XRD, `function-agentrun`, `provider-kubernetes` grants, namespaced Role | copy-tested; expiry proven with Clearance stopped and with the function pod killed |
-| **AP-B1** interceptor `/agent-installation-token`, separate GitHub App, ArgoCD accounts | commit-signing decision executed |
+| **AP-B1** interceptor `/agent-installation-token`, the agents' own GitHub App (D4), ArgoCD accounts | commit signing executed (D1, Hangar root CA); every agent PR and commit carries `task_id` and tool metadata, so Clearance's provenance detector can say *confirmed agent* |
 | **AP-B2** T1 tools with real adapters; `agent-scope` and `agent-identity` gates, stub then real | field-aware, from AF-9a |
 | **AP-B3** model proxy v0 (HTTP forwarder), hosted model route, key via Infisical | |
-| **AF-8** `airframe.*` tools, planner adapters | **the parachute sentence passes live**, with a seeded bad run and a resume test |
+| **AF-8a** read-only `airframe.*` tools: `capabilities`, `validate`, `explain`, `plan`, `status`, `describe`, `verify` | first in M3 (owner, 2026-10-28); Kubernetes reads as `platform-system/clearance` with a token minted per call, never Secrets |
+| **AF-8b** `airframe.apply` (opens PRs as the agents' App), planner adapters | **the parachute sentence passes live**, with a seeded bad run and a resume test |
 | **AF-6b** `describe` and verify contracts; **AF-10c** chart `agent:` block | |
-| **AP-C1** Flight recorder: `task_id` everywhere, audit chain anchor; each run records the pinned model version and its Preflight result | ledger fields from [industry-context.md](industry-context.md) |
+| **AP-C1** Flight recorder: `task_id` everywhere; each run records the pinned model version and its Preflight result | records in Clearance's evidence schema (verified versus claimed, coverage and assurance state). The anchor is the Clearance ledger (Tessera plus a witness, Clearance roadmap phase 2), not a local checkpoint |
 | **AP-A4** stable agent identity, separate from a run (per-agent policy, history, memory scope) | one identity per AgentDefinition; runs inherit it |
 | **AP-C2** cost accounting: tokens and compute per run, per agent, per task tree, in the recorder and the Tower tab | from budgets already enforced |
 | **AF-2b** fix the T0 read set (`getLogs`, `getMetrics`, `getRelease`, `getDeploymentStatus`) and put it in the contract bundle | read tools taught by example |
@@ -205,7 +211,32 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
   with the `autopilot-system` and `autopilot-runs` namespaces (apron#21), adopted on kiac-dev (gitops-cluster-dev#65,
   Synced/Healthy; a non-restricted pod is refused there).
 - Not in AP-A1: the `hub` and `inference` cluster types (Modelplane, M5).
-- AP-A2 (Clearance as an InfraService) is being built separately, in the user's AI lab.
+- AP-A2 (Clearance as an InfraService) was to be built separately in the user's AI lab. **Superseded 2026-10-28:** it is built here.
+
+**M3 status (2026-10-28).** Scorecard 89.5, 11 of 14 (`baseline-2026-10-25.json`): above this milestone's 88, but the exit
+test is the parachute sentence live, and nothing on that path runs yet.
+- **Clearance is now its own product** (Clearance Brief, Architecture and Roadmap, 2026-10-27/28; what it changes here is
+  [design.md section 0.1](design.md)). It has two boundaries: the runtime gateway, which is what M3 builds, and a deployment gate
+  on its own roadmap (Nov 2026 to Dec 2027, with go/stop gates). The gateway gets built whatever those gates decide: it is Hangar's AI
+  gateway. Its code moves to a `clearance` repo (D16), along the split line in design.md 0.1, which the owner accepted on 2026-10-28.
+- **AP-A2 is built here.** The owner will not build it in the lab (2026-10-28). Nothing of it is deployed: `server.py` is stdio, every
+  backend but glidepath-api is a fake, and sessions live in memory. `platform-system/clearance` exists on hangar-dev
+  (gitops-hangar-dev#35), but only as glidepath-api's reader identity.
+- **Agents get their own GitHub App** (D4, reconfirmed 2026-10-28). It is a different App from Clearance's provenance App.
+- **AF-8 splits.** AF-8a covers the read-only `airframe.*` tools (`capabilities`, `validate`, `explain`, `plan`, `status`,
+  `describe`, `verify`), built on the pattern `glidepath.*` proved (autopilot#16/#17), and runs **before AP-A3** (owner 2026-10-28).
+  It doesn't need AgentRun: the agent is a Claude Code session talking to Clearance over MCP. AF-8b is `apply`, after AP-B1.
+- **AP-A1's attestation was lost in the hangar-dev rebuild** (2026-10-21). The `autopilot-system` and `autopilot-runs` namespaces
+  exist again, but `airframe.autopilotReady` is not in hangar-dev's registry. Re-run `tools/netpol_canary.py` there and re-set the
+  flag before AP-A3 creates a run.
+- Done since 10-09 and used by M3: six `glidepath.*` T0 tools with a real HTTP adapter and R022, live through MCP on hangar-dev;
+  `cicd.yaml` is scoped by field (R021) instead of denied whole (D13).
+- **Scorecard work riding with AF-8a:** checks 3 (strict objects: mark the documented passthroughs `x-hangar-passthrough`, and stop
+  counting typed maps and `if`/`then` branches as open objects), 7 (boarding-api's two cross-app `FLIGHT_API_URL` literals need a
+  service reference beside `fromComponent`) and 11 (the tool check counts registered, tested tools, not a file name). Also: the
+  hard-coded "escape hatches denied by default" score becomes measured, since `/extraManifests` is in `BASELINE_DENY_FIELDS`.
+  Projected 97.2 and 14 of 14 if all of that lands, which is a thin margin.
+
 
 **M3 status (2026-10-09, before AP-A1): not started.** Nothing of it existed on a cluster: no `AgentRun` or agent-sandbox CRD on
 kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What moved between M2 and here:
@@ -262,9 +293,13 @@ kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What move
 in memory and their audit entry stores the requested limits only as a hash, so a Clearance restart loses the grant
 (AP-A2 needs a durable session store).
 
-**Build order:** AP-A1 -> AP-A3 (render an agent-sandbox `Sandbox`, per U11; hard expiry from its `shutdownTime`, per
-U2) -> AP-A2 with AF-2b -> AP-A4 -> AP-B1 -> AP-B2 -> AP-B3 -> AF-8 with AF-6b and AF-10c (the parachute run) -> AP-C1
-and AP-C2.
+**Build order (revised 2026-10-28):** AP-A1 (done; re-attest on hangar-dev) -> **AF-8a** with AF-6b's describe/verify and the
+scorecard fixes -> AP-A3 (render an agent-sandbox `Sandbox`, per U11; hard expiry from its `shutdownTime`, per U2) -> AP-A2
+(the `clearance` repo split, then the gateway deployed, with AF-2b) -> AP-A4 -> AP-B1 -> AP-B2 -> AP-B3 -> AF-8b with AF-10c
+(the parachute run) -> AP-C1 and AP-C2. The previous order put AF-8 after AP-B3; its read-only half needs none of those.
+
+_Previous order (2026-10-09): AP-A1 -> AP-A3 -> AP-A2 with AF-2b -> AP-A4 -> AP-B1 -> AP-B2 -> AP-B3 -> AF-8 with AF-6b and
+AF-10c -> AP-C1 and AP-C2._
 
 ### M4 Skyport AI workloads (weeks 19-24), target 93
 Parts 6 to 11, in shape order: task, session, service, scheduled, event, team. Each is walked live, has
@@ -301,9 +336,9 @@ repo setup, Modelplane reading. Do not parallelize the ownership split with Clea
 |---|---|---|---|
 | D1 | Commit signing for agent PRs | sign with the self-hosted Fulcio; extend the `provenance` gate; do not exempt agent PRs | M3 |
 | D2 | AgentRun as an XR | yes (not a bare Job, not a controller) | M3 |
-| D3 | Clearance standalone or a Backstage module | standalone, federating Backstage MCP | M3 |
-| D4 | A separate GitHub App for agents | yes, so agent traffic cannot starve CI of API budget | M3 |
-| D5 | Audit store | enable MinIO object lock when the bucket is created | before AP-C1 |
+| D3 | Clearance standalone or a Backstage module | standalone, federating Backstage MCP. **Since 2026-10-28 a product of its own** (D16) | M3 |
+| D4 | A separate GitHub App for agents | yes, so agent traffic cannot starve CI of API budget. **Reconfirmed 2026-10-28**; not the Clearance provenance App | M3 |
+| D5 | Audit store | enable MinIO object lock when the bucket is created. **Revised 2026-10-28:** integrity comes from the Clearance ledger (hashes in a Tessera log, a witness Clearance does not run); object lock is retention only | before AP-C1 |
 | D6 | Hub isolation for Modelplane | **Decided 2026-09-26:** hosted providers only for now (option 1); per-environment hub with dedicated accounts (option 2) is the M5 default | before M5 |
 | D7 | **Preflight's name** | Airworthiness (open; the user likes Autopilot, Clearance, Flight recorder) | before AP-B2 |
 | D8 | A new `autopilot` repo | yes; `clearance/` becomes a package in it | M0 |
@@ -311,6 +346,9 @@ repo setup, Modelplane reading. Do not parallelize the ownership split with Clea
 | D10 | Strictness rollout dates | **Decided 2026-09-26: option A, enforce now** (the fleet sweep is clean). `airframe validate` becomes a required check on gitops PRs. **Built 2026-09-26, not yet required:** Airframe publishes `ghcr.io/jfillman/airframe-validate` (multi-arch, on release tags; contract `validate-values`), Glidepath has the generic `validate-values` Task, `values-check` Pipeline and a gitops onboarding template. Rollout: resync PRs deliver `.tekton/pull-request-values.yaml` to each gitops repo (baggage-api's is #3; boarding-api, flight-api and skyport-broker were triggered), then register `values-validation` in `releaseGuardrails` to make it required. Ground (app repo) env edits are not gated yet: direct commits to main have no PR to block | M1 |
 | D11 | Debugging a run without pod exec | accept: debug via output, logs and audit | M3 |
 | D12 | Where agent code lives | `airframe/examples/skyport/agents/` | M4 |
+| D16 | Clearance's repo | **Decided 2026-10-28** (Clearance architecture): its own `clearance` repo; supersedes D8 for the package. The split line (design.md 0.1) was accepted on 2026-10-28 | AP-A2 |
+| D17 | Runtime boundary: Clearance as an AuthZEN PDP behind Traefik Hub's Sovereign Trust Plane, or its own gateway | **Open.** Recommendation: PDP, own gateway as fallback. Hangar runs Traefik Proxy v3.7.6, not Hub (verified 2026-10-28), so the own gateway ships now, with the decision refactored into a pure, AuthZEN-shaped function | before AP-B2 |
+| D18 | AF-8a before AP-A3 | **Decided 2026-10-28** | M3 |
 
 ## 5. Unverified: answer these in M0
 | # | Question | How to check |
