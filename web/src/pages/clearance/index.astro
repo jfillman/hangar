@@ -5,15 +5,16 @@ import PrCheck from '../../components/clearance/PrCheck.astro';
 import ChatApproval from '../../components/clearance/ChatApproval.astro';
 import Verify from '../../components/clearance/Verify.astro';
 import Closer from '../../components/clearance/Closer.astro';
+import MarkAnatomy from '../../components/clearance/MarkAnatomy.astro';
 import { u } from '../../lib/url';
 const c = (p = '') => u(`clearance/${p}`);
 ---
-<Layout title="Clearance" description="Clearance gates every change to production on your own policy, binds the approval to the exact artifact that lands, and keeps a record anyone can verify.">
+<Layout title="Clearance" description="Clearance gates every change to production on your own policy, binds the approval to the exact rendered change that lands, and keeps a record anyone can verify.">
   <section class="hero-c">
     <div class="clr-wrap">
       <a class="pill" href={c('design-partners/')}><span class="tag">Now boarding</span>Three design-partner pilots, from November 2026 <span aria-hidden="true">→</span></a>
       <h1 class="display">Let the agents ship. <em>Clear</em> every change.</h1>
-      <p class="sub">Clearance holds every change to a protected production environment until your own policy, or a named human, clears it. The clearance is bound to the exact artifact that lands, and the whole path goes on a record your auditor can verify without taking anyone's word for it.</p>
+      <p class="sub">Clearance holds every change to a protected production environment until your own policy, or a named human, clears it. The clearance is bound to the exact rendered change that lands, and the whole path goes on a record your auditor can verify without taking anyone's word for it.</p>
       <div class="hero-actions">
         <a class="btn btn-solid" href={c('design-partners/')}>Request a pilot <span class="arr">→</span></a>
         <a class="btn btn-ghost" href={c('product/')}>Take the tour</a>
@@ -25,7 +26,7 @@ const c = (p = '') => u(`clearance/${p}`);
   <section class="clr-wrap standards" aria-label="Built on">
     <p>Fits the pipeline you already fly. Nothing to migrate to.</p>
     <div class="std-row">
-      <span>GitHub</span><span>Argo CD</span><span>Kyverno</span><span>OPA</span><span>Sigstore</span><span>in-toto</span><span>Backstage</span><span>OpenTelemetry</span><span>Slack</span>
+      <span>GitHub</span><span>Argo CD</span><span>Kyverno</span><span>OPA</span><span>Sigstore</span><span>in-toto</span><span>Infisical</span><span>Traefik</span><span>Backstage</span><span>OpenTelemetry</span><span>Slack</span>
     </div>
   </section>
 
@@ -66,23 +67,23 @@ const c = (p = '') => u(`clearance/${p}`);
         </article>
         <article class="tile span-3" data-reveal>
           <p class="kicker">Clearance controller</p>
-          <h3>A clearance is bound to one digest.</h3>
-          <p>A signed, short-lived token names the artifact, the target, the policy version and the approver. Force-push after approval and it no longer fits.</p>
+          <h3>A clearance is bound to what renders.</h3>
+          <p>A signed, short-lived grant names the rendered manifest tree, every object in it, the target, the policy version and the approver. Change one object after approval and nothing admits it.</p>
           <div class="art">
             <svg viewBox="0 0 420 150" aria-hidden="true">
               <rect x="10" y="20" width="210" height="112" rx="10" fill="var(--paper)" stroke="var(--rule-strong)"/>
               <text x="26" y="44" font-size="11" class="mono" fill="var(--clr)">CLEARANCE TOKEN</text>
               <g font-size="11.5" fill="var(--muted)" class="mono">
-                <text x="26" y="66">digest  sha256:9f1c…</text>
-                <text x="26" y="84">target  broker-prod</text>
+                <text x="26" y="66">tree    sha256:e71d…</text>
+                <text x="26" y="84">objects 2 · 1 changed</text>
                 <text x="26" y="102">policy  7e2d · tier 2</text>
                 <text x="26" y="120">expires 60 min</text>
               </g>
               <path d="M220 76 H282" stroke="var(--clr)" stroke-width="2" stroke-dasharray="5 4"/>
               <circle cx="220" cy="76" r="4" fill="var(--clr)"/>
               <rect x="282" y="46" width="128" height="60" rx="10" fill="var(--clr-soft)" stroke="var(--clr)" stroke-width="1.5"/>
-              <text x="346" y="72" text-anchor="middle" font-size="12.5" fill="var(--ink)">image</text>
-              <text x="346" y="90" text-anchor="middle" font-size="11" class="mono" fill="var(--muted)">9f1c…e04a</text>
+              <text x="346" y="72" text-anchor="middle" font-size="12.5" fill="var(--ink)">manifest tree</text>
+              <text x="346" y="90" text-anchor="middle" font-size="11" class="mono" fill="var(--muted)">e71d…a40c</text>
             </svg>
           </div>
         </article>
@@ -125,7 +126,7 @@ const c = (p = '') => u(`clearance/${p}`);
           <p>Each field says whether Clearance checked it or an integration asserted it. Uncertainty made visible beats a claim of completeness.</p>
           <div class="art">
             <svg viewBox="0 0 260 120" aria-hidden="true">
-              {[['approver', 'verified'], ['digest', 'verified'], ['agent header', 'claimed'], ['commit sig', 'verified']].map(([k, v], i) => (
+              {[['approver', 'verified'], ['rendered tree', 'verified'], ['agent header', 'claimed'], ['commit sig', 'verified']].map(([k, v], i) => (
                 <g transform={`translate(0 ${6 + i * 28})`}>
                   <rect x="4" y="0" width="252" height="22" rx="5" fill="var(--paper)" stroke="var(--rule)"/>
                   <text x="14" y="15" font-size="11.5" class="mono" fill="var(--ink)">{k}</text>
@@ -149,10 +150,14 @@ const c = (p = '') => u(`clearance/${p}`);
         <div class="step"><span class="n">01 · TAXI</span><h3>Propose</h3><p>An agent or a person opens a pull request. The GitHub App reads the provenance and posts a check.</p></div>
         <div class="step"><span class="n">02 · HOLD SHORT</span><h3>Classify</h3><p>Path and resource rules, the environment and CI set the tier. Kyverno or OPA gives the policy verdict.</p></div>
         <div class="step"><span class="n">03 · CLEARED</span><h3>Clear</h3><p>Policy clears routine tiers in milliseconds. Sensitive ones wait for a named human who didn't start the change.</p></div>
-        <div class="step"><span class="n">04 · LOGGED</span><h3>Land and record</h3><p>Argo CD's PreSync hook checks the token against the digest. The outcome is signed and anchored.</p></div>
+        <div class="step"><span class="n">04 · LOGGED</span><h3>Land and record</h3><p>Argo CD renders the change and admission checks every object against its grant. The outcome is recorded and witnessed.</p></div>
       </div>
       <p class="mt-2"><a href={c('how-it-works/')}>How it works, end to end →</a></p>
     </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap"><MarkAnatomy /></div>
   </section>
 
   <section class="sec">
@@ -186,8 +191,8 @@ const c = (p = '') => u(`clearance/${p}`);
           <p class="kicker">For the auditor</p>
           <h2 class="h2">Check the record without taking <em>our</em> word for it.</h2>
           <ul class="points">
-            <li><b>Signed and anchored.</b> Records are signed with keys your admins don't hold and anchored in a transparency log with independent witnesses.</li>
-            <li><b>Open verification.</b> <code>clearance verify</code> is open source and needs no access to Clearance or to your database.</li>
+            <li><b>Hashes, witnessed.</b> Your records stay on your storage. The ledger holds only their hashes, and independent witnesses refuse any history shorter than the last one they saw.</li>
+            <li><b>Open verification.</b> <code>clearance verify</code> is open source, needs no access to Clearance, and names the exact line if one was altered.</li>
             <li><b>Exceptions up front.</b> Every packet states out-of-band changes, break-glass and degraded mode, plus what was not covered.</li>
           </ul>
           <p class="mt-2"><a href={c('ledger/')}>Evidence and the ledger →</a></p>
@@ -202,13 +207,13 @@ const c = (p = '') => u(`clearance/${p}`);
       <div class="sec-head" data-reveal>
         <p class="kicker">Risk tiers</p>
         <h2 class="h2">Routine traffic flows. Critical changes <em>hold</em>, by design.</h2>
-        <p class="sub">Four defaults, tuned per app in a <code>clearance.yaml</code> beside the Argo application. A path rule always beats a size heuristic, and declared intent never lowers a tier.</p>
+        <p class="sub">Four defaults, tuned per app in a <code>clearance.yaml</code> beside the Argo application. The tier comes from what changed in the rendered objects, not from the size of the YAML edit, and declared intent never lowers it.</p>
       </div>
       <div class="ladder" data-reveal>
         <div class="rung" style="--c: var(--good)"><span class="lv">Tier 0<b>Routine</b></span><p>Dev and preview environments; docs, tests, non-prod config.</p><span class="who">Auto-clear by policy</span><span class="lat">&lt; 1 s<small>latency</small></span></div>
-        <div class="rung" style="--c: var(--sky)"><span class="lv">Tier 1<b>Standard</b></span><p>Prod app code and image bumps with CI green and a small diff.</p><span class="who">Policy, one reviewer notified</span><span class="lat">&lt; 1 s<small>latency</small></span></div>
-        <div class="rung" style="--c: var(--accent)"><span class="lv">Tier 2<b>Sensitive</b></span><p>Prod config, Helm values, feature flags, scaling, network policy.</p><span class="who">One named human, owning team</span><span class="lat">Minutes<small>latency</small></span></div>
-        <div class="rung" style="--c: var(--bad)"><span class="lv">Tier 3<b>Critical</b></span><p>Secrets, RBAC, IAM, admission policies, add-ons, migrations.</p><span class="who">Two named humans, never auto</span><span class="lat">Hours<small>by design</small></span></div>
+        <div class="rung" style="--c: var(--sky)"><span class="lv">Tier 1<b>Standard</b></span><p>Prod app code, image bumps with CI green, a log level in a ConfigMap.</p><span class="who">Policy, one reviewer notified</span><span class="lat">&lt; 1 s<small>latency</small></span></div>
+        <div class="rung" style="--c: var(--accent)"><span class="lv">Tier 2<b>Sensitive</b></span><p>Replicas, Helm values that change behaviour, feature flags, network policy.</p><span class="who">One named human, owning team</span><span class="lat">Minutes<small>latency</small></span></div>
+        <div class="rung" style="--c: var(--bad)"><span class="lv">Tier 3<b>Critical</b></span><p>Secrets, RBAC, IAM, admission policies, Argo Applications, migrations.</p><span class="who">Two named humans, never auto</span><span class="lat">Hours<small>by design</small></span></div>
       </div>
     </div>
   </section>
@@ -223,7 +228,7 @@ const c = (p = '') => u(`clearance/${p}`);
         <div class="persona"><span class="eyebrow">VP Engineering</span><h3>Let the agents ship. Pass the audit anyway.</h3><p>One invoice instead of a quarter of engineer time spent stitching evidence together.</p></div>
         <div class="persona"><span class="eyebrow">Platform lead</span><h3>A gate that fits your GitOps.</h3><p>A Helm install in under an hour, Argo and Kyverno integration, and an open controller you can read.</p></div>
         <div class="persona"><span class="eyebrow">GRC lead</span><h3>Evidence mapped to your controls.</h3><p>A sample packet you can read in five minutes and forward without rework, with a coverage statement.</p></div>
-        <div class="persona"><span class="eyebrow">Auditor</span><h3>Verify it yourself.</h3><p>Anchored attestations, and a verifier that needs no access to the vendor or the customer.</p></div>
+        <div class="persona"><span class="eyebrow">Auditor</span><h3>Verify it yourself.</h3><p>Witnessed records, and a verifier that needs no access to the vendor or the customer.</p></div>
       </div>
     </div>
   </section>
@@ -237,8 +242,8 @@ const c = (p = '') => u(`clearance/${p}`);
       </div>
       <div class="status-band" data-reveal>
         <div><span class="chip built">Built</span><p>The runtime gateway inside Autopilot: tool tiers T0 to T3, path scope, narrow-only limits, CEL policy with deny rules, and a hash-chained audit with an anchored checkpoint. Tested without a cluster.</p></div>
-        <div><span class="chip draft">Draft</span><p>The two-boundary design, the evidence record schema, and the clearance token format.</p></div>
-        <div><span class="chip proposal">Proposal</span><p>The deployment gate, admission webhook, recorder, attestations, ledger anchoring and the audit packet. Design partners shape these first.</p></div>
+        <div><span class="chip draft">Draft</span><p>The two-boundary design, with the runtime gateway as an AuthZEN decision point behind Traefik, plus the deployment gate. The evidence record schema and the token format.</p></div>
+        <div><span class="chip proposal">Proposal</span><p>The deployment gate (render-time binding and admission policy), gate providers, the recorder, attestations, the witnessed ledger and the audit packet. Design partners shape these first.</p></div>
       </div>
     </div>
   </section>
