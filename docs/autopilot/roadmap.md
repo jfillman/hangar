@@ -226,6 +226,10 @@ test is the parachute sentence live, and nothing on that path runs yet.
 - **AF-8 splits.** AF-8a covers the read-only `airframe.*` tools (`capabilities`, `validate`, `explain`, `plan`, `status`,
   `describe`, `verify`), built on the pattern `glidepath.*` proved (autopilot#16/#17), and runs **before AP-A3** (owner 2026-10-28).
   It doesn't need AgentRun: the agent is a Claude Code session talking to Clearance over MCP. AF-8b is `apply`, after AP-B1.
+  **AF-8a DONE 2026-10-28** (autopilot#19): seven T0 tools over a GET-only Kubernetes reader (path allowlist; Secrets
+  refused before any request), R023 app scope, the planner's `cicd.yaml` patch split so the agent half passes R021 and the
+  Flight half is a human-merge step. Live smoke through MCP on hangar-dev passed (96 requests, all GETs on the allowlist).
+  Scorecard **97.1, 13 of 14** (`baseline-2026-10-28.json`); the last check waits on `fromService`.
 - **AP-A1's attestation was lost in the hangar-dev rebuild** (2026-10-21). The `autopilot-system` and `autopilot-runs` namespaces
   exist again, but `airframe.autopilotReady` is not in hangar-dev's registry. Re-run `tools/netpol_canary.py` there and re-set the
   flag before AP-A3 creates a run.

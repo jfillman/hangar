@@ -46,6 +46,11 @@ const labels: Record<string, { date: string; label: string; note: string }> = {
     label: 'Cloud targets and the rebuild',
     note: 'Three new XRDs (23 in all), cross-field CEL rules on 22 of them, fromComponent in nearly every env entry (2 literals left of 78), 23 chart guards and 48 chart tests, seven walkthroughs. Past the M3 target of 88, though M3 itself (the planner and airframe.* tools) is not built. The chart README got shorter when it was rewritten to describe today\'s chart, which cost a little discoverability.',
   },
+  'baseline-2026-10-28': {
+    date: '2026-10-28',
+    label: 'airframe.* tools behind Clearance',
+    note: 'Seven read-only airframe.* tools (capabilities, validate, explain, plan, status, describe, verify) behind Clearance over a GET-only Kubernetes reader, live on hangar-dev through MCP (autopilot#19). The planner\'s cicd.yaml patch now passes Glidepath\'s agent scope. The schema marks its 12 deliberate passthroughs, so every other object is strict (airframe#128). The scorecard itself got more honest (hangar#94): tools are counted from what Clearance registers rather than a file name, the extraManifests deny is measured instead of hard-coded, and typed maps and if/then fragments are no longer miscounted as open objects. One check left: two cross-app URLs that wait on fromService.',
+  },
 };
 
 export type Snapshot = Raw & { id: string; date: string; label: string; note: string; passed: number };
@@ -80,12 +85,12 @@ export const findings: Record<string, { found: string; next: string }> = {
     next: 'a chart README that documents every values key again',
   },
   '2 Schema precision': {
-    found: 'every schema node is described; 49 of 83 objects strict; 22 of 23 XRDs carry a cross-field CEL rule',
-    next: 'every object strict, tighter leaf fields, examples',
+    found: 'every schema node is described; all 67 non-passthrough objects strict, 12 passthroughs marked; 22 of 23 XRDs carry a cross-field CEL rule',
+    next: 'tighter leaf fields (78 of 206 constrained), examples',
   },
   '3 Component contracts': {
-    found: 'every component declares outputs and verify checks; 2 of 78 env entries still hard-code a name',
-    next: 'fromComponent in the last two env entries',
+    found: 'every component declares outputs and verify checks; 2 of 80 env entries still hard-code a name (cross-app URLs)',
+    next: 'fromService for the two cross-app URLs',
   },
   '4 Pre-merge validation': {
     found: 'airframe validate is a required check, with 23 chart guards that say what to fix',
@@ -97,19 +102,19 @@ export const findings: Record<string, { found: string; next: string }> = {
   },
   '6 Observe and verify': {
     found: '20 of 23 XRDs declare status conditions and a closed set of reason codes',
-    next: 'the last three XRDs, a describe tool',
+    next: 'the last three XRDs; describe and status tools are live',
   },
   '7 Docs for agents': {
     found: 'seven walkthroughs replay live, and every YAML block in the user docs parses',
     next: 'held; every new component ships its walkthrough',
   },
   '8 Interaction surface': {
-    found: 'an AppSpec schema in the contract bundle, with the parachute example; no airframe.* tools yet',
-    next: 'the planner and airframe.* tools behind Clearance (M3)',
+    found: 'seven read-only airframe.* tools behind Clearance, live through MCP; the planner\'s output passes Glidepath\'s agent scope',
+    next: 'airframe.apply as the agents\' own GitHub App (AF-8b), and a config API beside Tower\'s UI',
   },
   '9 Safety integration': {
     found: 'every values field is risk-classed and field-level agent scope is built into Clearance',
-    next: 'escape hatches (extraManifests) denied by default',
+    next: 'held; extraManifests and the other escape hatches stay denied to agents',
   },
   '10 Hygiene and determinism': {
     found: 'helm lint, 48 chart tests and chart CI; all 17 live values files render',
