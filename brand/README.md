@@ -22,7 +22,7 @@ Every product gets two renderings of the same mark — not two different logos, 
 
 ## Family vocabulary
 
-All six marks share the same ring + 8 ticks + heading bug. Only the center glyph and
+All seven marks share the same ring + 8 ticks + heading bug. Only the center glyph and
 its color change:
 
 | Product | Glyph | Color |
@@ -33,9 +33,10 @@ its color change:
 | Airframe | Spar + rivets | Sky `#6FB2D9` |
 | Apron | 2×2 parking grid | Gray `#96A2AC` |
 | Autopilot | Nose held between brackets (heading hold) | Amber `#E8A33D` |
+| Clearance | Check mark over a hold-short line (cleared past the hold) | Good green `#5FAE84` |
 
 Amber marks the two products that need attention (home base, command console); sky
-marks the informational/structural ones; gray marks ground infrastructure at rest —
+marks the informational/structural ones; gray marks ground infrastructure at rest; green, the UI's "good" status colour, marks Clearance, the product whose whole job is to say a change is cleared —
 the same "calm cockpit" rule the [Hangar Brand System](https://claude.ai/code/artifact/de0e3df6-a73b-4cc0-ad5b-ade5f2ede9a2)
 already applies to UI status colors.
 

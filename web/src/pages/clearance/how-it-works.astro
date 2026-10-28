@@ -1,0 +1,268 @@
+---
+import Layout from '../../layouts/Clearance.astro';
+import Closer from '../../components/clearance/Closer.astro';
+import { u } from '../../lib/url';
+const c = (p = '') => u(`clearance/${p}`);
+const lanes = [
+  ['AGENT', 80], ['GITHUB APP', 220], ['GATE', 360], ['HUMAN', 500], ['ARGO · WEBHOOK', 640], ['RECORDER', 780], ['LEDGER', 920],
+] as const;
+const msgs: [number, number, number, string, string?, boolean?][] = [
+  [80, 220, 112, 'pull request opened'],
+  [220, 360, 150, 'provenance + digests'],
+  [360, 220, 188, 'check: tier 2, with the reason'],
+  [360, 500, 226, 'approval request'],
+  [500, 360, 264, 'clears · IdP subject'],
+  [360, 640, 302, 'token: digest · env · policy · approver · expiry'],
+  [360, 780, 334, 'decision recorded', 'muted'],
+  [640, 780, 420, 'sync result via CDEvents'],
+  [780, 920, 456, 'checkpoint anchored', undefined, true],
+];
+---
+<Layout title="How it works" page="how" description="How Clearance clears a change end to end: provenance, tiering, the clearance token, the PreSync hook and admission webhook, and what happens when something fails.">
+  <style>
+    .route-dot { offset-path: path('M80 120 H915'); animation: ride 7s cubic-bezier(.45,0,.55,1) infinite; }
+    @keyframes ride { 0% { offset-distance: 0%; opacity: 0; } 5% { opacity: 1; } 55% { offset-distance: 60.5%; } 70% { offset-distance: 60.5%; } 95% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+    .gate-pulse { animation: gp 7s ease-in-out infinite; transform-origin: 600px 120px; transform-box: view-box; }
+    @keyframes gp { 0%, 52% { fill: var(--raised); } 58%, 68% { fill: var(--accent-soft); } 72%, 100% { fill: var(--clr-soft); } }
+    @media (prefers-reduced-motion: reduce) { .route-dot, .gate-pulse { animation: none; } .route-dot { display: none; } }
+  </style>
+
+  <section class="page-hero">
+    <div class="clr-wrap">
+      <p class="kicker">How it works</p>
+      <h1 class="display">Every change holds short until it's <em>cleared</em>.</h1>
+      <p class="sub">The first release covers one route, end to end: GitHub to Argo CD to Kubernetes, for the environments you declare protected. Everything outside that route is reported as coverage unavailable, in the record and in the packet, rather than quietly left out.</p>
+    </div>
+  </section>
+
+  <section class="clr-wrap" data-reveal>
+    <figure class="fig">
+      <svg viewBox="0 0 1000 350" role="img" aria-label="A change taxis from pull request through provenance and classification to the gate. Policy clears tiers 0 and 1; tiers 2 and 3 wait for a named human. The PreSync hook verifies the token before the cluster applies it, and every step lands in the evidence record.">
+        <defs>
+          <marker id="hw-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--rule-strong)"/></marker>
+          <marker id="hw-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--bad)"/></marker>
+          <marker id="hw-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--clr)"/></marker>
+        </defs>
+        <text x="20" y="36" font-size="17" fill="var(--ink)" font-weight="500">No change reaches the cluster without a clearance bound to it</text>
+        <g fill="none" stroke="var(--rule-strong)" stroke-width="1.4" marker-end="url(#hw-a)">
+          <path d="M140 120 H172"/><path d="M315 120 H347"/><path d="M490 120 H537"/>
+          <path d="M600 182 V212"/>
+        </g>
+        <g fill="none" stroke="var(--clr)" stroke-width="1.6" marker-end="url(#hw-g)">
+          <path d="M663 120 H702"/><path d="M835 120 H862"/><path d="M665 238 H768 V147"/>
+        </g>
+        <path d="M535 238 H80 V149" fill="none" stroke="var(--bad)" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#hw-r)"/>
+        <g fill="var(--raised)" stroke="var(--rule-strong)" stroke-width="1.3">
+          <rect x="20" y="94" width="120" height="52" rx="10"/>
+          <rect x="175" y="94" width="140" height="52" rx="10"/>
+          <rect x="350" y="94" width="140" height="52" rx="10"/>
+          <rect x="535" y="214" width="130" height="48" rx="10"/>
+          <rect x="705" y="94" width="130" height="52" rx="10"/>
+        </g>
+        <polygon class="gate-pulse" points="600,58 663,120 600,182 537,120" fill="var(--raised)" stroke="var(--accent)" stroke-width="2"/>
+        <rect x="865" y="94" width="118" height="52" rx="10" fill="var(--clr-soft)" stroke="var(--clr)" stroke-width="2"/>
+        <g font-size="13.5" fill="var(--ink)" text-anchor="middle">
+          <text x="80" y="117">Pull request</text><text x="80" y="134" font-size="11.5" fill="var(--muted)">agent or person</text>
+          <text x="245" y="117">Provenance</text><text x="245" y="134" font-size="11.5" fill="var(--muted)">with a confidence</text>
+          <text x="420" y="117">Classify</text><text x="420" y="134" font-size="11.5" fill="var(--muted)">tier + policy verdict</text>
+          <text x="600" y="116" font-weight="600">Hold short</text><text x="600" y="133" font-size="11.5" fill="var(--muted)">policy clears?</text>
+          <text x="600" y="236">Named human</text><text x="600" y="252" font-size="11.5" fill="var(--muted)">not the initiator</text>
+          <text x="770" y="117">PreSync hook</text><text x="770" y="134" font-size="11.5" fill="var(--muted)">token fits digest?</text>
+          <text x="924" y="117" font-weight="600">Applied</text><text x="924" y="134" font-size="11.5" fill="var(--muted)">protected cluster</text>
+        </g>
+        <g font-size="11.5">
+          <text x="683" y="108" text-anchor="middle" fill="var(--clr)" class="mono">T0–1</text>
+          <text x="610" y="202" fill="var(--accent)" class="mono">T2–3</text>
+          <text x="776" y="200" fill="var(--clr)">cleared</text>
+          <text x="300" y="230" fill="var(--bad)">denied: back to the author, with the reason</text>
+        </g>
+        <circle class="route-dot" r="7" fill="var(--clr)" stroke="var(--raised)" stroke-width="2"/>
+        <rect x="20" y="284" width="963" height="52" rx="10" fill="color-mix(in srgb, var(--sky) 9%, transparent)" stroke="var(--sky)" stroke-width="1.2"/>
+        <text x="38" y="306" font-size="11" class="mono" fill="var(--sky)">EVIDENCE RECORD · EVERY STEP</text>
+        <text x="38" y="325" font-size="12.5" fill="var(--ink)">provenance · tier · policy version · approver · digest · outcome · coverage state, signed and anchored</text>
+        <g stroke="var(--sky)" stroke-width="1" stroke-dasharray="2 4" opacity="0.7">
+          <path d="M245 146 V284"/><path d="M420 146 V284"/><path d="M770 146 V284"/><path d="M924 146 V284"/>
+        </g>
+      </svg>
+      <figcaption>Route · 01 of 03 · One change through the gate</figcaption>
+    </figure>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">The pieces</p>
+        <h2 class="h2">Where each instrument <em>runs</em>.</h2>
+      </div>
+      <div class="cmp table-wrap" data-reveal>
+        <table>
+          <thead><tr><th>Component</th><th>Job</th><th>Runs</th><th>Leans on</th></tr></thead>
+          <tbody>
+            <tr><td>Provenance detector</td><td>Tags pull requests and commits; posts the check; registers as a GitHub deployment protection rule</td><td>GitHub App, hosted by default</td><td>Checks API, commit signatures, agent metadata, CI attestations</td></tr>
+            <tr><td>Classifier and policy gate</td><td>Computes the tier; asks the policy engine; writes the decision and its reason</td><td>Your cluster</td><td>Kyverno or OPA, <code>clearance.yaml</code></td></tr>
+            <tr><td>Controller</td><td>PreSync hook: no token, no sync. Admission webhook as backstop. Reconciler for drift</td><td>Your cluster</td><td>Argo CD, Kubernetes admission</td></tr>
+            <tr><td>Recorder</td><td>Append-only, signed record of every clearance event</td><td>Your cluster or hosted</td><td>Postgres (CloudNativePG), object storage</td></tr>
+            <tr><td>Signer and ledger anchor</td><td>Keyless signing; checkpoints to a transparency log; witness co-signatures</td><td>Clearance service</td><td>Sigstore Fulcio and Rekor</td></tr>
+            <tr><td>Packet job</td><td>A date range to JSON, CSV and PDF, with control mappings and coverage</td><td>Recorder, batch</td><td>Mappings as versioned data</td></tr>
+            <tr><td>Surfaces</td><td>Checks, chat approvals, the console</td><td>GitHub, Slack, Tower</td><td>Backstage plugin</td></tr>
+            <tr><td>Identity</td><td>Approver identity through OIDC; subject and issuer recorded</td><td>Your IdP</td><td>Dex, Okta, Entra</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">The clearance token</p>
+        <h2 class="h2">An approval tied to a PR number can be <em>outflown</em>. A token tied to a digest can't.</h2>
+        <p class="sub">After policy or a human clears a change, the gate issues a signed, short-lived token naming the exact digests, the target, the policy version, the tier and the approvers. The hook compares the sync's revision and digests against it. The webhook checks again per resource. The recorder keeps the nonce so a token can't be replayed.</p>
+      </div>
+      <figure class="fig" data-reveal>
+        <svg viewBox="0 0 1000 590" role="img" aria-label="Sequence across seven lanes: agent, GitHub App, gate, human, Argo and webhook, recorder, ledger. A tier 2 change is held, cleared by a human, bound to its digest, applied and anchored. In the alternate path a force-push changes the digest, the token no longer fits, and an exception is recorded.">
+          <defs>
+            <marker id="sq-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+            <marker id="sq-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--bad)"/></marker>
+          </defs>
+          {lanes.map(([name, x]) => (
+            <g>
+              <rect x={x - 60} y="40" width="120" height="30" rx="8" fill="var(--paper-2)" />
+              <text x={x} y="59" text-anchor="middle" font-size="10.5" class="mono" fill="var(--muted)">{name}</text>
+              <line x1={x} y1="72" x2={x} y2="575" stroke="var(--rule-strong)" stroke-dasharray="3 5" />
+            </g>
+          ))}
+          {msgs.map(([a, b, y, label, tone, below]) => (
+            <g>
+              <path d={`M${a + (b > a ? 4 : -4)} ${y} H${b + (b > a ? -6 : 6)}`} fill="none" stroke={tone ? 'var(--rule-strong)' : 'var(--muted)'} stroke-width="1.3" marker-end="url(#sq-a)" />
+              <text x={(a + b) / 2 + (below ? 12 : 0)} y={below ? y + 17 : y - 7} text-anchor="middle" font-size="12" fill={tone ? 'var(--muted)' : 'var(--ink)'}>{label}</text>
+            </g>
+          ))}
+          <rect x="603" y="352" width="74" height="48" rx="7" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+          <text x="640" y="372" text-anchor="middle" font-size="11" fill="var(--ink)">PreSync</text>
+          <text x="640" y="388" text-anchor="middle" font-size="11" fill="var(--ink)">verify · apply</text>
+          <rect x="743" y="436" width="74" height="26" rx="7" fill="var(--sky-soft)" stroke="var(--sky)" stroke-width="1.5"/>
+          <text x="780" y="453" text-anchor="middle" font-size="11" fill="var(--ink)">sign record</text>
+          <rect x="323" y="196" width="74" height="20" rx="6" fill="var(--raised)" stroke="var(--rule-strong)"/>
+          <text x="360" y="210" text-anchor="middle" font-size="10.5" fill="var(--ink)">tier 2 · hold</text>
+          <line x1="20" y1="492" x2="980" y2="492" stroke="var(--bad)" stroke-dasharray="6 4"/>
+          <text x="22" y="485" font-size="10.5" class="mono" fill="var(--bad)">ALTERNATE · DIGEST CHANGED AFTER APPROVAL</text>
+          <path d="M84 520 H598" fill="none" stroke="var(--bad)" stroke-width="1.3" marker-end="url(#sq-r)"/>
+          <text x="340" y="513" text-anchor="middle" font-size="12" fill="var(--ink)">force-push: a new digest reaches the sync</text>
+          <rect x="600" y="508" width="80" height="24" rx="6" fill="var(--raised)" stroke="var(--bad)" stroke-width="1.5"/>
+          <text x="640" y="524" text-anchor="middle" font-size="11" fill="var(--bad)">token invalid</text>
+          <path d="M684 556 H774" fill="none" stroke="var(--bad)" stroke-width="1.3" marker-end="url(#sq-r)"/>
+          <text x="730" y="549" text-anchor="middle" font-size="12" fill="var(--ink)">exception recorded</text>
+          <text x="360" y="562" text-anchor="middle" font-size="12" fill="var(--muted)">held · re-evaluated as a new change</text>
+        </svg>
+        <figcaption>Sequence · 02 of 03 · A clearance is bound to the digest that lands</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Every ending is written down</p>
+        <h2 class="h2">A clearance ends recorded, denied, invalidated, or as an <em>exception</em>.</h2>
+        <p class="sub">The side states are what make uncertainty visible. A tier 2 or 3 change that Clearance couldn't verify is never reported as cleared.</p>
+      </div>
+      <figure class="fig" data-reveal>
+        <svg viewBox="0 0 1000 330" role="img" aria-label="State machine: proposed, classified, then cleared by policy or awaiting a human, verified at sync, applied and recorded. Side states: denied, invalidated when the digest changes or the token expires, exceptions for out-of-band changes, break-glass and degraded mode, and coverage unavailable.">
+          <defs><marker id="st-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
+          <g fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#st-a)">
+            <path d="M140 140 H172"/><path d="M302 128 C330 100 330 80 352 78"/><path d="M302 152 C330 180 330 200 352 202"/>
+            <path d="M492 78 C520 80 530 118 552 128"/><path d="M492 202 C520 200 530 160 552 152"/><path d="M712 140 H742"/><path d="M872 140 H892"/>
+            <path d="M422 226 V258"/>
+          </g>
+          <g fill="var(--raised)" stroke="var(--rule-strong)" stroke-width="1.3">
+            <rect x="20" y="116" width="120" height="48" rx="24"/><rect x="175" y="116" width="127" height="48" rx="24"/>
+            <rect x="355" y="56" width="137" height="44" rx="22"/><rect x="355" y="180" width="137" height="44" rx="22"/>
+            <rect x="745" y="116" width="127" height="48" rx="24"/>
+          </g>
+          <rect x="555" y="116" width="157" height="48" rx="24" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+          <rect x="895" y="116" width="92" height="48" rx="24" fill="var(--clr-soft)" stroke="var(--clr)" stroke-width="2"/>
+          <rect x="365" y="260" width="117" height="40" rx="20" fill="var(--raised)" stroke="var(--bad)" stroke-width="1.5"/>
+          <g font-size="13" fill="var(--ink)" text-anchor="middle">
+            <text x="80" y="145">Proposed</text><text x="238" y="145">Classified</text>
+            <text x="423" y="83">Cleared by policy</text><text x="423" y="207">Awaiting a human</text>
+            <text x="633" y="145" font-weight="600">Verified at sync</text><text x="808" y="145">Applied</text>
+            <text x="941" y="145" font-weight="600">Recorded</text><text x="423" y="285" fill="var(--bad)">Denied</text>
+          </g>
+          <g font-size="11" fill="var(--muted)"><text x="258" y="106">T0–1</text><text x="258" y="184">T2–3</text><text x="430" y="246">no</text></g>
+          <g font-size="11.5">
+            <rect x="555" y="210" width="157" height="88" rx="10" fill="none" stroke="var(--bad)" stroke-dasharray="4 4"/>
+            <text x="571" y="233" fill="var(--bad)" class="mono" font-size="10.5">INVALIDATED</text>
+            <text x="571" y="253" fill="var(--muted)">digest changed</text><text x="571" y="270" fill="var(--muted)">token expired</text><text x="571" y="287" fill="var(--muted)">re-evaluate</text>
+            <rect x="730" y="210" width="257" height="88" rx="10" fill="none" stroke="var(--accent)" stroke-dasharray="4 4"/>
+            <text x="746" y="233" fill="var(--accent)" class="mono" font-size="10.5">EXCEPTION · ALWAYS RECORDED</text>
+            <text x="746" y="253" fill="var(--muted)">out-of-band change detected</text><text x="746" y="270" fill="var(--muted)">break-glass, named and timed</text><text x="746" y="287" fill="var(--muted)">degraded-mode auto-clear</text>
+            <rect x="20" y="210" width="282" height="88" rx="10" fill="none" stroke="var(--soft)" stroke-dasharray="4 4"/>
+            <text x="36" y="233" fill="var(--soft)" class="mono" font-size="10.5">COVERAGE UNAVAILABLE</text>
+            <text x="36" y="253" fill="var(--muted)">a path Clearance can't see.</text><text x="36" y="270" fill="var(--muted)">Stated in the packet,</text><text x="36" y="287" fill="var(--muted)">never reported as cleared.</text>
+          </g>
+          <text x="20" y="30" font-size="15" fill="var(--ink)" font-weight="500">One clearance, start to finish</text>
+        </svg>
+        <figcaption>State machine · 03 of 03 · One clearance</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">When things go wrong</p>
+        <h2 class="h2">Designed for the bad day, <em>not</em> the demo.</h2>
+        <p class="sub">Authorization policy and service availability are separate questions. You choose per tier what happens when Clearance is unreachable; the defaults let tiers 0 and 1 through and hold tiers 2 and 3.</p>
+      </div>
+      <div class="cmp table-wrap" data-reveal>
+        <table>
+          <thead><tr><th>Failure</th><th>What happens</th><th>Containment</th></tr></thead>
+          <tbody>
+            <tr><td>Clearance is down</td><td>Tiers 2 and 3 hold; tiers 0 and 1 proceed per your outage policy</td><td>Degraded-mode records written on recovery; alert</td></tr>
+            <tr><td>Clearance is compromised</td><td>An attacker could issue tokens</td><td>Tokens bind to digests the attacker must also land; short-lived signing identity; two humans on tier 3; issuance shows in the ledger</td></tr>
+            <tr><td>The GitHub App token leaks</td><td>Checks and comments could be forged</td><td>Minimal App permissions; checks are advisory, the hook is the gate</td></tr>
+            <tr><td>An approver account is compromised</td><td>A fraudulent tier 2 clearance</td><td>Approver can't be the initiator; tier 3 needs two; IdP MFA; the subject is in the ledger</td></tr>
+            <tr><td>A database admin rewrites history</td><td>Records changed or deleted</td><td>Rows signed with a key the admin lacks; checkpoints in the log; witnesses; <code>clearance verify</code> fails loudly</td></tr>
+            <tr><td>The transparency log is unreachable</td><td>Checkpoints queue</td><td>Records still signed; anchoring resumes; the packet states the gap</td></tr>
+            <tr><td>Someone runs <code>kubectl apply</code></td><td>A change skips the hook</td><td>Admission webhook refuses resources without a token; the reconciler records the exception</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="cols" data-reveal>
+        <div>
+          <p class="kicker">Two entry points, one gate</p>
+          <h2 class="h2" style="font-size:clamp(1.8rem,2.6vw + 0.6rem,2.6rem)">Generic first. <em>Native</em> when Autopilot lands.</h2>
+        </div>
+        <div>
+          <p>The generic entry point is a GitHub pull request landing through Argo CD. It's what every team that doesn't run Hangar uses, so it ships first.</p>
+          <p>On a Hangar cluster an agent's work arrives as an Autopilot <code>AgentRun</code>, a Crossplane XR, and the same controller gates it at admission. The runtime tier decides what the run may do; the deployment tier decides what may land. A task id on every runtime record links the call that proposed a change to the clearance that landed it. <span class="chip proposal">Proposal</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Reference deployment</p>
+        <h2 class="h2">Clearance clears its <em>own</em> releases.</h2>
+        <p class="sub">The Hangar lab, a dev and a prod cluster, is the reference deployment and the demo. A clearance product that can't clear its own release isn't credible. Every phase closes with negative tests like these:</p>
+      </div>
+      <ol class="practices" data-reveal>
+        <li><h3>Held, cleared, synced</h3><p>An agent pull request to prod is held, cleared by a human, and syncs. The same change to dev auto-clears in under a second.</p></li>
+        <li><h3>Force-push refused</h3><p>A push after approval changes the digest, and the sync is refused.</p></li>
+        <li><h3>Side door caught</h3><p>A direct <code>kubectl apply</code> to prod appears as an out-of-band exception within the scan interval.</p></li>
+        <li><h3>Outage behaves as configured</h3><p>With Clearance stopped, a dev change proceeds and a secret rotation holds. Both are recorded on recovery.</p></li>
+        <li><h3>Verified from the outside</h3><p>A 30-day packet verifies against the log with <code>clearance verify</code> on a machine that can't reach the recorder.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <Closer />
+</Layout>

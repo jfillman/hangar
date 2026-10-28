@@ -1,0 +1,189 @@
+---
+import Layout from '../../layouts/Clearance.astro';
+import PrCheck from '../../components/clearance/PrCheck.astro';
+import ChatApproval from '../../components/clearance/ChatApproval.astro';
+import Verify from '../../components/clearance/Verify.astro';
+import Console from '../../components/clearance/Console.astro';
+import Closer from '../../components/clearance/Closer.astro';
+import { u } from '../../lib/url';
+const c = (p = '') => u(`clearance/${p}`);
+---
+<Layout title="Product" page="product" description="A tour of Clearance: the provenance detector, the classifier and policy gate, the clearance controller, and the evidence record with its audit packet.">
+  <section class="page-hero">
+    <div class="clr-wrap">
+      <p class="kicker">Product tour</p>
+      <h1 class="display">Four instruments on the <em>change path</em>.</h1>
+      <p class="sub">Clearance doesn't ask you to rebuild anything. It sits on the route a GitOps team already flies: pull request, CI, Argo CD, cluster. Each piece speaks a standard you already run, and the whole thing installs as one Helm chart.</p>
+      <div class="hero-actions" style="justify-content:flex-start">
+        <a class="btn btn-solid" href={c('design-partners/')}>Request a pilot <span class="arr">→</span></a>
+        <a class="btn btn-ghost" href={c('how-it-works/')}>How it works</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="feature" data-reveal>
+        <div>
+          <p class="kicker">01 · Provenance detector</p>
+          <h2 class="h2">Who or what started the change, <em>and how sure</em> we are.</h2>
+          <p class="sub">A GitHub App gives every pull request and commit a provenance confidence. Squash merges, rebases and humans editing agent-written code are the normal case, so the detector never pretends to know more than it does.</p>
+          <ul class="points">
+            <li><b>Four levels, no booleans.</b> Confirmed agent, probable agent, confirmed human, unknown.</li>
+            <li><b>Strongest signals first.</b> The agents' own App identity, signed commits, agent metadata from tools like Claude Code and Copilot, and CI attestations.</li>
+            <li><b>Unknown is treated as agent</b> in a protected environment. It never resolves to human.</li>
+          </ul>
+        </div>
+        <PrCheck />
+      </div>
+
+      <div class="feature flip" data-reveal>
+        <div>
+          <p class="kicker">02 · Classifier and policy gate</p>
+          <h2 class="h2">A tier from rules you can <em>read</em>.</h2>
+          <p class="sub">The tier comes from deterministic inputs: changed paths and resource kinds, the environment, provenance, CI status and diff size. Policy evaluation goes to the engine you already trust. Clearance owns the tiering, the decision record and the plain-language reason.</p>
+          <ul class="points">
+            <li><b>Kyverno or OPA</b> does the evaluating. Clearance stores the rule-set version and verdict with every record.</li>
+            <li><b>One file per app.</b> A <code>clearance.yaml</code> beside the Argo application, reviewed like any other change.</li>
+            <li><b>Invariants you can't switch off.</b> Tier 3 is never automatic, and nobody clears their own change.</li>
+          </ul>
+        </div>
+        <div class="cockpit" role="img" aria-label="An example clearance.yaml for skyport-broker">
+          <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="crumb">skyport-broker / deploy / <b>clearance.yaml</b></span></div>
+<div class="code"><span class="k">apiVersion</span>: <span class="s">clearance.hangarplatform.dev/v1alpha1</span>
+<span class="k">kind</span>: <span class="s">ChangePolicy</span>
+<span class="k">environments</span>:
+  <span class="k">skyport-broker-prod</span>: {'{'} <span class="k">protected</span>: <span class="n">true</span> {'}'}
+  <span class="k">skyport-broker-dev</span>:  {'{'} <span class="k">protected</span>: <span class="n">false</span> {'}'}
+<span class="k">tiers</span>:
+  - <span class="k">match</span>: {'{'} <span class="k">kinds</span>: [<span class="s">Secret</span>, <span class="s">ClusterRole</span>, <span class="s">ValidatingAdmissionPolicy</span>] {'}'}
+    <span class="k">tier</span>: <span class="n">3</span>
+  - <span class="k">match</span>: {'{'} <span class="k">paths</span>: [<span class="s">"values-*.yaml"</span>, <span class="s">"networkpolicy/**"</span>] {'}'}
+    <span class="k">tier</span>: <span class="n">2</span>
+  - <span class="k">match</span>: {'{'} <span class="k">paths</span>: [<span class="s">"**"</span>], <span class="k">ci</span>: <span class="s">passing</span>, <span class="k">maxDiffLines</span>: <span class="n">400</span> {'}'}
+    <span class="k">tier</span>: <span class="n">1</span>
+<span class="k">approvers</span>:
+  <span class="k">tier2</span>: [<span class="s">group:platform-oncall</span>]
+  <span class="k">tier3</span>: [<span class="s">group:platform-leads</span>, <span class="s">group:security</span>]  <span class="c"># two, one outside the team</span>
+<span class="k">outage</span>:                  <span class="c"># when Clearance can't be reached</span>
+  <span class="k">tier0</span>: <span class="g">allow-and-record</span>
+  <span class="k">tier1</span>: <span class="g">allow-and-record</span>
+  <span class="k">tier2</span>: <span class="n">hold</span>
+  <span class="k">tier3</span>: <span class="n">hold</span>
+<span class="k">intent</span>:
+  <span class="k">capture</span>: <span class="s">redacted</span>      <span class="c"># full text is opt-in per repo</span></div>
+        </div>
+      </div>
+
+      <div class="feature" data-reveal>
+        <div>
+          <p class="kicker">03 · Clearance controller</p>
+          <h2 class="h2">No token, <em>no sync</em>.</h2>
+          <p class="sub">An Argo CD PreSync hook refuses a sync without a valid clearance, and a validating admission webhook backs it up per resource. A reconciler diffs live state against cleared changes so the side door gets noticed too.</p>
+          <ul class="points">
+            <li><b>Bound to the artifact.</b> Digest, target environment, policy version, approver and a short expiry. A push after approval invalidates it.</li>
+            <li><b>Break-glass is a path, not a bypass.</b> A named person, a reason and a time limit, written down before the change lands.</li>
+            <li><b>Outage policy per tier.</b> Routine changes keep flowing; sensitive ones hold. Degraded mode is always on the record.</li>
+          </ul>
+        </div>
+        <div class="cockpit" role="img" aria-label="The claims inside a clearance token">
+          <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="crumb">clearance token · <b>tier 2</b></span></div>
+<div class="code">{'{'}
+  <span class="k">"subject"</span>: [{'{'} <span class="k">"name"</span>: <span class="s">"ghcr.io/jfillman/skyport-broker"</span>,
+                <span class="k">"digest"</span>: {'{'} <span class="k">"sha256"</span>: <span class="s">"9f1c…e04a"</span> {'}'} {'}'}],
+  <span class="k">"target"</span>:  {'{'} <span class="k">"cluster"</span>: <span class="s">"prod"</span>, <span class="k">"environment"</span>: <span class="s">"skyport-broker-prod"</span> {'}'},
+  <span class="k">"tier"</span>: <span class="n">2</span>,
+  <span class="k">"policy"</span>: {'{'} <span class="k">"ref"</span>: <span class="s">"clearance.yaml@7e2d"</span>, <span class="k">"engine"</span>: <span class="s">"kyverno/1.13"</span>, <span class="k">"verdict"</span>: <span class="g">"pass"</span> {'}'},
+  <span class="k">"provenance"</span>: {'{'} <span class="k">"level"</span>: <span class="s">"probable-agent"</span>, <span class="k">"task_id"</span>: <span class="s">"t-48fd…"</span> {'}'},
+  <span class="k">"approvals"</span>: [{'{'} <span class="k">"sub"</span>: <span class="s">"okta|00u9…"</span>, <span class="k">"via"</span>: <span class="s">"chat"</span> {'}'}],
+  <span class="k">"exp"</span>: <span class="n">1798790400</span>, <span class="k">"nonce"</span>: <span class="s">"c0a8…"</span>
+{'}'}</div>
+        </div>
+      </div>
+
+      <div class="feature flip" data-reveal>
+        <div>
+          <p class="kicker">04 · Evidence record and packet</p>
+          <h2 class="h2">A record your GRC lead can <em>forward unchanged</em>.</h2>
+          <p class="sub">Every clearance event becomes a signed, append-only record and an in-toto attestation next to the build provenance you already have. Pick a date range and the packet job turns it into JSON and CSV, with a PDF on top for people who like paper.</p>
+          <ul class="points">
+            <li><b>Control mappings as data.</b> SOC 2 change management first; PCI DSS and ISO 27001 once an auditor has reviewed them.</li>
+            <li><b>Exceptions and coverage, always.</b> Out-of-band, break-glass and degraded mode, plus a plain statement of what wasn't covered.</li>
+            <li><b>Pushes where evidence already goes.</b> A JSON stream to your SIEM, and structured records to your GRC platform.</li>
+          </ul>
+        </div>
+        <Verify />
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Surfaces</p>
+        <h2 class="h2">Clear changes where the team <em>already works</em>.</h2>
+        <p class="sub">Pull request checks for the author, chat for on-call, and a console in Tower, Hangar's Backstage portal, for everyone who wants the whole picture.</p>
+      </div>
+      <div class="bento">
+        <div class="tile span-2" data-reveal style="padding:0;background:transparent;border:0"><ChatApproval /></div>
+        <div class="tile span-4" data-reveal style="padding:0;background:transparent;border:0"><Console /></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Two boundaries, one record</p>
+        <h2 class="h2">From the tool call that drafted it to the sync that <em>landed</em> it.</h2>
+        <p class="sub">Clearance started as Autopilot's runtime gateway: every tool call an agent makes passes a tier check and lands in a hash-chained audit. The deployment gate is the second boundary. Both share one tier vocabulary, one evidence schema and one ledger, joined by a task id.</p>
+      </div>
+      <div class="cols" data-reveal>
+        <div><span class="chip built">Built</span><h3 class="mt-2" style="margin-top:0.8rem">Runtime boundary</h3><p>What may this agent call? Tool tiers T0 read, T1 reversible write, T2 propose, T3 never. Path scope, narrow-only limits, CEL deny rules with ids and fix hints, a hash-chained audit with an anchored checkpoint.</p></div>
+        <div><span class="chip proposal">Proposal</span><h3 class="mt-2" style="margin-top:0.8rem">Deployment boundary</h3><p>May this change land in a protected environment, and can we prove it did, under policy, afterwards? Provenance, tiers 0 to 3, the clearance token, the PreSync hook, the webhook and the record.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Where it fits</p>
+        <h2 class="h2">Built on the tools you have. <em>Not</em> another one of them.</h2>
+        <p class="sub">Most of what a buyer already owns either stops at the merge, gates live commands rather than declared changes, or collects evidence without enforcing anything. Clearance sits at the GitOps sync and binds the three together.</p>
+      </div>
+      <div class="cmp table-wrap" data-reveal>
+        <table>
+          <thead><tr><th>What you have</th><th>Gates deploys</th><th>Binds approval to digest</th><th>Agent-aware</th><th>Verifiable evidence</th><th>How Clearance relates</th></tr></thead>
+          <tbody>
+            <tr><td>Repo rulesets and protection rules</td><td class="y">Merge only</td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td>Builds on it, as a deployment protection rule</td></tr>
+            <tr><td>Policy engines and Argo RBAC</td><td class="y">Verdicts</td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td>Foundation; Clearance stores the verdict</td></tr>
+            <tr><td>Access proxies for live commands</td><td class="n">Commands</td><td class="n">No</td><td class="y">Some</td><td class="n">Vendor logs</td><td>They gate what an agent runs; Clearance gates what it lands</td></tr>
+            <tr><td>Agent runtime governance</td><td class="n">Calls</td><td class="n">No</td><td class="y">Yes</td><td class="n">Varies</td><td>Coexists; exports records when asked</td></tr>
+            <tr><td>Compliance automation platforms</td><td class="n">No</td><td class="n">No</td><td class="y">Some</td><td class="n">Collected</td><td>Channel: Clearance is the evidence source they pull</td></tr>
+            <tr><td>In-house glue</td><td class="y">Sometimes</td><td class="n">Rarely</td><td class="n">Rarely</td><td class="n">No</td><td>The gate is a sprint; being believed is the product</td></tr>
+            <tr class="us"><td>Clearance</td><td class="y">At sync</td><td class="y">Yes</td><td class="y">With confidence</td><td class="y">Anchored</td><td>The empty quadrant, still a hypothesis to test</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Positioning is a hypothesis the pilots are designed to test. Public product pages don't prove a feature is missing.</p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="cols" data-reveal>
+        <div>
+          <p class="kicker">What Clearance is not</p>
+          <h2 class="h2" style="font-size:clamp(1.8rem,2.6vw + 0.6rem,2.6rem)">A short list of things we <em>won't</em> pretend to be.</h2>
+        </div>
+        <div>
+          <p>Not a policy engine: Kyverno and OPA do that. Not a CI system: that's your pipeline, Glidepath in Hangar's case. Not an agent framework. And not an auditor: Clearance never calls its own output a certification, and never promises an audit outcome.</p>
+          <p>It helps you enforce your own change policy and assemble evidence for the controls that apply to you. The judgement stays with your auditor.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Closer />
+</Layout>
