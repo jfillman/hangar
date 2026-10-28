@@ -194,7 +194,7 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 | **AF-8b** `airframe.apply` (opens PRs as the agents' App), planner adapters | **the parachute sentence passes live**, with a seeded bad run and a resume test |
 | **AF-6b** `describe` and verify contracts; **AF-10c** chart `agent:` block | |
 | **AP-C1** Flight recorder: `task_id` everywhere; each run records the pinned model version and its Preflight result | records in Clearance's evidence schema (verified versus claimed, coverage and assurance state). The anchor is the Clearance ledger (Tessera plus a witness, Clearance roadmap phase 2), not a local checkpoint |
-| **AP-A4** stable agent identity, separate from a run (per-agent policy, history, memory scope) | one identity per AgentDefinition; runs inherit it |
+| **AP-A4** stable agent identity, separate from a run (per-agent policy, history, memory scope) | one identity per AgentDefinition; runs inherit it. **The identity is an ID-JAG** (RFC 8693 exchange at the IdP, then RFC 7523 bearer to Clearance; design.md 0.1); R001's principal is its subject. Blocked on an IdP that issues ID-JAG (D19) |
 | **AP-C2** cost accounting: tokens and compute per run, per agent, per task tree, in the recorder and the Tower tab | from budgets already enforced |
 | **AF-2b** fix the T0 read set (`getLogs`, `getMetrics`, `getRelease`, `getDeploymentStatus`) and put it in the contract bundle | read tools taught by example |
 
@@ -289,7 +289,8 @@ kiac-dev, no Clearance deployment, no `components.autopilot` in apron. What move
    chain to a Hangar-owned root rather than a per-cluster self-generated one. Design and rollout are not started.
 
 **Gaps in the existing code that M3 closes:** nothing maps a run pod's identity
-(`system:serviceaccount:agent-r-<id>:run`) to the session principal R001 compares against (AP-A4); sessions are held
+(`system:serviceaccount:agent-r-<id>:run`) to the session principal R001 compares against (AP-A4, now by ID-JAG: the run
+exchanges that token at the IdP, and the principal is the ID-JAG's subject); sessions are held
 in memory and their audit entry stores the requested limits only as a hash, so a Clearance restart loses the grant
 (AP-A2 needs a durable session store).
 
@@ -349,6 +350,7 @@ repo setup, Modelplane reading. Do not parallelize the ownership split with Clea
 | D16 | Clearance's repo | **Decided 2026-10-28** (Clearance architecture): its own `clearance` repo; supersedes D8 for the package. The split line (design.md 0.1) was accepted on 2026-10-28 | AP-A2 |
 | D17 | Runtime boundary: Clearance as an AuthZEN PDP behind Traefik Hub's Sovereign Trust Plane, or its own gateway | **Open.** Recommendation: PDP, own gateway as fallback. Hangar runs Traefik Proxy v3.7.6, not Hub (verified 2026-10-28), so the own gateway ships now, with the decision refactored into a pure, AuthZEN-shaped function | before AP-B2 |
 | D18 | AF-8a before AP-A3 | **Decided 2026-10-28** | M3 |
+| D19 | Which IdP issues agent ID-JAGs | **Open.** The standard is decided (ID-JAG, owner 2026-10-28). Dex cannot issue ID-JAGs today (dexidp/dex#4611 open; v2.46.1 lacks it). Options: wait for and pin a Dex release that ships it (recommended, since Dex is already Hangar's IdP); run a second IdP that issues them (Keycloak documents ID-JAG in its nightly docs; unverified in a release); a Clearance-side issuer (rejected: it is the decision point, so it must not mint its own principals). AF-8a does not need it: it reads as `platform-system/clearance` | AP-A4 |
 
 ## 5. Unverified: answer these in M0
 | # | Question | How to check |

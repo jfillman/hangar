@@ -45,4 +45,5 @@ Sources: the Clearance Brief, Architecture and Roadmap (2026-10-27/28). What the
 | D16 | Clearance is a standalone Hangar product with its own `clearance` repo. This supersedes D8 for the package (the `autopilot` repo stays). The proposed split: policy, scope, sessions, gateway, audit and the deployment gate go to `clearance`; definitions, Preflight, AgentRun, the planner and the Hangar tool backends stay in `autopilot`. The owner accepted this split on 2026-10-28. |
 | D17 | **Open:** the runtime boundary as an AuthZEN PDP behind Traefik Hub's Sovereign Trust Plane, or Clearance's own gateway. Hangar runs Traefik Proxy (not Hub), so the own gateway ships now, with the decision refactored into a pure, AuthZEN-shaped function. |
 | D18 | AF-8a, the read-only `airframe.*` tools, is built before AP-A3. |
+| Agent identity | Taken from a standard: ID-JAG (RFC 8693 token exchange at the IdP, then an RFC 7523 JWT bearer to Clearance). The issuer is open (D19 in roadmap.md): Dex has no ID-JAG issuance yet. |
 | AP-A2 | Built in this plan, not in a separate lab. Clearance is Hangar's AI gateway whatever the product's go/stop gates decide. |
