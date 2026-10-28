@@ -69,16 +69,16 @@ const legs: [string, number, number, string][] = [
           <div class="when"><b>Leg 1</b>Dec 2026</div><div class="node"><i></i></div>
           <div class="body">
             <h3>The gate</h3>
-            <p>The provenance detector, deterministic tier rules, the PreSync hook with the admission webhook behind it, bypass detection, approvals in the pull request, and registration as a GitHub deployment protection rule. Clearance's own releases go through the gate from the first install.</p>
-            <div class="gate"><b>Exit test</b>An agent pull request to prod is held, cleared by a person and synced. The same change to dev clears in under a second. A force-push after approval is refused. A direct apply shows up as an exception. An outage lets a dev change through and holds a secret rotation, both recorded.</div>
+            <p>The provenance detector and deterministic tier rules that read the rendered diff. Then three layers in Argo CD: a plugin that binds each clearance to the rendered tree, an admission policy that enforces it, and a PreSync hook that shows the wait. Bypass detection, approvals in the pull request, and registration as a GitHub deployment protection rule. Clearance's own releases go through the gate from the first install.</p>
+            <div class="gate"><b>Exit test</b>An agent pull request to prod is held, cleared by a person and synced. The same change to dev clears in under a second. A force-push after approval is refused at admission, and so is a sync that skips the hook. A ConfigMap-only change is tiered by its rendered diff and clears with the image unchanged. A direct apply shows up as an exception. An outage lets a dev change through and holds a secret rotation, both recorded.</div>
           </div>
         </div>
         <div class="leg" data-reveal>
           <div class="when"><b>Leg 2</b>Jan 2027</div><div class="node"><i></i></div>
           <div class="body">
             <h3>Recorder, ledger and the first packet</h3>
-            <p>The flight recorder with signed, append-only rows. Attestations signed with Sigstore and checkpoints anchored in Rekor. A listener on Glidepath's CDEvents stream so sync results and rollbacks land without another integration. Chat approvals. Packet v1 for SOC 2 change management.</p>
-            <div class="gate"><b>Exit test</b>A 30-day lab packet, including failures, rollbacks and a deliberate bypass, verifies independently with the open tool. The auditor's gap list is under ten items, and none of them is "wrong shape".</div>
+            <p>The flight recorder, an evidence sink of its own that sees every decision unsampled. Attestations signed with Sigstore. A ledger of record hashes in an open transparency log, countersigned by a witness Clearance doesn't run. Glidepath's CDEvents and Argo CD Notifications feed it sync results and rollbacks. Chat approvals. Packet v1 for SOC 2 change management. And the first federated gate provider, Infisical, so a secret rotation that never touched git is attributed instead of flagged.</p>
+            <div class="gate"><b>Exit test</b>A 30-day lab packet, including failures, rollbacks and a deliberate bypass, verifies independently with the open tool, against a witness Clearance doesn't run. A truncated, re-signed ledger is refused by the witness, an altered row is named, and a witness outage makes a tier 3 change wait. The auditor's gap list is under ten items, and none of them is "wrong shape".</div>
           </div>
         </div>
         <div class="leg key" data-reveal>
@@ -93,7 +93,7 @@ const legs: [string, number, number, string][] = [
           <div class="when"><b>Leg 4</b>May to Jul 2027</div><div class="node"><i></i></div>
           <div class="body">
             <h3>Generally available, and the ledger goes public</h3>
-            <p>A multi-tenant hosted recorder with keys tenants' admins don't hold. A public transparency log with independent witnesses, the open verifier and a hosted endpoint for auditors. PCI DSS and ISO mappings after auditor review. The Tower console. Evidence push to GRC platforms. Community, Team and Business plans.</p>
+            <p>A multi-tenant hosted recorder with keys tenants' admins don't hold. A public transparency log with independent witnesses, the open verifier and a hosted endpoint for auditors. PCI DSS and ISO mappings after auditor review. The Tower console and an Argo CD UI extension. Evidence push to GRC platforms. Community, Team and Business plans.</p>
             <div class="gate"><b>Exit test</b>A first paying customer. One packet accepted in completed Type II fieldwork. One auditor using the verification endpoint on their own.</div>
           </div>
         </div>

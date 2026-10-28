@@ -6,70 +6,79 @@ import { u } from '../../lib/url';
 const c = (p = '') => u(`clearance/${p}`);
 const fields = [
   ['Identities', 'Agent identity and tool version; initiating human; approver subjects and issuers'],
-  ['Source', 'Repository, revision, image and manifest digests'],
+  ['Source', 'Repository, revision, rendered tree root and per-object hashes; image digests as a cross-reference'],
   ['Target', 'Cluster, environment, Argo application'],
   ['Provenance', 'Confidence level and the signals behind it, each tagged verified or claimed'],
   ['Decision', 'Tier, policy version, rules fired, plain-language reason, approval channel, token reference'],
   ['Outcome', 'Deployment result, observed revision, health check, rollback if any'],
   ['Coverage', 'Authorized and verified · observed, not attributed · out-of-band detected · coverage unavailable'],
+  ['Assurance', 'Checkpointed · recorded, not yet checkpointed · not recorded: whether the record has reached a witnessed checkpoint'],
   ['Intent', 'A task reference and a secret-scrubbed summary by default; full text only where a repo opts in'],
   ['Integrity', 'Timestamps, signature, checkpoint reference, verification status'],
 ];
 ---
-<Layout title="Evidence and ledger" page="ledger" description="Clearance's evidence record, in-toto attestations, the audit packet, and a ledger anchored where nobody can quietly rewrite it.">
+<Layout title="Evidence and ledger" page="ledger" description="Clearance's evidence record, in-toto attestations, the audit packet, and a witnessed ledger of hashes that nobody can quietly rewrite, not even its operator.">
   <section class="page-hero">
     <div class="clr-wrap">
       <p class="kicker">Evidence and the Clearance Ledger</p>
       <h1 class="display">A record <em>nobody</em> can quietly rewrite.</h1>
-      <p class="sub">Not you, not us, not a database admin having a bad week. Every clearance event is signed with keys your administrators don't hold, anchored in an append-only transparency log, and co-signed by independent witnesses. Anyone can check it with an open tool.</p>
+      <p class="sub">Not you, not us, not a database admin having a bad week. Your records stay on your own storage. The ledger holds only their hashes, and independent witnesses refuse any history shorter than the last one they saw, so even whoever holds the signing key can't rewrite it unseen. Anyone can check it with an open tool.</p>
     </div>
   </section>
 
   <section class="clr-wrap" data-reveal>
     <figure class="fig">
-      <svg viewBox="0 0 1000 380" role="img" aria-label="Records are signed, batched into checkpoints and anchored in a transparency log that witnesses co-sign. If a database admin rewrites a record, its signature and the anchored checkpoint no longer match, and clearance verify fails.">
+      <svg viewBox="0 0 1000 400" role="img" aria-label="Records stay on your storage. Only their hashes go into the ledger, a Tessera log, which publishes signed checkpoints. Independent witnesses demand a consistency proof and never accept a smaller tree. If an admin edits a record, clearance verify names the altered line. If the operator truncates the log and re-signs, the witnesses refuse the checkpoint.">
         <defs><marker id="lg-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
         <marker id="lg-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--bad)"/></marker></defs>
-        <text x="20" y="34" font-size="17" font-weight="500" fill="var(--ink)">Why a rewritten database fails verification</text>
-        <text x="20" y="74" font-size="11" class="mono" fill="var(--soft)">RECORDER · YOUR CLUSTER OR HOSTED</text>
+        <text x="20" y="34" font-size="17" font-weight="500" fill="var(--ink)">Why a rewritten history fails verification</text>
+        <text x="20" y="74" font-size="11" class="mono" fill="var(--soft)">YOUR STORAGE · YOUR RETENTION</text>
         {[0, 1, 2, 3, 4].map((i) => (
           <g transform={`translate(${20 + i * 92} 90)`}>
             <rect width="80" height="64" rx="8" fill={i === 2 ? 'color-mix(in srgb, var(--bad) 10%, var(--raised))' : 'var(--raised)'} stroke={i === 2 ? 'var(--bad)' : 'var(--rule-strong)'} stroke-width="1.3"/>
             <text x="10" y="20" font-size="10.5" class="mono" fill="var(--muted)">rec {412 + i}</text>
             <rect x="10" y="30" width="44" height="5" rx="2" fill="var(--paper-2)"/><rect x="10" y="40" width="58" height="5" rx="2" fill="var(--paper-2)"/>
-            <text x="10" y="58" font-size="10" class="mono" fill={i === 2 ? 'var(--bad)' : 'var(--clr)'}>{i === 2 ? 'sig ✕' : 'sig ✓'}</text>
+            <text x="10" y="58" font-size="10" class="mono" fill={i === 2 ? 'var(--bad)' : 'var(--clr)'}>{i === 2 ? 'edited' : 'h ✓'}</text>
             {i < 4 && <path d="M80 32 H92" stroke="var(--rule-strong)" stroke-width="1.5"/>}
           </g>
         ))}
-        <path d="M244 204 V160" fill="none" stroke="var(--bad)" stroke-width="1.3" marker-end="url(#lg-r)"/>
-        <rect x="128" y="206" width="160" height="40" rx="8" fill="none" stroke="var(--bad)" stroke-dasharray="4 4"/>
-        <text x="208" y="222" text-anchor="middle" font-size="11.5" fill="var(--bad)">admin edits rec 414</text>
-        <text x="208" y="238" text-anchor="middle" font-size="10.5" fill="var(--muted)">and recomputes the chain</text>
-        <path d="M480 122 H548" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#lg-a)"/>
-        <text x="514" y="112" text-anchor="middle" font-size="11" fill="var(--muted)">batch</text>
-        <rect x="552" y="90" width="150" height="64" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
-        <text x="627" y="116" text-anchor="middle" font-size="13" fill="var(--ink)" font-weight="500">Checkpoint</text>
-        <text x="627" y="134" text-anchor="middle" font-size="10.5" class="mono" fill="var(--muted)">root 7c41… · n=416</text>
-        <path d="M702 122 H770" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#lg-a)"/>
-        <text x="736" y="112" text-anchor="middle" font-size="11" fill="var(--muted)">anchor</text>
-        <rect x="774" y="70" width="206" height="104" rx="10" fill="color-mix(in srgb, var(--sky) 9%, var(--raised))" stroke="var(--sky)" stroke-width="1.6"/>
-        <text x="790" y="94" font-size="11" class="mono" fill="var(--sky)">TRANSPARENCY LOG</text>
-        <text x="790" y="116" font-size="12.5" fill="var(--ink)">Append-only, public later</text>
-        {[0, 1, 2, 3, 4, 5, 6].map((i) => <rect x={790 + i * 26} y="130" width="20" height="28" rx="3" fill={i === 6 ? 'var(--sky)' : 'color-mix(in srgb, var(--sky) 35%, transparent)'} />)}
-        {[0, 1, 2].map((i) => (
+        <path d="M244 186 V160" fill="none" stroke="var(--bad)" stroke-width="1.3" marker-end="url(#lg-r)"/>
+        <rect x="128" y="188" width="160" height="40" rx="8" fill="none" stroke="var(--bad)" stroke-dasharray="4 4"/>
+        <text x="208" y="204" text-anchor="middle" font-size="11.5" fill="var(--bad)">admin edits rec 414</text>
+        <text x="208" y="220" text-anchor="middle" font-size="10.5" fill="var(--muted)">and recomputes the chain</text>
+        <path d="M452 122 H546" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#lg-a)"/>
+        <text x="499" y="112" text-anchor="middle" font-size="11" fill="var(--muted)">hashes only</text>
+        <rect x="550" y="70" width="190" height="124" rx="10" fill="color-mix(in srgb, var(--sky) 9%, var(--raised))" stroke="var(--sky)" stroke-width="1.6"/>
+        <text x="564" y="88" font-size="10.5" class="mono" fill="var(--sky)">LEDGER</text>
+        <g stroke="var(--sky)" stroke-width="1.2" fill="none"><path d="M645 106 L615 132 M645 106 L675 132 M615 132 L600 158 M615 132 L630 158 M675 132 L660 158 M675 132 L690 158"/></g>
+        <circle cx="645" cy="104" r="5" fill="var(--sky)"/>
+        <circle cx="615" cy="134" r="4" fill="color-mix(in srgb, var(--sky) 55%, transparent)"/><circle cx="675" cy="134" r="4" fill="color-mix(in srgb, var(--sky) 55%, transparent)"/>
+        {[600, 630, 660, 690].map((x) => <rect x={x - 7} y="158" width="14" height="12" rx="2" fill="color-mix(in srgb, var(--sky) 35%, transparent)"/>)}
+        <text x="645" y="187" text-anchor="middle" font-size="11.5" fill="var(--muted)">Tessera log of record hashes</text>
+        <path d="M645 194 V222" fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#lg-a)"/>
+        <rect x="550" y="226" width="190" height="50" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="645" y="246" text-anchor="middle" font-size="13" fill="var(--ink)" font-weight="500">Signed checkpoint</text>
+        <text x="645" y="264" text-anchor="middle" font-size="10.5" class="mono" fill="var(--muted)">n=416 · root 7c41…</text>
+        <path d="M740 251 H768 V90" fill="none" stroke="var(--rule-strong)" stroke-width="1.3"/>
+        <g fill="none" stroke="var(--muted)" stroke-width="1.3" marker-end="url(#lg-a)"><path d="M768 90 H786"/><path d="M768 140 H786"/><path d="M768 190 H786"/></g>
+        {['A witness Clearance runs', 'A witness you run', 'Your auditor, as a witness'].map((t, i) => (
           <g>
-            <circle cx={806 + i * 70} cy="236" r="18" fill="var(--raised)" stroke="var(--rule-strong)" stroke-width="1.3"/>
-            <path d={`M${799 + i * 70} 236 l5 5 l9 -10`} fill="none" stroke="var(--clr)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d={`M${806 + i * 70} 218 V178`} stroke="var(--rule-strong)" stroke-dasharray="2 3"/>
+            <rect x="790" y={70 + i * 50} width="190" height="40" rx="8" fill="var(--raised)" stroke="var(--rule-strong)" stroke-width="1.3"/>
+            <text x="804" y={95 + i * 50} font-size="12" fill="var(--ink)">{t}</text>
+            <path d={`M955 ${88 + i * 50} l4 4 l8 -9`} fill="none" stroke="var(--clr)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </g>
         ))}
-        <text x="876" y="276" text-anchor="middle" font-size="11.5" fill="var(--muted)">independent witnesses co-sign</text>
-        <rect x="430" y="300" width="550" height="60" rx="10" fill="var(--cockpit, #0b0d10)"/>
-        <text x="450" y="326" font-size="12" class="mono" fill="#5fae84">$ clearance verify packet.json</text>
-        <text x="450" y="346" font-size="12" class="mono" fill="#d9796c">✕ rec 414: signature invalid · checkpoint root mismatch</text>
-        <path d="M208 246 V330 H426" fill="none" stroke="var(--bad)" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#lg-r)"/>
+        <g font-size="11.5" fill="var(--muted)"><text x="790" y="234">each demands a consistency proof,</text><text x="790" y="250">keeps the last checkpoint it saw,</text><text x="790" y="266">and never accepts a smaller tree</text></g>
+        <rect x="790" y="296" width="190" height="44" rx="8" fill="none" stroke="var(--bad)" stroke-dasharray="4 4"/>
+        <text x="885" y="314" text-anchor="middle" font-size="11.5" fill="var(--bad)">operator truncates to n=410</text>
+        <text x="885" y="331" text-anchor="middle" font-size="10.5" fill="var(--muted)">and re-signs a clean checkpoint</text>
+        <text x="885" y="362" text-anchor="middle" font-size="12" class="mono" fill="var(--bad)">✕ refused: 410 &lt; 416</text>
+        <rect x="20" y="306" width="740" height="64" rx="10" fill="var(--cockpit, #0b0d10)"/>
+        <text x="40" y="332" font-size="12" class="mono" fill="#5fae84">$ clearance verify packet.json --logs ./records</text>
+        <text x="40" y="352" font-size="12" class="mono" fill="#d9796c">✕ rec 414, line 3: hash differs from the committed leaf</text>
+        <path d="M208 228 V302" fill="none" stroke="var(--bad)" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#lg-r)"/>
       </svg>
-      <figcaption>Integrity · Signed, anchored, witnessed</figcaption>
+      <figcaption>Integrity · Hashes committed, history witnessed</figcaption>
     </figure>
   </section>
 
@@ -95,7 +104,7 @@ const fields = [
         <div>
           <p class="kicker">Attestations</p>
           <h2 class="h2">The next link in a chain that <em>already exists</em>.</h2>
-          <p class="sub">Every cleared change emits a Clearance Change Attestation as an in-toto Statement. Its subject is the digest that landed; its predicate carries the control assertions, approvals, policy version, outcome, and a scope-and-limitations block naming what wasn't verified.</p>
+          <p class="sub">Every cleared change emits a Clearance Change Attestation as an in-toto Statement. Its subjects are the rendered tree and the image digests that landed; its predicate carries the control assertions, approvals, policy version, outcome, and a scope-and-limitations block naming what wasn't verified.</p>
           <ul class="points">
             <li><b>Signed with Sigstore</b>, keyless, beside the SLSA provenance Tekton Chains already emits in Glidepath.</li>
             <li><b>One walk</b> from build to clearance to deployment, for any verifier.</li>
@@ -106,8 +115,11 @@ const fields = [
           <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="crumb">attestation · <b>change-attestation/v1</b></span></div>
 <div class="code">{'{'}
   <span class="k">"_type"</span>: <span class="s">"https://in-toto.io/Statement/v1"</span>,
-  <span class="k">"subject"</span>: [{'{'} <span class="k">"name"</span>: <span class="s">"ghcr.io/jfillman/skyport-broker"</span>,
-                <span class="k">"digest"</span>: {'{'} <span class="k">"sha256"</span>: <span class="s">"9f1c…e04a"</span> {'}'} {'}'}],
+  <span class="k">"subject"</span>: [
+    {'{'} <span class="k">"name"</span>: <span class="s">"argocd://prod/skyport-broker/tree"</span>,
+      <span class="k">"digest"</span>: {'{'} <span class="k">"sha256"</span>: <span class="s">"e71d…"</span> {'}'} {'}'},
+    {'{'} <span class="k">"name"</span>: <span class="s">"ghcr.io/jfillman/skyport-broker"</span>,
+      <span class="k">"digest"</span>: {'{'} <span class="k">"sha256"</span>: <span class="s">"9f1c…"</span> {'}'} {'}'} ],
   <span class="k">"predicateType"</span>: <span class="s">"https://clearance.hangarplatform.dev/change-attestation/v1"</span>,
   <span class="k">"predicate"</span>: {'{'}
     <span class="k">"tier"</span>: <span class="n">2</span>,
@@ -133,6 +145,28 @@ const fields = [
           </ul>
         </div>
         <Packet />
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">Three rules for the proof</p>
+        <h2 class="h2">A hash chain proves consistency. It doesn't prove <em>immutability</em>.</h2>
+        <p class="sub">Whoever can rewrite the database can recompute the chain, and a truncated tail still looks valid. So the ledger follows the proof design Traefik's Sovereign Trust Plane set for the request path, on the same open log library and witness formats, so one verifier reads both.</p>
+      </div>
+      <div class="bento" data-reveal>
+        <div class="tile span-2"><p class="kicker">01 · Hashes, never content</p><h3>Nothing sensitive leaves.</h3><p>Records, diffs and gateway audit lines stay on your storage under your retention. The ledger holds their hashes in a Merkle tree with signed checkpoints. No added latency, and an air-gapped tenant anchors offline.</p></div>
+        <div class="tile span-2"><p class="kicker">02 · Witnesses with a rule</p><h3>History can only grow.</h3><p>A witness sees only checkpoints, demands proof that the new tree extends the old one, countersigns, and never accepts a smaller tree. A shortened history is caught even when the key holder did it.</p></div>
+        <div class="tile span-2"><p class="kicker">03 · Verify from the originals</p><h3>It names the line.</h3><p><code>clearance verify</code> reads your own files, checks signatures and countersignatures, proves inclusion, recomputes every hash and points at the exact line that changed. Offline, if you like.</p></div>
+      </div>
+      <div class="cols mt-2" data-reveal>
+        <div><p class="kicker">Two honest caveats</p></div>
+        <div>
+          <p><b>Integrity is not accuracy.</b> The ledger proves entries weren't rewritten. Whether an entry is true is what the verified-or-claimed tag on each field says, and the packet never implies more.</p>
+          <p><b>Enforcement and assurance can drift apart.</b> If a witness goes quiet, records keep being written but no new checkpoint is published. Every record carries its assurance state (checkpointed, recorded but not yet checkpointed, or not recorded), Tower alerts on it, the packet reports the window, and by default a tier 3 change waits until evidence can be witnessed again.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -181,7 +215,8 @@ const fields = [
         </div>
         <div>
           <p>Any platform team with a free sprint can build an approval gate. What a copy starts without is a verified link between authorization and deployment that third parties already rely on, explicit statements of what was and wasn't covered, and, over time, a dataset relating change shapes to control outcomes.</p>
-          <p>So verification is free and open, forever. The authority comes from the log's immutability and its witnesses, not from Clearance's word. An auditor who has verified one anchored packet tends to ask the next client why theirs isn't.</p>
+          <p>A witnessed log is no longer rare: Traefik ships one for the request path, and Clearance borrows its proof design on purpose. The moat is what's in the ledger, not the ledger.</p>
+          <p>So verification is free and open, forever. The authority comes from the log's witnesses, not from Clearance's word, and Clearance is never the only verifier of its own ledger. Where Traefik's public witness accepts outside checkpoints, Clearance nominates it, so one auditor's verifier checks the call log and the deployment log alike. An auditor who has verified one witnessed packet tends to ask the next client why theirs isn't.</p>
         </div>
       </div>
     </div>
