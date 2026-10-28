@@ -33,3 +33,16 @@ Accepted: stable agent identity (AP-A4), model version in the record (AP-C1), co
 | D15 | The U8 ClusterRole for AgentRun's provider-kubernetes objects is approved (`autopilot/airframe-drafts/rbac/provider-kubernetes-agentrun.yaml`). It ships only together with a ValidatingAdmissionPolicy confining the provider's service account to run namespaces, the agent-sandbox resources in place of Jobs, and a stable service-account binding; see roadmap.md "M3 status". |
 
 kiac-dev enforces NetworkPolicy (Cilium 1.20), verified 2026-10-09; the AP-A1 canary is expected to pass there.
+
+## 2026-10-28, Clearance becomes a product
+
+Sources: the Clearance Brief, Architecture and Roadmap (2026-10-27/28). What they change in Autopilot is in [design.md section 0.1](design.md).
+
+| Id | Decision |
+|---|---|
+| D4 (reconfirmed) | Agents get their own GitHub App. It is a different App from Clearance's provenance App: the one that writes agent PRs must not be the one that attests their provenance. |
+| D5 (revised) | Audit integrity comes from the Clearance ledger: record hashes in a Tessera log, with checkpoints countersigned by at least one witness Clearance does not operate. MinIO object lock remains for retention only. |
+| D16 | Clearance is a standalone Hangar product with its own `clearance` repo. This supersedes D8 for the package (the `autopilot` repo stays). The proposed split: policy, scope, sessions, gateway, audit and the deployment gate go to `clearance`; definitions, Preflight, AgentRun, the planner and the Hangar tool backends stay in `autopilot`. To be confirmed before code moves. |
+| D17 | **Open:** the runtime boundary as an AuthZEN PDP behind Traefik Hub's Sovereign Trust Plane, or Clearance's own gateway. Hangar runs Traefik Proxy (not Hub), so the own gateway ships now, with the decision refactored into a pure, AuthZEN-shaped function. |
+| D18 | AF-8a, the read-only `airframe.*` tools, is built before AP-A3. |
+| AP-A2 | Built in this plan, not in a separate lab. Clearance is Hangar's AI gateway whatever the product's go/stop gates decide. |
