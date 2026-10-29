@@ -230,6 +230,11 @@ test is the parachute sentence live, and nothing on that path runs yet.
   refused before any request), R023 app scope, the planner's `cicd.yaml` patch split so the agent half passes R021 and the
   Flight half is a human-merge step. Live smoke through MCP on hangar-dev passed (96 requests, all GETs on the allowlist).
   Scorecard **97.1, 13 of 14** (`baseline-2026-10-28.json`); the last check waits on `fromService`.
+- **Scorecard A+ (2026-10-29): 97.3, 14 of 14** (`baseline-2026-10-29.json`). `env[].fromService` (airframe#129, v0.3.168)
+  with `serviceNamespacePattern` passed by the platform on both clusters (glidepath#176, gitops-hangar-dev#42,
+  gitops-hangar-prod#13, apron#78) removed the last two literals (boarding-api#56, gitops-boarding-api#103, renders
+  byte-identical, live). This is readiness, measured; M3's exit (the parachute sentence live, Clearance killed mid-run,
+  the seeded bad run failing) is not met. Next: AP-A3.
 - **AP-A1's attestation was lost in the hangar-dev rebuild** (2026-10-21). The `autopilot-system` and `autopilot-runs` namespaces
   exist again, but `airframe.autopilotReady` is not in hangar-dev's registry. Re-run `tools/netpol_canary.py` there and re-set the
   flag before AP-A3 creates a run.
