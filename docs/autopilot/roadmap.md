@@ -185,7 +185,7 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 | Task | Notes |
 |---|---|
 | **AP-A1** apron `components.autopilot` toggle, registry `autopilotReady`, network-policy canary | refused on `type: upper`; the canary must pass before `autopilotReady` flips (kiac-dev enforces NetworkPolicy: Cilium, verified 2026-10-09) |
-| **AP-A2** Clearance's runtime gateway deployed on hangar-dev from the `clearance` repo, as an Airframe app; a durable session store; audit written in the draft evidence schema; T0 tools with real adapters | Backstage MCP, ArgoCD read-only account; built here (owner, 2026-10-28) |
+| **AP-A2** Clearance's runtime gateway deployed on hangar-dev from the `clearance` repo, as an Airframe app; a durable session store; audit written in the draft evidence schema; T0 tools with real adapters; deletes each finished AgentRun after recording its evidence (D20; the backstop reaps at deadline + 60 min) | Backstage MCP, ArgoCD read-only account; built here (owner, 2026-10-28) |
 | **AP-A3** `AgentRun` XRD, `function-agentrun`, `provider-kubernetes` grants, namespaced Role | copy-tested; expiry proven with Clearance stopped and with the function pod killed |
 | **AP-B1** interceptor `/agent-installation-token`, the agents' own GitHub App (D4), ArgoCD accounts | commit signing executed (D1, Hangar root CA); every agent PR and commit carries `task_id` and tool metadata, so Clearance's provenance detector can say *confirmed agent* |
 | **AP-B2** T1 tools with real adapters; `agent-scope` and `agent-identity` gates, stub then real | field-aware, from AF-9a |

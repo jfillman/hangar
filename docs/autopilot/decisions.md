@@ -47,3 +47,9 @@ Sources: the Clearance Brief, Architecture and Roadmap (2026-10-27/28). What the
 | D18 | AF-8a, the read-only `airframe.*` tools, is built before AP-A3. |
 | Agent identity | Taken from a standard: ID-JAG (RFC 8693 token exchange at the IdP, then an RFC 7523 JWT bearer to Clearance). The issuer is open (D19 in roadmap.md): Dex has no ID-JAG issuance yet. |
 | AP-A2 | Built in this plan, not in a separate lab. Clearance is Hangar's AI gateway whatever the product's go/stop gates decide. |
+
+## 2026-10-29, after the AP-A3 copy-test
+
+| Id | Decision |
+|---|---|
+| D20 | Finished AgentRuns are deleted, in two layers. Clearance (AP-A2) deletes a run once it has recorded the run's evidence. A backstop CronJob (cluster repo `55-autopilot/agentrun-reaper/`, no Clearance and no function needed) deletes every AgentRun whose deadline, `min(spec.expiresAt, creation + max TTL)`, passed more than 60 minutes ago, judged from those immutable fields alone, never from status. Deleting the XR cascades through owner references to Objects Crossplane lost track of, the copy-test's open finding (an untracked run namespace and endless Sandbox re-creation after etcd timeouts). The backstop's one permission is list and delete on agentruns in `autopilot-runs`. Crossplane Operations can't delete resources (v2 alpha), so it is a CronJob. Clearance must record evidence within the 60 minutes; a run the backstop reaps keeps only its CronJob log line. |
