@@ -45,7 +45,7 @@ in a separate lab.
 
 | Area | Before | Now |
 |---|---|---|
-| Repository | Clearance is a package inside the `autopilot` repo (D8) | Its own `clearance` repo, installable alone (Clearance architecture ch. 1; D16). The split line is proposed below |
+| Repository | Clearance is a package inside the `autopilot` repo (D8) | Its own repo, https://github.com/jfillman/clearance, installable alone (Clearance architecture ch. 1; D16); split 2026-10-29, Autopilot pins a tagged release. The split line is below |
 | Name and brand | A feature of Autopilot, no mark | A product, like Autopilot; it needs a mark and a glossary entry of its own |
 | Audit and Flight recorder | Hash-chained JSON lines, checkpoint anchored "somewhere the writer cannot rewrite" (WORM or Rekor); MinIO object lock (D5) | One **evidence record** schema: every field tagged *verified* (Clearance checked it) or *claimed* (an integration asserted it), a **coverage state** and an **assurance state**. A **ledger of hashes only** in a Tessera log with C2SP checkpoints, countersigned by at least one witness Clearance does not operate, checked by the open `clearance verify`. Content stays on the tenant's storage. Object lock remains for retention, not for integrity. The evidence sink takes every decision unsampled, separate from telemetry |
 | Runtime policy | CEL rules evaluated inside Clearance's dispatch loop | The same rules, shaped as an **AuthZEN policy decision point**. The long-term enforcer is Traefik Hub's Sovereign Trust Plane, inline at the request path (open decision, Clearance architecture ch. 13 and 15). Clearance keeps its own gateway until then (see "Runtime boundary on a standard") |
