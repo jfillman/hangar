@@ -222,6 +222,13 @@ test is the parachute sentence live, and nothing on that path runs yet.
 - **AP-A2 is built here.** The owner will not build it in the lab (2026-10-28). Nothing of it is deployed: `server.py` is stdio, every
   backend but glidepath-api is a fake, and sessions live in memory. `platform-system/clearance` exists on hangar-dev
   (gitops-hangar-dev#35), but only as glidepath-api's reader identity.
+  **Repo split done 2026-10-29 (D16):** autopilot#23 made the package splittable (a core that imports nothing from Hangar;
+  packs for tool policy, `clearance.packs.hangar` holding `glidepath.*`/`airframe.*`, R021 to R023; handlers and the AgentRun
+  run backend registered by Autopilot's `hangar_gateway()`), then the core moved with its history to
+  https://github.com/jfillman/clearance (v0.1.0, 180 tests), and autopilot#24 pins it. Clearance policy changes are now a
+  clearance release plus a pin bump. Next in AP-A2: the HTTP transport with interim sign-in (TokenReview for run pods,
+  a Dex token for people, until D19), the durable store (Postgres) in the draft evidence-record shape, the real AgentRun and
+  read backends, and the deployment on hangar-dev.
 - **Agents get their own GitHub App** (D4, reconfirmed 2026-10-28). It is a different App from Clearance's provenance App.
 - **AF-8 splits.** AF-8a covers the read-only `airframe.*` tools (`capabilities`, `validate`, `explain`, `plan`, `status`,
   `describe`, `verify`), built on the pattern `glidepath.*` proved (autopilot#16/#17), and runs **before AP-A3** (owner 2026-10-28).
