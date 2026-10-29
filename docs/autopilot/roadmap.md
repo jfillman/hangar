@@ -229,6 +229,36 @@ test is the parachute sentence live, and nothing on that path runs yet.
   clearance release plus a pin bump. Next in AP-A2: the HTTP transport with interim sign-in (TokenReview for run pods,
   a Dex token for people, until D19), the durable store (Postgres) in the draft evidence-record shape, the real AgentRun and
   read backends, and the deployment on hangar-dev.
+  **Deployed and live-verified on hangar-dev, 2026-10-29.** Clearance runs in `autopilot-system` as
+  `autopilot-system/clearance`; that namespace was chosen because function-agentrun's egress allows only it.
+  - Built in clearance v0.2.0 to v0.4.0: streamable-HTTP MCP with TokenReview (audience `clearance`) and OIDC sign-in;
+    the Postgres store, with sessions and evidence in one transaction and a single writer; the draft evidence envelope;
+    `Gateway.expire()` (D20).
+  - Built in autopilot (`autopilot-gateway`, gateway-v0.2.0, autopilot#25/#26): the real AgentRun store and the T0 reads.
+    `argo.app.get` reads the Application object through the GET-only Kubernetes reader, so no Argo CD account or token
+    is needed. `metrics.query` queries Thanos and `logs.query` queries Loki.
+  - Losing Postgres ends the process (exit 70) and a restart reloads.
+  - Deployed by apron#95/#97/#98 and gitops-hangar-dev#58/#60/#61: a CNPG database and ingress NetworkPolicies (agent-run
+    namespaces to the gateway; the gateway and the CNPG operator to Postgres).
+  - Verified live:
+    - auth: no bearer and an API-audience token both get 401;
+    - denials R001, R006 and R002, the breaker surviving a restart, and the chain continuing across it;
+    - an AgentRun created and then expired as Clearance's own identity (namespace and Sandbox rendered, then deleted);
+    - the read tools through MCP;
+    - the NetworkPolicies: an agent-run namespace reaches the gateway, any other namespace is refused, and Postgres is
+      reachable from the gateway only;
+    - Postgres pod deleted: the gateway exited 70 at the next sweep, restarted once, and the open session kept its
+      spend.
+  - **Not done in AP-A2:**
+    - People's OIDC sign-in. The code is built, but hangar-dev has no IdP for people: its Dex servers issue only
+      client_credentials. This needs an owner decision (which IdP; see D19) and a GitHub OAuth App the owner creates.
+      Until then, the delegated agents (glidepath.*, airframe.*, coding-agent) cannot be opened through the deployed
+      gateway.
+    - `catalog.read`: Backstage runs on hangar-prod only, and its API needs a credential.
+    - `app.api.get`: no definition uses it.
+    - `argo.sync.lower`: a T1 tool, part of AP-B.
+    - Retiring `platform-system/clearance`: apron#99 and gitops-hangar-dev#62 are open, plus a manual cleanup after
+      the merge.
 - **Agents get their own GitHub App** (D4, reconfirmed 2026-10-28). It is a different App from Clearance's provenance App.
 - **AF-8 splits.** AF-8a covers the read-only `airframe.*` tools (`capabilities`, `validate`, `explain`, `plan`, `status`,
   `describe`, `verify`), built on the pattern `glidepath.*` proved (autopilot#16/#17), and runs **before AP-A3** (owner 2026-10-28).
