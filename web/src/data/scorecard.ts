@@ -51,6 +51,11 @@ const labels: Record<string, { date: string; label: string; note: string }> = {
     label: 'airframe.* tools behind Clearance',
     note: 'Seven read-only airframe.* tools (capabilities, validate, explain, plan, status, describe, verify) behind Clearance over a GET-only Kubernetes reader, live on hangar-dev through MCP (autopilot#19). The planner\'s cicd.yaml patch now passes Glidepath\'s agent scope. The schema marks its 12 deliberate passthroughs, so every other object is strict (airframe#128). The scorecard itself got more honest (hangar#94): tools are counted from what Clearance registers rather than a file name, the extraManifests deny is measured instead of hard-coded, and typed maps and if/then fragments are no longer miscounted as open objects. One check left: two cross-app URLs that wait on fromService.',
   },
+  'baseline-2026-10-29': {
+    date: '2026-10-29',
+    label: 'A+: fromService',
+    note: 'The last derived-name literals are gone: env[].fromService (airframe v0.3.168) builds another app\'s Service URL from the namespace convention the platform now passes every environment, so an agent never guesses it. All 14 acceptance checks pass and the overall clears 97: the A+ bar. The milestone it measures readiness for, the parachute sentence running live through Clearance, is still ahead (airframe.apply, the agents\' GitHub App, AgentRun).',
+  },
 };
 
 export type Snapshot = Raw & { id: string; date: string; label: string; note: string; passed: number };
@@ -89,8 +94,8 @@ export const findings: Record<string, { found: string; next: string }> = {
     next: 'tighter leaf fields (78 of 206 constrained), examples',
   },
   '3 Component contracts': {
-    found: 'every component declares outputs and verify checks; 2 of 80 env entries still hard-code a name (cross-app URLs)',
-    next: 'fromService for the two cross-app URLs',
+    found: 'every component declares outputs and verify checks; no env entry hard-codes a derived name (fromComponent, fromService)',
+    next: 'held; AF-SVC-001 flags a hand-written in-cluster URL',
   },
   '4 Pre-merge validation': {
     found: 'airframe validate is a required check, with 23 chart guards that say what to fix',
