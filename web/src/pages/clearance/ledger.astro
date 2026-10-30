@@ -2,6 +2,9 @@
 import Layout from '../../layouts/Clearance.astro';
 import Packet from '../../components/clearance/Packet.astro';
 import Closer from '../../components/clearance/Closer.astro';
+import RecordLayers from '../../components/clearance/RecordLayers.astro';
+import AuditorDesk from '../../components/clearance/AuditorDesk.astro';
+import Clearinghouse from '../../components/clearance/Clearinghouse.astro';
 import { u } from '../../lib/url';
 const c = (p = '') => u(`clearance/${p}`);
 const fields = [
@@ -89,6 +92,7 @@ const fields = [
         <h2 class="h2">One versioned record per clearance event. <em>Verified</em> or <em>claimed</em>, field by field.</h2>
         <p class="sub">The record is a first-class data model, not a report stitched from logs after the fact. Every field says whether Clearance checked it (a signature it verified) or an integration asserted it (a header GitHub forwarded). The distinction survives into the packet.</p>
       </div>
+      <div data-reveal><RecordLayers /></div>
       <div class="cmp table-wrap" data-reveal>
         <table>
           <thead><tr><th>Field group</th><th>Contents</th></tr></thead>
@@ -168,6 +172,7 @@ const fields = [
           <p><b>Enforcement and assurance can drift apart.</b> If a witness goes quiet, records keep being written but no new checkpoint is published. Every record carries its assurance state (checkpointed, recorded but not yet checkpointed, or not recorded), Tower alerts on it, the packet reports the window, and by default a tier 3 change waits until evidence can be witnessed again.</p>
         </div>
       </div>
+      <div class="mt-2" data-reveal><AuditorDesk /></div>
     </div>
   </section>
 
@@ -219,6 +224,7 @@ const fields = [
           <p>So verification is free and open, forever. The authority comes from the log's witnesses, not from Clearance's word, and Clearance is never the only verifier of its own ledger. Where Traefik's public witness accepts outside checkpoints, Clearance nominates it, so one auditor's verifier checks the call log and the deployment log alike. An auditor who has verified one witnessed packet tends to ask the next client why theirs isn't.</p>
         </div>
       </div>
+      <div class="mt-2" data-reveal><Clearinghouse /></div>
     </div>
   </section>
 
