@@ -14,7 +14,7 @@ const c = (p = '') => u(`clearance/${p}`);
     <div class="clr-wrap">
       <a class="pill" href={c('design-partners/')}><span class="tag">Now boarding</span>Three design-partner pilots, from November 2026 <span aria-hidden="true">→</span></a>
       <h1 class="display">Let the agents ship. <em>Clear</em> every change.</h1>
-      <p class="sub">Clearance holds every change to a protected production environment until your own policy, or a named human, clears it. The clearance is bound to the exact rendered change that lands, and the whole path goes on a record your auditor can verify without taking anyone's word for it.</p>
+      <p class="sub">Clearance holds every change to a protected production environment until your own policy, or a named human, clears it. The clearance is bound to the exact rendered change that lands, and the whole path goes on a record your auditor can verify without taking anyone's word for it. A human commit is governed exactly as an agent's is, from day one.</p>
       <div class="hero-actions">
         <a class="btn btn-solid" href={c('design-partners/')}>Request a pilot <span class="arr">→</span></a>
         <a class="btn btn-ghost" href={c('product/')}>Take the tour</a>
@@ -35,6 +35,21 @@ const c = (p = '') => u(`clearance/${p}`);
       <p class="kicker center" style="text-align:center">The question</p>
       <p class="quote-c mt-2">When an AI agent produces a change that reaches production, can you prove who or what started it, which controls <em>authorized</em> it, who approved it, and what actually deployed?</p>
       <p class="quote-by">Most teams can see the pull request and the reviewer. The chain from intent to cluster is the part nobody holds.</p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
+        <p class="kicker">The thesis</p>
+        <h2 class="h2">The control is agent-agnostic. The <em>trigger</em> is agentic.</h2>
+        <p class="sub">Clearance gates every change on four things: the change, the target, the actor's identity and the policy in force. AI provenance is recorded as a signal with a confidence, never used as the gate. So you install it on the traffic you already have, and the record is a quarter deep by the time the first agent change arrives.</p>
+      </div>
+      <div class="personas three" data-reveal>
+        <div class="persona"><span class="eyebrow">Adopting agents</span><h3>The chain is broken. This repairs it.</h3><p>Agent changes land under a bot identity with no named human in the approval chain. Clearance puts the human, the policy and the exact change back on one record.</p></div>
+        <div class="persona"><span class="eyebrow">About to adopt them</span><h3>Install it before the first agent.</h3><p>The most common buyer has no agents in production yet: a platform team that wants them and a security team that won't allow it until change control holds for bots. Clearance is what lets security say yes.</p></div>
+        <div class="persona"><span class="eyebrow">Regulated, no agent plans</span><h3>A tighter change control, with a witness.</h3><p>A bound, witnessed change record is worth having whether or not an agent ever touches the pipeline. The agents, when they come, are already covered.</p></div>
+      </div>
     </div>
   </section>
 
@@ -228,7 +243,7 @@ const c = (p = '') => u(`clearance/${p}`);
         <div class="persona"><span class="eyebrow">VP Engineering</span><h3>Let the agents ship. Pass the audit anyway.</h3><p>One invoice instead of a quarter of engineer time spent stitching evidence together.</p></div>
         <div class="persona"><span class="eyebrow">Platform lead</span><h3>A gate that fits your GitOps.</h3><p>A Helm install in under an hour, Argo and Kyverno integration, and an open controller you can read.</p></div>
         <div class="persona"><span class="eyebrow">GRC lead</span><h3>Evidence mapped to your controls.</h3><p>A sample packet you can read in five minutes and forward without rework, with a coverage statement.</p></div>
-        <div class="persona"><span class="eyebrow">Auditor</span><h3>Verify it yourself.</h3><p>Witnessed records, and a verifier that needs no access to the vendor or the customer.</p></div>
+        <div class="persona"><span class="eyebrow">Auditor</span><h3>Verify it yourself. Then sign.</h3><p>Free tooling, a witness you run, and a one-click acceptance that signs a receipt into the ledger. Never a fee on the auditor's side.</p></div>
       </div>
     </div>
   </section>
@@ -241,9 +256,9 @@ const c = (p = '') => u(`clearance/${p}`);
         <p class="sub">Every Hangar product labels its claims. Clearance does too.</p>
       </div>
       <div class="status-band" data-reveal>
-        <div><span class="chip built">Built</span><p>The runtime gateway inside Autopilot: tool tiers T0 to T3, path scope, narrow-only limits, CEL policy with deny rules, and a hash-chained audit with an anchored checkpoint. Tested without a cluster.</p></div>
-        <div><span class="chip draft">Draft</span><p>The two-boundary design, with the runtime gateway as an AuthZEN decision point behind Traefik, plus the deployment gate. The evidence record schema and the token format.</p></div>
-        <div><span class="chip proposal">Proposal</span><p>The deployment gate (render-time binding and admission policy), gate providers, the recorder, attestations, the witnessed ledger and the audit packet. Design partners shape these first.</p></div>
+        <div><span class="chip built">Built</span><p>The runtime gateway, in its own <code>clearance</code> repository since October 29, 2026 and running on the Hangar dev cluster: tool tiers T0 to T3, path and field scope, narrow-only limits, CEL deny rules R001 to R020 with a fail-closed R000, a Hangar pack for the Glidepath and Airframe tools, MCP over HTTP with cluster and OIDC sign-in, a Postgres store, PR provenance verdicts, a human inbox, and a hash-chained audit with an anchored checkpoint. Tested without a cluster.</p></div>
+        <div><span class="chip draft">Draft</span><p>The two-boundary design, with the runtime gateway as an AuthZEN decision point behind Traefik, plus the deployment gate. The evidence record schema and the token format, now with the security-impact and back-out fields PCI DSS 6.5.1 asks for per change.</p></div>
+        <div><span class="chip proposal">Proposal</span><p>The deployment gate (render-time binding and admission policy), gate providers, the recorder, attestations, the witnessed ledger, the audit packet, the control graph, and the assurance providers with their acceptance receipts. Design partners shape these first.</p></div>
       </div>
     </div>
   </section>

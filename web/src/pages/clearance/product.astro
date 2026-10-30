@@ -143,11 +143,26 @@ const c = (p = '') => u(`clearance/${p}`);
       <div class="sec-head" data-reveal>
         <p class="kicker">Two boundaries, one record</p>
         <h2 class="h2">From the tool call that drafted it to the sync that <em>landed</em> it.</h2>
-        <p class="sub">Clearance started as Autopilot's runtime gateway: every tool call an agent makes passes a tier check and lands in a hash-chained audit. That boundary is moving onto an open standard, and becoming an integration rather than the product. The deployment boundary is where Clearance is the product. Both share one tier vocabulary, one evidence schema and one ledger, joined by a task id.</p>
+        <p class="sub">Clearance started as Autopilot's runtime gateway, and since October 29, 2026 it is a product and repository of its own: every tool call an agent makes passes a tier check and lands in a hash-chained audit. That boundary is moving onto an open standard, and becoming an integration rather than the product. The deployment boundary is where Clearance is the product. Both share one tier vocabulary, one evidence schema and one ledger, joined by a task id.</p>
       </div>
       <div class="cols" data-reveal>
-        <div><span class="chip built">Built</span> <span class="chip draft">Moving to a standard</span><h3 class="mt-2" style="margin-top:0.8rem">Runtime boundary · an integration</h3><p>What may this agent call? Tool tiers T0 read, T1 reversible write, T2 propose, T3 never. Path scope, narrow-only limits, CEL deny rules with ids and fix hints. Built as Autopilot's own gateway; next, the same policy answers as an AuthZEN decision point behind Traefik's Sovereign Trust Plane, which enforces inline and logs every call. Delegation moves to standard token exchange, still narrow-only.</p></div>
+        <div><span class="chip built">Built</span> <span class="chip draft">Moving to a standard</span><h3 class="mt-2" style="margin-top:0.8rem">Runtime boundary · an integration</h3><p>What may this agent call? Tool tiers T0 read, T1 reversible write, T2 propose, T3 never. Path and field scope, narrow-only limits, CEL deny rules with ids and fix hints, a fail-closed R000, and packs for the tools only some deployments have. Built, released from its own repository, pinned by Autopilot and running on the Hangar dev cluster; next, the same policy answers as an AuthZEN decision point behind Traefik's Sovereign Trust Plane, which enforces inline and logs every call. Delegation moves to standard token exchange, still narrow-only.</p></div>
         <div><span class="chip proposal">Proposal</span><h3 class="mt-2" style="margin-top:0.8rem">Deployment boundary</h3><p>May this change land in a protected environment, and can we prove it did, under policy, afterwards? A deployment is a reconciliation, not a request: Argo CD talks to the API server and the operator pulls secrets, and neither passes a gateway. Provenance, tiers 0 to 3, render-time binding, admission, gate providers and the record. The gateway proves what an agent called; Clearance proves what landed.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="cols" data-reveal>
+        <div>
+          <p class="kicker">The third direction</p>
+          <h2 class="h2" style="font-size:clamp(1.8rem,2.6vw + 0.6rem,2.6rem)">Changes come in from two sides. Evidence goes <em>out</em> to a third.</h2>
+        </div>
+        <div>
+          <p>Pull requests arrive through Argo CD, and Autopilot runs arrive through the gateway. The people who have to believe the result sit somewhere else entirely: your auditor, a readiness assessor, your next customer's vendor-risk team. Clearance treats them as <b>assurance providers</b>. Your packet reaches them in the shape they already accept, through the GRC hub they already use, an audit firm's portal, or OSCAL for the ones who want the machine-readable form.</p>
+          <p>When they accept a packet for an engagement, the acceptance is a small statement they sign with their own key, written to the ledger as a record of its own. Later packets carry it, and a trust page built from those receipts answers the vendor-risk questionnaire with something a reviewer can verify. Clearance delivers and records. It never submits on your behalf and never issues a verdict. <a href={c('ledger/')}>How the receipt works →</a></p>
+        </div>
       </div>
     </div>
   </section>

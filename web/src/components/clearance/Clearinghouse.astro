@@ -21,9 +21,9 @@ const caps = [
   </div>
   <div class="cl-scene">
   <div class="cl-map">
-    <div class="cl-node cl-n-sub" data-layer="subscriber"><span class="cl-nlabel" style="color:var(--cp-amber)">SUBSCRIBER</span><strong>Platform and GRC team</strong><span class="cl-nnote">pays for the record store, the witnesses and the providers</span></div>
-    <div class="cl-node cl-n-cust" data-layer="customers"><span class="cl-nlabel" style="color:var(--cp-green)">THEIR CUSTOMERS</span><strong>Vendor-risk reviewers</strong><span class="cl-nnote">read the trust page; verify the receipt themselves</span></div>
-    <div class="cl-node cl-n-clr" data-layer="clearance"><span class="cl-nlabel" style="color:var(--cp-amber)">CLEARANCE</span><strong>Ledger and providers</strong><span class="cl-nnote">delivers, records, never judges</span></div>
+    <div class="cl-node cl-n-sub" data-layer="subscriber"><span class="cl-nlabel" style="color:var(--cp-green)">SUBSCRIBER</span><strong>Platform and GRC team</strong><span class="cl-nnote">pays for the record store, the witnesses and the providers</span></div>
+    <div class="cl-node cl-n-cust" data-layer="customers"><span class="cl-nlabel" style="color:var(--cp-ink)">THEIR CUSTOMERS</span><strong>Vendor-risk reviewers</strong><span class="cl-nnote">read the trust page; verify the receipt themselves</span></div>
+    <div class="cl-node cl-n-clr" data-layer="clearance"><span class="cl-nlabel" style="color:var(--cp-green)">CLEARANCE</span><strong>Ledger and providers</strong><span class="cl-nnote">delivers, records, never judges</span></div>
     <div class="cl-node cl-n-aud" data-layer="auditor"><span class="cl-nlabel" style="color:var(--cp-sky)">AUDIT FIRM</span><strong>Verifier and witness</strong><span class="cl-nnote">free tooling; signs an acceptance receipt</span></div>
     <div class="cl-node cl-n-hub" data-layer="auditor"><span class="cl-nlabel" style="color:var(--cp-sky)">GRC HUB</span><strong>Vanta · Drata</strong><span class="cl-nnote">where the auditors already live; first provider</span></div>
     <svg class="cl-lines" aria-hidden="true" viewBox="0 0 790 500" preserveAspectRatio="none">
@@ -59,13 +59,13 @@ const caps = [
   .cl-visual { margin: 2rem 0; display: grid; grid-template-columns: 1fr; gap: 1.5rem 2.5rem; background: var(--cp); color: var(--cp-ink); border-radius: 14px; padding: 2.4rem clamp(1.2rem, 4vw, 3.5rem); overflow: hidden; }
   .cl-eyebrow { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cp-muted); margin: 0 0 0.6rem; }
   .cl-h { font-family: var(--font-serif); font-weight: 400; font-size: clamp(2rem, 3.2vw, 2.9rem); line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 1rem; }
-  .cl-h em { color: var(--cp-amber); }
+  .cl-h em { color: var(--cp-green); }
   .cl-caps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.92rem; line-height: 1.45; color: var(--cp-muted); }
   .cl-cap { display: grid; grid-template-columns: 24px 1fr; gap: 0.6rem; border-left: 2px solid transparent; padding-left: 0.7rem; margin-left: -0.85rem; transition: opacity 0.3s, border-color 0.3s, color 0.3s; }
   .cl-cap strong { color: var(--cp-ink); font-weight: 600; }
-  .cl-n { font-family: var(--font-mono); color: var(--cp-amber); font-size: 0.8rem; }
+  .cl-n { font-family: var(--font-mono); color: var(--cp-green); font-size: 0.8rem; }
   .is-hot .cl-cap { opacity: 0.45; }
-  .is-hot .cl-cap.is-on { opacity: 1; border-left-color: var(--cp-amber); color: var(--cp-ink); }
+  .is-hot .cl-cap.is-on { opacity: 1; border-left-color: var(--cp-green); color: var(--cp-ink); }
   .cl-hint { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; color: #7f8891; margin: 1rem 0 0; }
 
   /* The map is drawn on a fixed 790x500 stage and scaled to whatever width the column gives it,
@@ -81,10 +81,10 @@ const caps = [
   .cl-nlabel { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; }
   .cl-nnote { font-size: 0.76rem; color: var(--cp-muted); }
   .cl-n-sub { left: 0; top: 120px; } .cl-n-cust { left: 0; top: 300px; }
-  .cl-n-clr { left: 300px; top: 210px; width: 180px; background: #3a2c15; border-color: var(--cp-amber); }
+  .cl-n-clr { left: 300px; top: 210px; width: 180px; background: #17291f; border-color: var(--cp-green); }
   .cl-n-aud { left: 560px; top: 120px; } .cl-n-hub { left: 560px; top: 300px; }
   .cl-map:hover .cl-node { opacity: 0.4; }
-  .cl-map:hover .cl-node:hover { opacity: 1; border-color: var(--cp-amber); background: #3a2c15; transform: translateY(-6px); box-shadow: 0 18px 36px rgba(0, 0, 0, 0.5); }
+  .cl-map:hover .cl-node:hover { opacity: 1; border-color: var(--cp-green); background: #17291f; transform: translateY(-6px); box-shadow: 0 18px 36px rgba(0, 0, 0, 0.5); }
   .cl-lines { position: absolute; left: 0; top: 0; width: 790px; height: 500px; pointer-events: none; overflow: visible; }
   .cl-lines text { font-family: var(--font-mono); font-size: 10px; fill: #7f8891; }
   .cl-pkt, .cl-rcpt { position: absolute; width: 140px; box-sizing: border-box; background: #fbfaf7; color: var(--cp-3); border-radius: 6px; padding: 6px 9px; font-family: var(--font-mono); font-size: 0.62rem; line-height: 1.45; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); }

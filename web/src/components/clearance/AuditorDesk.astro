@@ -2,8 +2,8 @@
 // The auditor's desk: the witness strip as the hero, then the numbers a desk needs.
 // All figures are illustrative; the component is a picture of the product, not a live view.
 const rows = [
-  { id: '#48,213', what: 'flight-api · ConfigMap · tier 2', who: 'm.chen · okta', st: 'VERIFIED' },
-  { id: '#48,187', what: 'gate-api · NetworkPolicy · tier 2', who: 'a.okafor · okta', st: 'VERIFIED' },
+  { id: '#48,213', what: 'skyport-broker · ConfigMap · tier 2', who: 'm.chen · okta', st: 'VERIFIED' },
+  { id: '#48,187', what: 'skyport-auth · NetworkPolicy · tier 2', who: 'a.okafor · okta', st: 'VERIFIED' },
   { id: '#48,102', what: 'infisical · rotation · tier 3', who: '2 approvers', st: 'VERIFIED' },
   { id: '#47,990', what: 'platform · ClusterRole · tier 3', who: 'break-glass · j.fillman', st: 'EXCEPTION' },
 ];
@@ -24,9 +24,9 @@ const coverage = [
   </div>
 
   <div class="cl-strip">
-    <div class="cl-party cl-p-op"><span class="cl-plabel" style="color:var(--cp-amber)">OPERATOR · CLEARANCE</span><div class="cl-pbox" style="background:#3a2c15;border-color:var(--cp-amber)">ledger · size 48,213</div><span class="cl-pnote">holds the signing key</span></div>
+    <div class="cl-party cl-p-op"><span class="cl-plabel" style="color:var(--cp-green)">OPERATOR · CLEARANCE</span><div class="cl-pbox" style="background:#17291f;border-color:var(--cp-green)">ledger · size 48,213</div><span class="cl-pnote">holds the signing key</span></div>
     <div class="cl-party cl-p-wit"><span class="cl-plabel" style="color:var(--cp-sky)">WITNESS · AUDITOR'S OWN</span><div class="cl-pbox" style="background:#16262f;border-color:var(--cp-sky)">remembers: size 47,900</div><span class="cl-pnote">extends, never shrinks</span></div>
-    <div class="cl-party cl-p-ver"><span class="cl-plabel" style="color:var(--cp-green)">VERIFIER · THIS DESK</span><div class="cl-pbox" style="border-color:var(--cp-green)">31 / 31 checkpoints ✓</div><span class="cl-pnote">verified 10:42 today</span></div>
+    <div class="cl-party cl-p-ver"><span class="cl-plabel" style="color:var(--cp-ink)">VERIFIER · THIS DESK</span><div class="cl-pbox" style="border-color:var(--cp-ink)">31 / 31 checkpoints <span style="color:var(--cp-green)">✓</span></div><span class="cl-pnote">verified 10:42 today</span></div>
     <div class="cl-cp cl-cp-out" aria-hidden="true">checkpoint 48,213<br />root b8e0… + proof</div>
     <div class="cl-cp cl-cp-back" aria-hidden="true">countersigned<br /><span style="color:#2e8b57">witness ✓</span></div>
     <div class="cl-sig" aria-hidden="true">extends 47,900 → countersign</div>
@@ -53,7 +53,7 @@ const coverage = [
           <div class="cl-bar-row"><span>{c.label}</span><div class="cl-track"><div class="cl-bar" style={`--w:${c.w}%;background:${c.c}`}></div></div></div>
         ))}
       </div>
-      <div class="cl-statement"><span class="cl-klabel" style="color:var(--cp-amber)">COVERAGE STATEMENT</span><br />Runtime secret values are outside this record. Three records recorded, not checkpointed, during a witness outage on 14 Nov; the tier 3 change in that window was held.</div>
+      <div class="cl-statement"><span class="cl-klabel" style="color:var(--cp-green)">COVERAGE STATEMENT</span><br />Runtime secret values are outside this record. Three records recorded, not checkpointed, during a witness outage on Nov 14; the tier 3 change in that window was held.</div>
     </div>
   </div>
 </figure>
@@ -62,11 +62,11 @@ const coverage = [
   .cl-desk { margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem; background: var(--cp); color: var(--cp-ink); border-radius: 14px; padding: 2rem clamp(1.2rem, 3vw, 2.6rem) 1.8rem; overflow: hidden; font-size: 0.82rem; }
   .cl-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cp-muted); margin: 0 0 0.3rem; }
   .cl-h { font-family: var(--font-serif); font-weight: 400; font-size: clamp(1.4rem, 2.4vw, 2rem); line-height: 1.1; margin: 0; }
-  .cl-h em { color: var(--cp-amber); }
+  .cl-h em { color: var(--cp-green); }
   .cl-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1rem; }
   .cl-actions { display: flex; gap: 0.6rem; }
   .cl-btn { font-size: 0.8rem; color: var(--cp-ink); background: var(--cp-3); border: 1px solid var(--cp-line-2); border-radius: 6px; padding: 0.55rem 0.8rem; }
-  .cl-btn-accent { color: #0b0d10; background: var(--cp-amber); border-color: var(--cp-amber); }
+  .cl-btn-accent { color: #0b0d10; background: var(--cp-green); border-color: var(--cp-green); }
 
   .cl-strip { position: relative; height: 150px; background: var(--cp-2); border: 1px solid var(--cp-line); border-radius: 10px; overflow: hidden; }
   .cl-party { position: absolute; top: 28px; display: flex; flex-direction: column; gap: 8px; }
@@ -101,7 +101,7 @@ const coverage = [
   .cl-track { height: 7px; background: var(--cp-3); border-radius: 4px; overflow: hidden; }
   .cl-bar { height: 100%; width: var(--w); animation: cl-fill 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s both; }
   @keyframes cl-fill { from { width: 0; } to { width: var(--w); } }
-  .cl-statement { background: #3a2c15; border: 1px solid var(--cp-amber); border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; line-height: 1.5; }
+  .cl-statement { background: #17291f; border: 1px solid var(--cp-green); border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; line-height: 1.5; }
 
   @media (min-width: 860px) { .cl-grid { grid-template-columns: 1.45fr 1fr; } }
   @media (max-width: 720px) {
