@@ -8,7 +8,7 @@ P = Page(
     'No long-lived Kubernetes credential for Tower, anywhere',
     'The spec that replaced Tower\'s never-expiring cluster token with federated tokens that live ten minutes, split its reads from its writes, and closed a bigger hole found on the way.',
     '2026-10-10',
-    meta=[('Status', 'phases 0 to 4 done and live, Oct 12, 2026; phase 5 not started'),
+    meta=[('Status', 'phases 0 to 4 done and live, Oct 12, 2026; phase 5 not started; Tower\'s Tekton and proxy grants cut back by Glidepath API P6, Oct 30, 2026'),
           ('Docs', '<a href="https://hangarplatform.dev/docs/tower/credentials/">Tower cluster credentials</a>')],
     lede=('Tower reached the dev cluster with a ServiceAccount token that never expired, copied into four places. '
           'I wanted it gone, not rotated. The spec ended up doing more than that: checking what the token could '
@@ -71,6 +71,7 @@ P.add(f"""
     <div class="card"><span class="eyebrow">Finding 0.2</span><h3>Anyone signed in could use it</h3><p>Re-run and Cancel went from the browser through Backstage's generic Kubernetes proxy, which every signed-in user could reach. That bypassed Tower's ownership check entirely.</p></div>
     <div class="card"><span class="eyebrow">Phase 0</span><h3>Closed first</h3><p>An admission policy pins the exact PipelineRun shape Tower sends. Re-run and Cancel moved to owner-gated backend routes, and the proxy now refuses anything but reads.</p></div>
   </div>
+  <p class="note"><b>Since Glidepath API P6 (Oct 30, 2026)</b> <code>tower-actor</code> can't write a PipelineRun at all. Its binding to <code>backstage-tekton-rerun</code> is deleted, and the shape policy, renamed <code>glidepath-api-pipelinerun-shape</code>, refuses every PipelineRun write from it and holds glidepath-api, which now starts and cancels runs, to the same shape. <code>tower-actor</code> keeps <code>view</code>, the break-glass binder and the service proxy to glidepath-api. The reader lost its Rekor, Testkube and <code>tekton-results-relay</code> service-proxy grants; its Role <code>backstage-ingestor-tekton-results-proxy</code> keeps the old name but names only glidepath-api. The tokens themselves didn't change.</p>
 </section>
 
 <section>

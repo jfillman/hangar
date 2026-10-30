@@ -32,7 +32,7 @@ export const papers: Paper[] = [
     title: 'A Glidepath API for people, Tower and agents',
     dek: 'Give Glidepath the front end Airframe already has: a generated contract, a validator, a small API for runs and releases, and four tiers of action. Agents edit cicd.yaml through pull requests, limited by field, and Tower moves onto the API side by side, one group of routes at a time.',
     page: 'papers/2026-10-25-glidepath-api.html',
-    status: { label: 'Under way · P0 to P2 live', tone: 'open' },
+    status: { label: 'Done · P6 live Oct 30', tone: 'done' },
   },
   {
     id: 'airframe-cloud-dependencies', kind: 'spec', product: 'airframe', date: '2026-10-24',
