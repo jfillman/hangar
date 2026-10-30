@@ -14,6 +14,8 @@ GATE-01 and GATE-18 (`policy-validation` real) checked on 2026-10-27 against gli
 PROM-01 to PROM-11, POL-11 and the SC-05 change (Ground and Flight registries, ADR-0029) added 2026-10-30, checked
 against glidepath `983d2e0`, apron `2493b02`, gitops-hangar-dev `52b1223`, gitops-hangar-prod `fd9082a`, and live on
 both clusters.
+OPS-06, POL-01 and TEST-10 changed 2026-10-30 with Glidepath API P6 (Tower on glidepath-api, no Tekton writes), checked
+against gitops-hangar-dev `52b1223` and live (`kubectl auth can-i`).
 CRED-07 to CRED-09, POL-10) re-checked on 2026-10-17: glidepath `1ad8dae`, airframe `0710485` (v0.3.148),
 gitops-cluster-dev #108.
 
@@ -157,7 +159,7 @@ The test stage, the shared check ride and the evidence a release carries: [Glide
 | TEST-07 | The environment's NetworkPolicy admits same-namespace pods only; an app lets the `testkube` namespace in through its own `glidepath/base.yaml` (`networkPolicy.allowIngressFrom`). | Convention | airframe-application |
 | TEST-08 | Tower shows every attested test run on an image (the Tests step), the check ride first, each downloadable; the build provenance is the one whose pipeline ran `build-image`. | Display | Tower v0.79.0 `supplyChain.ts` |
 | TEST-09 | A release record carries the check ride the qa gate read (outcome, counts, source, execution, verdict, how many runs were attested) frozen in when the record is sealed; before that Tower reads it live from provenance. The run shown is the newest verified pass, else the newest check ride, else the newest run of any role, so a failure is never hidden behind an older pass and "the team's tests ran, no check ride" reads differently from "nothing ran". | Enforced (record) / Display (live) | backend `testEvidence.ts`; Tower v0.80.0 `findReleaseTestRun` |
-| TEST-10 | The Pipelines tab's Tests view lists every Testkube execution tagged with the app and downloads its JUnit report, read through the control plane's service proxy as Tower's read identity (read only; `testkube-api-server:8088`). An execution Testkube marked aborted although every step passed is shown as passed, with the note. | Display | backend `/tests`, `/tests/report`; `backstage-ingestor-testkube-proxy` Role |
+| TEST-10 | The Pipelines tab's Tests view lists every Testkube execution tagged with the app and downloads its JUnit report, read from glidepath-api (`listTests`, `getTestReport`) as Tower's read identity. An execution Testkube marked aborted although every step passed is shown as passed, with the note. Changed 2026-10-30: Tower read Testkube itself through the control plane's service proxy; that grant is gone. | Display | backend `/tests`, `/tests/report`; glidepath-api |
 
 ## 6. Change management (`itsm`)
 
@@ -225,7 +227,7 @@ Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main
 | OPS-03 | Sync and force sync: owners on Ground, admins only on Flight. | Enforced | ACC-04 |
 | OPS-04 | Restarting a pod never takes the last ready pod of a Flight ReplicaSet. On Ground it needs an explicit "accept downtime". | Enforced | [`podRestart.ts`](https://github.com/jfillman/backstage/blob/main/packages/backend/src/podRestart.ts) |
 | OPS-05 | Skipping canary analysis on Flight (promote full, skip step) is allowed to owners as a **bypass**: audited critical and announced to everyone. Every Rollout action is announced. | Soft | `tower.rollout.bypass` |
-| OPS-06 | Re-running and cancelling a PipelineRun is for owners. The cluster admits only Glidepath's own run shape in an app's `-cicd` namespace, and on an existing run only a cancel. | Enforced | `tower-pipelinerun-shape` policy |
+| OPS-06 | Re-running and cancelling a PipelineRun is for owners, and Tower does both through glidepath-api, never by writing the PipelineRun itself. The cluster refuses any PipelineRun write from `tower-actor`, and admits from glidepath-api only Glidepath's own run shape in an app's or InfraService's `-cicd` namespace, and on an existing run only a cancel. Changed 2026-10-30: `tower-actor` wrote the runs itself, held to the shape by `tower-pipelinerun-shape`. | Enforced | `glidepath-api-pipelinerun-shape` policy (POL-01) |
 | OPS-07 | Configuration changes (values, env XR, ConfigMap files, `cicd.yaml`) are PRs, never direct edits. | Enforced | `tower.config.edit` |
 
 ## 11. Break-glass debug sessions
@@ -276,7 +278,7 @@ closed).
 
 | ID | Policy | Cluster | Rule |
 |---|---|---|---|
-| POL-01 | `tower-pipelinerun-shape` | kiac-dev | Backstage's PipelineRuns have Glidepath's shape only (OPS-06). |
+| POL-01 | `glidepath-api-pipelinerun-shape` | kiac-dev | Backstage (`tower-actor`) may not create or patch a PipelineRun; glidepath-api's have Glidepath's shape only (OPS-06). Kyverno ValidatingPolicy. Was `tower-pipelinerun-shape` until 2026-10-30, which held Backstage's own PipelineRuns to that shape. |
 | POL-02 | `tower-rolebinding-delete` | kiac-dev | Backstage may delete only `tower-breakglass-*` RoleBindings. |
 | POL-03 | `tower-breakglass-rolebinding` | both | The only grant Backstage may create. On Flight it must name an approver other than the requester, or carry the glass-broken mark. |
 | POL-04 | `tower-breakglass-debug-container`, `-debug-image` | both | The exact debug image digest and its cosign signature, hardened settings, and process access only for the approved session. |
