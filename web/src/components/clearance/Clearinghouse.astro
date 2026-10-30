@@ -53,6 +53,15 @@ const caps = [
       l.addEventListener('mouseleave', () => set(null));
     });
   });
+  // Scale the 790px map to its column. Done here rather than with container-query
+  // trig in CSS, which some browsers resolve to zero and hide the map entirely.
+  document.querySelectorAll<HTMLElement>('.cl-house .cl-scene').forEach((scene) => {
+    const map = scene.querySelector<HTMLElement>('.cl-map');
+    if (!map) return;
+    const fit = () => map.style.setProperty('--s', String(Math.min(1, scene.clientWidth / 790)));
+    fit();
+    new ResizeObserver(fit).observe(scene);
+  });
 </script>
 
 <style>
@@ -71,7 +80,7 @@ const caps = [
   /* The map is drawn on a fixed 790x500 stage and scaled to whatever width the column gives it,
      so nothing is clipped and the arrows stay attached to their boxes at every size. */
   .cl-scene { container-type: inline-size; width: 100%; }
-  .cl-map { position: relative; width: 790px; height: 500px; transform-origin: top left; transform: scale(tan(atan2(100cqw, 790px))); margin-bottom: calc(500px * tan(atan2(100cqw, 790px)) - 500px); }
+  .cl-map { position: relative; width: 790px; height: 500px; transform-origin: top left; transform: scale(var(--s, 1)); margin-bottom: calc(500px * var(--s, 1) - 500px); }
   .cl-node {
     position: absolute; width: 230px; height: 112px; box-sizing: border-box; padding: 14px 16px; border-radius: 10px;
     display: flex; flex-direction: column; gap: 4px; background: var(--cp-3); border: 1.5px solid var(--cp-line-2);
