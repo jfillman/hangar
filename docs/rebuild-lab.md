@@ -485,7 +485,9 @@ For the role, `aws iam detach-role-policy --role-name hangar-crossplane-kiac-dev
 | `glidepath-hangar-dev`, `shared` | `github-application-id`, `github-installation-id`, `github-private-key`, `github-webhook-secret`, `provider-github-creds`, `provider-azure-creds` (optional), `registry-credentials-dockerconfigjson`, `backstage-notify-token`, `anthropic-api-key`, `github-mcp-token` | export of `platform-cicd-kind-dev` (2.7) |
 | | `provider-infisical-creds` | identity `hangar-dev-crossplane` (2.6) |
 | | `relay-token-hangar-prod` | generated (2.7) |
+| | `flight-promoter-app-id`, `flight-promoter-private-key`, `flight-registry-read-dockerconfigjson` | the `hangar-flight-promoter` App (owned by `riley-roooo`, installed only on `riley-roooo/flight-promoter`) and the same Flight `read:packages` token as hangar-prod; the promote pipeline needs all three ([Glidepath registries.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/registries.md)) |
 | `glidepath-hangar-prod`, `shared` | `github-application-id`, `github-installation-id`, `github-private-key`, `registry-credentials-dockerconfigjson`, `anthropic-api-key`, `github-mcp-token` | export of `platform-cicd-kind-prod` (4.4) |
+| | `flight-registry-read-dockerconfigjson` | a `read:packages` token of the Flight registry's owner (`riley-roooo`). Kyverno's Flight admission reads attestations with it, and with `admission.flight.pullFromFlight` every tenant pod pulls with it; without it, no tenant pod can start on hangar-prod ([Glidepath registries.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/registries.md)) |
 | | `platform-outcome-relay-token` | the same value as `relay-token-hangar-prod` (4.4) |
 | `backstage-hangar-prod`, `prod` | ten keys | section 5.6 |
 | `<app>-hangar-dev`, `<app>-hangar-prod` | per app | that app's export, when its walkthrough creates the project. Include `customs-api` and `smoke-ecs` if you recreate them |
