@@ -7,6 +7,7 @@ import Console from '../../components/clearance/Console.astro';
 import Closer from '../../components/clearance/Closer.astro';
 import { u } from '../../lib/url';
 const c = (p = '') => u(`clearance/${p}`);
+const shot = (f: string) => u(`media/clearance/${f}`);
 ---
 <Layout title="Product" page="product" description="A tour of Clearance: the provenance detector, the classifier and policy gate, render-time binding with admission enforcement, and the evidence record with its audit packet.">
   <section class="page-hero">
@@ -141,13 +142,56 @@ const c = (p = '') => u(`clearance/${p}`);
   <section class="sec">
     <div class="clr-wrap">
       <div class="sec-head" data-reveal>
+        <p class="kicker">In the console</p>
+        <h2 class="h2">Three pages in Backstage. <em>Nothing</em> here edits policy.</h2>
+        <p class="sub">Clearance ships as a Backstage plugin that stands alone or sits inside Tower, Hangar's console. The pages read the gate and the record; policy changes stay releases and pull requests. The deployment gate pages are the proposal, drawn so design partners can argue with something concrete.</p>
+      </div>
+      <div class="shots" data-reveal>
+        <figure class="shot">
+          <img src={shot('clearances.png')} alt="The Clearances page: a change-traffic table by tier, and a tier 3 secret rotation holding for a second named person, with its commit, manifest tree, objects, policy and provenance" width="1440" height="1067" loading="lazy" />
+          <figcaption><span class="chip proposal">Proposal</span> Clearances. Every change bound for a protected environment, held short until policy or a named person clears it. The right pane shows exactly what a clearance is bound to.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src={shot('policy.png')} alt="The Policy page: deny rules in evaluation order with hit counts, a dry-run panel that explains a denial with its fix hint, and the deployment tier table" width="1440" height="999" loading="lazy" />
+          <figcaption><span class="chip built">Built rules</span> Policy. The deny rules in the order they run, with hits, and a dry run that explains a denial with the same fix hint the agent got. The deployment tiers below it are the proposal.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src={shot('evidence.png')} alt="The Evidence page: one record per decision with its hash chain, a record detail with each field tagged verified or claimed, the packets table and the auditor's verify command" width="1440" height="1196" loading="lazy" />
+          <figcaption><span class="chip built">Built records</span> Evidence. One record per decision on both boundaries, each field tagged verified or claimed. The auditor never needs an account here: they get the packet and run the open verifier.</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src={shot('tower-clearance-tab.png')} alt="Tower's Clearance tab on an app: a holding change that needs a person, the agents allowed to act on the app, their recent activity, and the change policy per environment" width="1440" height="996" loading="lazy" />
+          <figcaption><span class="chip proposal">Proposal</span> The same data inside Tower. An app's Clearance tab: what's holding and who can clear it, which agents may act on the app, and the policy per environment.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="sec-head" data-reveal>
         <p class="kicker">Two boundaries, one record</p>
         <h2 class="h2">From the tool call that drafted it to the sync that <em>landed</em> it.</h2>
-        <p class="sub">Clearance started as Autopilot's runtime gateway: every tool call an agent makes passes a tier check and lands in a hash-chained audit. That boundary is moving onto an open standard, and becoming an integration rather than the product. The deployment boundary is where Clearance is the product. Both share one tier vocabulary, one evidence schema and one ledger, joined by a task id.</p>
+        <p class="sub">Clearance started as Autopilot's runtime gateway, and since October 29, 2026 it is a product and repository of its own: every tool call an agent makes passes a tier check and lands in a hash-chained audit. That boundary is moving onto an open standard, and becoming an integration rather than the product. The deployment boundary is where Clearance is the product. Both share one tier vocabulary, one evidence schema and one ledger, joined by a task id.</p>
       </div>
       <div class="cols" data-reveal>
-        <div><span class="chip built">Built</span> <span class="chip draft">Moving to a standard</span><h3 class="mt-2" style="margin-top:0.8rem">Runtime boundary · an integration</h3><p>What may this agent call? Tool tiers T0 read, T1 reversible write, T2 propose, T3 never. Path scope, narrow-only limits, CEL deny rules with ids and fix hints. Built as Autopilot's own gateway; next, the same policy answers as an AuthZEN decision point behind Traefik's Sovereign Trust Plane, which enforces inline and logs every call. Delegation moves to standard token exchange, still narrow-only.</p></div>
+        <div><span class="chip built">Built</span> <span class="chip draft">Moving to a standard</span><h3 class="mt-2" style="margin-top:0.8rem">Runtime boundary · an integration</h3><p>What may this agent call? Tool tiers T0 read, T1 reversible write, T2 propose, T3 never. Path and field scope, narrow-only limits, CEL deny rules with ids and fix hints, a fail-closed R000, and packs for the tools only some deployments have. Built, released from its own repository, pinned by Autopilot and running on the Hangar dev cluster; next, the same policy answers as an AuthZEN decision point behind Traefik's Sovereign Trust Plane, which enforces inline and logs every call. Delegation moves to standard token exchange, still narrow-only.</p></div>
         <div><span class="chip proposal">Proposal</span><h3 class="mt-2" style="margin-top:0.8rem">Deployment boundary</h3><p>May this change land in a protected environment, and can we prove it did, under policy, afterwards? A deployment is a reconciliation, not a request: Argo CD talks to the API server and the operator pulls secrets, and neither passes a gateway. Provenance, tiers 0 to 3, render-time binding, admission, gate providers and the record. The gateway proves what an agent called; Clearance proves what landed.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="clr-wrap">
+      <div class="cols" data-reveal>
+        <div>
+          <p class="kicker">The third direction</p>
+          <h2 class="h2" style="font-size:clamp(1.8rem,2.6vw + 0.6rem,2.6rem)">Changes come in from two sides. Evidence goes <em>out</em> to a third.</h2>
+        </div>
+        <div>
+          <p>Pull requests arrive through Argo CD, and Autopilot runs arrive through the gateway. The people who have to believe the result sit somewhere else entirely: your auditor, a readiness assessor, your next customer's vendor-risk team. Clearance treats them as <b>assurance providers</b>. Your packet reaches them in the shape they already accept, through the GRC hub they already use, an audit firm's portal, or OSCAL for the ones who want the machine-readable form.</p>
+          <p>When they accept a packet for an engagement, the acceptance is a small statement they sign with their own key, written to the ledger as a record of its own. Later packets carry it, and a trust page built from those receipts answers the vendor-risk questionnaire with something a reviewer can verify. Clearance delivers and records. It never submits on your behalf and never issues a verdict. <a href={c('ledger/')}>How the receipt works →</a></p>
+        </div>
       </div>
     </div>
   </section>

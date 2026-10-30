@@ -10,7 +10,7 @@ const mail = (plan: string) => `mailto:james@hangarplatform.dev?subject=${encode
     <div class="clr-wrap">
       <p class="kicker">Pricing</p>
       <h1 class="display" style="margin-left:auto;margin-right:auto">Open enforcement. <em>Paid</em> assurance.</h1>
-      <p class="sub center">The controller, the provenance detector, the classifier, the record schema and the verifier are open source. You pay for keeping the assurance current: hosted, signed, retained, anchored and mapped to your controls.</p>
+      <p class="sub center">The controller, the provenance detector, the classifier, the record schema and the verifier are open source. You pay for keeping the assurance current: hosted, witnessed, retained, mapped to your controls, and delivered to the people who have to believe it. Audit firms pay nothing.</p>
     </div>
   </section>
 
@@ -25,7 +25,7 @@ const mail = (plan: string) => `mailto:james@hangarplatform.dev?subject=${encode
           <li>Open controller, binding plugin and admission policy</li>
           <li>Provenance detector and classifier</li>
           <li>Local recorder, 30-day retention</li>
-          <li><code>clearance verify</code></li>
+          <li><code>clearance verify</code>: you keep your evidence and can prove it to anyone, by hand</li>
         </ul>
         <a class="btn btn-ghost" href={c('design-partners/')}>Get early access</a>
       </div>
@@ -37,6 +37,7 @@ const mail = (plan: string) => `mailto:james@hangarplatform.dev?subject=${encode
         <p class="per">per governed scope</p>
         <ul>
           <li>Hosted recorder, 1-year retention</li>
+          <li>Witnesses you don't run</li>
           <li>SOC 2 change-management packet</li>
           <li>Chat approvals</li>
           <li>Ledger anchoring at included volume</li>
@@ -54,7 +55,8 @@ const mail = (plan: string) => `mailto:james@hangarplatform.dev?subject=${encode
           <li>PCI DSS and ISO 27001 mappings</li>
           <li>Tower console plugin</li>
           <li>Attested exports, metered anchoring</li>
-          <li>Evidence push to your GRC platform</li>
+          <li>Assurance providers: automatic delivery per engagement, acceptance receipts in the ledger</li>
+          <li>A trust page built from receipts, for vendor-risk reviews</li>
         </ul>
         <a class="btn btn-ghost" href={mail('Business')}>Talk to us</a>
       </div>
@@ -67,13 +69,31 @@ const mail = (plan: string) => `mailto:james@hangarplatform.dev?subject=${encode
           <li>Self-hosted GitHub App</li>
           <li>Air-gapped recorder, offline anchoring</li>
           <li>Custom control mappings</li>
-          <li>Data residency</li>
-          <li>Named support</li>
+          <li>Direct audit-firm integrations</li>
+          <li>Data residency, named support</li>
         </ul>
         <a class="btn btn-ghost" href={mail('Regulated')}>Talk to us</a>
       </div>
     </div>
-    <p class="note center" style="text-align:center;margin-top:1.4rem">Indicative design-partner pricing in USD, set with the first customers. Verification is always free.</p>
+    <div class="plan wide" data-reveal>
+      <div>
+        <span class="badge still">For the other side of the table</span>
+        <h3>Auditor</h3>
+        <p class="for">Audit firms and readiness assessors.</p>
+      </div>
+      <ul>
+        <li>Verification tool</li>
+        <li>Witness operation</li>
+        <li>Packet intake, in your format</li>
+        <li>One-click acceptance that signs a receipt into the ledger</li>
+      </ul>
+      <div class="wide-cta">
+        <p class="price">Free</p>
+        <p class="per">always</p>
+        <a class="btn btn-ghost" href={mail('Auditor')}>Talk to us</a>
+      </div>
+    </div>
+    <p class="note center" style="text-align:center;margin-top:1.4rem">Indicative design-partner pricing in USD: hypotheses to test with the first customers, not benchmarks. Verification is always free, and so is everything on the auditor's side.</p>
   </section>
 
   <section class="sec">
@@ -114,6 +134,8 @@ const mail = (plan: string) => `mailto:james@hangarplatform.dev?subject=${encode
         <details><summary>What if Clearance goes down on a Friday afternoon?</summary><p>You decide per tier. The defaults let routine tier 0 and 1 changes proceed and hold tier 2 and 3, so an outage never blocks a routine deploy and always holds a secret rotation. Every degraded-mode change is recorded and shows up in the packet's exceptions.</p></details>
         <details><summary>Do you need our prompts and source code?</summary><p>No. Intent is redacted by default to a task reference and a secret-scrubbed summary. Records stay in your tenant. Anything shared across customers is opt-in and aggregate only.</p></details>
         <details><summary>Which platforms are supported?</summary><p>The first release covers GitHub, Argo CD and Kubernetes, with Kyverno or OPA for policy and any OIDC identity provider. Flux and GitLab come when a design partner needs them. Paths Clearance can't see are reported as coverage unavailable, never skipped.</p></details>
+        <details><summary>Why is the auditor side free?</summary><p>Because the product is the position between you and the people who have to believe your evidence, and that position only exists if the people on the other side use it. An audit firm that has verified one witnessed packet and signed one receipt tends to ask the next client why theirs isn't. Charging them for the tool would be charging the ledger for its own witnesses.</p></details>
+        <details><summary>Are these prices final?</summary><p>No. They're hypotheses, set as bands and tested with design partners. The meter stays: governed production scope, never seats. Retention, self-hosting and direct firm integrations cost real engineering time, so they're priced as bands and add-ons rather than folded into a flat fee.</p></details>
         <details><summary>Why is the controller open source?</summary><p>A gate a security team can't read is a gate they won't install, and open verification is what makes the ledger a ledger. The paid plans are the hosted, retained, anchored, mapped and supported parts.</p></details>
       </div>
     </div>
