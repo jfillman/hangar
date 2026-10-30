@@ -402,6 +402,12 @@
 .fig figcaption { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--soft); margin-top: 1rem; }
 .fig svg text { font-family: var(--font-sans); }
 .fig svg .mono { font-family: var(--font-mono); letter-spacing: 0.06em; }
+.shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 1.5rem; }
+.shot { margin: 0; display: flex; flex-direction: column; gap: 0.8rem; }
+.shot img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--rule-strong); background: #0b0d10; box-shadow: 0 30px 60px -40px rgba(0, 0, 0, 0.6); }
+.shot figcaption { font-size: 0.9rem; color: var(--muted); line-height: 1.5; }
+.shot figcaption .chip { margin-right: 0.4rem; }
+@media (max-width: 900px) { .shots { grid-template-columns: minmax(0, 1fr); } }
 
 /* Two-column prose */
 .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 3rem; }

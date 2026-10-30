@@ -4,6 +4,7 @@ import Closer from '../../components/clearance/Closer.astro';
 import Descent from '../../components/clearance/Descent.astro';
 import { u } from '../../lib/url';
 const c = (p = '') => u(`clearance/${p}`);
+const shot = (f: string) => u(`media/clearance/${f}`);
 const lanes = [
   ['AGENT', 80], ['GITHUB APP', 220], ['GATE', 360], ['HUMAN', 500], ['ARGO · ADMISSION', 640], ['RECORDER', 780], ['LEDGER', 920],
 ] as const;
@@ -357,6 +358,15 @@ const msgs: [number, number, number, string, string?, boolean?][] = [
           <p>On a Hangar cluster an agent's work arrives as an Autopilot <code>AgentRun</code>, a Crossplane XR, and the same controller gates it at admission. The runtime tier decides what the run may do; the deployment tier decides what may land. A task id on every runtime record links the call that proposed a change to the clearance that landed it. <span class="chip proposal">Proposal</span></p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:0">
+    <div class="clr-wrap">
+      <figure class="shot" data-reveal>
+        <img src={shot('autopilot-runs.png')} alt="Autopilot's Runs page in Backstage: live runs with spend, and one run's flight log listing every call as Clearance recorded it, including a denied read with its rule id" width="1440" height="1461" loading="lazy" />
+        <figcaption><span class="chip built">Built gateway</span> The native entry point, as Autopilot shows it. Every call a run makes goes through Clearance, and the run's flight log is Clearance's record of it: the session opened as the definition's own identity, the reads allowed, one read denied by R015 with the hint the agent was given, and the model call charged back by weighted tokens.</figcaption>
+      </figure>
     </div>
   </section>
 
