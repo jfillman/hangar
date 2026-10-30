@@ -11,6 +11,9 @@ glidepath `36eb223`. GATE-05, GATE-06 and GATE-15 to GATE-17 (release-signing po
 `9c42d81` (ADR-0027), tower `be8111b` (v0.82.0), backstage `61634fb`, gitops-hangar-dev `0d48da0`, apron `24d23d0`,
 airframe `8aea2f6`.
 GATE-01 and GATE-18 (`policy-validation` real) checked on 2026-10-27 against glidepath `22cd9ff` (ADR-0028).
+PROM-01 to PROM-11, POL-11 and the SC-05 change (Ground and Flight registries, ADR-0029) added 2026-10-30, checked
+against glidepath `983d2e0`, apron `2493b02`, gitops-hangar-dev `52b1223`, gitops-hangar-prod `fd9082a`, and live on
+both clusters.
 CRED-07 to CRED-09, POL-10) re-checked on 2026-10-17: glidepath `1ad8dae`, airframe `0710485` (v0.3.148),
 gitops-cluster-dev #108.
 
@@ -95,6 +98,26 @@ Full action-by-action table: [Tower security model](https://github.com/jfillman/
 | ENV-08 | Each app environment has its own namespace (`<type>-<app>-<env>`), and pipelines run in the app's `-cicd` namespace. RBAC never spans them. | Enforced | Glidepath, Airframe |
 | ENV-09 | A PR preview environment lives as long as its PR. Its namespace is deleted with its Application, and a sweep every 30 minutes deletes any preview namespace whose Application is gone. | Enforced | [Glidepath ephemeral-environments.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/ephemeral-environments.md) |
 | ENV-10 | A Flight destination must be a registered upper cluster marked `crossplaneReady`. A dev cluster is refused. | Enforced | Airframe `ApplicationEnvironment` schema and cluster registry |
+
+### Ground and Flight registries (PROM)
+
+Builds push to **Ground** (`ghcr.io/jfillman`); upper clusters run only what was promoted to **Flight**
+(`ghcr.io/riley-roooo`), copied by digest before the release merges. Detail:
+[Glidepath registries.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/registries.md), [ADR-0029](https://github.com/jfillman/glidepath/blob/main/docs/admin/adr/0029-ground-and-flight-registries.md).
+
+| ID | Rule | Strength | Held by |
+|---|---|---|---|
+| PROM-01 | A Flight environment's release file pins the Flight repository **and a digest** (`release.image.digest`), with the Ground repository it came from as `source`, from the moment the release PR opens. A release that pins Ground, or no digest, is never promoted. | Enforced | `open-release-pr`; `promote` refuses |
+| PROM-02 | Only the promoter writes Flight: the `promote` workflow in `riley-roooo/flight-promoter`, whose own short-lived `GITHUB_TOKEN` is the only credential with write access. Builds, clusters and Glidepath cannot write it; Glidepath can only start the workflow (the `hangar-flight-promoter` App, `actions: write` on that one repo, minted per call by the broker for the `glidepath-promoter` ServiceAccount only). | Enforced | GHCR package permissions; broker `/promoter-token` |
+| PROM-03 | Promotion starts only when every required gate is green on the release PR's current head commit. The last gate to finish starts it (an event, not a polling pod), exactly once; `promote` re-checks every gate itself and refuses a red or missing one. `image-promotion` is then a required check on the PR, and it cannot be made advisory. | Enforced | `comment-pr-check-result` fan-in; `promote` |
+| PROM-04 | The copy keeps every digest: the image index, every platform manifest, the `.sig`/`.att` tags and the OCI 1.1 referrers. Nothing is re-signed, so Rekor entries and the check ride's age stay valid. The copy is verified in Flight with a read-only credential before the check goes green: digest, `.sig`, `.att`, and a promotion attestation naming this request. | Enforced | `promote` workflow; `promote-image` StepAction |
+| PROM-05 | Upper clusters run tenant images only from Flight, each with a promotion attestation (`https://hangar.io/attestations/promotion/v1`) signed by the promote workflow's GitHub Actions identity on public Sigstore and verified offline. Third-party images no build produces (CloudNativePG, OTel auto-instrumentation, `bitnamilegacy`) are allow-listed by prefix. Tenant pods pull with a read-only Flight credential; the Ground credential is not on the cluster. In force on hangar-prod since 2026-10-30 (Audit from 2026-10-29). | Fails closed | Kyverno `flight-only-images` (ValidatingPolicy) and `flight-images` (ImageValidatingPolicy), Deny, `failurePolicy: Fail`, rendered by Apron `admission.flight` (POL-11) |
+| PROM-06 | Only the app's own Ground repository is promotable: never a PR preview build (`<app>-pr`) or another app's image. | Enforced | `promote` |
+| PROM-07 | Promoting a digest already in Flight (a rollback, a second environment) copies nothing new and adds a new promotion attestation for that release. | Enforced (not yet exercised by a live rollback) | `promote` workflow (digest copy is idempotent) |
+| PROM-08 | A release merged before its promotion is a bypass and is never promoted afterwards: the merged pin names a Flight digest that does not exist, so the new pods cannot start and the previous ReplicaSet keeps serving; the missing `image-promotion` check is reported as a bypass. | Enforced (`promote` refuses a merged PR); the bypass alert is Soft | `promote`; `detect-bypass-merge` (GATE-04) |
+| PROM-09 | Flight retention never deletes a release that a release file pins, a Release Record names, or an open release PR pins, nor the 10 newest releases of a package, nor one younger than 30 days. The platform plans, and only the promote repo's `prune` workflow deletes. A package without a readable gitops repo is never pruned. | **Off here** (Flight only grows: `promotion.retention.enabled` is false; the `prune` workflow is in the promoter repo since 2026-10-30 but has not run) | Glidepath `flight-prune` CronJob; `prune` workflow |
+| PROM-10 | With promotion on, a cloud target (`aws-ecs`, `aws-lambda`, `azure-container-apps`) in a Flight environment is refused before it deploys: a cloud deploy copies from Ground, so nothing promoted it. Ground environments of the same app are not affected. | Enforced | `resolve-deploy-target` |
+| PROM-11 | The registries and promotion settings are admin-owned: the catalog's `registries` and `promotion` values and the cluster's `admission.flight`, never `cicd.yaml` or Tower. | Enforced | Glidepath catalog values; Apron `cluster.yaml` |
 
 ## 4. Release gates
 
@@ -191,7 +214,7 @@ Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main
 | SC-02 | Tekton Chains signs every image and its provenance with a short-lived certificate from the build cluster's own Fulcio (its own trust root, never the public one), and logs the signatures in the platform's Rekor. Rekor's signing key persists, is never replaced, and is never in git, Infisical or a terminal. | Enforced | [Glidepath image-signing.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/image-signing.md) |
 | SC-03 | Tower colours a supply-chain step by its verification. **Green**: verified. **Amber**: present but unverified, for a reason that isn't tampering. **Red**: contradicted, so don't promote it. **Grey**: missing. A signature with no Rekor entry counts as unsigned. | Display | [Tower supply-chain.md](https://github.com/jfillman/tower/blob/main/docs/supply-chain.md) |
 | SC-04 | Readiness's "Signed and attested" passes only on a verified attestation, never on one that is merely present. | Display | Tower `isSignedAndAttested` |
-| SC-05 | Image signatures are checked at release (GATE-07), not when a cluster admits an image. The exception is the Tower debug image (BG-04). | Enforced at release only | see [section 16](#16-rules-that-are-not-enforced-yet) |
+| SC-05 | Build signatures and provenance are checked at release (GATE-07), not when a cluster admits an image. Since 2026-10-30 hangar-prod admits tenant images only with a promotion attestation (PROM-05), which records that the image went through the promoter after the gates; the Chains provenance itself is not re-checked at admission (it carries no Rekor inclusion proof, and the build cluster's Rekor is unreachable from prod). The Tower debug image is checked at admission too (BG-04). hangar-dev checks nothing at admission. | Enforced at release; at admission on hangar-prod through PROM-05 | see [section 18](#18-rules-that-are-not-enforced-yet) |
 
 ## 10. Live operations from Tower
 
@@ -262,6 +285,7 @@ closed).
 | POL-07 | `no-long-lived-sa-tokens` | kiac-dev | No long-lived ServiceAccount token Secrets in `backstage-system`. |
 | POL-08 | `testkube-secret-usage` | kiac-dev | A tenant's TestWorkflow may reference only that tenant's own Secrets in the shared `testkube` namespace. |
 | POL-10 | `glidepath-cloud-deployer-pods`, `-taskruns`, `-pipelineruns`, `-jobs` | kiac-dev | Only a cloud deploy may run as `glidepath-cloud-deployer`, the one identity AWS deploy roles trust. Decided by who created the object, never by labels: pods only from Tekton's controller or the Job controller, TaskRuns only from Tekton, Jobs only from Crossplane, and only they may change a TaskRun's or Job's spec later (others may add metadata, as Chains, Results and the garbage collector do), and a PipelineRun may give it only to the catalog `deploy` Pipeline's `deploy-aws-lambda` and `deploy-aws-ecs`, not run-wide, with no pod-template `env` or volumes. |
+| POL-11 | `flight-only-images`, `flight-images` | hangar-prod | Tenant pods run only Flight images with a promotion attestation, or an allow-listed third-party prefix (PROM-05). Scoped to namespaces labelled `hangar.io/managed-secrets`. Kyverno, Deny, fails closed. |
 | POL-09 | (how policies are written) | both | Every optional field is guarded with `has()`, and every policy is scoped by match conditions, so a CEL error can only refuse its own objects. A policy change widens before it narrows. |
 
 Full detail: [Tower break-glass admission policies](https://github.com/jfillman/tower/blob/main/docs/break-glass/admin/policies.md).
@@ -312,7 +336,11 @@ Every place where a rule above is weaker than it reads, in one list:
 | The check-rides repository's owners are not enforced. | TEST-04 | A private repo on GitHub Free: code-owner review is convention. The repo holds no secrets and can be made public. |
 | An app opens its NetworkPolicy to tests by hand. | TEST-07 | A platform default for the `testkube` namespace is on the test framework roadmap. |
 | Production SLO burn isn't read during the bake. | REL-13 | Production's Prometheus is on and canary analysis uses it, but the outcome is still decided from the rollout alone, so "clean" can't yet mean "no SLO burn during bake". |
-| Image signatures aren't checked at admission. | SC-05 | An unsigned image could run if it got into git. GATE-07 is the only check. |
+| Build signatures aren't checked at admission. | SC-05 | hangar-prod checks the promotion attestation (PROM-05), not the Chains provenance; hangar-dev checks nothing, so an unsigned image could run there if it got into git. |
+| The promote workflow trusts whoever starts it. | PROM-02, PROM-03, PROM-05 | The workflow checks its input's shape, not the gates. Anyone who can start it (the promoter App through the broker, or `riley-roooo`, who owns the repo) gets a valid promotion attestation for any Ground digest, and PROM-05 would admit it. Glidepath only starts it after PROM-03. |
+| Flight admission depends on Kyverno being up. | PROM-05 | `failurePolicy: Fail`: while hangar-prod's Kyverno admission controller is down, new pods in tenant namespaces are refused. It restarted 354 times between 2026-10-18 and 2026-10-30. |
+| Flight retention is off. | PROM-09 | Flight keeps every promoted image until `promotion.retention.enabled` is turned on (dry run first: neither the package listing with the read credential nor deletion with the workflow's token has been tried). |
+| Cloud environments can't be Flight while promotion is on. | PROM-10 | Refused rather than promoted. No app has a cloud Flight environment today; cloud promotion is a recorded Glidepath follow-up. |
 | `airframe-validate` doesn't run on app repos or the tenants repo. | GATE-08, CRED-01 | Airframe roadmap AF-4b. |
 | Agent and security-review limits are convention. | AF-06, AF-07, AI-03 | Clearance isn't deployed, and no rule requires a security reviewer. |
 | Azure deploys use a stored secret. | CRED-07 | Lambda and ECS deploys are keyless (2026-10-16/17). Azure Container Apps still logs in with a stored service principal secret; next is workload identity federation ([Glidepath known gap 43](https://github.com/jfillman/glidepath/blob/main/docs/admin/known-gaps.md)). |
