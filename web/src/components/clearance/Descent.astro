@@ -1,0 +1,101 @@
+---
+// The workflow: a change descends through four gates (bind, hold, admit, record).
+// Each gate lights as the change passes; hovering a gate pauses the descent and lights its caption.
+const gates = [
+  { n: '01', key: 'bind', label: 'BIND · REPO-SERVER PLUGIN', value: 'tree sha256:e71d…8d1 · grant stamped on 2 objects', title: 'Bind.', cap: 'The plugin hashes the rendered tree at render. No clearance, no manifests; no sync flag skips it.' },
+  { n: '02', key: 'hold', label: 'HOLD · PRESYNC HOOK', value: 'tier 2 · awaiting m.chen · cleared 14:02:11Z', title: 'Hold.', cap: 'Tiers 2 and 3 wait for a named human, visible in Argo\'s own UI. Never the proposer.' },
+  { n: '03', key: 'admit', label: 'ADMIT · API SERVER', value: 'grant clr_01JB2K7 · ConfigMap/flight-api · hash matches', title: 'Admit.', cap: 'Admission checks each object against the grant. A force-push has no grant.' },
+  { n: '04', key: 'record', label: 'RECORD · LEDGER', value: '#48,213 signed · checkpoint 48,213 · 2 witnesses', title: 'Record.', cap: 'Signed, hashed into a witnessed log. Your auditor verifies without asking us.' },
+];
+---
+<figure class="cockpit cl-visual cl-descent" data-cl-link>
+  <div class="cl-copy">
+    <p class="cl-eyebrow">The workflow</p>
+    <h3 class="cl-h">Four gates. One <em>descent</em>.</h3>
+    <ol class="cl-caps">
+      {gates.map((g) => (
+        <li class="cl-cap" data-cap={g.key}><span class="cl-n">{g.n}</span><span><strong>{g.title}</strong> {g.cap}</span></li>
+      ))}
+    </ol>
+    <p class="cl-hint">hover a gate to hold the descent</p>
+  </div>
+  <div class="cl-stage">
+    <div class="cl-stack">
+      {[...gates].reverse().map((g, i) => (
+        <div class={`cl-gate cl-g${4 - i}`} data-layer={g.key} style={`top:${(3 - i) * 75}px`}>
+          <span class:list={['cl-label', { 'is-sky': g.key === 'record' }]}>{g.n} · {g.label}</span>
+          <span class="cl-value">{g.value}</span>
+        </div>
+      ))}
+      <div class="cl-craft" aria-hidden="true"><span class="cl-craft-n">PR #412</span><span class="cl-craft-t">flight-api</span></div>
+    </div>
+  </div>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cl-link]').forEach((root) => {
+    const caps = root.querySelectorAll<HTMLElement>('[data-cap]');
+    const set = (key: string | null) => {
+      root.classList.toggle('is-hot', !!key);
+      caps.forEach((c) => c.classList.toggle('is-on', c.dataset.cap === key));
+    };
+    root.querySelectorAll<HTMLElement>('[data-layer]').forEach((l) => {
+      l.addEventListener('mouseenter', () => set(l.dataset.layer ?? null));
+      l.addEventListener('mouseleave', () => set(null));
+    });
+  });
+</script>
+
+<style>
+  .cl-visual { margin: 2rem 0; display: grid; grid-template-columns: 1fr; gap: 1.5rem 2.5rem; background: var(--cp); color: var(--cp-ink); border-radius: 14px; padding: 2.4rem clamp(1.2rem, 4vw, 3.5rem); overflow: hidden; }
+  .cl-eyebrow { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cp-muted); margin: 0 0 0.6rem; }
+  .cl-h { font-family: var(--font-serif); font-weight: 400; font-size: clamp(2rem, 3.2vw, 2.9rem); line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 1rem; }
+  .cl-h em { color: var(--cp-amber); }
+  .cl-caps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.92rem; line-height: 1.45; color: var(--cp-muted); }
+  .cl-cap { display: grid; grid-template-columns: 24px 1fr; gap: 0.6rem; border-left: 2px solid transparent; padding-left: 0.7rem; margin-left: -0.85rem; transition: opacity 0.3s, border-color 0.3s, color 0.3s; }
+  .cl-cap strong { color: var(--cp-ink); font-weight: 600; }
+  .cl-n { font-family: var(--font-mono); color: var(--cp-amber); font-size: 0.8rem; }
+  .is-hot .cl-cap { opacity: 0.45; }
+  .is-hot .cl-cap.is-on { opacity: 1; border-left-color: var(--cp-amber); color: var(--cp-ink); }
+  .cl-hint { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; color: #7f8891; margin: 1rem 0 0; }
+
+  .cl-stage { position: relative; perspective: 1400px; display: flex; align-items: center; justify-content: center; min-height: 460px; }
+  .cl-stack { position: relative; width: 420px; height: 420px; transform-style: preserve-3d; margin-top: 40px; }
+  .cl-gate {
+    position: absolute; left: 0; width: 420px; height: 110px; box-sizing: border-box; padding: 14px 18px;
+    display: flex; flex-direction: column; gap: 4px; border-radius: 8px;
+    background: var(--cp-3); border: 1.5px solid var(--cp-line-2);
+    transform: rotateX(55deg) rotateZ(-30deg);
+    transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+  }
+  .cl-label { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; color: var(--cp-amber); }
+  .cl-label.is-sky { color: var(--cp-sky); }
+  .cl-value { font-size: 0.82rem; color: var(--cp-muted); }
+  .cl-g1 { animation: cl-g1 10s linear infinite; } .cl-g2 { animation: cl-g2 10s linear infinite; } .cl-g3 { animation: cl-g3 10s linear infinite; } .cl-g4 { animation: cl-g4 10s linear infinite; }
+  @keyframes cl-g1 { 0%, 6% { background: var(--cp-3); border-color: var(--cp-line-2); } 14%, 100% { background: #3a2c15; border-color: var(--cp-amber); } }
+  @keyframes cl-g2 { 0%, 30% { background: var(--cp-3); border-color: var(--cp-line-2); } 38%, 100% { background: #3a2c15; border-color: var(--cp-amber); } }
+  @keyframes cl-g3 { 0%, 54% { background: var(--cp-3); border-color: var(--cp-line-2); } 62%, 100% { background: #3a2c15; border-color: var(--cp-amber); } }
+  @keyframes cl-g4 { 0%, 78% { background: var(--cp-3); border-color: var(--cp-line-2); } 86%, 100% { background: #16262f; border-color: var(--cp-sky); } }
+  .cl-craft {
+    position: absolute; left: 150px; top: -80px; width: 120px; height: 56px; box-sizing: border-box; padding: 0 14px;
+    display: flex; flex-direction: column; justify-content: center; border-radius: 8px;
+    background: #fbfaf7; color: var(--cp-3); box-shadow: 0 24px 40px rgba(0, 0, 0, 0.6);
+    transform: translateZ(80px) rotateX(55deg) rotateZ(-30deg);
+    animation: cl-drop 10s linear infinite;
+  }
+  .cl-craft-n { font-family: var(--font-mono); font-size: 0.62rem; color: #5b6570; }
+  .cl-craft-t { font-size: 0.82rem; font-weight: 600; }
+  @keyframes cl-drop { 0% { top: -80px; opacity: 0; } 6% { opacity: 1; } 14% { top: 0; } 30% { top: 0; } 38% { top: 75px; } 54% { top: 75px; } 62% { top: 150px; } 78% { top: 150px; } 86% { top: 225px; } 100% { top: 225px; opacity: 1; } }
+  .cl-stack:hover .cl-gate, .cl-stack:hover .cl-craft { animation-play-state: paused; }
+  .cl-stack:hover .cl-gate { opacity: 0.38; }
+  .cl-stack:hover .cl-gate:hover { opacity: 1; transform: translateZ(60px) rotateX(55deg) rotateZ(-30deg); border-color: var(--cp-amber); background: #3a2c15; box-shadow: 0 30px 50px rgba(0, 0, 0, 0.6); }
+
+  @media (min-width: 860px) { .cl-visual { grid-template-columns: 380px 1fr; } }
+  @media (max-width: 520px) { .cl-stack { transform: scale(0.72); transform-origin: center; } .cl-stage { min-height: 360px; } }
+  @media (prefers-reduced-motion: reduce) {
+    .cl-gate, .cl-craft, .cl-cap { animation: none; transition: none; }
+    .cl-craft { top: 225px; }
+    .cl-g1, .cl-g2, .cl-g3 { background: #3a2c15; border-color: var(--cp-amber); }
+    .cl-g4 { background: #16262f; border-color: var(--cp-sky); }
+  }
+</style>

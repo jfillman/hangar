@@ -1,0 +1,83 @@
+---
+// The change record as five layers: provenance, authorization, binding, outcome, coverage.
+// Hover a layer and it lifts out of the stack; its caption lights on the left.
+const layers = [
+  { n: '01', key: 'provenance', label: 'PROVENANCE', value: 'confirmed agent · claude-code 2.1 · for J. Fillman', cap: 'Who or what proposed it, with a confidence, never a guess.', title: 'Provenance.' },
+  { n: '02', key: 'authorization', label: 'AUTHORIZATION', value: 'tier 2 · clearance.yaml@7e2d · m.chen via okta', cap: 'The tier, the policy version, the named human if one was needed.', title: 'Authorization.' },
+  { n: '03', key: 'binding', label: 'BINDING', value: 'tree sha256:e71d…8d1 · commit a3b4…', cap: 'The digest of exactly what deployed. A force-push breaks it.', title: 'Binding.' },
+  { n: '04', key: 'outcome', label: 'OUTCOME', value: 'synced 14:02:40Z · healthy · no rollback', cap: 'Sync result, health, rollback if any.', title: 'Outcome.' },
+  { n: '05', key: 'coverage', label: 'COVERAGE', value: 'authorized-and-verified · runtime secret values not in scope', cap: 'What the record could not see, said out loud.', title: 'Coverage.' },
+];
+---
+<figure class="cockpit cl-visual cl-record" data-cl-link>
+  <div class="cl-copy">
+    <p class="cl-eyebrow">The change record</p>
+    <h3 class="cl-h">Five layers. One <em>record</em>.</h3>
+    <ol class="cl-caps">
+      {layers.map((l) => (
+        <li class="cl-cap" data-cap={l.key}><span class="cl-n">{l.n}</span><span><strong>{l.title}</strong> {l.cap}</span></li>
+      ))}
+    </ol>
+    <p class="cl-hint">hover a layer</p>
+  </div>
+  <div class="cl-stage">
+    <div class="cl-stack">
+      {[...layers].reverse().map((l, i) => (
+        <div class={`cl-layer cl-l${5 - i}`} data-layer={l.key} style={`top:${(4 - i) * 75}px`}>
+          <span class="cl-label">{l.n} · {l.label}</span>
+          <span class="cl-value">{l.value}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</figure>
+
+<script>
+  // Link a hovered layer to its caption. Pure presentation; nothing here is load-bearing.
+  document.querySelectorAll<HTMLElement>('[data-cl-link]').forEach((root) => {
+    const caps = root.querySelectorAll<HTMLElement>('[data-cap]');
+    const set = (key: string | null) => {
+      root.classList.toggle('is-hot', !!key);
+      caps.forEach((c) => c.classList.toggle('is-on', c.dataset.cap === key));
+    };
+    root.querySelectorAll<HTMLElement>('[data-layer]').forEach((l) => {
+      l.addEventListener('mouseenter', () => set(l.dataset.layer ?? null));
+      l.addEventListener('mouseleave', () => set(null));
+    });
+  });
+</script>
+
+<style>
+  .cl-visual { margin: 2rem 0; display: grid; grid-template-columns: 1fr; gap: 1.5rem 2.5rem; background: var(--cp); color: var(--cp-ink); border-radius: 14px; padding: 2.4rem clamp(1.2rem, 4vw, 3.5rem); overflow: hidden; }
+  .cl-eyebrow { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cp-muted); margin: 0 0 0.6rem; }
+  .cl-h { font-family: var(--font-serif); font-weight: 400; font-size: clamp(2rem, 3.2vw, 2.9rem); line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 1rem; }
+  .cl-h em { color: var(--cp-amber); }
+  .cl-caps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.92rem; line-height: 1.45; color: var(--cp-muted); }
+  .cl-cap { display: grid; grid-template-columns: 24px 1fr; gap: 0.6rem; border-left: 2px solid transparent; padding-left: 0.7rem; margin-left: -0.85rem; transition: opacity 0.3s, border-color 0.3s, color 0.3s; }
+  .cl-cap strong { color: var(--cp-ink); font-weight: 600; }
+  .cl-n { font-family: var(--font-mono); color: var(--cp-amber); font-size: 0.8rem; }
+  .is-hot .cl-cap { opacity: 0.45; }
+  .is-hot .cl-cap.is-on { opacity: 1; border-left-color: var(--cp-amber); color: var(--cp-ink); }
+  .cl-hint { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; color: #7f8891; margin: 1rem 0 0; }
+
+  .cl-stage { position: relative; perspective: 1400px; display: flex; align-items: center; justify-content: center; min-height: 460px; }
+  .cl-stack { position: relative; width: 420px; height: 420px; transform-style: preserve-3d; }
+  .cl-layer {
+    position: absolute; left: 0; width: 420px; height: 110px; box-sizing: border-box; padding: 14px 18px;
+    display: flex; flex-direction: column; gap: 4px; border-radius: 8px;
+    background: var(--cp-3); border: 1px solid var(--cp-line-2);
+    transform: rotateX(55deg) rotateZ(-30deg);
+    transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+    animation: cl-settle 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .cl-l5 { animation-delay: 0.1s; } .cl-l4 { animation-delay: 0.5s; } .cl-l3 { animation-delay: 0.9s; } .cl-l2 { animation-delay: 1.3s; } .cl-l1 { animation-delay: 1.7s; }
+  .cl-label { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; color: #7f8891; }
+  .cl-value { font-size: 0.82rem; color: var(--cp-muted); }
+  .cl-stack:hover .cl-layer { animation: none; opacity: 0.38; }
+  .cl-stack:hover .cl-layer:hover { opacity: 1; transform: translateZ(60px) rotateX(55deg) rotateZ(-30deg); border-color: var(--cp-amber); background: #3a2c15; box-shadow: 0 30px 50px rgba(0, 0, 0, 0.6); }
+  @keyframes cl-settle { from { opacity: 0; transform: translateY(-120px) rotateX(55deg) rotateZ(-30deg); } to { opacity: 1; transform: translateY(0) rotateX(55deg) rotateZ(-30deg); } }
+
+  @media (min-width: 860px) { .cl-visual { grid-template-columns: 380px 1fr; } }
+  @media (max-width: 520px) { .cl-stack { transform: scale(0.72); transform-origin: center; } .cl-stage { min-height: 360px; } }
+  @media (prefers-reduced-motion: reduce) { .cl-layer, .cl-cap { animation: none; transition: none; } }
+</style>

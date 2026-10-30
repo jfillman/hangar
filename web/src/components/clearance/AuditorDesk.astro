@@ -1,0 +1,115 @@
+---
+// The auditor's desk: the witness strip as the hero, then the numbers a desk needs.
+// All figures are illustrative; the component is a picture of the product, not a live view.
+const rows = [
+  { id: '#48,213', what: 'flight-api · ConfigMap · tier 2', who: 'm.chen · okta', st: 'VERIFIED' },
+  { id: '#48,187', what: 'gate-api · NetworkPolicy · tier 2', who: 'a.okafor · okta', st: 'VERIFIED' },
+  { id: '#48,102', what: 'infisical · rotation · tier 3', who: '2 approvers', st: 'VERIFIED' },
+  { id: '#47,990', what: 'platform · ClusterRole · tier 3', who: 'break-glass · j.fillman', st: 'EXCEPTION' },
+];
+const coverage = [
+  { label: 'authorized and verified', w: 94, c: 'var(--cp-green)' },
+  { label: 'observed, not attributed', w: 4, c: 'var(--cp-amber)' },
+  { label: 'out-of-band detected', w: 1.5, c: 'var(--cp-red)' },
+  { label: 'recorded, not checkpointed', w: 0.5, c: '#7f8891' },
+];
+---
+<figure class="cockpit cl-desk">
+  <div class="cl-head">
+    <div>
+      <p class="cl-eyebrow">The auditor workflow · Tower</p>
+      <h3 class="cl-h">hangar-prod · Q4 2026 · <em>verified against a witness we do not run</em></h3>
+    </div>
+    <div class="cl-actions" aria-hidden="true"><span class="cl-btn">Export OSCAL</span><span class="cl-btn cl-btn-accent">clearance verify</span></div>
+  </div>
+
+  <div class="cl-strip">
+    <div class="cl-party cl-p-op"><span class="cl-plabel" style="color:var(--cp-amber)">OPERATOR · CLEARANCE</span><div class="cl-pbox" style="background:#3a2c15;border-color:var(--cp-amber)">ledger · size 48,213</div><span class="cl-pnote">holds the signing key</span></div>
+    <div class="cl-party cl-p-wit"><span class="cl-plabel" style="color:var(--cp-sky)">WITNESS · AUDITOR'S OWN</span><div class="cl-pbox" style="background:#16262f;border-color:var(--cp-sky)">remembers: size 47,900</div><span class="cl-pnote">extends, never shrinks</span></div>
+    <div class="cl-party cl-p-ver"><span class="cl-plabel" style="color:var(--cp-green)">VERIFIER · THIS DESK</span><div class="cl-pbox" style="border-color:var(--cp-green)">31 / 31 checkpoints ✓</div><span class="cl-pnote">verified 10:42 today</span></div>
+    <div class="cl-cp cl-cp-out" aria-hidden="true">checkpoint 48,213<br />root b8e0… + proof</div>
+    <div class="cl-cp cl-cp-back" aria-hidden="true">countersigned<br /><span style="color:#2e8b57">witness ✓</span></div>
+    <div class="cl-sig" aria-hidden="true">extends 47,900 → countersign</div>
+  </div>
+
+  <div class="cl-kpis">
+    <div class="cl-kpi"><span class="cl-klabel">CHANGES</span><span class="cl-kval">1,412</span><span class="cl-ksub">61% confirmed agent · 27% human · 12% probable</span></div>
+    <div class="cl-kpi"><span class="cl-klabel">CLEARED BY</span><span class="cl-kval">91% policy</span><span class="cl-ksub">127 by a named human · median wait 11 min</span></div>
+    <div class="cl-kpi"><span class="cl-klabel">EXCEPTIONS</span><span class="cl-kval" style="color:var(--cp-red)">7</span><span class="cl-ksub">4 out-of-band · 2 break-glass · 1 degraded</span></div>
+    <div class="cl-kpi"><span class="cl-klabel">CONTROLS · CC8.1 / 6.5.1</span><span class="cl-kval" style="color:var(--cp-green)">4 covered</span><span class="cl-ksub">3 partial · 1 gap · mapping v3</span></div>
+  </div>
+
+  <div class="cl-grid">
+    <div class="cl-panel">
+      <div class="cl-prow-head"><span class="cl-klabel">TIER 2 AND 3 · WITH APPROVER</span><span class="cl-klabel">127 rows</span></div>
+      {rows.map((r) => (
+        <div class="cl-row"><span class="cl-mono">{r.id}</span><span>{r.what}</span><span class="cl-dim">{r.who}</span><span class:list={['cl-st', { 'is-bad': r.st === 'EXCEPTION' }]}>{r.st}</span></div>
+      ))}
+    </div>
+    <div class="cl-side">
+      <div class="cl-panel">
+        <span class="cl-klabel">COVERAGE · 14 APPS</span>
+        {coverage.map((c) => (
+          <div class="cl-bar-row"><span>{c.label}</span><div class="cl-track"><div class="cl-bar" style={`--w:${c.w}%;background:${c.c}`}></div></div></div>
+        ))}
+      </div>
+      <div class="cl-statement"><span class="cl-klabel" style="color:var(--cp-amber)">COVERAGE STATEMENT</span><br />Runtime secret values are outside this record. Three records recorded, not checkpointed, during a witness outage on 14 Nov; the tier 3 change in that window was held.</div>
+    </div>
+  </div>
+</figure>
+
+<style>
+  .cl-desk { margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem; background: var(--cp); color: var(--cp-ink); border-radius: 14px; padding: 2rem clamp(1.2rem, 3vw, 2.6rem) 1.8rem; overflow: hidden; font-size: 0.82rem; }
+  .cl-eyebrow { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cp-muted); margin: 0 0 0.3rem; }
+  .cl-h { font-family: var(--font-serif); font-weight: 400; font-size: clamp(1.4rem, 2.4vw, 2rem); line-height: 1.1; margin: 0; }
+  .cl-h em { color: var(--cp-amber); }
+  .cl-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1rem; }
+  .cl-actions { display: flex; gap: 0.6rem; }
+  .cl-btn { font-size: 0.8rem; color: var(--cp-ink); background: var(--cp-3); border: 1px solid var(--cp-line-2); border-radius: 6px; padding: 0.55rem 0.8rem; }
+  .cl-btn-accent { color: #0b0d10; background: var(--cp-amber); border-color: var(--cp-amber); }
+
+  .cl-strip { position: relative; height: 150px; background: var(--cp-2); border: 1px solid var(--cp-line); border-radius: 10px; overflow: hidden; }
+  .cl-party { position: absolute; top: 28px; display: flex; flex-direction: column; gap: 8px; }
+  .cl-p-op { left: 28px; width: 176px; } .cl-p-wit { left: 50%; margin-left: -110px; width: 220px; align-items: center; } .cl-p-ver { right: 28px; width: 180px; align-items: flex-end; }
+  .cl-plabel { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; }
+  .cl-pbox { width: 100%; height: 48px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--cp-3); border: 1.5px solid var(--cp-line-2); font-family: var(--font-mono); font-size: 0.72rem; }
+  .cl-pnote { font-family: var(--font-mono); font-size: 0.62rem; color: #7f8891; }
+  .cl-cp { position: absolute; top: 58px; width: 128px; box-sizing: border-box; background: #fbfaf7; color: var(--cp-3); border-radius: 6px; padding: 6px 9px; font-family: var(--font-mono); font-size: 0.62rem; line-height: 1.45; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); }
+  .cl-cp-out { animation: cl-out 6s ease-in-out infinite; }
+  .cl-cp-back { animation: cl-back 6s ease-in-out infinite; }
+  .cl-sig { position: absolute; left: 50%; margin-left: 60px; top: 118px; font-family: var(--font-mono); font-size: 0.62rem; color: var(--cp-green); animation: cl-ok 6s ease-in-out infinite; }
+  @keyframes cl-out { 0% { left: 214px; opacity: 0; } 8% { opacity: 1; } 40% { left: calc(50% - 174px); opacity: 1; } 48% { opacity: 0; } 100% { opacity: 0; } }
+  @keyframes cl-back { 0%, 56% { left: calc(50% + 112px); opacity: 0; } 62% { opacity: 1; } 92% { left: calc(100% - 350px); opacity: 1; } 100% { opacity: 0; } }
+  @keyframes cl-ok { 0%, 48% { opacity: 0; } 56%, 100% { opacity: 1; } }
+
+  .cl-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+  .cl-kpi { background: var(--cp-2); border: 1px solid var(--cp-line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+  .cl-klabel { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; color: #7f8891; }
+  .cl-kval { font-family: var(--font-serif); font-size: 1.65rem; line-height: 1.1; }
+  .cl-ksub { font-size: 0.76rem; color: var(--cp-muted); }
+
+  .cl-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .cl-panel { background: var(--cp-2); border: 1px solid var(--cp-line); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .cl-prow-head { display: flex; justify-content: space-between; }
+  .cl-row { display: grid; grid-template-columns: 76px 1fr 120px 76px; gap: 10px; padding: 6px 0; border-top: 1px solid var(--cp-line); font-size: 0.78rem; }
+  .cl-mono { font-family: var(--font-mono); color: var(--cp-muted); }
+  .cl-dim { color: var(--cp-muted); }
+  .cl-st { font-family: var(--font-mono); font-size: 0.6rem; color: var(--cp-green); }
+  .cl-st.is-bad { color: var(--cp-red); }
+  .cl-side { display: flex; flex-direction: column; gap: 12px; }
+  .cl-bar-row { display: grid; grid-template-columns: 160px 1fr; gap: 10px; align-items: center; font-size: 0.76rem; }
+  .cl-track { height: 7px; background: var(--cp-3); border-radius: 4px; overflow: hidden; }
+  .cl-bar { height: 100%; width: var(--w); animation: cl-fill 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s both; }
+  @keyframes cl-fill { from { width: 0; } to { width: var(--w); } }
+  .cl-statement { background: #3a2c15; border: 1px solid var(--cp-amber); border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; line-height: 1.5; }
+
+  @media (min-width: 860px) { .cl-grid { grid-template-columns: 1.45fr 1fr; } }
+  @media (max-width: 720px) {
+    .cl-strip { height: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+    .cl-party { position: static; width: 100%; align-items: flex-start; margin: 0; }
+    .cl-cp, .cl-sig { display: none; }
+    .cl-row { grid-template-columns: 1fr 1fr; }
+    .cl-bar-row { grid-template-columns: 1fr; gap: 4px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .cl-cp, .cl-sig, .cl-bar { animation: none; opacity: 1; } .cl-cp-out { left: calc(50% - 174px); } .cl-cp-back { left: calc(100% - 350px); } }
+</style>

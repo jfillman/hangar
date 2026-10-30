@@ -1,0 +1,107 @@
+---
+// Why anyone pays: the clearinghouse between the people who make changes and the people who have to believe them.
+// Hover a party to pause the loop and light its caption.
+const caps = [
+  { n: '01', key: 'subscriber', title: 'Submit.', cap: 'Your packet reaches your auditor in the shape they already accept.' },
+  { n: '02', key: 'auditor', title: 'Verify.', cap: 'They run the open tool and their own witness. Not our word.' },
+  { n: '03', key: 'clearance', title: 'Accept.', cap: 'Their acceptance is signed into the ledger as a record of its own.' },
+  { n: '04', key: 'customers', title: 'Reuse.', cap: 'That receipt is what you show your next customer\'s vendor-risk team.' },
+];
+---
+<figure class="cockpit cl-visual cl-house" data-cl-link>
+  <div class="cl-copy">
+    <p class="cl-eyebrow">Why anyone pays</p>
+    <h3 class="cl-h">The gate is free. The <em>clearinghouse</em> is the product.</h3>
+    <ol class="cl-caps">
+      {caps.map((c) => (
+        <li class="cl-cap" data-cap={c.key}><span class="cl-n">{c.n}</span><span><strong>{c.title}</strong> {c.cap}</span></li>
+      ))}
+    </ol>
+    <p class="cl-hint">hover a party</p>
+  </div>
+  <div class="cl-scene">
+  <div class="cl-map">
+    <div class="cl-node cl-n-sub" data-layer="subscriber"><span class="cl-nlabel" style="color:var(--cp-amber)">SUBSCRIBER</span><strong>Platform and GRC team</strong><span class="cl-nnote">pays for the record store, the witnesses and the providers</span></div>
+    <div class="cl-node cl-n-cust" data-layer="customers"><span class="cl-nlabel" style="color:var(--cp-green)">THEIR CUSTOMERS</span><strong>Vendor-risk reviewers</strong><span class="cl-nnote">read the trust page; verify the receipt themselves</span></div>
+    <div class="cl-node cl-n-clr" data-layer="clearance"><span class="cl-nlabel" style="color:var(--cp-amber)">CLEARANCE</span><strong>Ledger and providers</strong><span class="cl-nnote">delivers, records, never judges</span></div>
+    <div class="cl-node cl-n-aud" data-layer="auditor"><span class="cl-nlabel" style="color:var(--cp-sky)">AUDIT FIRM</span><strong>Verifier and witness</strong><span class="cl-nnote">free tooling; signs an acceptance receipt</span></div>
+    <div class="cl-node cl-n-hub" data-layer="auditor"><span class="cl-nlabel" style="color:var(--cp-sky)">GRC HUB</span><strong>Vanta · Drata</strong><span class="cl-nnote">where the auditors already live; first provider</span></div>
+    <svg class="cl-lines" aria-hidden="true" viewBox="0 0 790 500" preserveAspectRatio="none">
+      <defs><marker id="cl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--cp-line-2)"/></marker></defs>
+      <g fill="none" stroke="var(--cp-line-2)" stroke-width="1.25" marker-end="url(#cl-arrow)">
+        <path d="M232 190 L298 244"/><path d="M482 244 L558 190"/><path d="M482 290 L558 342"/><path d="M298 290 L232 342"/>
+      </g>
+      <text x="236" y="232">packet</text><text x="500" y="232">submit</text><text x="500" y="306">accept</text><text x="236" y="306">receipt</text>
+    </svg>
+    <div class="cl-pkt" aria-hidden="true">packet Q4-2026<br />checkpoint 48,213</div>
+    <div class="cl-rcpt" aria-hidden="true">receipt · accepted<br /><span style="color:#2e8b57">2026 Type II · signed</span></div>
+    <div class="cl-trust" aria-hidden="true">trust page<br />verified change control</div>
+  </div>
+  <p class="cl-foot">Subscriber pays. Auditor side free. Nobody has to trust Clearance: every party verifies the same log.</p>
+  </div>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-cl-link]').forEach((root) => {
+    const caps = root.querySelectorAll<HTMLElement>('[data-cap]');
+    const set = (key: string | null) => {
+      root.classList.toggle('is-hot', !!key);
+      caps.forEach((c) => c.classList.toggle('is-on', c.dataset.cap === key));
+    };
+    root.querySelectorAll<HTMLElement>('[data-layer]').forEach((l) => {
+      l.addEventListener('mouseenter', () => set(l.dataset.layer ?? null));
+      l.addEventListener('mouseleave', () => set(null));
+    });
+  });
+</script>
+
+<style>
+  .cl-visual { margin: 2rem 0; display: grid; grid-template-columns: 1fr; gap: 1.5rem 2.5rem; background: var(--cp); color: var(--cp-ink); border-radius: 14px; padding: 2.4rem clamp(1.2rem, 4vw, 3.5rem); overflow: hidden; }
+  .cl-eyebrow { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cp-muted); margin: 0 0 0.6rem; }
+  .cl-h { font-family: var(--font-serif); font-weight: 400; font-size: clamp(2rem, 3.2vw, 2.9rem); line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 1rem; }
+  .cl-h em { color: var(--cp-amber); }
+  .cl-caps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.92rem; line-height: 1.45; color: var(--cp-muted); }
+  .cl-cap { display: grid; grid-template-columns: 24px 1fr; gap: 0.6rem; border-left: 2px solid transparent; padding-left: 0.7rem; margin-left: -0.85rem; transition: opacity 0.3s, border-color 0.3s, color 0.3s; }
+  .cl-cap strong { color: var(--cp-ink); font-weight: 600; }
+  .cl-n { font-family: var(--font-mono); color: var(--cp-amber); font-size: 0.8rem; }
+  .is-hot .cl-cap { opacity: 0.45; }
+  .is-hot .cl-cap.is-on { opacity: 1; border-left-color: var(--cp-amber); color: var(--cp-ink); }
+  .cl-hint { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; color: #7f8891; margin: 1rem 0 0; }
+
+  /* The map is drawn on a fixed 790x500 stage and scaled to whatever width the column gives it,
+     so nothing is clipped and the arrows stay attached to their boxes at every size. */
+  .cl-scene { container-type: inline-size; width: 100%; }
+  .cl-map { position: relative; width: 790px; height: 500px; transform-origin: top left; transform: scale(tan(atan2(100cqw, 790px))); margin-bottom: calc(500px * tan(atan2(100cqw, 790px)) - 500px); }
+  .cl-node {
+    position: absolute; width: 230px; height: 112px; box-sizing: border-box; padding: 14px 16px; border-radius: 10px;
+    display: flex; flex-direction: column; gap: 4px; background: var(--cp-3); border: 1.5px solid var(--cp-line-2);
+    transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+  }
+  .cl-node strong { font-size: 0.88rem; font-weight: 600; }
+  .cl-nlabel { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; }
+  .cl-nnote { font-size: 0.76rem; color: var(--cp-muted); }
+  .cl-n-sub { left: 0; top: 120px; } .cl-n-cust { left: 0; top: 300px; }
+  .cl-n-clr { left: 300px; top: 210px; width: 180px; background: #3a2c15; border-color: var(--cp-amber); }
+  .cl-n-aud { left: 560px; top: 120px; } .cl-n-hub { left: 560px; top: 300px; }
+  .cl-map:hover .cl-node { opacity: 0.4; }
+  .cl-map:hover .cl-node:hover { opacity: 1; border-color: var(--cp-amber); background: #3a2c15; transform: translateY(-6px); box-shadow: 0 18px 36px rgba(0, 0, 0, 0.5); }
+  .cl-lines { position: absolute; left: 0; top: 0; width: 790px; height: 500px; pointer-events: none; overflow: visible; }
+  .cl-lines text { font-family: var(--font-mono); font-size: 10px; fill: #7f8891; }
+  .cl-pkt, .cl-rcpt { position: absolute; width: 140px; box-sizing: border-box; background: #fbfaf7; color: var(--cp-3); border-radius: 6px; padding: 6px 9px; font-family: var(--font-mono); font-size: 0.62rem; line-height: 1.45; box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); }
+  .cl-pkt { top: 240px; animation: cl-out 8s ease-in-out infinite; }
+  .cl-rcpt { top: 432px; animation: cl-back 8s ease-in-out infinite; }
+  .cl-trust { position: absolute; left: 20px; top: 240px; width: 190px; box-sizing: border-box; background: #16262f; border: 1px solid var(--cp-sky); border-radius: 6px; padding: 6px 9px; font-family: var(--font-mono); font-size: 0.62rem; line-height: 1.45; animation: cl-down 8s ease-in-out infinite; }
+  .cl-map:hover .cl-pkt, .cl-map:hover .cl-rcpt, .cl-map:hover .cl-trust { animation-play-state: paused; }
+  @keyframes cl-out { 0% { left: 320px; opacity: 0; } 8% { opacity: 1; } 42% { left: 605px; opacity: 1; } 50% { opacity: 0; } 100% { opacity: 0; } }
+  @keyframes cl-back { 0%, 52% { left: 605px; opacity: 0; } 58% { opacity: 1; } 92% { left: 90px; opacity: 1; } 100% { opacity: 0; } }
+  @keyframes cl-down { 0%, 60% { top: 232px; opacity: 0; } 66% { opacity: 1; } 94% { top: 248px; opacity: 1; } 100% { opacity: 0; } }
+  .cl-foot { margin: 0.9rem 0 0; font-family: var(--font-mono); font-size: 0.66rem; color: #7f8891; line-height: 1.6; }
+
+  @media (min-width: 860px) { .cl-visual { grid-template-columns: 380px 1fr; } }
+  @media (max-width: 860px) {
+    .cl-map { width: 100%; height: auto; transform: none; margin-bottom: 0; display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .cl-node { position: static; width: 100%; height: auto; }
+    .cl-lines, .cl-pkt, .cl-rcpt, .cl-trust { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .cl-pkt, .cl-rcpt, .cl-trust, .cl-cap { animation: none; opacity: 1; } .cl-pkt { left: 605px; } .cl-rcpt { left: 90px; } .cl-trust { top: 248px; } }
+</style>
