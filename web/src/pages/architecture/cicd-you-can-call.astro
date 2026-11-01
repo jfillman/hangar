@@ -1,0 +1,427 @@
+---
+import Base from '../../layouts/Base.astro';
+import Diagram from '../../components/Diagram.astro';
+import Evidence from '../../components/Evidence.astro';
+import { essays } from '../../data/essays';
+import { u } from '../../lib/url';
+const essay = essays.find((e) => e.slug === 'cicd-you-can-call')!;
+const api = u('docs/glidepath/admin/api/');
+const gaps = u('docs/glidepath/admin/known-gaps/');
+const evidence = [
+  { text: 'glidepath-api: 30 operations in one OpenAPI contract, tiers T0 to T2, live on the dev cluster since October 25, 2026', status: 'built' as const, href: api },
+  { text: 'TokenReview and SubjectAccessReview on glidepath.hangar.io; reader, operator and releaser roles; delegates with On-Behalf-Of', status: 'built' as const, href: api },
+  { text: "Tower's only CI/CD path since October 30; Tower's identities can't write a PipelineRun", status: 'built' as const, href: api },
+  { text: 'Live runs and CI/CD events pushed as server-sent events', status: 'built' as const, href: api },
+  { text: 'cicd.yaml validation as an API call and as a pull-request check on every app repo', status: 'built' as const, href: api },
+  { text: 'Metrics, two SLOs, alerts, traces joined from Tower, and the Glidepath API dashboard', status: 'built' as const, href: api },
+  { text: 'People sign in with people-dex over the Gateway route (November 1)', status: 'built' as const, href: api },
+  { text: 'Tower over the Gateway route: merged, not switched on in prod', status: 'draft' as const },
+  { text: 'Durable event fan-out over AMQP (known gap 44)', status: 'proposal' as const, href: gaps },
+  { text: 'TLS on the lab Gateway', status: 'proposal' as const },
+  { text: 'Ground promotions and cloud pins through the API, which need a GitHub write identity', status: 'proposal' as const },
+];
+---
+<Base title={essay.title} description={essay.dek} section="architecture">
+  <div class="wrap">
+    <article class="essay">
+      <header class="hero">
+        <p class="eyebrow"><a href={u('architecture/')}>Architecture</a> · {essay.minutes} min read</p>
+        <h1>A CI/CD engine you can <em>call</em></h1>
+        <p class="lede">{essay.dek}</p>
+      </header>
+
+      <div class="prose">
+        <p>
+          On October 30, 2026, I took away Tower's permission to create a Tekton PipelineRun. Then I opened a gate-api
+          build in Tower and clicked Re-run.
+        </p>
+        <p>
+          The run started. Tower couldn't have started it any more, and it didn't try. Instead, it asked Glidepath to re-run the
+          build for me, and Glidepath wrote one line to its audit log: operation <code>rerunRun</code>, status 201,
+          caller <code>tower-actor</code>, on behalf of <code>jfillman</code>. Ten minutes earlier I'd cancelled a
+          checkin-api build the same way. Same kind of line, same two names.
+        </p>
+        <p>
+          That small moment is what this essay is about. Glidepath, Hangar's CI/CD engine, used to be a set of Tekton
+          pipelines that only Tower knew how to drive. It's now an API that anything can call, Tower included, and that
+          decides for itself who may do what. I want to explain how it works, and argue that it's the right shape for a
+          CI/CD engine.
+        </p>
+
+        <h2>Tower was the API, and that was the problem</h2>
+        <p>
+          Until late October, everything a person could learn about Glidepath went through Tower's backend. One file in
+          Backstage held about sixty routes. They read run history from Tekton Results, test runs from Testkube and
+          signatures from Rekor. They verified image signatures, and they wrote PipelineRuns straight into the cluster
+          through a Kubernetes proxy whenever somebody clicked Re-run or Cancel. It worked well, and I'd built most of it
+          on purpose.
+        </p>
+        <p>
+          But it meant Glidepath's real API was a Backstage plugin. An agent can't call a Backstage route. A script
+          would have to pretend to be Tower. A second portal would have to copy all sixty routes and get them all right.
+          And the most important rule in the whole system, who may re-run whose build, lived in a portal's backend, where
+          the CI/CD engine couldn't see it or enforce it. Glidepath couldn't stand on its own.
+        </p>
+        <p class="pull">A portal should be a client of the CI/CD engine, not the place where its rules live.</p>
+
+        <h2>Why it had to be an API, again</h2>
+        <p>
+          A week earlier, in <a href={u('architecture/paving-the-cloud/')}>Paving the cloud</a>, I
+          argued that a paved road has to be an API. A form in front of a ticket queue can't be versioned, reviewed, undone
+          or used by an agent; an API can. An IDP that's only a portal is a catalog of things you can request, and an IDP
+          with an API underneath is a catalog of things the platform will keep true.
+        </p>
+        <p>
+          That essay was about nouns: a queue, a bucket, a database. For nouns, the Kubernetes API is a wonderful home. You
+          get a schema, a status, and a controller that puts things back when they drift. CI/CD is mostly verbs. Run this
+          again. Why did it fail? Show me the log. Promote it to staging. Roll it back. In
+          <a href={u('architecture/cost-of-the-platform/')}>What Hangar costs</a> I drew a line
+          between things that should be reconciled and things that should just happen once, and a re-run is clearly the
+          second kind. Nobody wants a controller re-running their build forever.
+        </p>
+        <p>
+          It's tempting to say the API already existed, because a PipelineRun is a Kubernetes object. But a PipelineRun
+          is the implementation. It has more fields than anyone should fill in by hand, and if every client may create
+          one, every client may create <em>any</em> one, with any service account and any task. Giving Tower that right
+          is how I ended up needing admission policies to keep Tower honest.
+        </p>
+        <p>
+          So glidepath-api is plain HTTP that borrows Kubernetes where Kubernetes is good, which is identity and access
+          control, and keeps the verbs at the level people think in. Built that way, an API-driven CI/CD engine buys a
+          handful of things a portal backend can't:
+        </p>
+        <ul>
+          <li><strong>One front door.</strong> Tower, an agent, a script and a person with <code>curl</code> get the same answers to the same questions.</li>
+          <li><strong>One place to decide, and one place to record.</strong> Every call is authorized and written down by the engine, whoever is asking.</li>
+          <li><strong>A contract.</strong> Every operation, with what it risks, is in one file an agent can read and a test can check.</li>
+          <li><strong>Narrow grants.</strong> Tower's identities can no longer write a PipelineRun at all. The engine holds that right, behind its own rules.</li>
+          <li><strong>A replaceable portal.</strong> Glidepath stands alone. Tower is one client, and it doesn't have to be the last.</li>
+        </ul>
+      </div>
+
+      <Diagram id="api/01-one-front-door" />
+
+      <div class="prose">
+        <h2>What it is</h2>
+        <p>
+          glidepath-api is a small Go service: two replicas on the control-plane cluster, behind one Service on port
+          8080. Every merge that touches it builds a new multi-arch image, and the contract is baked into the image, so
+          <code>GET /v1/contract</code> always describes the code that's answering. It has 30 operations, and the first
+          thing to know about each one is its tier:
+        </p>
+        <ul>
+          <li><strong>T0, read.</strong> 26 of the 30. Nothing changes.</li>
+          <li><strong>T1, reversible in Ground.</strong> Re-run and cancel a build in the app's own CI namespace.</li>
+          <li><strong>T2, propose for Flight.</strong> Promote and roll back a production-side environment. The API only starts the app's release pipeline; the change arrives as a GitOps pull request that a person merges.</li>
+          <li><strong>T3, never offered.</strong> Anything that would change production directly.</li>
+        </ul>
+        <p>
+          Two things are missing on purpose. Promoting to a Ground environment and pinning a cloud release are both
+          commits to a repo, so they need a GitHub write identity, and the API doesn't hold one. They stay in Tower for
+          now. Here's the whole surface:
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Call</th><th>Tier</th><th>What it answers</th></tr></thead>
+          <tbody>
+            <tr class="group"><td colspan="3">Who you are, and the rules</td></tr>
+            <tr><td><code>GET /v1/whoami</code></td><td class="tier">T0</td><td>Who the API thinks you are</td></tr>
+            <tr><td><code>GET /v1/contract</code></td><td class="tier">T0</td><td>Every operation and its tier, every <code>cicd.yaml</code> field and who may change it</td></tr>
+            <tr class="group"><td colspan="3">One app's runs</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/runs</code></td><td class="tier">T0</td><td>Finished runs from the last 30 days, newest first</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/runs/&#123;result&#125;</code></td><td class="tier">T0</td><td>One run</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/runs/&#123;result&#125;/logs/&#123;taskRun&#125;</code></td><td class="tier">T0</td><td>A task's step logs</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/runs/&#123;result&#125;/explain</code></td><td class="tier">T0</td><td>Why it failed: the failing step, a known-failure id, a hint, the matching line</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/live</code></td><td class="tier">T0</td><td>Runs in flight, as the cluster holds them now</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/live/stream</code></td><td class="tier">T0</td><td>The same, pushed: a snapshot, then every change</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/live/taskruns/&#123;taskRun&#125;/logs/&#123;container&#125;</code></td><td class="tier">T0</td><td>A running step's log</td></tr>
+            <tr class="group"><td colspan="3">The whole fleet</td></tr>
+            <tr><td><code>GET /v1/runs</code>, <code>/v1/live</code>, <code>/v1/live/taskruns</code></td><td class="tier">T0</td><td>Runs across every namespace, paged, with ETags</td></tr>
+            <tr><td><code>GET /v1/releases</code>, <code>/v1/releases/events</code></td><td class="tier">T0</td><td>Every release record, and the stalled and drifted ones</td></tr>
+            <tr class="group"><td colspan="3">Releases and evidence</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/releases</code>, <code>/releases/&#123;chainId&#125;</code></td><td class="tier">T0</td><td>The app's release records</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/releases/runs/&#123;name&#125;</code></td><td class="tier">T0</td><td>A promotion or rollback, followed from the click to its pull request</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/evidence?image=</code></td><td class="tier">T0</td><td>Every signature and attestation on an image, re-verified</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/tests</code>, <code>/tests/&#123;id&#125;/report</code></td><td class="tier">T0</td><td>Test runs from Testkube, and their JUnit reports</td></tr>
+            <tr class="group"><td colspan="3">Environments</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/environments</code></td><td class="tier">T0</td><td>The release plan: environments, tiers, promotion order</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/environments/&#123;env&#125;/rollback-plan</code></td><td class="tier">T0</td><td>What's running, and what it could roll back to</td></tr>
+            <tr><td><code>GET /v1/apps/&#123;app&#125;/previews</code></td><td class="tier">T0</td><td>The app's pull-request preview environments</td></tr>
+            <tr class="group"><td colspan="3">Changes</td></tr>
+            <tr><td><code>POST /v1/apps/&#123;app&#125;/cicd/validations</code></td><td class="tier">T0</td><td>What a <code>cicd.yaml</code> change would mean, before anyone opens a pull request</td></tr>
+            <tr><td><code>POST /v1/apps/&#123;app&#125;/pipelineruns/&#123;name&#125;/rerun</code>, <code>/cancel</code></td><td class="tier">T1</td><td>Re-run or cancel a build, once per idempotency key</td></tr>
+            <tr><td><code>POST /v1/apps/&#123;app&#125;/environments/&#123;env&#125;/promote</code>, <code>/rollback</code></td><td class="tier">T2</td><td>Start a release run whose pull request a person merges</td></tr>
+            <tr class="group"><td colspan="3">Events</td></tr>
+            <tr><td><code>GET /v1/events</code>, <code>/v1/events/recent</code></td><td class="tier">T0</td><td>Every CI/CD event, re-verified, as a resumable stream or as JSON</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose">
+        <p>A few of those endpoints deserve an extra mention, because they're things Tower never had.</p>
+        <p>
+          <strong>Explain.</strong> A failed run is classified against Glidepath's list of known failures, in the
+          contract's order, with the line in the log that matched. When I added the last three entries, every one of the
+          twenty most recent real failures on the dev cluster came back with a name and a hint.
+        </p>
+        <p>
+          <strong>Pushed, not polled.</strong> Tower's CI/CD tab used to ask for live runs every six seconds, which is
+          about 760 calls an hour for each open tab. <code>live/stream</code> is one connection: a snapshot, then each
+          change. Behind it, one watcher per namespace serves every viewer of that namespace and stops when the last one
+          leaves. The event stream works the same way for CDEvents: every build, gate and release event the shared broker
+          carries, re-verified, as server-sent events that resume from the last id you saw.
+        </p>
+        <p>
+          <strong>Validate before you propose.</strong> <code>cicd/validations</code> takes a change to an app's
+          <code>cicd.yaml</code> and says whether it's valid, which fields it touches, and whether an agent would be
+          allowed to make it. It's the same validator as the new <code>cicd-validate</code> pull-request check, which now
+          runs on all six app repos, so the answer before the pull request is the answer the check will give. The first
+          real agent pull request through it rewrote all 73 lines of the file, because the API returned re-marshalled
+          YAML. Now it edits the file's own text, and a one-line change is a one-line diff.
+        </p>
+      </div>
+
+      <div class="prose">
+        <h2>Who may do what</h2>
+        <p>
+          I didn't want glidepath-api to invent its own users, roles or tokens. The cluster already knows who everyone is,
+          and Kubernetes RBAC is already the thing my security reviews read. So the API asks the cluster twice.
+        </p>
+        <p>
+          <strong>Who are you?</strong> is a TokenReview. Anything the API server trusts works: an in-cluster
+          ServiceAccount, or a federated identity from the other cluster, which is how Tower's identities from the prod
+          cluster arrive. (Since November 1 there's one more way in, for people. That gets its own section below.)
+        </p>
+        <p>
+          <strong>May you?</strong> is a SubjectAccessReview in the app's CI namespace, on an API group that nothing
+          actually serves: <code>glidepath.hangar.io</code>. Its resources are <code>runs</code>, <code>runs/logs</code>,
+          <code>releases</code>, <code>evidence</code>, <code>tests</code>, <code>environments</code>,
+          <code>events</code> and <code>cicd</code>. RBAC only needs the strings, so access is an ordinary ClusterRole.
+          There are three: a reader, an operator who may re-run and cancel, and a releaser who may promote and roll back.
+          They hold nothing of each other's, and all three are bound to nobody on a fresh install. To let one identity
+          into one app, you bind the role in that app's namespace. And an app that doesn't exist answers 403 to anyone who
+          couldn't read it if it did, so the API never tells a stranger which apps exist.
+        </p>
+      </div>
+
+      <Diagram id="api/02-how-a-call-is-decided" />
+
+      <div class="prose">
+        <p>
+          <strong>For whom?</strong> Tower acts for people, and people in Backstage aren't Kubernetes identities, so no
+          SubjectAccessReview can be asked about them. A listed delegate, Tower or Clearance, may name the person in an
+          <code>X-Glidepath-On-Behalf-Of</code> header. Every write from a delegate must name someone, or it's refused
+          before anything is read. The API authorizes the delegate and records the person, and it trusts the delegate to
+          have checked that person, which Tower does with its owner permission before it calls. I want to be clear that
+          this is a trust I chose, not one the API can prove. The audit line is what keeps it checkable.
+        </p>
+        <p>
+          <strong>The cluster's own lock.</strong> glidepath-api's ServiceAccount has to be able to create PipelineRuns in
+          any app's namespace, because apps are onboarded after it's installed, and RBAC can't narrow that to "only
+          Glidepath's kind of run". So an admission policy does. It holds the API to Glidepath's shape: an app's or
+          InfraService's CI namespace, a pipeline from the platform catalog, the standard runner, no inline spec, and an
+          update may only cancel. The same policy refuses any PipelineRun write from Tower's writer identity. If the API
+          ever had a bug that built the wrong run, the cluster would still say no.
+        </p>
+        <p>
+          <strong>Safe to retry.</strong> Every write takes an <code>Idempotency-Key</code>, and the run's name is derived
+          from it, so sending the same request twice returns the first run with a 200 instead of starting a second one.
+          Every write also has a dry run. And every refusal is JSON with a stable rule, like <code>GP-AUTHZ-001</code> or
+          <code>GP-API-422</code>, and a hint about what would work. A person reads the hint; an agent branches on the
+          rule.
+        </p>
+        <p>
+          <strong>No GitHub credential.</strong> Promotions and rollbacks have to read the app's repos. glidepath-api holds
+          no GitHub token at all. For each request it asks Glidepath's broker for one, and the broker mints a read-only
+          installation token scoped to that one repository, and only if the repository really belongs to the app. The
+          token lives for the request. It's never cached, logged or returned.
+        </p>
+
+        <h2>Moving Tower without a flag day</h2>
+        <p>
+          The riskiest part of an API like this isn't the API. It's moving the existing client onto it without breaking
+          the views people use every day. So Tower moved one group of routes at a time, and each group went through three
+          modes: <em>direct</em>, the old code; <em>shadow</em>, where Tower still answered from its own code but also
+          asked the API in the background and logged every field that differed; and <em>api</em>, where the API's answer
+          was the only one.
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Route group</th><th>Shadow</th><th>On the API</th><th>What shadowing caught</th></tr></thead>
+          <tbody>
+            <tr><td>Release state</td><td>Oct 27</td><td>Oct 28</td><td>Nothing. Clean from the start.</td></tr>
+            <tr><td>Run history and logs</td><td>Oct 27</td><td>Oct 28</td><td>Slow cold reads timing out at Tower's 10 seconds</td></tr>
+            <tr><td>Supply-chain evidence and tests</td><td>Oct 28</td><td>Oct 29</td><td>A runtime difference, and a real security bug</td></tr>
+            <tr><td>Re-run and cancel</td><td>Oct 28</td><td>Oct 29</td><td>Nothing, though a cancel is a weak comparison</td></tr>
+            <tr><td>Live runs, fleet history, Ops Wall</td><td>none</td><td>Oct 30</td><td>Built on the API from the start</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose">
+        <p>
+          The run history caught the first real problem. A busy app's first read from Tekton Results could take a few
+          seconds, Tower gave up at ten, and the API threw the half-finished read away. So nothing got cached, and every
+          retry started cold. Now a read that fills the cache finishes even when its caller has gone, callers asking the
+          same thing share one read, and each replica warms every app's last seven days when it starts. The slowest
+          tenth of history calls fell from 10 seconds to under 7, and the errors went to zero.
+        </p>
+        <p>
+          The evidence comparison caught something better. To move it, I ported Tower's signature verification to Go by
+          hand, so its answers would match field for field. Doing that, I noticed that the identity check was an
+          unanchored regular expression. A signature from a branch called <code>main-evil</code> would have passed a
+          policy that said <code>main</code>. Both implementations now anchor the match. I'd reviewed that code before
+          and missed it. Writing it a second time didn't. That's a merit of an API-driven design I didn't expect: the
+          second client is also a code review of the first.
+        </p>
+        <p>
+          On October 30 the old paths were deleted. Tower now asks glidepath-api for every run, log, release record,
+          piece of evidence and test run, and sends every re-run, cancel, promotion and rollback through it. There is no
+          fallback. If the API fails, Tower shows the error, with the trace id in it. That afternoon I rolled gate-api's
+          production back to an earlier version from Tower. The audit log showed the rollback plan read on my behalf, then
+          <code>rollbackEnvironment</code> 201 from <code>tower-actor</code>. A release run opened the pull request, I
+          merged it, and the release record went from progressing to healthy.
+        </p>
+
+        <h2>Watching the API itself</h2>
+        <p>
+          If every CI/CD click in Hangar now goes through one service, that service had better be the best-watched thing
+          in the platform. On October 31 it got the same treatment I'd give a product.
+        </p>
+        <p>
+          <strong>Metrics.</strong> Each replica serves Prometheus metrics on its own port, with nothing else on that
+          listener: requests by operation, tier, status and decision; how long each took; open streams. A caller that
+          gives up before the answer is recorded as a 499, not a 502, because that's what really happened.
+        </p>
+        <p>
+          <strong>SLOs.</strong> Two, over 30 days, through Sloth: 99.5% of calls don't fail, and 95% of calls answer
+          within 2.5 seconds. On the dev cluster the latency SLO started burning on day one, at about 1.8 times the
+          budget, because the API server answers TaskRun lists slowly there. I left the objective where it was. An SLO
+          moved to make an alert go away isn't measuring anything any more. Four more alerts cover what an SLO can't:
+          no replica scraped, a replica missing, and each kind of stream close to its limit.
+        </p>
+        <p>
+          <strong>Traces.</strong> Each call is a span named for its operation, with the app, the tier, the caller and the
+          decision on it, and each thing the API reads for that call is a child span. A caller that sends a W3C
+          <code>traceparent</code> gets its trace joined. Prod Backstage was already instrumented with OpenTelemetry, and
+          I checked that a <code>traceparent</code> survives the API server's proxy unchanged, so a click in Tower on one
+          cluster and the Tekton Results read on the other end up in one trace. The trace id comes back in a response
+          header, it's in the audit line, and Tower ends its error messages with it.
+        </p>
+      </div>
+
+      <Diagram id="api/03-one-call-three-signals" />
+
+      <div class="prose">
+        <p>
+          <strong>Dashboards.</strong> Grafana has a new <em>Glidepath API</em> dashboard: both SLOs, their budget and
+          burn, the alerts, traffic and latency per operation, open streams, and Tower's own measurement of its calls,
+          read from the prod cluster, next to the API's. The gap between the two lines is the network between the
+          clusters, which is the number I'd been guessing at for a month. The pipelines dashboard got PipelineRun
+          durations and outcomes, runs waiting to resolve, pod start latency and the traces of failed and slow stages.
+          It also turned out to be querying Tekton metric names that hadn't existed for several releases. Those are
+          fixed.
+        </p>
+
+        <h2>A door for people</h2>
+        <p>
+          Until November 1 a person could only reach the API through the Kubernetes API server's proxy, which means
+          holding a cluster credential. That's fine for me and wrong for everyone else. So glidepath-api now has a route
+          on the cluster's Gateway, serving <code>/v1</code> and nothing else, and it accepts a person's ID token from
+          people-dex, the same Dex in front of GitHub that Clearance already trusts.
+        </p>
+        <p>
+          The API checks that token itself. A token goes down that path only if its issuer is people-dex, and then it's
+          fully verified: the signature against Dex's keys, the issuer, the expiry, and the audience, which has to be
+          glidepath-api's own client, so a token minted for Clearance is refused here. Every other token still goes to
+          TokenReview, so ServiceAccounts and Tower's identities work over the route too. The person becomes
+          <code>people:&lt;their GitHub login&gt;</code>, and from there it's the same SubjectAccessReview as everyone
+          else. Readers are bound by default; writing needs an explicit grant. Dex will sign in any GitHub user, so the
+          API only lets in an explicit list, and the chart won't turn people sign-in on without one. A person is
+          never a delegate.
+        </p>
+        <p>
+          I could have put the sign-in on the Gateway instead. Traefik doesn't do OIDC by itself, and more to the point,
+          the API already had to decide every call. Two places that decide who you are is one more than I want to keep in
+          agreement.
+        </p>
+        <p>
+          Tower can use the route as well, skipping the API server proxy, which should take a hop and some latency out of
+          every call. That's merged, and switched off until I turn it on for prod. One thing to say plainly: the lab's
+          Gateway is plain HTTP, so a token on that route crosses my home network unencrypted. It's the same for
+          Clearance and Dex today. On a real network, TLS on the Gateway comes first.
+        </p>
+
+        <h2>And for agents</h2>
+        <p>
+          The API is plain HTTP on purpose. The agent side lives in Clearance, which puts MCP tools in front of it and
+          maps the API's tiers onto its own. Nine new read tools landed this week, among them a bounded watch of a live
+          run and the preview list. On October 29 a seeded typo broke a gate-api build. The event came off the stream, a
+          triage agent read the run, its log and its explanation through the API, and it opened a one-line fix as a pull
+          request, with nobody asking it to. How Clearance decides what an agent may do is its own story, and the next
+          essay.
+        </p>
+
+        <h2>The rest of the week</h2>
+        <p>
+          A few smaller things landed in Glidepath alongside the API. Every app repo now runs the
+          <code>cicd-validate</code> check on any pull request that changes <code>cicd.yaml</code>. A bare
+          <code>/retest</code> comment now runs every check again: the check templates matched on a field a comment
+          webhook doesn't have, so they were quietly skipped. Repos with nothing to build can be onboarded for pull-request
+          checks alone. Re-run, cancel, promote and rollback have a run handle Tower can follow from the click to the pull
+          request. Preview environments can be read through the API, though they still start with a <code>preview</code>
+          label on the pull request. And the fleet lists page and send ETags, so an unchanged answer costs a 304.
+        </p>
+
+        <h2>What it costs, and what's still open</h2>
+        <p>An API is one more thing to run, and I'd rather list its bill than have you find it.</p>
+        <ul>
+          <li><strong>Prod depends on dev, more visibly.</strong> Tower on the prod cluster now gets every CI/CD answer from a service on the dev cluster. That dependency was already the top finding in the architecture review. The API makes it explicit; it doesn't remove it.</li>
+          <li><strong>Latency has a floor.</strong> Every call crosses between clusters, and under host load a cold read still gets close to Tower's ten seconds.</li>
+          <li><strong>Events aren't durable.</strong> Each replica keeps the last 2000 events, for a day at most, in memory. If both restart at once, a consumer that was away misses what happened. A design for durable fan-out over AMQP is written and deliberately deferred until a second unattended consumer appears, or a missed event costs something. It's known gap 44.</li>
+          <li><strong>The delegate is trusted.</strong> The API records the person Tower acts for but can't check them itself.</li>
+          <li><strong>The route is plain HTTP</strong> in the lab, as above.</li>
+          <li><strong>Some verbs stay in Tower.</strong> Ground promotions and cloud pins need a GitHub write identity the API doesn't have, and previews are read only.</li>
+        </ul>
+
+        <h2>A boring backend</h2>
+        <p>
+          My favourite result of all this is how dull Tower's backend got. It doesn't verify signatures, read Tekton
+          Results, talk to Testkube or write PipelineRuns any more. It asks, and shows the answer. Tomorrow a different
+          portal, a command-line tool or an agent can ask the same questions and get the same answers, decided by the same
+          rules and written to the same log.
+        </p>
+        <p>
+          The third of my <a href={u('principles/')}>principles</a> is an API-driven control plane,
+          ready for AI. For Airframe that meant Kubernetes resources. For Glidepath it meant something smaller and plainer:
+          an HTTP API that borrows the cluster's identity and RBAC, and keeps the verbs where people can find them.
+        </p>
+        <p class="sign">James</p>
+          <p class="more"><a href={u('architecture/')}>← All architecture essays</a></p>
+      </div>
+
+      <Evidence items={evidence} heading="Where Hangar does this, and where it doesn't yet" />
+    </article>
+  </div>
+</Base>
+<style>
+  .essay .hero .eyebrow a { color: inherit; }
+  .essay .hero h1 { max-width: 22ch; }
+  .prose h2 { margin-top: 3rem; }
+  .pull {
+    font-family: var(--font-serif); font-size: clamp(1.5rem, 1.4vw + 1rem, 2rem); line-height: 1.25;
+    border-left: 3px solid var(--accent); padding: 0.2rem 0 0.2rem 1.2rem; margin: 2.5rem 0; max-width: 34ch;
+  }
+  .sign { font-family: var(--font-serif); font-size: 1.4rem; margin-top: 2rem; }
+  .more { margin-top: 2rem; }
+  td code { white-space: nowrap; }
+  td.tier { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+  tr.group td {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
+    padding-top: 1.1rem; border-bottom-color: var(--rule-strong);
+  }
+</style>
