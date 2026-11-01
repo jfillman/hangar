@@ -16,6 +16,8 @@ against glidepath `983d2e0`, apron `2493b02`, gitops-hangar-dev `52b1223`, gitop
 both clusters.
 OPS-06, POL-01 and TEST-10 changed 2026-10-30 with Glidepath API P6 (Tower on glidepath-api, no Tekton writes), checked
 against gitops-hangar-dev `52b1223` and live (`kubectl auth can-i`).
+API-01 to API-12 (the CI/CD API, glidepath-api, and the `cicd-validate` check) added 2026-11-01, checked against
+glidepath `d48e1b7` (contract 0.11.0) and gitops-hangar-dev `fd0ed74`, and live on hangar-dev.
 CRED-07 to CRED-09, POL-10) re-checked on 2026-10-17: glidepath `1ad8dae`, airframe `0710485` (v0.3.148),
 gitops-cluster-dev #108.
 
@@ -54,8 +56,9 @@ the rule:
 15. [Credentials and secrets](#15-credentials-and-secrets)
 16. [Notifications](#16-notifications)
 17. [AI agents](#17-ai-agents)
-18. [Rules that are not enforced yet](#18-rules-that-are-not-enforced-yet)
-19. [Keeping this page true](#19-keeping-this-page-true)
+18. [The CI/CD API (glidepath-api)](#18-the-cicd-api-glidepath-api)
+19. [Rules that are not enforced yet](#19-rules-that-are-not-enforced-yet)
+20. [Keeping this page true](#20-keeping-this-page-true)
 
 ## 1. People and roles
 
@@ -216,7 +219,7 @@ Full detail: [Tower release records](https://github.com/jfillman/tower/blob/main
 | SC-02 | Tekton Chains signs every image and its provenance with a short-lived certificate from the build cluster's own Fulcio (its own trust root, never the public one), and logs the signatures in the platform's Rekor. Rekor's signing key persists, is never replaced, and is never in git, Infisical or a terminal. | Enforced | [Glidepath image-signing.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/image-signing.md) |
 | SC-03 | Tower colours a supply-chain step by its verification. **Green**: verified. **Amber**: present but unverified, for a reason that isn't tampering. **Red**: contradicted, so don't promote it. **Grey**: missing. A signature with no Rekor entry counts as unsigned. | Display | [Tower supply-chain.md](https://github.com/jfillman/tower/blob/main/docs/supply-chain.md) |
 | SC-04 | Readiness's "Signed and attested" passes only on a verified attestation, never on one that is merely present. | Display | Tower `isSignedAndAttested` |
-| SC-05 | Build signatures and provenance are checked at release (GATE-07), not when a cluster admits an image. Since 2026-10-30 hangar-prod admits tenant images only with a promotion attestation (PROM-05), which records that the image went through the promoter after the gates; the Chains provenance itself is not re-checked at admission (it carries no Rekor inclusion proof, and the build cluster's Rekor is unreachable from prod). The Tower debug image is checked at admission too (BG-04). hangar-dev checks nothing at admission. | Enforced at release; at admission on hangar-prod through PROM-05 | see [section 18](#18-rules-that-are-not-enforced-yet) |
+| SC-05 | Build signatures and provenance are checked at release (GATE-07), not when a cluster admits an image. Since 2026-10-30 hangar-prod admits tenant images only with a promotion attestation (PROM-05), which records that the image went through the promoter after the gates; the Chains provenance itself is not re-checked at admission (it carries no Rekor inclusion proof, and the build cluster's Rekor is unreachable from prod). The Tower debug image is checked at admission too (BG-04). hangar-dev checks nothing at admission. | Enforced at release; at admission on hangar-prod through PROM-05 | see [section 19](#19-rules-that-are-not-enforced-yet) |
 
 ## 10. Live operations from Tower
 
@@ -322,16 +325,37 @@ Full detail: [Tower break-glass admission policies](https://github.com/jfillman/
 | AI-02 | Agent runs go only to clusters marked `autopilotReady` (AF-05). | Enforced | AgentRun composition |
 | AI-03 | Per-agent tool tiers, budgets and field allow/deny lists (Clearance) are built but not deployed. | Off here | [Autopilot design](../autopilot/design.md) |
 
-## 18. Rules that are not enforced yet
+## 18. The CI/CD API (glidepath-api)
+
+Every read and write of an app's CI/CD, from Tower, Clearance, a script or a person, goes through glidepath-api: runs,
+logs, release records, evidence, tests, environments, events, re-run, cancel, promote and roll back. Tower has no
+other path since 2026-10-30 (OPS-06). Detail: [Glidepath api.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/api.md).
+
+| ID | Rule | Strength | Held by |
+|---|---|---|---|
+| API-01 | Every `/v1` call needs a bearer token. Who the caller is comes from the cluster's TokenReview, or, for a token whose issuer is people-dex, from glidepath-api's own check of that ID token: signature, issuer, expiry, and an audience of `glidepath-api` (a token minted for Clearance is refused). A token that fails is `GP-AUTH-001`/`002`. | Fails closed | [api.md: Who may read what](https://github.com/jfillman/glidepath/blob/main/docs/admin/api.md#who-may-read-what) |
+| API-02 | What a caller may do is a SubjectAccessReview in the app's `-cicd` namespace on `glidepath.hangar.io` (`runs`, `runs/logs`, `releases`, `evidence`, `tests`, `environments`, `events`, `cicd`). Three roles hold the verbs: reader, operator (re-run, cancel) and releaser (promote, roll back). None includes another, and a fresh install binds nobody. On hangar-dev the readers are Tower's read identity and Clearance; operators and releasers are `tower-actor` and Clearance. | Enforced | glidepath-control-plane `api.readers`, `api.operators`, `api.releasers` |
+| API-03 | An app that doesn't exist answers 403 to a caller who couldn't read it if it did, and 404 only to one who could, so the API never tells a stranger which apps exist. | Enforced | glidepath-api |
+| API-04 | Only a listed delegate (Tower's two identities and Clearance on hangar-dev) may name a person with `X-Glidepath-On-Behalf-Of` (`GP-AUTH-003`). A delegate's write must name one (`GP-AUTH-004`). The API authorizes the delegate and records the person; it can't check the person, so it trusts the delegate's own check (ACC-03 in Tower). | Enforced (the header); the person check is the delegate's | `api.delegates` |
+| API-05 | Writes are tiered. **T1**: re-run and cancel a PipelineRun, only in the app's own `-cicd` namespace, taken from the path, never the request. **T2**: promote and roll back a **Flight** environment, which only starts the app's release pipeline; the change is a gitops PR a person merges (ENV-03). A Ground target is `GP-API-422`. **T3** (anything that changes production directly) is never offered. The tier of every operation is in the contract. | Enforced | glidepath-api; `api/openapi.yaml` `x-glidepath-tier` |
+| API-06 | Ground promotion and cloud release pins are not offered by the API: both are commits to a repo, and the API holds no GitHub write identity. They stay in Tower. | Enforced (no route) | [api.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/api.md) |
+| API-07 | Every write takes an `Idempotency-Key`, and the run's name is derived from it: the same key returns the first run (200, replayed), never a second one; a name held by something else is `GP-API-409`. Every write has a dry run. | Enforced | glidepath-api |
+| API-08 | glidepath-api holds no GitHub credential. For each request the broker mints an installation token scoped to one of the app's own repos (matched to a Pipelines as Code Repository in the app's namespace) with `contents`, `pull_requests` and `metadata` read only, and only for glidepath-api's ServiceAccount. The token is never cached, logged, returned or put in an error. | Enforced | broker `POST /github-read-token` (`githubRead.callers`) |
+| API-09 | Every call, allowed or refused, writes one audit line: operation, tier, app, caller, on-behalf-of, decision, status, time and trace id; a write adds its key's hash, never the key. No token is ever in it. | Enforced | glidepath-api audit log |
+| API-10 | People call the API over the Gateway route (`/v1` only) with a people-dex ID token, as `people:<GitHub login>`, and only if that login is in `api.oidc.allowedUsers` (`GP-AUTH-005`); the chart refuses people sign-in without the list. An allowed person is bound as a reader; writing needs the name under operators or releasers. A person is never a delegate. | Enforced | `api.oidc`, `api.route` |
+| API-11 | An event on the stream is one the API re-verified when it arrived: the sender's token is checked again by TokenReview, and its ServiceAccount must be in the event's own app `-cicd` namespace (the relay excepted). A forged event is dropped. Replicas share events only with each other, under their own token audience. | Enforced | `/internal/events/tap`, peer fan-out |
+| API-12 | Every PR to an onboarded app repo runs `cicd-validate`: when `cicd.yaml` changes, the schema, `GP-ENV` and `GP-PIPE` rules, and for an agent's PR the `GP-SCOPE` rules too; a PR that removes `cicd.yaml` fails. The same validator answers `POST /v1/apps/{app}/cicd/validations` before a PR exists. It stops a merge only as a required check (GATE-03). | Enforced as a check; **Off here** as a blocker | [Glidepath contract.md](https://github.com/jfillman/glidepath/blob/main/docs/admin/contract.md#enforced-in-app-pull-requests-the-cicd-validate-check) |
+
+## 19. Rules that are not enforced yet
 
 Every place where a rule above is weaker than it reads, in one list:
 
 | Gap | Rules | What it means today |
 |---|---|---|
-| GitHub Free can't enforce rulesets or required checks on private repos. | GATE-03, REL-03 | Gates and sign-off report but don't block. A bypass is detected and announced (GATE-04, REL-05). |
+| GitHub Free can't enforce rulesets or required checks on private repos. | GATE-03, REL-03, API-12 | Gates and sign-off report but don't block. A bypass is detected and announced (GATE-04, REL-05). |
 | A GitHub-merged release rests on a GitHub session. | GATE-15 | Decided 2026-10-20 (ADR-0027): an allowed merger's GitHub session is enough to release a PR's code, and in `merger` mode nobody gitsign-signed that code. On hangar-dev the path is on for every onboarded app (backstage, boarding-api, flight-api, gate-api), in `merger` mode with 0 approvals (one person merges). Raise `requiredApprovals` once a second real person merges; use `strict` where every author can run gitsign. |
 | The ruleset assumes every PR is a release PR. | GATE-03 | Once enforced, non-release PRs would wait forever for gates that never run. Fix before enabling GATE-03 ([ruleset audit](https://github.com/jfillman/glidepath/blob/main/docs/admin/github-ruleset.md#problems-found-in-the-audit-2026-09-27)). |
-| App repos aren't gated. | ENV-02 | By design: Ground is self-service. Only gitops repos get gates. |
+| App repos aren't gated. | ENV-02 | By design: Ground is self-service. Only gitops repos get release gates. App repo PRs run `cicd-validate` (API-12) and the agent gates, which report but don't block (GATE-03). |
 | `itsm` is real only with a provider. | GATE-01 | This lab points it at a mock change tool (CHG-01 to CHG-06 hold against the mock). |
 | `policy-validation` checks only validating policies. | GATE-18 | ImageValidatingPolicy, mutating policies, parameterised ValidatingAdmissionPolicies and Pod Security Admission labels are not evaluated; admission still enforces them at sync. Every policy on hangar-prod today is a break-glass rule, so every current release passes until app-facing policies land in `30-policy/`. |
 | `qa` is advisory on hangar-dev. | GATE-12, GATE-13 | `required: false` until every app with a Flight environment has a check ride (boarding-api has one). The check runs and reports; a missing ride does not fail it. |
@@ -347,8 +371,11 @@ Every place where a rule above is weaker than it reads, in one list:
 | Agent and security-review limits are convention. | AF-06, AF-07, AI-03 | Clearance isn't deployed, and no rule requires a security reviewer. |
 | Azure deploys use a stored secret. | CRED-07 | Lambda and ECS deploys are keyless (2026-10-16/17). Azure Container Apps still logs in with a stored service principal secret; next is workload identity federation ([Glidepath known gap 43](https://github.com/jfillman/glidepath/blob/main/docs/admin/known-gaps.md)). |
 | Only admins can run software templates. | ACC-02 | App teams can't scaffold a new service themselves. Intentional for the lab; revisit before onboarding other teams. |
+| The API trusts the delegate's person check. | API-04 | A write from Tower or Clearance names a person, but the API can only authorize the delegate. If Tower's owner check (ACC-03) were wrong, the API would still act; the audit line records both names. |
+| People's route is plain HTTP in this lab. | API-10 | The Gateway listener has no TLS, so an ID token crosses the LAN in the clear, as it does for Clearance and Dex. Use it on a trusted network until the Gateway has TLS. |
+| CI/CD events are best effort. | API-11 | Each replica keeps the last 2000 events, for 24 h at most, in memory. If both replicas restart at once, a subscriber that was away misses events. Durable fan-out over AMQP is designed and deferred ([Glidepath known gap 44](https://github.com/jfillman/glidepath/blob/main/docs/admin/known-gaps.md), ADR-0030). |
 
-## 19. Keeping this page true
+## 20. Keeping this page true
 
 - A change that adds, changes or removes a rule updates this page in the same change: here when the change is in
   this repo, or with a linked Hangar PR when it isn't. The component's own docs keep the detail.
