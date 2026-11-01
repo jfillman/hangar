@@ -7,7 +7,7 @@ Three sets: plan (8), autopilot (19), reference (10); plus Glidepath (7), Crossp
 import sys, os, re, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib
-import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, e_m, e_n, e_o, e_p, e_q, e_r, d123, d456, d789, d1011
+import e_a, e_b, e_c, e_d, e_e, e_f, e_g, e_h, e_i, e_j, e_k, e_l, e_m, e_n, e_o, e_p, e_q, e_r, e_s, d123, d456, d789, d1011
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '../../docs/autopilot/diagrams')
@@ -34,6 +34,8 @@ OUT_RELEASES = os.path.join(OUT, '../../releases/diagrams')
 # The Overview set (high-level Hangar pictures, the home page's diagram among them) lives in docs/overview/diagrams.
 # It uses its own kit, ov.py, for motion, product marks and click-through, so it is written whole here.
 OUT_OVERVIEW = os.path.join(OUT, '../../overview/diagrams')
+# The API set (pictures for the essay "A CI/CD engine you can call") lives in docs/api/diagrams.
+OUT_API = os.path.join(OUT, '../../api/diagrams')
 
 PLAN = [e_g.p_family, e_g.p_roadmap, e_g.p_deps, e_g.p_scorecard, e_g.p_contract, e_g.p_plan_seq, e_g.p_skyport_matrix, e_g.p_skyport_seq]
 AUTOPILOT = [
@@ -53,6 +55,7 @@ OVERVIEW = [('change-road', e_l.o_change), ('product-family', e_l.o_family), ('t
 TESTING = [e_m.t_how_it_works, e_m.t_in_hangar, e_m.t_free_tier]
 EXPANSION = [e_n.g_many_targets, e_n.g_where_policy_lives, e_n.g_today_and_next]
 PAVING = [e_q.q_two_roads, e_q.q_road_parts, e_q.q_since_october]
+API = [e_s.s_front_door, e_s.s_decided, e_s.s_one_call]
 PORTABILITY = [e_p.q_coupling, e_p.q_contracts, e_p.q_tokens, e_p.q_release_on_gitlab, e_p.q_migration, e_p.q_roadmap]
 BREAKGLASS = [e_o.b_exec_vs_debug, e_o.b_how_it_works, e_o.b_two_people, e_o.b_layers, e_o.b_policies,
               e_o.b_lifecycle, e_o.b_report_card]
@@ -92,6 +95,7 @@ por = build('portability', PORTABILITY, '.', 'Hangar · Portability', root=OUT_P
 slo = build('slo', SLO, '.', 'Hangar · SLOs', root=OUT_SLO)
 bg = build('breakglass', BREAKGLASS, '.', 'Hangar · Tower · Break-glass', root=OUT_BREAKGLASS)
 rel = build('releases', RELEASES, '.', 'Hangar · Tower · Release record', root=OUT_RELEASES)
+api = build('api', API, '.', 'Hangar · Glidepath · API', root=OUT_API)
 
 os.makedirs(OUT_OVERVIEW, exist_ok=True)
 for f in glob.glob(os.path.join(OUT_OVERVIEW, '[0-9][0-9]-*.html')):

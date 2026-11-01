@@ -3,6 +3,13 @@ export type Essay = { slug: string; title: string; dek: string; date: string; mi
 
 export const essays: Essay[] = [
   {
+    slug: 'cicd-you-can-call',
+    title: 'A CI/CD engine you can call',
+    dek: "In one week Glidepath grew an API: 30 operations for runs, logs, evidence, tests, releases and events, decided by the cluster's own identity and RBAC, measured with SLOs and traces, and now open to people over a Gateway route. Why a CI/CD engine should be an API and not a portal's backend, how Tower moved onto it one piece at a time without a flag day, and what it still doesn't do.",
+    date: '2026-11-01',
+    minutes: 15,
+  },
+  {
     slug: 'release-record',
     title: "The release record, and the users I haven't met",
     dek: "Tower's release record follows a release from its draft to its outcome and writes every decision into git. What it's trying to fix, how it works, and why I keep a release's story in the GitOps repo. And an honest admission: Hangar has no users, so every part of it rests on assumptions about customers I've never met. Here they are, with how I'd test each one.",
