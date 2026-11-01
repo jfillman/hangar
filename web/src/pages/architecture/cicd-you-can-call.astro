@@ -36,7 +36,7 @@ const evidence = [
           build in Tower and clicked Re-run.
         </p>
         <p>
-          The run started. Tower couldn't have started it any more, and it didn't try. It asked Glidepath to re-run the
+          The run started. Tower couldn't have started it any more, and it didn't try. Instead, it asked Glidepath to re-run the
           build for me, and Glidepath wrote one line to its audit log: operation <code>rerunRun</code>, status 201,
           caller <code>tower-actor</code>, on behalf of <code>jfillman</code>. Ten minutes earlier I'd cancelled a
           checkin-api build the same way. Same kind of line, same two names.
@@ -104,7 +104,7 @@ const evidence = [
       <div class="prose">
         <h2>What it is</h2>
         <p>
-          glidepath-api is a small Go service: two replicas in the control-plane cluster, behind one Service on port
+          glidepath-api is a small Go service: two replicas on the control-plane cluster, behind one Service on port
           8080. Every merge that touches it builds a new multi-arch image, and the contract is baked into the image, so
           <code>GET /v1/contract</code> always describes the code that's answering. It has 30 operations, and the first
           thing to know about each one is its tier:
@@ -160,7 +160,7 @@ const evidence = [
       </div>
 
       <div class="prose">
-        <p>A few of those deserve a sentence each, because they're things Tower never had.</p>
+        <p>A few of those endpoints deserve an extra mention, because they're things Tower never had.</p>
         <p>
           <strong>Explain.</strong> A failed run is classified against Glidepath's list of known failures, in the
           contract's order, with the line in the log that matched. When I added the last three entries, every one of the
