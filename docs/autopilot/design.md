@@ -10,7 +10,7 @@ Names, checked against the Hangar Brand System on 2026-09-26. **Autopilot** (a s
 |---|---|
 | Clearance core: tiers, path and field scope, narrow-only limits, definitions, sessions and the run tree, 23 CEL rules (R000 to R022), hash-chained audit, gateway, model-proxy decisions, triggers, artifacts, the MCP surface | **Built**, 308 tests on `autopilot` main (2026-10-28), no cluster needed |
 | `glidepath.*` T0 tools over glidepath-api, with a real HTTP adapter (the first real backend) | **Built** and live-verified on hangar-dev through MCP (autopilot#16, #17) |
-| Clearance's evidence record | **Built**, not yet released: `clearance.evidence/v1` frozen (R-6, 2026-11-03; ships with the R-1 Clearance release), schema and record check in the Clearance repo's docs/evidence.md |
+| Clearance's evidence record | **Built**: `clearance.evidence/v1` frozen (R-6, 2026-11-03), released in clearance v0.27.0 and written by the Go core on hangar-dev since the R-4 cutover; schema and record check in the Clearance repo's docs/evidence.md |
 | Clearance's deployment gate, ledger and packet | **Proposal**, in the Clearance product docs (section 0.1) |
 | AppSpec, and the planner that compiles it to a change set (the parachute test: one plain-language request, a new Python app named parachute with four environments, compiled to the exact change set; see [the parachute sentence](airframe-ai-friendly.md)) | **Built** and tested, including against the real XRD schemas, Glidepath's `cicd.schema.json` and a real `helm template` |
 | Nine Skyport agent definitions and six Preflight cases | **Built** ([skyport-ai-workloads.md](skyport-ai-workloads.md)) |
@@ -68,24 +68,27 @@ every decision and writing every record through Clearance's API, and reaches it 
 |---|---|
 | the decision service: CEL deny rules, the tier vocabulary, path, repo and field scope, narrow-only, answered as an AuthZEN-shaped evaluation for every tool call, model call, session open and spawn; the clearance token; the evidence record schema, the recorder and its store; the ledger, `clearance verify` and the packet; the deployment gate (classifier, `clearance.yaml`, grants, approvals) and its providers (Argo CD, Terraform, the GitHub App's protection rule, `clearance register`); provenance verification from receipts; tiering of agent-definition changes; clearance-api; approver identity | the MCP surface; sessions, the run tree, limits and budgets, the breaker and requested limits; the tool registry and dispatch to every backend; the model proxy; agent definitions, their schema and the cluster pin loader; the human inbox, person controls, run results, artifacts and trigger history; the runtime catalog and images; the trigger bridge and scheduler; AgentRun, Preflight and the planner; the tool backends and the vendored Glidepath and Airframe contracts; the gateway's serve entrypoint and image |
 
-**Where the code is today (Built):** sessions, dispatch, the gateway, the model proxy and the MCP surface still sit in the
-`clearance` repo, where D16 put them, and hangar-dev's gateway runs them from there. **Proposal:** R-3 moves them to `autopilot`.
-Until then the D16 line describes the code and the D21 line describes the products.
+**Where the code is today (Built, 2026-11-03):** the code follows the D21 line. R-3 moved sessions, dispatch, the gateway,
+the model proxy and the MCP surface to `autopilot` (autopilot#69 to #73), and R-3d removed the Python package from
+`clearance` (v0.30.0), whose core is now Go only. On hangar-dev since the R-4 cutover, the gateway (gateway-v0.4.0)
+calls the Go core (clearance v0.29.0, `clearance-core` and `clearance-api` from the clearance chart) for every decision
+and record, and keeps its own database and read API (`autopilot-pg`, `autopilot-api`). See the roadmap's "Clearance
+and Autopilot build: W0 and W1".
 
 The line: Clearance must install at a customer that runs no Airframe, no Glidepath and no Autopilot. Hangar-specific backends would
 make it a Hangar component, not a product. The tool *policy* (the rules, the tier vocabulary, scope, R021 and R022) is Clearance's; the tool
-*registry* and *implementations* are Autopilot's. Clearance's own code is Go (D22); the gateway stays Python through R-3, then A-9
+*registry* and *implementations* are Autopilot's. Clearance's own code is Go (D22); the gateway moved in Python (R-3) and A-9
 ports it to Go.
 
 ### Runtime boundary on a standard
 
-Traefik's Sovereign Trust Plane (GA 30 Sep 2026) does at the request path what Clearance's dispatch does in Python: delegation by
+Traefik's Sovereign Trust Plane (GA 30 Sep 2026) does at the request path what the gateway's dispatch does in Python: delegation by
 token exchange, inline enforcement through an AuthZEN query that returns a structured denial, and a witnessed log of every decision. Hangar's
 rule is to adopt leading technology rather than reinvent it. **Verified 2026-10-28:** both clusters run open-source Traefik Proxy
 (`docker.io/traefik:v3.7.6`, GatewayClass `traefik`), not Traefik Hub, so STP needs a Hub licence or the feature reaching the open
 proxy. Until one of those happens:
 
-- Clearance keeps its own gateway, which is what AP-A2 deploys.
+- Hangar keeps its own gateway: AP-A2 deployed it, and since R-3 it is Autopilot's (D21).
 - Dispatch is refactored so the decision is a pure function, from an AuthZEN-shaped request (subject, action, resource, context)
   to a decision with a rule id and a hint. That makes moving behind STP a change of transport, not of policy. Denials already return
   a rule id and a fix hint (section 5.3), which is the structured 403 STP returns.

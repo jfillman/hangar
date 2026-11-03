@@ -201,6 +201,65 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 
 **Exit:** the parachute sentence works end to end on dev (a human merges the flight PRs); killing Clearance mid-run still ends every run on time; the seeded bad run scores as failed.
 
+**Clearance and Autopilot build: W0 and W1 (2026-11-03).** The build spec's first two waves are done, and the W1 gate
+("installs alone") passed on 2026-11-03. The M3 table above is as of 2026-11-02: where it says the gateway runs
+from the `clearance` repo, read the rows below.
+
+| Piece | Status |
+|---|---|
+| W0: R-1 the Go core, provider protocol and conformance harness; R-6 `clearance.evidence/v1`; R-8 CHANGELOG, release workflow and docs (clearance#42, #43; autopilot#68; hangar#108, #109, #110) | **Built**, merged 2026-11-03 |
+| R-2 Clearance's own image, chart and Go `clearance api` (clearance#44) | **Built**, released in v0.27.0 |
+| R-3 the AI gateway moves to Autopilot: the Python moved with its history (autopilot#69), its own read API (#70), calls to the core with its own database (#71), the core of v0.28.0 (#72; core side clearance#48) | **Built**, in gateway-v0.4.0 |
+| R-5 policy bundles (`clearance.policy/v1`); Hangar's vocabulary out of the core and into configuration (clearance#49, autopilot#73); decisions D23 and D24 | **Built**, in clearance v0.29.0 and gateway-v0.4.0 |
+| R-7 Clearance as its own apron component, `55-clearance`; people-dex moved to `55-identity` (apron#151; apron#152 lets the core and clearance-api reach the API server on Cilium) | **Built**, live on hangar-dev |
+| R-4 the cutover on hangar-dev (gitops-hangar-dev#107) | **Built**, live since 2026-11-03 |
+| R-3d the Python package leaves the `clearance` repo; the core is Go only (clearance#50) | **Built**, released in v0.30.0. hangar-dev still runs 0.29.0: apron pins chart 0.29.0 |
+
+What runs on hangar-dev, in `autopilot-system`:
+- The Go core, clearance v0.29.0 from the clearance chart 0.29.0 (image `ghcr.io/jfillman/clearance@sha256:afdca0b4…48dd4`):
+  `clearance-core` (one replica, the only writer of `clearance-pg`) and `clearance-api` (two replicas). The core loads
+  the Hangar policy bundle with its live glidepath-api source, and `CLEARANCE_TRUSTED_REGISTRIES` is
+  `ghcr.io/riley-roooo/` (D23).
+- The gateway, gateway-v0.4.0, which calls the core for every decision and record. It has its own database,
+  `autopilot-pg`, and its own read API, `autopilot-api` (the old `clearance-api`, renamed). The gateway's Deployment
+  is still named `clearance`.
+
+**The W1 gate (passed 2026-11-03).**
+- Installs alone: the release workflow's install test passes on a bare kind cluster (no Airframe, no Glidepath) with
+  the published image, for every release from v0.27.0 to v0.30.0.
+- The chain is unbroken across the cutover. The Python gateway's last record was seq 640, head `07e7a9d8…`. The Go core
+  opened the same store with the same head and continued at seq 641. The Go chain verify is ok, anchored at
+  641:`07e7a9d8`.
+- The runtime tables were copied into `autopilot-pg` by an in-cluster Job: 24 sessions, 2 human requests, 145
+  events, 2 results, 1 definition.
+- R-4's live evidence, seq 641 to 681:
+  - 641 to 649: `clearance register` from the scratch repo, with the GitHub App's deployment protection rule approving
+    (641, 642); GitHub App check runs (643 to 646); an agent-gates verdict (647, gitops-backstage#244).
+  - 650 to 665: a researcher run.
+  - 666 to 667: a hold and its release.
+  - 669 to 674: a human request.
+  - 675 to 676: session end.
+  - 677 to 681: a coding-agent run.
+- A streaming model call was not checked on its own; the owner accepted it as covered indirectly.
+- A hand-applied fix during the cutover (a CiliumNetworkPolicy for TokenReview) is now apron's (apron#152).
+
+**Owed from W1:**
+- `GET /v1/evidence/verify` through the API.
+- The apron pin to v0.30.0.
+- R-4 cleanup: the runtime tables left in `clearance-pg`, `GATEWAY_API_TABLES=clearance`, the `/mcp` alias, and the
+  gateway's rename together with airframe.
+
+**Next: W2, gate cores (not started; needs the owner's go).**
+- Clearance: C-1 the clearance token; C-6 outage policy, coverage states, break-glass and exceptions; C-8 the policy
+  engine's verdict in the record; C-9 the Traefik Hub adapter; C-10 clearance-api for the gates.
+- Argo CD gate: G-ARGO-1, the design pass and spikes.
+- Terraform gate: G-TF-1, the `terraform-plan` subject in the core; G-TF-2, hold, release and outcome on the core API.
+- Autopilot: A-1 runtime provider conformance and records; A-4 Flight recorder fields and cost accounting (AP-C1,
+  AP-C2); A-5 trigger durability; A-7 runtime images and run polish.
+
+The W2 gate: signed tokens issued; the grant feed served; both subject kinds registered; the Argo design pass
+recorded with its spike results.
+
 **M3 status (2026-11-02).** The runtime boundary is built and live on hangar-dev: clearance v0.26.1 in the
 `autopilot-gateway` image gateway-v0.3.27 (apron pins it by digest), clearance-api, CNPG `clearance-pg`, people-dex,
 AgentRuns, the GitHub App `Hangar Clearance`, and every gateway flag on. The status column above is checked against
