@@ -182,24 +182,32 @@ GitHub Check - both brand new in this batch, not a repeat of the M0 typo check.
 - **The `platform/` → `airframe/` rename** (AF-5's own step 4) is scoped as a separate follow-on, not part of M2's AF-5 line item above - it touches every live app's file layout, both clusters' ApplicationSets, ~10 Glidepath Tasks, Tower's Config tab, and every scaffold template, and the design doc's own plan is a dual-path migration window, not a drop-in rename.
 
 ### M3 Autopilot core (weeks 11-18), target 88
-| Task | Notes |
-|---|---|
-| **AP-A1** apron `components.autopilot` toggle, registry `autopilotReady`, network-policy canary | refused on `type: upper`; the canary must pass before `autopilotReady` flips (kiac-dev enforces NetworkPolicy: Cilium, verified 2026-10-09) |
-| **AP-A2** Clearance's runtime gateway deployed on hangar-dev from the `clearance` repo, as an Airframe app; a durable session store; audit written in the draft evidence schema; T0 tools with real adapters; deletes each finished AgentRun after recording its evidence (D20; the backstop reaps at deadline + 60 min) | Backstage MCP, ArgoCD read-only account; built here (owner, 2026-10-28) |
-| **AP-A3** `AgentRun` XRD, `function-agentrun`, `provider-kubernetes` grants, namespaced Role | copy-tested; expiry proven with Clearance stopped and with the function pod killed |
-| **AP-B1** interceptor `/agent-installation-token`, the agents' own GitHub App (D4), ArgoCD accounts | commit signing executed (D1, Hangar root CA); every agent PR and commit carries `task_id` and tool metadata, so Clearance's provenance detector can say *confirmed agent* |
-| **AP-B2** T1 tools with real adapters; `agent-scope` and `agent-identity` gates, stub then real | field-aware, from AF-9a |
-| **AP-B2c** `clearance-api`: Clearance's read API as a separate read-only process (sessions, run trees, evidence with chain verify, receipts, agent definitions, the inbox feed), roles person/delegate/notifier/auditor, a generated contract Tower vendors ([spec](https://github.com/jfillman/clearance/blob/main/docs/clearance-api.md), owner 2026-10-30) | phase 1 done when Tower's Agent requests poller uses the feed; then Tower's Clearance plugin, then SSE events |
-| **AP-B3** model proxy v0 (HTTP forwarder), hosted model route, key via Infisical | |
-| **AF-8a** read-only `airframe.*` tools: `capabilities`, `validate`, `explain`, `plan`, `status`, `describe`, `verify` | first in M3 (owner, 2026-10-28); Kubernetes reads as `platform-system/clearance` with a token minted per call, never Secrets |
-| **AF-8b** `airframe.apply` (opens PRs as the agents' App), planner adapters | **the parachute sentence passes live**, with a seeded bad run and a resume test |
-| **AF-6b** `describe` and verify contracts; **AF-10c** chart `agent:` block | |
-| **AP-C1** Flight recorder: `task_id` everywhere; each run records the pinned model version and its Preflight result | records in Clearance's evidence schema (verified versus claimed, coverage and assurance state). The anchor is the Clearance ledger (Tessera plus a witness, Clearance roadmap phase 2), not a local checkpoint |
-| **AP-A4** stable agent identity, separate from a run (per-agent policy, history, memory scope) | one identity per AgentDefinition; runs inherit it. **The identity is an ID-JAG** (RFC 8693 exchange at the IdP, then RFC 7523 bearer to Clearance; design.md 0.1); R001's principal is its subject. Blocked on an IdP that issues ID-JAG (D19) |
-| **AP-C2** cost accounting: tokens and compute per run, per agent, per task tree, in the recorder and the Tower tab | from budgets already enforced |
-| **AF-2b** fix the T0 read set (`getLogs`, `getMetrics`, `getRelease`, `getDeploymentStatus`) and put it in the contract bundle | read tools taught by example |
+| Task | Notes | Status (2026-11-02) |
+|---|---|---|
+| **AP-A1** apron `components.autopilot` toggle, registry `autopilotReady`, network-policy canary | refused on `type: upper`; the canary must pass before `autopilotReady` flips (kiac-dev enforces NetworkPolicy: Cilium, verified 2026-10-09) | **Done** 2026-10-09; re-attested on hangar-dev (`autopilotReady: true` in its registry) |
+| **AP-A2** Clearance's runtime gateway deployed on hangar-dev from the `clearance` repo, as an Airframe app; a durable session store; audit written in the draft evidence schema; T0 tools with real adapters; deletes each finished AgentRun after recording its evidence (D20; the backstop reaps at deadline + 60 min) | Backstage MCP, ArgoCD read-only account; built here (owner, 2026-10-28) | **Done**, live on hangar-dev since 2026-10-29; people sign in through people-dex (D19 interim); `catalog.read` and `argo.sync.lower` live; `platform-system/clearance` retired |
+| **AP-A3** `AgentRun` XRD, `function-agentrun`, `provider-kubernetes` grants, namespaced Role | copy-tested; expiry proven with Clearance stopped and with the function pod killed | **Done**, live: AgentRuns in `autopilot-runs` on agent-sandbox v1.0.8, `function-agentrun`, the reaper CronJob |
+| **AP-B1** interceptor `/agent-installation-token`, the agents' own GitHub App (D4), ArgoCD accounts | commit signing executed (D1, Hangar root CA); every agent PR and commit carries `task_id` and tool metadata, so Clearance's provenance detector can say *confirmed agent* | **Done** for the route and the agents' App (`hangar-autopilot-agents`, PRs through the broker); commit signing (D1) **not started**; no Argo CD account needed |
+| **AP-B2** T1 tools with real adapters; `agent-scope` and `agent-identity` gates, stub then real | field-aware, from AF-9a | **Done**, live: `agent-gates-` required; T1 tools real (`repo.pr.open`, `glidepath.cicd.propose`, `argo.sync.lower`) |
+| **AP-B2c** `clearance-api`: Clearance's read API as a separate read-only process (sessions, run trees, evidence with chain verify, receipts, agent definitions, the inbox feed), roles person/delegate/notifier/auditor, a generated contract Tower vendors ([spec](https://github.com/jfillman/clearance/blob/main/docs/clearance-api.md), owner 2026-10-30) | phase 1 done when Tower's Agent requests poller uses the feed; then Tower's Clearance plugin, then SSE events | **Done**: clearance-api v0.13.0+, two replicas; Tower's agent-requests poller reads the inbox feed; the Clearance plugin is built |
+| **AP-B3** model proxy v0 (HTTP forwarder), hosted model route, key via Infisical | | **Done**, live: the model proxy to Anthropic, streaming since clearance v0.26.0 |
+| **AF-8a** read-only `airframe.*` tools: `capabilities`, `validate`, `explain`, `plan`, `status`, `describe`, `verify` | first in M3 (owner, 2026-10-28); Kubernetes reads as `platform-system/clearance` with a token minted per call, never Secrets | **Done** 2026-10-28; `airframe.validate` is not in the gateway image |
+| **AF-8b** `airframe.apply` (opens PRs as the agents' App), planner adapters | **the parachute sentence passes live**, with a seeded bad run and a resume test | Not started |
+| **AF-6b** `describe` and verify contracts; **AF-10c** chart `agent:` block | | not rechecked |
+| **AP-C1** Flight recorder: `task_id` everywhere; each run records the pinned model version and its Preflight result | records in Clearance's evidence schema (verified versus claimed, coverage and assurance state). The anchor is the Clearance ledger (Tessera plus a witness, Clearance roadmap phase 2), not a local checkpoint | not rechecked |
+| **AP-A4** stable agent identity, separate from a run (per-agent policy, history, memory scope) | one identity per AgentDefinition; runs inherit it. **The identity is an ID-JAG** (RFC 8693 exchange at the IdP, then RFC 7523 bearer to Clearance; design.md 0.1); R001's principal is its subject. Blocked on an IdP that issues ID-JAG (D19) | Blocked on D19 (an IdP that issues ID-JAG) |
+| **AP-C2** cost accounting: tokens and compute per run, per agent, per task tree, in the recorder and the Tower tab | from budgets already enforced | not rechecked |
+| **AF-2b** fix the T0 read set (`getLogs`, `getMetrics`, `getRelease`, `getDeploymentStatus`) and put it in the contract bundle | read tools taught by example | not rechecked |
 
 **Exit:** the parachute sentence works end to end on dev (a human merges the flight PRs); killing Clearance mid-run still ends every run on time; the seeded bad run scores as failed.
+
+**M3 status (2026-11-02).** The runtime boundary is built and live on hangar-dev: clearance v0.26.1 in the
+`autopilot-gateway` image gateway-v0.3.27 (apron pins it by digest), clearance-api, CNPG `clearance-pg`, people-dex,
+AgentRuns, the GitHub App `Hangar Clearance`, and every gateway flag on. The status column above is checked against
+each repo's origin/main. The exit test (the parachute sentence live, Clearance killed mid-run, the seeded bad run
+failing) still waits on AF-8b. The 2026-11-02 build spec (Clearance and Autopilot, R/A/C/G packages) moves the AI
+gateway's code from clearance into autopilot (R-3) and Clearance's core to Go (R-1); the rows above say what exists
+today, not where it will live.
 
 **AP-A1 done (2026-10-09).**
 - Registry: `airframe.autopilotReady` (airframe#81, v0.3.138). The chart refuses it on any cluster without the

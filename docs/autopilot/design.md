@@ -197,24 +197,26 @@ Environment: `HANGAR_RUN_ID`, `_TASK_ID`, `_SESSION_ID`, `_AGENT`, `_EXPIRES_AT`
 
 ## 4. Components and repo changes
 
+Status checked against origin/main of each repo and the hangar-dev deployment on 2026-11-02 (clearance v0.26.1,
+autopilot gateway-v0.3.27, airframe v0.3.172 on hangar-dev).
+
 | Repo / path | Change | Phase | Status |
 |---|---|---|---|
-| `autopilot/src/clearance`, moving to the `clearance` repo (D16) | Gateway core, policy, audit, sessions, model proxy core, triggers, Preflight, MCP surface (triggers and Preflight stay in `autopilot`, section 0.1) | A to C | **Built** (308 tests) |
-| `autopilot/airframe-drafts/xrds/agentrun.yaml` | AgentRun XRD | A | **Draft** |
-| `autopilot/airframe-drafts/functions/function-agentrun/` | Pure `compose()` plus a gRPC wrapper on the real SDK | A | **Built** (tests) and **Draft** (never run by Crossplane) |
-| `airframe/xrds`, `compositions`, `functions` | Move the drafts in through a worktree | A | Proposal |
-| `provider-kubernetes-applied-resources` (gitops-cluster-dev) | Grants for Namespace, ResourceQuota, NetworkPolicy, ServiceAccount, batch/Job | A | Proposal |
-| `apron/cluster.yaml.example`, `hack/customize-cluster.sh`, `apron/55-autopilot/` | `components.autopilot`, refused on upper; types `hub` and `inference` | A | Proposal |
-| `gitops-cluster-dev` cluster registry | `autopilotReady`, set only after the network-policy canary passes | A | Proposal |
-| `glidepath/platform/broker` (token-review-interceptor) | `/agent-installation-token` beside `/github-installation-token` | B | Proposal |
-| ArgoCD RBAC | `role:clearance-read`, `role:clearance-lower` | B | Proposal |
-| `glidepath` releaseGuardrails | `agent-scope`, `agent-identity` (loud stubs first) | B | Proposal |
-| `glidepath/platform/dora-exporter` | `author=agent\|human` label | C | Proposal |
-| `backstage` (Tower) | Agent tab: session-type runs and chat, scoped to one app (reuses the Autopilot plugin's backend, the same relationship Tower's Glidepath tab has to Glidepath) | C | Proposal |
-| A new **Autopilot** Backstage plugin, standalone-installable beside Tower | Fleet-wide console: every run across every agent, budgets, the breaker, Preflight results, audit | C | Proposal |
-| Airframe A+ program (contract bundle, `airframe validate`, ownership split, `airframe.*` tools) | see [airframe-ai-friendly.md](airframe-ai-friendly.md); Autopilot's planner and tools depend on it | M0 to M3 | Proposal; planner **Built** |
-| Trigger runner and trigger bridge | interval and broker-event agents | M4 | Logic **Built**; runners Proposal |
-| Real backends and auth adapters | GitHub via the interceptor, ArgoCD, the Kubernetes API for `AgentRun` XRs, Backstage MCP federation, Tower and TokenReview auth | A to B | Proposal (interfaces and fakes **Built**) |
+| `clearance` repo (D16; was `autopilot/src/clearance`) | Gateway core, policy, audit, sessions, model proxy, MCP surface, human inbox, person controls, run results, PR provenance, the deployment gate's core, the GitHub App, clearance-api | A to C | **Built**, v0.26.1, 406 tests; live on hangar-dev |
+| `autopilot` repo | Hangar backends, `serve.py` (the `autopilot-gateway` image), triggers, event bridge, scheduler, `Agent` XR loader, Preflight, the planner, the runtimes | A to C | **Built**, gateway-v0.3.27, 554 tests; live on hangar-dev |
+| `airframe/xrds`, `compositions`, `functions` | `AgentRun` XRD, composition and `function-agentrun`; the `Agent` XRD | A | **Built**, live on hangar-dev (catalog v0.3.172); the `autopilot` drafts are pointers |
+| `provider-kubernetes` grants (apron `55-autopilot/agentrun-grants/`) | Namespace, ResourceQuota, NetworkPolicy, ServiceAccount, agent-sandbox `Sandbox`, with the confining ValidatingAdmissionPolicy (D15) | A | **Built**, live |
+| `apron/55-autopilot/` | `components.autopilot` (refused off the control-plane cluster), the gateway, clearance-api, CNPG `clearance-pg`, people-dex, grants, agent-sandbox, the reaper | A | **Built**, live on hangar-dev; types `hub` and `inference` not built (M5) |
+| Cluster registry | `autopilotReady`, set only after the network-policy canary passes | A | **Built**; set on hangar-dev |
+| `glidepath/broker` (token-review-interceptor) | `/agent-installation-token` beside `/github-installation-token`, for the agents' App (D4) | B | **Built**, live |
+| ArgoCD RBAC | `role:clearance-read`, `role:clearance-lower` | B | **Superseded**: reads go through the Kubernetes API (`argo.app.get`), and `argo.sync.lower` is a Role confined by a ValidatingAdmissionPolicy; no Argo CD account |
+| `glidepath` releaseGuardrails | `agent-scope`, `agent-identity` (the `agent-gates-` check), `clearance-gate-` | B | **Built**, live: agent-gates required, clearance-gate advisory |
+| `glidepath/dora-exporter` | `author=agent\|human` label | C | Proposal |
+| `backstage` (Tower) | Agent tab and Clearance tab per app | C | **Built** (Tower `AgentTab`, `ClearanceTab`) |
+| Autopilot and Clearance Backstage plugins, beside Tower | Fleet-wide console: runs, agents, a person's Run, controls, the inbox; Clearance evidence and policy pages | C | **Built** (`plugins/autopilot`, `plugins/clearance*`) |
+| Airframe A+ program (contract bundle, `airframe validate`, ownership split, `airframe.*` tools) | see [airframe-ai-friendly.md](airframe-ai-friendly.md) | M0 to M3 | **Built** (scorecard 97.3, 14 of 14); `airframe.validate` is not in the gateway image, and `airframe.apply` (AF-8b) is not built |
+| Trigger runner and trigger bridge | interval and Glidepath-event agents | M4 | **Built**, live (`scheduler.py`, `event_bridge.py`); no durable event cursor |
+| Real backends and auth adapters | GitHub via the broker, Argo CD reads and lower syncs, AgentRuns, Backstage catalog, Prometheus, Loki, glidepath-api; TokenReview, people-dex OIDC, Tower federation, GitHub Actions OIDC | A to B | **Built**, live; not built: `chat.*`, `app.api.get`, `xr.request`, Backstage MCP federation, ID-JAG (D19) |
 
 ## 5. Concrete artifacts
 
@@ -366,9 +368,14 @@ These are explicit decisions, not details:
 
 ## 9. Built versus not
 
-`cd ~/tech/autopilot && ./.venv/bin/python -m pytest -q` runs **308 tests** with no cluster (2026-10-28; at the time of this section, 255): scope and traversal safety, narrow-only limits, definition schema, sessions and the run tree (including the property test), 16 CEL rules one at a time and failing closed, hash-chain tamper detection, the gateway end to end with fakes, the model proxy, triggers, Preflight, the MCP surface on the mcp SDK v2, the AgentRun manifest against the XRD's own schema, and the composition function including its gRPC wrapper on the real SDK.
+As of 2026-11-02: clearance v0.26.1 (406 tests, Postgres included) and autopilot gateway-v0.3.27 (554 tests), both
+with no cluster, and the whole runtime boundary live on hangar-dev. Section 4 has the per-component table.
 
-**Not built:** the real GitHub, ArgoCD, Kubernetes and Backstage adapters; the auth adapters; MCP over HTTP; the model proxy's HTTP forwarder; the interceptor route; the CI gates; the drafts have never been applied or rendered by Crossplane. **Unit tests prove the composition logic, not that provider-kubernetes accepts what it renders.**
+**Not built:** the tools without a backend (`chat.*`, `app.api.get`, `xr.request`; `airframe.validate` in the image),
+`airframe.apply`, Backstage MCP federation, stable agent identity by ID-JAG (D19), a durable event cursor, the
+deployment gate's admission side, evidence signing, checkpoints and a witness, and anything on hangar-prod beyond
+Tower reading clearance-api. The 2026-10-28 text of this section (308 tests, no real adapters, drafts never applied)
+is superseded.
 
 ## 10. What I did not verify
 
