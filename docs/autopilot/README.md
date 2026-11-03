@@ -8,7 +8,7 @@ the Airframe A+ program that makes the service catalog operable by agents.
 
 **Brand:** the mark is Option A, Hold, chosen 2026-09-26; the five options considered are in `docs/brand/autopilot-logo-options.html` in the repo (open the file in a browser; TechDocs cannot link to standalone HTML), and the files are in [`brand/marks/`](../../brand/marks/).
 
-**Code:** [github.com/jfillman/autopilot](https://github.com/jfillman/autopilot) (public; the `clearance` Python package, agent definitions, Preflight cases, the AppSpec planner, `AgentRun` drafts). **Status (2026-10-28):** M0 to M2 closed; M3 in progress (AP-A1 done, AF-8a next); scorecard 89.5, 11 of 14. **Clearance is now a product of its own** with a runtime gateway (built, Autopilot's) and a deployment gate (proposed); its code moves to a `clearance` repo. See [design.md section 0.1](design.md) and the roadmap's M3 status.
+**Code:** [github.com/jfillman/autopilot](https://github.com/jfillman/autopilot) (Hangar's backends, the `autopilot-gateway` image, triggers, agent definitions, Preflight cases, the AppSpec planner, the agent runtimes) and [github.com/jfillman/clearance](https://github.com/jfillman/clearance) (the policy, audit and session gateway, D16). **Status (2026-11-02):** M0 to M2 closed; M3's AP-A1, AP-A2, AP-A3, AP-B1 (less commit signing), AP-B2, AP-B2c, AP-B3 and AF-8a are built and live on hangar-dev (clearance v0.26.1 in gateway-v0.3.27); scorecard **97.3, 14 of 14**. Clearance is a product of its own: its runtime boundary is live, and the deployment gate's core and its GitHub App (check runs, deployment protection rule, `clearance register`) are built, with admission still to come. See [design.md section 0.1](design.md) and the roadmap's M3 status.
 
 ## Read in this order
 | Doc | Read this when... |
@@ -26,23 +26,28 @@ the Airframe A+ program that makes the service catalog operable by agents.
 | What | Where |
 |---|---|
 | Scorecard and the committed baseline | `hangar/tools/airframe-scorecard/` |
-| Clearance, planner, Skyport agent definitions, Preflight cases, AgentRun drafts (308 tests) | the `autopilot` repo; Clearance's package moves to a `clearance` repo (D16) |
+| Clearance (406 tests at v0.26.1) | the `clearance` repo (D16) |
+| Hangar backends, the gateway image, planner, agent definitions, Preflight cases, runtimes (554 tests at gateway-v0.3.27) | the `autopilot` repo |
 | Diagram generator | `hangar/tools/diagrams/` |
 | Airframe drafts (`AGENTS.md`, sidecar meta) | [drafts/airframe/](drafts/airframe/) |
 | The Skyport demo | `airframe/docs/user/skyport-demo.md` and `airframe/examples/skyport/` |
 
-## Status, 2026-10-28
+## Status, 2026-11-02
 | | |
 |---|---|
-| Design | complete; Clearance-as-a-product folded in (design.md 0.1) |
-| Clearance runtime gateway, planner, definitions, cases | **Built**, 308 tests, 23 rules; `glidepath.*` tools live through MCP |
-| Clearance deployment gate, evidence record, ledger | **Proposal**, on the Clearance product roadmap |
-| Scorecard | **Built**; **89.5 / 100**, 11 of 14 acceptance checks (baseline 27.3) |
-| `AgentRun` XRD, composition, function | **Draft**, never applied |
-| Clearance deployed on a cluster | not yet (AP-A2) |
+| Design | complete; Clearance-as-a-product folded in (design.md 0.1); the 2026-11-02 build spec moves the AI gateway into Autopilot and Clearance to Go |
+| Clearance runtime boundary (gateway, policy, evidence chain, model proxy, inbox, person controls, run results, clearance-api) | **Built**, live on hangar-dev: clearance v0.26.1, 406 tests |
+| Clearance deployment gate | core **Built** (v0.19.0) and fed by the advisory `clearance-gate-` check and `clearance register`; admission **Proposal** |
+| Clearance GitHub App (`Hangar Clearance`) | **Built**, live: check runs (v0.21.0), deployment protection rule (v0.22.0), `clearance register` (v0.23.0) |
+| Evidence signing, checkpoint, witness, ledger | **Proposal**, on the Clearance product roadmap |
+| Autopilot gateway, backends, triggers, runtimes | **Built**, live: gateway-v0.3.27, 554 tests; runtime images generic, base-python, langgraph, claude-agent-sdk |
+| `AgentRun` XRD, composition, function; `Agent` XRD | **Built**, live on hangar-dev (airframe catalog v0.3.172) |
+| Scorecard | **Built**; **97.3 / 100**, 14 of 14 acceptance checks (baseline 27.3) |
+| hangar-prod | nothing of Clearance or Autopilot runs there; Tower reads clearance-api on hangar-dev |
 
 ## Run it
 ```bash
 python3 hangar/tools/airframe-scorecard/scorecard.py                # the grade
-cd ~/tech/autopilot && ./.venv/bin/python -m pytest -q               # 308 tests
+cd ~/tech/autopilot && ./.venv/bin/python -m pytest -q               # 554 tests
+cd ~/tech/clearance && ./.venv/bin/python -m pytest -q               # 406 tests (Postgres ones need CLEARANCE_TEST_DSN)
 ```
