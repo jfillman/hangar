@@ -31,7 +31,7 @@ The aviation vocabulary is the brand's rule (see the Hangar Brand System): names
 | **Deployment tier 0 to 3** | Routine, Standard, Sensitive, Critical. Decides who may clear a change. Shares names with runtime T0 to T3, not rules. |
 | **Clearance (token)** | A signed, short-lived authorization bound to one rendered change: the git commit, the manifest-tree digest and per-object hashes, plus target, policy version, tier and approvers. |
 | **ClearanceGrant** | The in-cluster resource the controller materializes from a verified token; a ValidatingAdmissionPolicy checks writes against it. |
-| **Evidence record** | One versioned record per clearance event or tool call, every field tagged *verified* or *claimed*. |
+| **Evidence record** | One versioned record per clearance event or tool call (`clearance.evidence/v1`), every field tagged *verified* or *claimed*, naming its provider and its subject. |
 | **Coverage state** | authorized-and-verified, observed-not-attributed, out-of-band-detected, or coverage-unavailable. |
 | **Assurance state** | checkpointed, recorded-not-checkpointed, or not-recorded: whether a record's hash has reached a witnessed checkpoint. |
 | **Clearance Ledger** | A Tessera transparency log holding record hashes only, with C2SP checkpoints countersigned by witnesses. |
