@@ -58,15 +58,23 @@ in a separate lab.
 | Consoles | Autopilot plugin (fleet-wide) plus a Tower Agent tab (section 8, 3a) | Unchanged, plus Clearance's own Tower plugin (pending clearances, record search, packet download) in Clearance phase 4 |
 | GitHub Apps | One agents' App (D4) | Two Apps with different jobs: the **agents' App** writes PRs as agents (D4, AP-B1); the **Clearance provenance App** reads PRs and commits, posts checks and is a deployment protection rule (checks, pull requests, contents read, deployments; never administration or workflows). Keep them separate: the App that authors a change must not be the one that attests its provenance, and each needs its own rate-limit bucket. The interceptor outer bound (section 5.5) applies to both |
 
-### Repo split (D16, accepted by the owner 2026-10-28)
+### Repo split (D16, accepted by the owner 2026-10-28, amended by D21 2026-11-02)
 
-| `clearance` (the product) | `autopilot` (Hangar's agent runtime) |
+D21 moves the line: Autopilot owns the AI gateway, and Clearance decides and records. The gateway enforces, asking Clearance for
+every decision and writing every record through Clearance's API, and reaches it no other way.
+
+| `clearance` (the product: decides and records, the gates, the ledger) | `autopilot` (Hangar's agent runtime and AI gateway) |
 |---|---|
-| tiers, path and field scope, narrow-only limits, CEL policy rules, sessions and the run tree, dispatch and the gateway, the MCP surface, model-proxy decisions, the audit (becoming the evidence record), later the AuthZEN PDP API and the whole deployment gate | agent definitions and their schema, Preflight cases and harness, the AgentRun XRD, composition and `function-agentrun`, the AppSpec planner (`airframe_plan.py`), the tool backends (`glidepath_api.py`, the coming `airframe.*` tools), triggers and the trigger bridge, the vendored Glidepath and Airframe contracts, `netpol_canary.py`, the smoke tools |
+| the decision service: CEL deny rules, the tier vocabulary, path, repo and field scope, narrow-only, answered as an AuthZEN-shaped evaluation for every tool call, model call, session open and spawn; the clearance token; the evidence record schema, the recorder and its store; the ledger, `clearance verify` and the packet; the deployment gate (classifier, `clearance.yaml`, grants, approvals) and its providers (Argo CD, Terraform, the GitHub App's protection rule, `clearance register`); provenance verification from receipts; tiering of agent-definition changes; clearance-api; approver identity | the MCP surface; sessions, the run tree, limits and budgets, the breaker and requested limits; the tool registry and dispatch to every backend; the model proxy; agent definitions, their schema and the cluster pin loader; the human inbox, person controls, run results, artifacts and trigger history; the runtime catalog and images; the trigger bridge and scheduler; AgentRun, Preflight and the planner; the tool backends and the vendored Glidepath and Airframe contracts; the gateway's serve entrypoint and image |
 
-The line: Clearance must install at a customer that runs no Airframe and no Glidepath. Hangar-specific backends would make it a
-Hangar component, not a product. Autopilot pins the `clearance` package and registers its tools with it. The tool *policy* (which
-tools exist, their tiers, R021 and R022) is Clearance's. The tool *implementations* are Autopilot's.
+**Where the code is today (Built):** sessions, dispatch, the gateway, the model proxy and the MCP surface still sit in the
+`clearance` repo, where D16 put them, and hangar-dev's gateway runs them from there. **Proposal:** R-3 moves them to `autopilot`.
+Until then the D16 line describes the code and the D21 line describes the products.
+
+The line: Clearance must install at a customer that runs no Airframe, no Glidepath and no Autopilot. Hangar-specific backends would
+make it a Hangar component, not a product. The tool *policy* (the rules, the tier vocabulary, scope, R021 and R022) is Clearance's; the tool
+*registry* and *implementations* are Autopilot's. Clearance's own code is Go (D22); the gateway stays Python through R-3, then A-9
+ports it to Go.
 
 ### Runtime boundary on a standard
 
