@@ -253,7 +253,7 @@ What runs on hangar-dev, in `autopilot-system`:
 - Clearance: C-1 the clearance token; C-6 outage policy, coverage states, break-glass and exceptions; C-8 the policy
   engine's verdict in the record; C-9 the Traefik Hub adapter; C-10 clearance-api for the gates.
 - Argo CD gate: G-ARGO-1, the design pass and spikes. **Design recorded 2026-11-03** (clearance `docs/gate.md`,
-  "Phase 2 design pass"; D25 decided by the owner, D26 to D29 proposed), every spike run on hangar-dev in Warn mode;
+  "Phase 2 design pass"; D25 decided by the owner, D26 to D29 accepted 2026-11-03), every spike run on hangar-dev in Warn mode;
   the two hangar-prod measurements (Kyverno under prod load, the cross-cluster identity) wait for the owner
   (clearance `docs/spikes/g-argo-1/prod-plan.md`).
 - Terraform gate: G-TF-1, the `terraform-plan` subject in the core; G-TF-2, hold, release and outcome on the core API.
