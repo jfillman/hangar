@@ -444,6 +444,16 @@ a Preflight case with a seeded bad run, and updates its quickstart's verified-st
 - Conformance on prod: upper clusters get no runs, and a run cannot be created there.
 - The A+ run: scorecard 14 of 14 and overall at least 97, recorded.
 
+### Clearance build: W4 gate (closed 2026-11-09)
+
+The owner closed the W4 gate of the Clearance and Autopilot build specification on 2026-11-09, with one check postponed.
+
+- **Live packet:** built by Clearance 0.36.0 from the hangar-dev database: 1,266 records, covering 2026-10-29 to 2026-11-09. It verifies offline with the log key, witness policy, trust root and signer identity supplied separately: record hashes and chain, log signature, the hangar-prod witness's countersignature, 1,266 inclusion proofs, and 7 keyless attestations.
+- **Negative controls:** one altered record fails the manifest, chain and inclusion checks; a wrong witness key fails the witness check.
+- **Coverage statement:** carries the six coverage states and states observation is blind, since no collector exists until W5.
+- **Conformance:** the Argo CD and Terraform providers both pass.
+- **Postponed: the 30-day window.** The chain began on 2026-10-29 and the first countersignature was on 2026-11-09. Re-run the packet on 2026-12-09, when 30 days of records have each been witnessed as they happened.
+
 ## 3. Critical path
 `chart guard → validate → contract → ownership split → Autopilot core → planner (parachute) → Skyport AI`.
 Parallel and safe to interleave: Skyport components (born A+), docs and walkthroughs, the Autopilot
