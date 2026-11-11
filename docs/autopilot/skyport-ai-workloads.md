@@ -81,7 +81,10 @@ policy and labels a run gets. It is the only workload facing the public, so its 
 **hardened** sandbox.
 
 **That fails closed on the dev cluster, by design.** It has no gVisor or Kata
-runtime class, so the chart (and `function-agentrun`) reject it rather than run it weaker. To run the
+runtime class, so the chart (and `function-agentrun`) reject it rather than run it weaker. eks-dev has one
+(gVisor on its `sandbox` node group, cluster.yaml `autopilot.hardenedRuntime: gvisor`), so a hardened
+`AgentRun` can run there. The chart's `agent:` block is not built yet; when it is, it must take the runtime
+class from the same cluster setting rather than its own. To run the
 demo on the dev cluster, change the definition to `standard` in a reviewed commit and record why. A run can
 narrow a definition but never widen it, so lowering isolation is only ever a commit. That moment is
 worth a paragraph in the quickstart.
