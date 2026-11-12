@@ -67,3 +67,8 @@ narrative and still refer to components by their pre-rebrand names (`platform-ci
 stale: they're a historical record of decisions as they were made, and a global rename
 would misdate them. Renaming those references is in scope for the later docs
 reorg/rebrand pass, not this one.
+
+## License
+
+Copyright 2026 James Fillman. Licensed under the [Apache License, Version 2.0](LICENSE).
+See [NOTICE](NOTICE) for attribution and [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
