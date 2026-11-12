@@ -454,6 +454,16 @@ The owner closed the W4 gate of the Clearance and Autopilot build specification 
 - **Conformance:** the Argo CD and Terraform providers both pass.
 - **Postponed: the 30-day window.** The chain began on 2026-10-29 and the first countersignature was on 2026-11-09. Re-run the packet on 2026-12-09, when 30 days of records have each been witnessed as they happened.
 
+### Clearance build: W5 (gate passed 2026-11-11; work closed 2026-11-12)
+
+W5 added observation: Clearance now records changes made outside its gates, on Kubernetes (audit webhook) and AWS
+(CloudTrail and Config), and says when it cannot see.
+
+- **Gate (passed 2026-11-11):** on hangar-dev, a `kubectl apply` by an admin was recorded with its diff, a Secret write with no value, and reverted; stopping the collector gave a blind window with its reason; a console security-group change in the lab account was recorded out-of-band with the SSO identity and diff, and its removal folded into `reverted` (0.40.3). Packets are saved under `clearance-packets/`.
+- **After the gate (2026-11-12):** platform GitOps attribution on hangar-prod (Argo CD writes, cluster-scoped objects, sync hooks and their Kubernetes cleanup, 0.41.x to 0.42.1); Tower shows coverage, exceptions and alerts, and admins resolve exceptions from it (O-5); the agent gate moved to Clearance's GitHub App and Glidepath's `agent-gates-` check was retired (C-7); Clearance moved to `clearance-system` and the gateway became `autopilot-gateway` (R-10); the core learns the gateway's bundled agents (0.42.0, gateway-v0.6.0).
+- **Live:** Clearance 0.42.0 (0.42.1 rolling out) and gateway-v0.6.0. The hangar-prod gate is still Warn: holds are recorded, not enforced.
+- **Carried:** the Warn-to-Deny flip (owner), R-10e alias retirement, A-10 Skyport move, G-ARGO-10, A-11 (agent provisioning hardening, from the owner's parachute test), the 30-day packet re-run on 2026-12-09.
+
 ## 3. Critical path
 `chart guard → validate → contract → ownership split → Autopilot core → planner (parachute) → Skyport AI`.
 Parallel and safe to interleave: Skyport components (born A+), docs and walkthroughs, the Autopilot
