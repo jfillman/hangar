@@ -197,7 +197,7 @@ Services reuse the existing application path, so nothing new is invented for the
 
 ### Runtime contract (any framework)
 
-Environment: `HANGAR_RUN_ID`, `_TASK_ID`, `_SESSION_ID`, `_AGENT`, `_EXPIRES_AT`, `_LIMITS`, `_INPUT`, `_OUTPUT_DIR`, `_WORKSPACE`, `CLEARANCE_URL`, `MODEL_PROXY_URL` (each URL only if the network mode allows it). Files: `/workspace`, `/run/output`, tokens under `/var/run/hangar` (audiences `clearance` and `model-proxy`). On SIGTERM, checkpoint within 30 seconds. That is the whole contract, which is why Claude Agent SDK, LangGraph and a hand-rolled agent all fit.
+Environment: `HANGAR_RUN_ID`, `_TASK_ID`, `_SESSION_ID`, `_AGENT`, `_EXPIRES_AT`, `_LIMITS`, `_INPUT`, `_OUTPUT_DIR`, `_WORKSPACE`, `AUTOPILOT_URL`, `MODEL_PROXY_URL` (each URL only if the network mode allows it). Files: `/workspace`, `/run/output`, tokens under `/var/run/hangar` (audiences `autopilot` and `model-proxy`; R-10e removed the old `CLEARANCE_URL` and the `clearance` audience). On SIGTERM, checkpoint within 30 seconds. That is the whole contract, which is why Claude Agent SDK, LangGraph and a hand-rolled agent all fit.
 
 ### Sandbox and compute classes
 
