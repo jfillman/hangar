@@ -10,6 +10,8 @@ Nov 2, 2026 · @James
 
 **Revised 2026-11-07, after W3.** This revision folds in the day's analysis and the updated Clearance documents: the Architecture's new chapter 09 (Observation) and its renumbered chapters 10 to 18, the coverage states `break-glass` and `attempted-refused`, the observation-health record, the verification statement and its insurer profile, approver independence extended to automation, and the four revenue-line companions ([Clearinghouse](https://claude.ai/artifact/3rPgELsmjQJ5rqsz386D9Q), [Intelligence](https://claude.ai/artifact/M2rDPgy5WJx8aG7dxsr3xf), [Verification](https://claude.ai/artifact/UfE1xys4nK9C7D2gNm25Lp), [Underwriting](https://claude.ai/artifact/PaZMadKYhzJSJgTBHxiw6B)). It adds three series as sections 15 to 17, after the open questions so that every existing section number still holds (O observation, P clearinghouse, I intelligence), two follow-up packages inside the existing series (R-9, C-14), two waves after W4 in section 11 (W5 Observation, W6 Clearinghouse), new rows in the component, gap, deferred-portal and open-question tables, and two guardrails in section 12. Nothing already merged changes; W4's entry is unchanged except that O-1 and C-14 join it so the packet is not frozen without the new states.
 
+**Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 2 open differences, marked "Open difference" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
+
 ## How to use this spec {#how-to-use-this-spec}
 
 This spec is written for a managing Claude Code session that builds Clearance and Autopilot by delegating work packages to subagents. Every package in sections 6 to 10 is self-contained: it names its repos, its dependencies, what to build, how to prove it on hangar-dev, and what only the user can do.
@@ -547,6 +549,8 @@ Hangar gets one offline root and one Fulcio intermediate per cluster, and a vers
 - **Build.** The `outage` block of `clearance.yaml` and the platform baseline (tiers 0 and 1 allow-and-record, 2 and 3 hold); degraded-mode records when a provider reports the core was unreachable (`POST /v1/records` with `coverage: coverage-unavailable` on recovery); the clearance state machine with the side states (held, expired, superseded, degraded, exception); `deploy.exception` as a first-class record with kinds out-of-band, drift, untraced-apply and digest-mismatch; break-glass as `POST /v1/breakglass` with a named user, reason and TTL, recorded before the change and reconciled when the TTL ends. `ChangeRequest.protected` is used or removed; `flight_registries` becomes configuration so the image rule fires.
 - **Done when.** State-machine tests cover every transition; a provider's degraded-mode report appears in the packet's exceptions; break-glass shows in the record before the change it covers.
 
+> **Open difference (from "Clearance hosted App with a subscriber-hosted core", 2026-11-12):** for the hybrid mode that document rejects a deployment whenever the core is unreachable ("no verdict means no approval"), with no tier distinction, where this package lets tiers 0 and 1 allow-and-record during an outage. See [Hybrid mode, failure modes](#hybrid-mode).
+
 ### C-7 · Provenance confidence and the retirement of `agent-gates-`
 <!-- pkg status=done wave=W3 -->
 
@@ -639,6 +643,22 @@ Added 2026-11-12 (owner). Clearance is meant to install alone, for a team that h
   4. **C-16d The guide.** `docs/byo.md`: install Clearance alone (the chart, PostgreSQL, the GitHub App), wire your gateway (the four calls and the trailers), wire your CI (register, Terraform, Argo CD, or the raw protocol for any other tool), turn on observation, and read a packet, using the C-16c example throughout. It states the limits: GitHub only for the App, provenance and register (GitLab and Bitbucket would need adapters), and what a team gives up without the Argo CD gate.
 - **Done when.** On a fresh kind cluster with only Clearance installed, the reference gateway's agent opens a pull request that Clearance's App vouches for (`Clearance / agent-identity` and `agent-scope` confirmed), the reference workflow's deploy is held and cleared through the deployment protection rule, and a packet built from that chain verifies offline. Hangar's own trailers and headers are unchanged.
 - **Owner steps.** A GitHub org or account for the example's App installation, if the lab's cannot be used.
+
+### C-17 · Hybrid mode: the connector, the relay and reconciliation
+<!-- pkg status=proposal depends=C-13,C-15 -->
+
+Folded in 2026-11-16 from the owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12), written there as an addition to C-13. The design, flows, credentials, failure modes and threat model are in the section [Hybrid mode](#hybrid-mode); this package is its build plan.
+
+- **Repos.** clearance (connector protocol, core connector client, reconciliation job, docs); the vendor relay's repo is not named in the source.
+- **Depends on.** C-13 (tenancy by installation, the KMS key); C-15 (the connector is leader-only).
+- **Build.**
+  1. **C-17a The connector protocol** as a versioned spec in Clearance's repo, with the handshake, event and verdict messages, acknowledgement and replay, and conformance tests.
+  2. **C-17b The core's connector client:** outbound only, leader-only with C-15, a health check, dedupe on event ids, and the read-token variant.
+  3. **C-17c The relay:** webhook intake and signature checks, tenant routing, the durable per-tenant queue, check-run and deployment-callback posting through KMS signing, enrolment and revocation.
+  4. **C-17d The reconciliation job** in the core: read back GitHub's check runs and deployment reviews and record any answer with no matching record as an exception.
+  5. **C-17e Docs:** the three modes, how to choose, onboarding, and the threat model.
+- **Done when.** A core on a network with no inbound access, connected to a test relay, gets a PR's check runs and a protected deployment answered within a few seconds of the webhook, survives a 30-minute disconnect with no lost verdicts, and records a forged relay answer as an exception through reconciliation.
+- **Owner steps.** The open questions in the Hybrid mode section: default data mode, long-poll or WebSocket baseline, the queue window, whether a subscriber may run their own relay.
 
 ### A-11 · Agent provisioning hardening (parachute test findings, 2026-11-12)
 <!-- pkg status=built -->
@@ -1162,6 +1182,125 @@ The opt-in cross-tenant dataset is a second pipeline with its own schema and con
 - **Depends on.** I-2; ten or more opted-in tenants (the roadmap's phase 5 trigger).
 - **Build.** The measurement set of the Intelligence companion (AI-originated share by confidence band, human-required share by operational class, denial and refused-attempt rates, rollback rate by cause, out-of-band and break-glass rates beside the health record, monitoring-protection counts, control effectiveness), each printed with its confound and its coverage floor, as an internal report that validates every measurement before any edition is published; the public index is a later, commercial decision and not a package here.
 - **Done when.** The report runs over the consenting lab tenants and every measurement has its confound line.
+
+## Hybrid mode: a hosted App with a subscriber-hosted core {#hybrid-mode}
+
+Folded in 2026-11-16 from the owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12). It is written as an addition to C-13 (Hosted multi-tenant App); the build plan is C-17.
+
+A subscriber installs one public Clearance GitHub App that the vendor runs, while their Clearance core and its evidence stay on their own network with no inbound port. The core holds a long-lived outbound connection to the vendor's relay; the relay receives GitHub's webhooks, hands each event to the right core, and posts the core's verdicts back to GitHub as the App. The App's private key never leaves the vendor, the subscriber's core never holds a GitHub credential beyond a short-lived read token it asks for per event, and every record stays in the subscriber's chain.
+
+Today's design (`docs/provenance-app.md`) pairs a hosted App with a hosted core, and a self-hosted App with a self-hosted core that GitHub must reach. This section adds the third mode, which is likely the common one for a team that wants its evidence in-house and no public endpoint.
+
+### Three deployment modes
+
+| | Self-hosted | Hybrid (this section) | Fully hosted |
+| --- | --- | --- | --- |
+| GitHub App | Registered by the subscriber from Clearance's manifest | The vendor's public App, installed by the subscriber | The vendor's public App |
+| App private key | Subscriber's secret store | Vendor KMS, never exported | Vendor KMS |
+| Clearance core and chain | Subscriber's network | Subscriber's network | Vendor, one logical core per tenant |
+| Inbound access needed | GitHub must reach the core's webhook route (a public endpoint or a relay such as a Cloudflare tunnel) | None: one outbound connection from the core | None for the subscriber |
+| What the vendor sees | Nothing | PR metadata the decision needs, and the verdicts | Everything |
+| Who runs the core | Subscriber | Subscriber | Vendor |
+| Fits | Teams that can expose an endpoint, and Hangar today | Teams that keep evidence in-house and allow no inbound traffic | Teams that want nothing to run |
+
+The decision logic, the records and the packet are the same in all three; only where the App lives and how events travel change.
+
+### Architecture
+
+> Diagram: hybrid mode, GitHub, the vendor relay, the subscriber's core. Original retired 2026-11-16; a copy of the source is kept privately.
+
+GitHub only ever talks to the vendor's relay. The relay queues each event for its tenant and the subscriber's core pulls it over a connection the core opened, decides, records, and sends back only the verdict, which the relay posts to GitHub with a key that never leaves the vendor's KMS.
+
+### Flows
+
+**A pull request's provenance check**
+
+1. A pull request opens or is pushed in a repo where the subscriber installed the App. GitHub sends `pull_request` to the relay's public webhook endpoint.
+2. The relay checks GitHub's signature, maps the installation id to the tenant, and creates two check runs on the head commit in state `queued` (`Clearance / agent-identity`, `Clearance / agent-scoped`), so the PR shows them at once.
+3. The relay fetches what the decision needs, with a one-repo installation token it mints and discards: the head commit, the changed paths with renames, the author login, and the head commit's trailers. It appends this to the event.
+4. The relay puts the event on the tenant's queue and sends it down the tenant's open connection.
+5. The subscriber's core runs `provenance.verify` against its own receipts, exactly as today, and writes the `provenance.verify` record to its chain.
+6. The core sends back the verdict only: both outcomes (`confirmed`, `not-agent`, AI001 to AI004, AS001 to AS004), each violation's path and rule, and the record's sequence number and hash.
+7. The relay completes the two check runs with the verdict and the summary text, then deletes the event from the queue.
+
+> **Open difference (from "Clearance hosted App with a subscriber-hosted core", 2026-11-12):** the check name in step 2 is written `Clearance / agent-scoped`; C-16 and A-11 in this spec name it `Clearance / agent-scope`. Probably a typo in the source; the owner confirms which name the App publishes.
+
+**A deployment protection callback**
+
+1. A workflow job targets an environment protected by the App. GitHub sends `deployment_protection_rule` with a callback URL.
+2. The relay sends the event (repository, commit, environment, run id) down the connection. It keeps the callback URL and never passes it on.
+3. The core finds the change registered for that repository, commit and environment, and answers `approved`, `rejected` (with the reason, such as DG-UNREGISTERED), or `waiting` while people decide.
+4. For `approved` or `rejected` the relay posts to GitHub's callback with a deployments-scoped token it mints. For `waiting` it posts nothing; the core sends a second message when people clear or deny the change, or when it expires, and the relay answers then. GitHub keeps the deployment waiting up to 30 days.
+5. Every answer is a `deploy.request` and a `deploy.clear`, `deploy.deny` or `deploy.expire` record in the subscriber's chain, as today.
+
+### The connector protocol
+
+- **Connection.** The core dials out to one vendor hostname over HTTPS (long-poll as the baseline; a WebSocket where the subscriber's egress allows it). One connection per installation, opened by the core's leader only (with C-15, the standby stays disconnected until it takes the lock).
+- **Authentication, both ways.** The core authenticates with a per-tenant client certificate issued at onboarding (mTLS), or a signed token from a key the subscriber registered; the vendor's server certificate is pinned in the core's configuration. The core never accepts a connection, so there is nothing to authenticate inbound.
+- **Delivery.** At least once. Each event has an id; the core acknowledges an event only after its record is committed, and the relay retries un-acknowledged events with backoff. Clearance's own dedupe on the source event id makes a redelivery a no-op (the same rule the collectors use).
+- **Ordering.** Per pull request and per deployment, in the order GitHub sent them; no ordering across PRs is needed. A newer head on the same PR supersedes an older queued event for it.
+- **Backpressure and size.** A bounded queue per tenant (by count and age); events older than GitHub's own retry window are dropped with a record of the drop, so a long outage surfaces as a gap, not as stale verdicts. Payloads carry paths and metadata, not file contents.
+- **Verdict messages.** The core's answer carries the event id, the verdict, and the record's sequence number and hash, so the relay's log can name the evidence each GitHub answer came from.
+- **Versioning.** A protocol version in the handshake; the relay serves the two most recent versions so a subscriber can upgrade the core on their own schedule.
+
+### Credentials and data
+
+| Item | Held by | Never held by |
+| --- | --- | --- |
+| GitHub App private key | Vendor KMS (signing happens inside it) | The subscriber's core, the relay's disk |
+| Installation tokens | Minted by the relay per call, one repository, minimal permissions, discarded after use | The subscriber's core (unless C-13 chooses the read-token variant below) |
+| Webhook secret | Vendor | Subscriber |
+| Connector credential | Subscriber (the core's client key); the vendor holds only its public half | n/a |
+| Receipts, records, the chain, ledger keys, signing keys | Subscriber | Vendor |
+| Policy and definitions | Subscriber | Vendor |
+
+**What the vendor sees:** repository and PR identifiers, the head commit, changed paths, the author login, commit trailers, the environment name for deployments, and the verdicts with their record sequence numbers. No file contents, no receipts, no policy, no evidence.
+
+**Variant for teams that want even less on the vendor side:** the relay forwards only the event header, and mints a short-lived read-only token for that one repository which it passes to the core with the event; the core reads the PR itself and the token expires minutes later. The vendor then sees identifiers and verdicts only, at the cost of a credential briefly on the subscriber's side. This matches the mint-per-call, never-persisted pattern Hangar already uses for agent tokens.
+
+### Failure modes
+
+| What fails | What GitHub shows | What happens to the event | When it recovers |
+| --- | --- | --- | --- |
+| The subscriber's core is down or disconnected | Check runs stay `queued`; protected deployments wait | Held in the tenant's queue | The core reconnects and drains the queue in order; verdicts land late, none are lost inside the queue's window |
+| A long core outage, past the queue's window | Check runs time out to a neutral "Clearance unavailable" conclusion; deployments are rejected rather than approved | Dropped, with a drop record the core receives on reconnect | The core writes a coverage gap (`coverage-unavailable`) for the window, so the packet shows it |
+| The relay is down | Nothing new appears; GitHub retries webhook delivery for a while, then marks it failed | Re-delivered by GitHub, or lost after its retries | Missing check runs re-run with GitHub's re-request; the relay replays its own undelivered queue on restart |
+| The vendor's KMS is unavailable | Check runs stay `queued`; deployments wait | Verdicts held by the relay until it can sign | The relay posts held answers when signing returns |
+| The connection drops mid-event | none | Not acknowledged, so redelivered | The core's dedupe makes the second delivery a no-op |
+
+The rule throughout: no verdict means no approval. A deployment is never approved because something was unreachable, which is the same fail-closed stance as the self-hosted App.
+
+> **Open difference (from "Clearance hosted App with a subscriber-hosted core", 2026-11-12):** the rule above rejects a deployment whenever the core is unreachable. C-6 in this spec makes the outage policy tier-based (tiers 0 and 1 allow-and-record, tiers 2 and 3 hold). The source says nothing about tiers; whether a hybrid-mode deployment at tier 0 or 1 is allowed through during a core outage, held, or rejected is for the owner to decide.
+
+### Threat model
+
+| Attacker | Could try | Control |
+| --- | --- | --- |
+| Someone on the internet | Forge webhooks to the relay | GitHub signature check before anything is queued; rate limits per installation |
+| Someone who stole one subscriber's connector credential | Receive that tenant's events, send forged verdicts | Credential bound to one installation; verdicts must name a record sequence number and hash the vendor cannot check, but a subscriber's own chain can, so a forged "confirmed" without a matching `provenance.verify` record is detectable in the packet; rotation and revocation at the vendor; short certificate lifetimes |
+| A compromised relay or vendor insider | Answer GitHub falsely (approve a deployment, pass a check) | The subscriber's chain is the record: every GitHub answer must match a record the subscriber holds, and a reconciliation job in the core reads GitHub's check runs and deployment reviews back through the read token and flags any answer with no matching record as an exception. The vendor can lie to GitHub but cannot make the subscriber's evidence agree |
+| The same, reading data | See PR metadata and verdicts | No file contents, receipts, policy or evidence cross; the read-token variant shrinks this to identifiers |
+| A cross-tenant mistake in the relay | Deliver one tenant's event to another | Routing by installation id only, the event signed by the relay per tenant and checked by the core against its own installation id; a mismatched event is refused and reported |
+| An attacker inside the subscriber's network | Impersonate the core to the relay | The connector key in the subscriber's secret store, the same protection as the core's signing keys |
+
+The key design property: trust in GitHub's answers rests on the subscriber's chain, not on the vendor. The reconciliation job is what turns a vendor lie into a recorded exception.
+
+### Tenancy, onboarding and operations
+
+- **Tenant = installation.** Installing the App on a GitHub account or organisation creates a tenant keyed by the installation id; adding or removing repositories is an `app.installation` record in the subscriber's chain once connected.
+- **Onboarding.** 1) Install the App and choose repositories. 2) The vendor's onboarding page issues a one-time enrolment code for that installation. 3) The subscriber sets the code in the core's configuration; the core generates its connector key pair, enrols its public key, and connects. 4) The first event confirms the link end to end. No secret is ever pasted into the vendor's page.
+- **Rotation.** The connector certificate renews automatically before expiry; revocation is one action on the vendor side and takes effect on the next connection.
+- **Rate limits.** GitHub's limits are per installation, so one noisy tenant cannot starve another's API budget; the relay batches check-run updates per PR.
+- **Scaling.** Stateless relay instances behind a load balancer; the per-tenant queue lives in a durable store; one active connection per tenant, so a tenant's ordering is preserved.
+- **Operations for the subscriber.** The core's health gains a connector check (connected, last event, queue depth on the vendor side), and the packet's coverage statement names any window the connector was down.
+
+### Open questions
+
+- Default data mode: the relay fetches PR metadata (simpler for the subscriber) or the read-token variant (less at the vendor). Recommendation: read-token by default for the hybrid mode, since its buyers chose it for data control.
+- Long-poll versus WebSocket as the baseline, given corporate proxies. Recommendation: long-poll baseline, WebSocket as an upgrade.
+- The queue window: how long the relay holds events for a disconnected core. Bounded by GitHub's own retry and check-run timeouts; a value is set in C-17a.
+- Whether a subscriber may run their own relay (a self-hosted App with the same connector protocol), which would let the self-hosted mode also drop its inbound endpoint.
+- Pricing and limits per tenant are out of scope here.
 
 ## Build report: W0 and W1 (2026-11-03) {#build-report-w0-and-w1}
 
