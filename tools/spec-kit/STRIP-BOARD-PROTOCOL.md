@@ -28,3 +28,5 @@ The design is mine (not yet confirmed by the owner as final: adjust on their fee
 10. Spec docs use the Spec Sheet format: /Users/jerf/tech/clearance-packets/spec-kit/ (SPEC-FORMAT.md, build_spec.py, spec-template.html); one `specs/<name>/spec.md` per spec, built to HTML and published as an Artifact.
 8. New spec or work package: seed its slices as `W` strips and its open decisions as `A` strips before starting.
 Related: [[feedback-scope-transparency]], [[feedback-live-verification]], [[feedback-a9-ignore-python-bugs]].
+
+**Who works a board (added 2026-11-16).** Only the session the owner started for that program. Creating or converting a spec and seeding its board is not taking on the work: `meta/board.session` stays "none (unwatched)", the focus says "PAUSED: no session is working this program", no board check is scheduled, and nothing is started from answers on it. An answered ask on a board no session owns is kept for the session that later takes the program on. When a session owns a board, `meta/board.session` names it, so the owner can see on the page whether answering a strip will start work.
