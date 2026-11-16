@@ -10,7 +10,7 @@ Nov 2, 2026 · @James
 
 **Revised 2026-11-07, after W3.** This revision folds in the day's analysis and the updated Clearance documents: the Architecture's new chapter 09 (Observation) and its renumbered chapters 10 to 18, the coverage states `break-glass` and `attempted-refused`, the observation-health record, the verification statement and its insurer profile, approver independence extended to automation, and the four revenue-line companions ([Clearinghouse](https://claude.ai/artifact/3rPgELsmjQJ5rqsz386D9Q), [Intelligence](https://claude.ai/artifact/M2rDPgy5WJx8aG7dxsr3xf), [Verification](https://claude.ai/artifact/UfE1xys4nK9C7D2gNm25Lp), [Underwriting](https://claude.ai/artifact/PaZMadKYhzJSJgTBHxiw6B)). It adds three series as sections 15 to 17, after the open questions so that every existing section number still holds (O observation, P clearinghouse, I intelligence), two follow-up packages inside the existing series (R-9, C-14), two waves after W4 in section 11 (W5 Observation, W6 Clearinghouse), new rows in the component, gap, deferred-portal and open-question tables, and two guardrails in section 12. Nothing already merged changes; W4's entry is unchanged except that O-1 and C-14 join it so the packet is not frozen without the new states.
 
-**Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 2 open differences, marked "Open difference" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
+**Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 1 open difference, marked "Open difference" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
 
 ## How to use this spec {#how-to-use-this-spec}
 
@@ -1216,14 +1216,12 @@ GitHub only ever talks to the vendor's relay. The relay queues each event for it
 **A pull request's provenance check**
 
 1. A pull request opens or is pushed in a repo where the subscriber installed the App. GitHub sends `pull_request` to the relay's public webhook endpoint.
-2. The relay checks GitHub's signature, maps the installation id to the tenant, and creates two check runs on the head commit in state `queued` (`Clearance / agent-identity`, `Clearance / agent-scoped`), so the PR shows them at once.
+2. The relay checks GitHub's signature, maps the installation id to the tenant, and creates two check runs on the head commit in state `queued` (`Clearance / agent-identity`, `Clearance / agent-scope`), so the PR shows them at once.
 3. The relay fetches what the decision needs, with a one-repo installation token it mints and discards: the head commit, the changed paths with renames, the author login, and the head commit's trailers. It appends this to the event.
 4. The relay puts the event on the tenant's queue and sends it down the tenant's open connection.
 5. The subscriber's core runs `provenance.verify` against its own receipts, exactly as today, and writes the `provenance.verify` record to its chain.
 6. The core sends back the verdict only: both outcomes (`confirmed`, `not-agent`, AI001 to AI004, AS001 to AS004), each violation's path and rule, and the record's sequence number and hash.
 7. The relay completes the two check runs with the verdict and the summary text, then deletes the event from the queue.
-
-> **Open difference (from "Clearance hosted App with a subscriber-hosted core", 2026-11-12):** the check name in step 2 is written `Clearance / agent-scoped`; C-16 and A-11 in this spec name it `Clearance / agent-scope`. Probably a typo in the source; the owner confirms which name the App publishes.
 
 **A deployment protection callback**
 
