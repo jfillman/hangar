@@ -6,6 +6,7 @@ Build specifications and working plans for the Hangar program, kept here so they
 |---|---|
 | `clearance-autopilot/spec.md` | Clearance & Autopilot Build Specification |
 | `clearance-cloud/spec.md` | Clearance Cloud Build Specification |
+| `argo-rollouts-1-11/spec.md` | Argo Rollouts 1.11 Upgrade and Follow-ons: Build Specification |
 | `plans/` | Plans, package cards, reviews and design notes written during the build |
 
 Each `spec.md` is a Spec Sheet source. Build the page with the kit in [`tools/spec-kit/`](../tools/spec-kit/):
