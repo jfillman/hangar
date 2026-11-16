@@ -1,0 +1,354 @@
+<title>Strip Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one working column (max 62rem). "Needs you" is always first; everything else is a rack of strips below it.
+   A strip is three compartments like a flight progress strip: callsign (id) | what | state. Hangar palette:
+   amber = needs the owner, sky = information and links. */
+:root{
+  --bg:#f2efe9; --panel:#faf8f4; --bg2:#e8e3da; --ink:#1b1f24; --muted:#5b6570; --faint:#838b93;
+  --rule:rgba(27,31,36,.14); --rule-solid:#c7c2b8; --accent:#b9791f; --accent-tint:rgba(185,121,31,.10);
+  --link:#2e7ba6; --link-tint:rgba(46,123,166,.10); --good:#3d7a55; --good-tint:rgba(61,122,85,.12);
+  --bad:#a8442f; --bad-tint:rgba(168,68,47,.10);
+  --sans:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0b0d10; --panel:#12161b; --bg2:#171b21; --ink:#e9ecef; --muted:#96a2ac; --faint:#6e7981;
+  --rule:rgba(233,236,239,.14); --rule-solid:rgba(150,162,172,.3); --accent:#e8a33d; --accent-tint:rgba(232,163,61,.12);
+  --link:#6fb2d9; --link-tint:rgba(111,178,217,.12); --good:#7fc79a; --good-tint:rgba(127,199,154,.12);
+  --bad:#e07a63; --bad-tint:rgba(224,122,99,.12); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0b0d10; --panel:#12161b; --bg2:#171b21; --ink:#e9ecef; --muted:#96a2ac; --faint:#6e7981;
+  --rule:rgba(233,236,239,.14); --rule-solid:rgba(150,162,172,.3); --accent:#e8a33d; --accent-tint:rgba(232,163,61,.12);
+  --link:#6fb2d9; --link-tint:rgba(111,178,217,.12); --good:#7fc79a; --good-tint:rgba(127,199,154,.12);
+  --bad:#e07a63; --bad-tint:rgba(224,122,99,.12); color-scheme:dark }
+
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:62rem;margin-inline:auto;display:grid;gap:22px}
+header{display:grid;gap:6px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:1.7rem;font-weight:600;line-height:1.2;margin:0;text-wrap:balance}
+.focus{font-size:1.02rem;max-width:46rem;margin:0}
+.stamp{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.note{font-size:13px;color:var(--muted)}
+.banner{border:1px solid var(--bad);background:var(--bad-tint);padding:8px 12px;font-size:13.5px}
+
+.counts{display:flex;flex-wrap:wrap;gap:8px}
+.count{font-family:var(--mono);font-size:12px;border:1px solid var(--rule-solid);padding:3px 9px;color:var(--muted);background:var(--panel)}
+.count b{color:var(--ink);font-weight:600}
+.count.hot{border-color:var(--accent);color:var(--accent)} .count.hot b{color:var(--accent)}
+
+section{display:grid;gap:8px;min-width:0}
+.sec-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--rule-solid);padding-bottom:6px}
+h2{font-size:1.05rem;font-weight:600;margin:0}
+.sec-head .sub{font-size:13px;color:var(--muted)}
+.empty{font-size:13.5px;color:var(--muted);padding:10px 0}
+
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font:inherit;font-family:var(--mono);font-size:12.5px;padding:5px 11px;border:1px solid var(--rule-solid);background:var(--panel);color:var(--muted);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.search{font:inherit;font-size:13.5px;padding:5px 9px;border:1px solid var(--rule-solid);background:var(--panel);color:var(--ink);min-width:0;flex:1 1 180px;max-width:280px}
+
+/* the strip */
+.strip{display:grid;grid-template-columns:5.2rem minmax(0,1fr) auto;border:1px solid var(--rule-solid);background:var(--panel)}
+.strip + .strip{margin-top:-1px}
+.strip.need{border-color:var(--accent);position:relative;z-index:1}
+.cs{font-family:var(--mono);font-weight:600;font-size:13.5px;padding:10px 10px;border-right:1px solid var(--rule);display:grid;align-content:start;gap:2px}
+.cs small{font-weight:400;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.strip.need .cs{background:var(--accent-tint);color:var(--accent)}
+.what{padding:9px 12px;min-width:0;display:grid;gap:5px}
+.title{font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.body{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere;max-width:46rem}
+.meta{display:flex;flex-wrap:wrap;gap:6px 12px;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.meta a{color:var(--link)}
+.st{padding:10px 10px;border-left:1px solid var(--rule);display:grid;align-content:start;justify-items:end;gap:6px;min-width:6.4rem}
+.chip{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--rule-solid);padding:1px 6px;color:var(--muted);white-space:nowrap}
+.chip.amber{border-color:var(--accent);color:var(--accent)} .chip.good{border-color:var(--good);color:var(--good)}
+.chip.bad{border-color:var(--bad);color:var(--bad)} .chip.sky{border-color:var(--link);color:var(--link)}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;font-size:13.5px}
+.kv dt{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.kv dd{margin:0;overflow-wrap:anywhere}
+.answered{border-left:2px solid var(--good);padding:4px 10px;background:var(--good-tint);font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.ownernote{border-left:2px solid var(--link);padding:4px 10px;background:var(--link-tint);font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+
+form.ans{display:grid;gap:8px;border-top:1px dashed var(--rule-solid);padding-top:8px;margin-top:2px}
+.opts{display:grid;gap:4px}
+.opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:start;font-size:14px;padding:3px 0}
+.opt .rec{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);padding:0 5px;margin-left:6px;white-space:nowrap}
+textarea,input[type=text],select{font:inherit;font-size:14px;width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--rule-solid);background:var(--bg);color:var(--ink)}
+textarea{min-height:2.6rem;resize:vertical}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button.act{font:inherit;font-size:13.5px;font-weight:600;padding:6px 12px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+button.act.quiet{background:transparent;color:var(--ink);border-color:var(--rule-solid);font-weight:500}
+button.act[disabled]{opacity:.5;cursor:default}
+.msg{font-size:13px;color:var(--muted)} .msg.err{color:var(--bad)}
+details.how{border:1px solid var(--rule-solid);background:var(--panel);padding:8px 12px}
+details.how summary{cursor:pointer;font-weight:600}
+details.how ol{margin:8px 0 4px;padding-left:1.3em;max-width:46rem} details.how li{margin-bottom:5px}
+details.how code{font-family:var(--mono);font-size:.88em;background:var(--bg2);padding:.05em .3em}
+.newstrip{border:1px solid var(--rule-solid);background:var(--panel);padding:10px 12px;display:grid;gap:8px}
+.grid2{display:grid;grid-template-columns:minmax(0,11rem) minmax(0,1fr);gap:8px}
+@media (max-width:640px){
+  .strip{grid-template-columns:4.2rem minmax(0,1fr)} .st{grid-column:1 / -1;border-left:0;border-top:1px solid var(--rule);justify-items:start;display:flex;flex-wrap:wrap}
+  .grid2{grid-template-columns:1fr}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="program">Program</div>
+    <h1>Strip Board</h1>
+    <p class="focus" id="focus">Loading the board…</p>
+    <div class="stamp" id="stamp"></div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="counts" id="counts"></div>
+  </header>
+
+  <section aria-labelledby="h-need">
+    <div class="sec-head"><h2 id="h-need">Needs you</h2><span class="sub">Questions waiting for an answer and steps only you can take. Nothing else on this page needs you.</span></div>
+    <div id="need"></div>
+  </section>
+
+  <section aria-labelledby="h-rack">
+    <div class="sec-head">
+      <h2 id="h-rack">The rack</h2>
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <input class="search" id="q" type="text" placeholder="Filter by id or word" aria-label="Filter strips">
+    </div>
+    <div id="rack"></div>
+  </section>
+
+  <section aria-labelledby="h-new">
+    <div class="sec-head"><h2 id="h-new">Add a strip</h2><span class="sub">A question, a bug or a request for Claude. It is read at the start of the next turn.</span></div>
+    <form class="newstrip" id="newform">
+      <div class="grid2">
+        <select id="new-kind" aria-label="Kind">
+          <option value="request">Request</option><option value="question">Question</option><option value="bug">Bug or issue</option><option value="note">Note</option>
+        </select>
+        <input id="new-title" type="text" placeholder="One line: what is it?" aria-label="Title" maxlength="200">
+      </div>
+      <textarea id="new-body" placeholder="Details (optional)" aria-label="Details" maxlength="4000"></textarea>
+      <div class="row"><button class="act" type="submit" id="new-go">Add strip</button><span class="msg" id="new-msg"></span></div>
+    </form>
+  </section>
+
+  <details class="how">
+    <summary>How this board works</summary>
+    <ol>
+      <li><strong>Everything goes on a strip.</strong> A strip has an id that never changes and is never reused: <code>A</code> ask, <code>Y</code> yours, <code>I</code> issue, <code>W</code> work, <code>C</code> change, <code>R</code> unverified, <code>O</code> one you added.</li>
+      <li><strong>Chat stays short.</strong> A chat message names strip ids and says only what changed: what needs you, what broke, what went live. The detail is here.</li>
+      <li><strong>A question is never asked only in chat.</strong> Each ask carries its options, Claude's recommendation, what it blocks, and what Claude does if you say nothing. Things that cannot be undone, or that only you may do, never have a default.</li>
+      <li><strong>Answer here or in chat.</strong> Pick an option and press Answer, or type <code>A-7: b</code> in chat. A chat answer is copied onto the strip word for word.</li>
+      <li><strong>Claude reads the board at the start of every turn</strong> and before acting on anything an ask gates. Your notes and new strips are picked up then.</li>
+      <li><strong>A change says where it is live and how that was checked.</strong> Anything claimed but not proven gets its own <code>R</code> strip until it is.</li>
+      <li><strong>Strips are closed, never deleted.</strong> Answered asks stay under Decided as the record of what was decided, when, and in whose words.</li>
+    </ol>
+  </details>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KINDS = {
+    ask:   {letter:"A", name:"Ask",        open:["open"]},
+    yours: {letter:"Y", name:"Yours",      open:["open"]},
+    issue: {letter:"I", name:"Issue",      open:["new","diagnosing","fix-open","known-limit"]},
+    work:  {letter:"W", name:"Work",       open:["queued","running","review","blocked"]},
+    change:{letter:"C", name:"Change",     open:[]},
+    risk:  {letter:"R", name:"Unverified", open:["open"]},
+    owner: {letter:"O", name:"From you",   open:["open"]}
+  };
+  var TABS = [
+    {id:"work",   label:"In flight",  test:function(s){return s.kind==="work" && s.state!=="done";}},
+    {id:"issue",  label:"Issues",     test:function(s){return s.kind==="issue" && s.state!=="fixed" && s.state!=="accepted";}},
+    {id:"change", label:"Shipped",    test:function(s){return s.kind==="change";}},
+    {id:"risk",   label:"Unverified", test:function(s){return s.kind==="risk" && s.state==="open";}},
+    {id:"owner",  label:"From you",   test:function(s){return s.kind==="owner";}},
+    {id:"decided",label:"Decided",    test:function(s){return s.kind==="ask" && s.state!=="open";}},
+    {id:"closed", label:"Closed",     test:function(s){return (s.kind==="yours"&&s.state!=="open")||(s.kind==="work"&&s.state==="done")||(s.kind==="issue"&&(s.state==="fixed"||s.state==="accepted"))||(s.kind==="risk"&&s.state!=="open");}}
+  ];
+  var CHIP = {open:"amber", "new":"bad", diagnosing:"amber", "fix-open":"sky", "known-limit":"", fixed:"good", accepted:"",
+              queued:"", running:"sky", review:"sky", blocked:"bad", done:"good", merged:"sky", live:"good", verified:"good",
+              answered:"good", withdrawn:"", closed:""};
+  var state = {strips:{}, meta:null, tab:"work", q:"", db:null, loaded:false, drafts:{}};
+  try { var t = localStorage.getItem("sb-tab"); if (t) state.tab = t; } catch(e){}
+
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+  function fmt(iso){ if(!iso) return ""; var d=new Date(iso); if(isNaN(d)) return iso;
+    var p=function(n){return String(n).padStart(2,"0");};
+    return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }
+  function num(s){ var m=/-(\d+)$/.exec(s.id||""); return m?parseInt(m[1],10):0; }
+  function byPrio(a,b){ return ((a.p||2)-(b.p||2)) || (num(a)-num(b)); }
+  function newest(a,b){ return String(b.updated||"").localeCompare(String(a.updated||"")) || (num(b)-num(a)); }
+
+  function links(s){
+    var box = el("div","meta");
+    if (s.spec) box.appendChild(el("span",null,"spec "+s.spec));
+    (Array.isArray(s.links)?s.links:[]).forEach(function(l){
+      if(!l||typeof l.url!=="string"||!/^https:\/\//.test(l.url)) return;
+      var a=el("a",null,l.label||l.url); a.href=l.url; a.target="_blank"; a.rel="noopener"; box.appendChild(a); });
+    if (s.updated) box.appendChild(el("span",null,"updated "+fmt(s.updated)));
+    return box;
+  }
+
+  function strip(s, need){
+    var k = KINDS[s.kind] || {name:s.kind||"?"};
+    var root = el("article","strip"+(need?" need":"")); root.setAttribute("aria-label", s.id+" "+(s.title||""));
+    var cs = el("div","cs", s.id); cs.appendChild(el("small",null,k.name)); root.appendChild(cs);
+    var what = el("div","what");
+    what.appendChild(el("div","title", s.title||"(no title)"));
+    if (s.body) what.appendChild(el("div","body", s.body));
+    if (s.kind==="ask"){
+      var kv = el("dl","kv");
+      if (s.blocks){ kv.appendChild(el("dt",null,"Blocks")); kv.appendChild(el("dd",null,s.blocks)); }
+      if (s.fallback){ kv.appendChild(el("dt",null,"If no answer")); kv.appendChild(el("dd",null,s.fallback)); }
+      if (kv.children.length) what.appendChild(kv);
+    }
+    if (s.kind==="change"){
+      var kv2 = el("dl","kv");
+      if (s.live){ kv2.appendChild(el("dt",null,"Live")); kv2.appendChild(el("dd",null,s.live)); }
+      if (s.checked){ kv2.appendChild(el("dt",null,"Checked")); kv2.appendChild(el("dd",null,s.checked)); }
+      if (s.unverified){ kv2.appendChild(el("dt",null,"Not checked")); kv2.appendChild(el("dd",null,s.unverified)); }
+      if (kv2.children.length) what.appendChild(kv2);
+    }
+    if (s.answer && (s.answer.choice || s.answer.text)){
+      var opt = (Array.isArray(s.options)?s.options:[]).filter(function(o){return o.key===s.answer.choice;})[0];
+      var line = "Answered"+(s.answer.at?" "+fmt(s.answer.at):"")+": "+(opt?opt.label:(s.answer.choice||""))+(s.answer.text?(opt||s.answer.choice?"\n":"")+s.answer.text:"");
+      what.appendChild(el("div","answered", line));
+    }
+    if (s.note) what.appendChild(el("div","ownernote","Your note: "+s.note));
+    if (s.reply) what.appendChild(el("div","answered","Claude: "+s.reply));
+    what.appendChild(links(s));
+    if (need && s.kind==="ask") what.appendChild(askForm(s));
+    else if (need && s.kind==="yours") what.appendChild(doneForm(s));
+    else what.appendChild(noteForm(s));
+    root.appendChild(what);
+    var st = el("div","st");
+    st.appendChild(el("span","chip "+(CHIP[s.state]||""), s.state||"?"));
+    if (s.sev) st.appendChild(el("span","chip "+(s.sev==="high"?"bad":s.sev==="medium"?"amber":""), s.sev));
+    root.appendChild(st);
+    return root;
+  }
+
+  function write(ref, patch, msg, btn){
+    if(!state.db){ msg.textContent="The board's store is not available in this view."; msg.className="msg err"; return Promise.resolve(false); }
+    if(btn) btn.disabled=true; msg.className="msg"; msg.textContent="Saving…";
+    return ref.update(patch).then(function(){ msg.textContent="Saved."; if(btn) btn.disabled=false; return true; })
+      .catch(function(e){ msg.className="msg err"; msg.textContent="Not saved ("+((e&&e.code)||"error")+"). Try again, or answer in chat."; if(btn) btn.disabled=false; return false; });
+  }
+
+  function askForm(s){
+    var f = el("form","ans"); var name="opt-"+s.id; var opts=el("div","opts");
+    (Array.isArray(s.options)?s.options:[]).forEach(function(o,i){
+      var lab=el("label","opt"); var r=document.createElement("input"); r.type="radio"; r.name=name; r.value=o.key; r.id=name+"-"+i;
+      if (state.drafts[s.id] && state.drafts[s.id].choice===o.key) r.checked=true;
+      r.addEventListener("change",function(){ (state.drafts[s.id]=state.drafts[s.id]||{}).choice=o.key; });
+      var t=el("span"); t.appendChild(el("strong",null,o.key+". ")); t.appendChild(document.createTextNode(o.label||""));
+      if (s.recommend===o.key) t.appendChild(el("span","rec","recommended"));
+      if (o.note){ t.appendChild(document.createElement("br")); t.appendChild(el("span","note",o.note)); }
+      lab.appendChild(r); lab.appendChild(t); opts.appendChild(lab); });
+    f.appendChild(opts);
+    var ta=document.createElement("textarea"); ta.id="txt-"+s.id; ta.placeholder="Something else, or a comment (optional)"; ta.maxLength=4000;
+    ta.value=(state.drafts[s.id]&&state.drafts[s.id].text)||"";
+    ta.addEventListener("input",function(){ (state.drafts[s.id]=state.drafts[s.id]||{}).text=ta.value; });
+    f.appendChild(ta);
+    var row=el("div","row"); var b=el("button","act","Answer "+s.id); b.type="submit"; var m=el("span","msg"); row.appendChild(b); row.appendChild(m); f.appendChild(row);
+    f.addEventListener("submit",function(ev){ ev.preventDefault();
+      var d=state.drafts[s.id]||{}; var choice=d.choice||""; var text=(ta.value||"").trim();
+      if(!choice && !text){ m.className="msg err"; m.textContent="Pick an option or type an answer."; return; }
+      var now=new Date().toISOString();
+      write(state.db.doc("strips/"+s.id), {answer:{choice:choice,text:text,at:now,by:"owner"}, state:"answered", updated:now}, m, b)
+        .then(function(ok){ if(ok) delete state.drafts[s.id]; });
+    });
+    return f;
+  }
+  function doneForm(s){
+    var f=el("form","ans"); var ta=document.createElement("textarea"); ta.id="txt-"+s.id; ta.placeholder="Note for Claude (optional)"; ta.maxLength=4000;
+    ta.value=(state.drafts[s.id]&&state.drafts[s.id].text)||""; ta.addEventListener("input",function(){ (state.drafts[s.id]=state.drafts[s.id]||{}).text=ta.value; });
+    f.appendChild(ta);
+    var row=el("div","row"); var b=el("button","act","Mark "+s.id+" done"); b.type="submit";
+    var b2=el("button","act quiet","Save note only"); b2.type="button"; var m=el("span","msg");
+    row.appendChild(b); row.appendChild(b2); row.appendChild(m); f.appendChild(row);
+    function go(done){ var now=new Date().toISOString(); var text=(ta.value||"").trim(); var patch={updated:now};
+      if(text) patch.note=text; if(done){ patch.state="done"; patch.done_at=now; }
+      if(!done && !text){ m.className="msg err"; m.textContent="Type a note first."; return; }
+      write(state.db.doc("strips/"+s.id), patch, m, b).then(function(ok){ if(ok) delete state.drafts[s.id]; }); }
+    f.addEventListener("submit",function(ev){ ev.preventDefault(); go(true); });
+    b2.addEventListener("click",function(){ go(false); });
+    return f;
+  }
+  function noteForm(s){
+    var d=document.createElement("details"); var sm=document.createElement("summary"); sm.className="note"; sm.textContent=s.note?"Change your note":"Add a note for Claude"; d.appendChild(sm);
+    var f=el("form","ans"); var ta=document.createElement("textarea"); ta.id="txt-"+s.id; ta.maxLength=4000; ta.value=(state.drafts[s.id]&&state.drafts[s.id].text)||s.note||"";
+    ta.addEventListener("input",function(){ (state.drafts[s.id]=state.drafts[s.id]||{}).text=ta.value; });
+    if (state.drafts[s.id] && state.drafts[s.id].open) d.open=true;
+    d.addEventListener("toggle",function(){ (state.drafts[s.id]=state.drafts[s.id]||{}).open=d.open; });
+    var row=el("div","row"); var b=el("button","act quiet","Save note"); b.type="submit"; var m=el("span","msg"); row.appendChild(b); row.appendChild(m);
+    f.appendChild(ta); f.appendChild(row);
+    f.addEventListener("submit",function(ev){ ev.preventDefault(); var now=new Date().toISOString();
+      write(state.db.doc("strips/"+s.id), {note:(ta.value||"").trim(), note_at:now, updated:now}, m, b).then(function(ok){ if(ok) delete state.drafts[s.id]; }); });
+    d.appendChild(f); return d;
+  }
+
+  function render(){
+    var all = Object.keys(state.strips).map(function(k){return state.strips[k];});
+    var m = state.meta || {};
+    $("program").textContent = m.program || "Program";
+    $("focus").textContent = state.loaded ? (m.focus || (all.length ? "" : "No strips yet. Claude adds them as work starts; you can add one below.")) : "Loading the board…";
+    $("stamp").textContent = m.updated ? ("Claude last wrote "+fmt(m.updated)+(m.session?" · session "+m.session:"")) : "";
+    var need = all.filter(function(s){ return (s.kind==="ask"||s.kind==="yours") && s.state==="open"; }).sort(byPrio);
+    var counts=$("counts"); counts.textContent="";
+    function c(label,n,hot){ var e=el("span","count"+(hot&&n?" hot":"")); e.appendChild(el("b",null,String(n))); e.appendChild(document.createTextNode(" "+label)); counts.appendChild(e); }
+    c("need you", need.length, true);
+    TABS.forEach(function(t){ if(t.id==="closed"||t.id==="decided") return; c(t.label.toLowerCase(), all.filter(t.test).length, false); });
+    var nb=$("need"); nb.textContent="";
+    if(!need.length) nb.appendChild(el("div","empty", state.loaded ? "Nothing needs you right now." : "Loading…"));
+    need.forEach(function(s){ nb.appendChild(strip(s,true)); });
+
+    var tabs=$("tabs"); tabs.textContent="";
+    TABS.forEach(function(t){ var b=el("button","tab", t.label+" "+all.filter(t.test).length); b.type="button"; b.setAttribute("role","tab");
+      b.setAttribute("aria-selected", String(state.tab===t.id));
+      b.addEventListener("click",function(){ state.tab=t.id; try{localStorage.setItem("sb-tab",t.id);}catch(e){} render(); }); tabs.appendChild(b); });
+    var tab = TABS.filter(function(t){return t.id===state.tab;})[0] || TABS[0];
+    var q = state.q.trim().toLowerCase();
+    var rows = all.filter(tab.test).filter(function(s){ if(!q) return true;
+      return ((s.id||"")+" "+(s.title||"")+" "+(s.body||"")+" "+(s.spec||"")).toLowerCase().indexOf(q)>=0; });
+    rows.sort(tab.id==="change"||tab.id==="decided"||tab.id==="closed" ? newest : byPrio);
+    var rack=$("rack"); rack.textContent="";
+    if(!rows.length) rack.appendChild(el("div","empty", state.loaded ? (q?"No strip here matches that filter.":"Nothing in "+tab.label.toLowerCase()+".") : "Loading…"));
+    rows.forEach(function(s){ rack.appendChild(strip(s,false)); });
+  }
+
+  $("q").addEventListener("input",function(e){ state.q=e.target.value; render(); });
+
+  $("newform").addEventListener("submit",function(ev){ ev.preventDefault();
+    var m=$("new-msg"), b=$("new-go"); var title=$("new-title").value.trim();
+    if(!title){ m.className="msg err"; m.textContent="Give it a one-line title."; return; }
+    if(!state.db){ m.className="msg err"; m.textContent="The board's store is not available in this view. Tell Claude in chat."; return; }
+    var max=0; Object.keys(state.strips).forEach(function(k){ var s=state.strips[k]; if(s.kind==="owner") max=Math.max(max,num(s)); });
+    var id="O-"+(max+1); var now=new Date().toISOString();
+    b.disabled=true; m.className="msg"; m.textContent="Saving…";
+    state.db.doc("strips/"+id).set({id:id,kind:"owner",sub:$("new-kind").value,title:title,body:$("new-body").value.trim(),state:"open",p:1,created:now,updated:now,by:"owner"})
+      .then(function(){ m.textContent="Added as "+id+"."; $("new-title").value=""; $("new-body").value=""; b.disabled=false; state.tab="owner"; render(); })
+      .catch(function(e){ m.className="msg err"; m.textContent="Not saved ("+((e&&e.code)||"error")+"). Tell Claude in chat."; b.disabled=false; });
+  });
+
+  render();
+  var slow = setTimeout(function(){ if(!state.loaded){ var bn=$("banner"); bn.hidden=false; bn.textContent="The board's data has not arrived yet. It may be unreachable from this view; anything shown may be out of date."; } }, 10000);
+  function settled(){ state.loaded=true; clearTimeout(slow); $("banner").hidden=true; }
+
+  var use = (window.claude && window.claude.use) ? window.claude.use("db") : Promise.resolve(null);
+  use.then(function(db){
+    if(!db){ state.loaded=true; clearTimeout(slow); var bn=$("banner"); bn.hidden=false; bn.textContent="This view cannot reach the board's store (signed out, or opened outside Claude). Ask Claude for the current state in chat."; render(); return; }
+    state.db=db;
+    db.collection("strips").limit(1000).onSnapshot(function(snap){
+      var next={}; snap.docs.forEach(function(d){ var v=d.data(); if(v){ var o={}; Object.keys(v).forEach(function(k){o[k]=v[k];}); if(!o.id) o.id=d.id; next[d.id]=o; } });
+      state.strips=next; if(!snap.metadata || !snap.metadata.fromCache) settled(); else state.loaded=true; render();
+    }, function(e){ state.loaded=true; clearTimeout(slow); var bn=$("banner"); bn.hidden=false; bn.textContent="The board stopped updating ("+((e&&e.code)||"error")+"). Reload the page to reconnect."; render(); });
+    db.doc("meta/board").onSnapshot(function(d){ state.meta = d.exists ? d.data() : null; render(); }, function(){});
+  }).catch(function(){ state.loaded=true; render(); });
+})();
+</script>
