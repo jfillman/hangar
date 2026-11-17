@@ -75,22 +75,30 @@ is_gate() { case "$1" in "$appname / "*) return 0 ;; esac; return 1; }
 
 # pr_info: reads one .tekton file on stdin, prints "<metadata.name or generateName><TAB><filter>" per PipelineRun document.
 # filter: "path filter" (on-path-change, on-path-change-ignore, or an on-cel-expression that uses files.*),
-# "branch filter" (an on-cel-expression on source_branch or target_branch, other than target_branch == "main"),
-# "CEL without path or branch reference" (any other on-cel-expression), or "no path filter".
+# "branch filter" (on-target-branch other than [main], or an on-cel-expression on source_branch or target_branch other than
+# target_branch == "main"), "event filter" (on-event other than [pull_request], or a CEL event other than pull_request),
+# "CEL without path or branch reference" (any other on-cel-expression), or "no path filter". The CEL text is normalised
+# first (whitespace dropped, single quotes read as double), so target_branch=="main" and target_branch == 'main' are alike.
 pr_info() {
   python3 -c '
-import sys, yaml
+import re, sys, yaml
+def items(v):
+    return [x.strip().strip("\"\x27") for x in str(v).strip().strip("[]").split(",") if x.strip()]
 for d in yaml.safe_load_all(sys.stdin):
     if not isinstance(d, dict) or d.get("kind") != "PipelineRun":
         continue
     m = d.get("metadata") or {}
     a = m.get("annotations") or {}
     p = "pipelinesascode.tekton.dev/"
-    cel = str(a.get(p + "on-cel-expression") or "")
+    cel = re.sub(r"\s+", "", str(a.get(p + "on-cel-expression") or "")).replace("\x27", "\"")
+    rest = cel.replace("target_branch==\"main\"", "")
+    events = re.findall(r"event==\"(\w+)\"", cel)
     if p + "on-path-change" in a or p + "on-path-change-ignore" in a or "files." in cel:
         f = "path filter"
-    elif "source_branch" in cel.replace("target_branch == \"main\"", "") or "target_branch" in cel.replace("target_branch == \"main\"", ""):
+    elif "source_branch" in rest or "target_branch" in rest or (p + "on-target-branch" in a and items(a[p + "on-target-branch"]) != ["main"]):
         f = "branch filter"
+    elif any(e != "pull_request" for e in events) or (p + "on-event" in a and items(a[p + "on-event"]) != ["pull_request"]):
+        f = "event filter"
     elif cel:
         f = "CEL without path or branch reference"
     else:
@@ -154,9 +162,11 @@ EOF
       while IFS=$'\t' read -r nm filt; do
         [ -z "$filt" ] && continue
         # the check's context is exactly "<app> / <name>"; compare the whole string
-        if printf '%s\n' "$req" | cut -f1 | grep -Fxq -- "$appname / $nm"; then rq="required"; else rq="not required"; fi
+        if printf '%s\n' "$req" | cut -f1 | grep -Fxq -- "$appname / $nm"; then rq="required"
+        elif [ $errs -gt 0 ]; then rq="UNKNOWN (required checks could not be read)"
+        else rq="not required"; fi
         echo "  .tekton: $path ($nm): $filt, $rq"
-        if [ "$filt" != "path filter" ] && [ "$filt" != "branch filter" ] && [ "$rq" = "not required" ]; then unfiltered="$unfiltered$nm "; fi
+        if [ "$filt" != "path filter" ] && [ "$filt" != "branch filter" ] && [ "$filt" != "event filter" ] && [ "$rq" = "not required" ]; then unfiltered="$unfiltered$nm "; fi
       done <<EOI
 $info
 EOI
@@ -166,7 +176,7 @@ EOI
   else
     echo "  .tekton: could not be read ($(printf '%s' "$API_BODY" | head -1))"
   fi
-  [ -n "$unfiltered" ] && echo "  not conditional (no path or branch filter) and not required: $unfiltered"
+  [ -n "$unfiltered" ] && echo "  not conditional (no path, branch or event filter) and not required: $unfiltered"
 
   if [ -n "$gates" ]; then echo "  verdict: gate checks are required"
   elif [ $errs -gt 0 ]; then echo "  verdict: UNKNOWN: a request failed (see above), so required checks could not be determined"
