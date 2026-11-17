@@ -75,7 +75,8 @@ is_gate() { case "$1" in "$appname / "*) return 0 ;; esac; return 1; }
 
 # pr_info: reads one .tekton file on stdin, prints "<metadata.name or generateName><TAB><filter>" per PipelineRun document.
 # filter: "path filter" (on-path-change, on-path-change-ignore, or an on-cel-expression that uses files.*),
-# "CEL without path reference" (an on-cel-expression that does not look at files), or "no path filter".
+# "branch filter" (an on-cel-expression on source_branch or target_branch, other than target_branch == "main"),
+# "CEL without path or branch reference" (any other on-cel-expression), or "no path filter".
 pr_info() {
   python3 -c '
 import sys, yaml
@@ -88,8 +89,10 @@ for d in yaml.safe_load_all(sys.stdin):
     cel = str(a.get(p + "on-cel-expression") or "")
     if p + "on-path-change" in a or p + "on-path-change-ignore" in a or "files." in cel:
         f = "path filter"
+    elif "source_branch" in cel.replace("target_branch == \"main\"", "") or "target_branch" in cel.replace("target_branch == \"main\"", ""):
+        f = "branch filter"
     elif cel:
-        f = "CEL without path reference"
+        f = "CEL without path or branch reference"
     else:
         f = "no path filter"
     print("%s\t%s" % (m.get("name") or m.get("generateName") or "", f))
@@ -153,7 +156,7 @@ EOF
         # the check's context is exactly "<app> / <name>"; compare the whole string
         if printf '%s\n' "$req" | cut -f1 | grep -Fxq -- "$appname / $nm"; then rq="required"; else rq="not required"; fi
         echo "  .tekton: $path ($nm): $filt, $rq"
-        if [ "$filt" != "path filter" ] && [ "$rq" = "not required" ]; then unfiltered="$unfiltered$nm "; fi
+        if [ "$filt" != "path filter" ] && [ "$filt" != "branch filter" ] && [ "$rq" = "not required" ]; then unfiltered="$unfiltered$nm "; fi
       done <<EOI
 $info
 EOI
@@ -163,7 +166,7 @@ EOI
   else
     echo "  .tekton: could not be read ($(printf '%s' "$API_BODY" | head -1))"
   fi
-  [ -n "$unfiltered" ] && echo "  no path filter (or CEL without a path reference) and not required: $unfiltered"
+  [ -n "$unfiltered" ] && echo "  not conditional (no path or branch filter) and not required: $unfiltered"
 
   if [ -n "$gates" ]; then echo "  verdict: gate checks are required"
   elif [ $errs -gt 0 ]; then echo "  verdict: UNKNOWN: a request failed (see above), so required checks could not be determined"
