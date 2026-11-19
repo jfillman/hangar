@@ -10,7 +10,7 @@ Nov 2, 2026 · @James
 
 **Revised 2026-11-07, after W3.** This revision folds in the day's analysis and the updated Clearance documents: the Architecture's new chapter 09 (Observation) and its renumbered chapters 10 to 18, the coverage states `break-glass` and `attempted-refused`, the observation-health record, the verification statement and its insurer profile, approver independence extended to automation, and the four revenue-line companions ([Clearinghouse](https://claude.ai/artifact/3rPgELsmjQJ5rqsz386D9Q), [Intelligence](https://claude.ai/artifact/M2rDPgy5WJx8aG7dxsr3xf), [Verification](https://claude.ai/artifact/UfE1xys4nK9C7D2gNm25Lp), [Underwriting](https://claude.ai/artifact/PaZMadKYhzJSJgTBHxiw6B)). It adds three series as sections 15 to 17, after the open questions so that every existing section number still holds (O observation, P clearinghouse, I intelligence), two follow-up packages inside the existing series (R-9, C-14), two waves after W4 in section 11 (W5 Observation, W6 Clearinghouse), new rows in the component, gap, deferred-portal and open-question tables, and two guardrails in section 12. Nothing already merged changes; W4's entry is unchanged except that O-1 and C-14 join it so the packet is not frozen without the new states.
 
-**Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 1 open difference, marked "Open difference" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
+**Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 1 difference, the outage rule, decided by the owner on 2026-11-16 and marked "Decided" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
 
 ## How to use this spec {#how-to-use-this-spec}
 
@@ -549,7 +549,7 @@ Hangar gets one offline root and one Fulcio intermediate per cluster, and a vers
 - **Build.** The `outage` block of `clearance.yaml` and the platform baseline (tiers 0 and 1 allow-and-record, 2 and 3 hold); degraded-mode records when a provider reports the core was unreachable (`POST /v1/records` with `coverage: coverage-unavailable` on recovery); the clearance state machine with the side states (held, expired, superseded, degraded, exception); `deploy.exception` as a first-class record with kinds out-of-band, drift, untraced-apply and digest-mismatch; break-glass as `POST /v1/breakglass` with a named user, reason and TTL, recorded before the change and reconciled when the TTL ends. `ChangeRequest.protected` is used or removed; `flight_registries` becomes configuration so the image rule fires.
 - **Done when.** State-machine tests cover every transition; a provider's degraded-mode report appears in the packet's exceptions; break-glass shows in the record before the change it covers.
 
-> **Open difference (from "Clearance hosted App with a subscriber-hosted core", 2026-11-12):** for the hybrid mode that document rejects a deployment whenever the core is unreachable ("no verdict means no approval"), with no tier distinction, where this package lets tiers 0 and 1 allow-and-record during an outage. See [Hybrid mode, failure modes](#hybrid-mode).
+> **Decided 2026-11-16 (owner):** this tier rule applies to the self-hosted and fully hosted modes. In hybrid mode a deployment is never approved while the subscriber's core is unreachable ("no verdict means no approval"), whatever its tier: the relay cannot know a change's tier without the core, and GitHub keeps the deployment waiting. See [Hybrid mode, failure modes](#hybrid-mode).
 
 ### C-7 · Provenance confidence and the retirement of `agent-gates-`
 <!-- pkg status=done wave=W3 -->
@@ -1268,7 +1268,7 @@ GitHub only ever talks to the vendor's relay. The relay queues each event for it
 
 The rule throughout: no verdict means no approval. A deployment is never approved because something was unreachable, which is the same fail-closed stance as the self-hosted App.
 
-> **Open difference (from "Clearance hosted App with a subscriber-hosted core", 2026-11-12):** the rule above rejects a deployment whenever the core is unreachable. C-6 in this spec makes the outage policy tier-based (tiers 0 and 1 allow-and-record, tiers 2 and 3 hold). The source says nothing about tiers; whether a hybrid-mode deployment at tier 0 or 1 is allowed through during a core outage, held, or rejected is for the owner to decide.
+> **Decided 2026-11-16 (owner):** the rule above stands for hybrid mode at every tier. C-6's tier-based outage policy (tiers 0 and 1 allow-and-record, tiers 2 and 3 hold) continues to apply to the self-hosted and fully hosted modes only.
 
 ### Threat model
 
