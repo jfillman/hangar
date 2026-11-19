@@ -43,7 +43,7 @@ Each of these is checked against `main` as of today.
     cluster. Now:
     - `40-clusters` creates a Secrets Manager secret for each, in the cluster's own account.
     - You put the value in once.
-    - `bootstrap_secrets = true` writes both Kubernetes Secrets. Terraform reads the values as ephemeral values and
+    - Listing the cluster in `bootstrap_secrets` writes both Kubernetes Secrets. Terraform reads the values as ephemeral values and
       writes them through write-only arguments, so they never reach state.
     - `apron up` then runs straight through.
   - **The runbook is current.** The fleet settings to carry from the lab (and which to leave for later), Tower's values
@@ -78,8 +78,8 @@ Do not start a phase until the previous gate passes. Each gate is a check from `
 | 1. Foundation | 1-5 | State bucket adopted, Organization (five accounts, SCPs, Identity Center), four VPCs, the `aws` zone delegated from Cloudflare (a manual NS step), backup vault | `dig NS aws.hangarplatform.dev` returns Route 53; SSO profiles work for the four new accounts |
 | 2. Infisical | 6-7 | Infisical on Fargate (about 25 minutes), ENCRYPTION_KEY backed up, first-run admin, sign-ups off, three provider identities | two healthy targets; the org and the three identities exist |
 | 3. Clusters | 8 | eks-man, then eks-dev, then eks-prod (about 20 minutes each) | nodes Ready (eks-dev: 3 general plus the gVisor node), `gp3` default, Infisical's `/api/status` reachable from a pod over PrivateLink, `runsc` on the sandbox node |
-| 4. Hub | 9-13 | Bootstrap values into Secrets Manager, then `bootstrap_secrets=true`, `apron up` on eks-dev, import the lab's `glidepath-hangar-dev` project, fleet file, gateway DNS, GitHub App URLs (decision 1) | every ExternalSecret Synced; `https://argocd.eks-dev...` answers from your address only; a PaC delivery returns 200 |
-| 5. Prod, platform, Tower | 14-15 | The same for eks-prod and eks-man; Tower registered on the AWS fleet with the lab's XRs paused; Tower's values per the step 15 table | Tower signs you in; eks-dev's API server logs Tower's federated user |
+| 4. Hub | 9-13 | Bootstrap values into Secrets Manager, then `bootstrap_secrets = ["eks-dev"]`, `apron up` on eks-dev, import the lab's `glidepath-hangar-dev` project, fleet file, gateway DNS, GitHub App URLs (decision 1) | every ExternalSecret Synced; `https://argocd.eks-dev...` answers from your address only; a PaC delivery returns 200 |
+| 5. Prod, platform, Tower | 14-15 | The same for eks-prod and eks-man; Tower registered on the AWS fleet with the lab's XRs paused; Tower's values per the step 15 table | Tower signs you in; eks-dev's API server logs Tower's federated user; with decision 2 built, Tower lists an app's eks-prod workloads and eks-prod's API server logs the same federated user. Without it, record "eks-prod not visible in Tower" as an accepted gap here |
 | 6. Prove it | 16 | A new app end to end; G1 (scale eks-dev to zero, prod keeps serving); a 30-minute Infisical outage; G4 restore from the backup vault; RDS failover | the times written down |
 | 7. Clearance on AWS | (new runbook section, to write) | observe-aws for the hangar-dev/prod accounts (an `observe/<account>` stack per account, using the cluster's EKS issuer); Kubernetes audit from EKS control-plane logs; the ledger witness on eks-man; targets and backup; then the Go gateway | each feature's own verification, as on the lab |
 
@@ -96,8 +96,8 @@ Do not start a phase until the previous gate passes. Each gate is a check from `
   - the EKS OIDC identity provider association (10-20 minutes)
   - the AWS Load Balancer Controller v3 annotations on Traefik's Service
   - the bumped Infisical image (v0.167.5) on Fargate
-  - the ephemeral Secrets Manager read with `bootstrap_secrets=true`, which errors if a secret has no value yet:
-    put the values first
+  - the ephemeral Secrets Manager read for a cluster listed in `bootstrap_secrets`, which errors if a secret has no
+    value yet: put the values first, then list the cluster
 
 ## Cost and pace
 
