@@ -43,7 +43,7 @@ Per app and environment, the gate is turned on by:
 | # | Where | What it holds | Consumer |
 |---|---|---|---|
 | 1 | `cluster.yaml` `clearance.gate.apps` (gitops-hangar-prod `cluster.yaml:46`) | app names | `hack/render.py:492,511` renders `CLEARANCE_GATE_APP_REGEX`; ApplicationSet `templatePatch` (`applicationset.tmpl.yaml:193-194`) swaps the Helm source for the `clearance` plugin source when app regex and env regex both match |
-| 2 | `clearance.protectedEnvironments` (`cluster.yaml:41`) | `<cluster>/<env>` globs | `render.py:465-466` renders `CLEARANCE_GATE_ENV_REGEX`; the same `templatePatch` line; also the Map publisher (`render.py:781`) |
+| 2 | `clearance.protectedEnvironments` (`cluster.yaml:41`) | `<cluster>/<env>` globs | `render.py:475` renders `CLEARANCE_GATE_ENV_REGEX`; the same `templatePatch` line; also the Map publisher (`render.py:781`) |
 | 3 | `clearance.gate.agent.projects` (`cluster.yaml:49`) | Argo CD project names (= app names) | agent chart `argocd.projects` (`agent/application.yaml:31`, `render.py:518`) |
 | 4 | `clearance.gate.agent.protectedNamespaces` (`cluster.yaml:50`) | `app-<app>-<env>` | agent chart RBAC and opt-in scope (`agent/application.yaml:32`, `render.py:519`); Map target gates (`render.py:768,785`) |
 | 5 | `clearance.observe.protectedNamespaces` (`cluster.yaml:54`) | `app-<app>-<env>` | observer chart (`57-clearance-observe/application.yaml:28,55`), audit policy, Map observers (`render.py:613,767`) |
@@ -64,7 +64,7 @@ How the pieces meet at runtime:
 - The destination namespace is `__DESTINATION_NAMESPACE__` (`applicationset.tmpl.yaml:172`), `app-<app>-<env>`. It is
   created by the chart's own Namespace object (airframe `charts/airframe-application/templates/namespace/namespace.yaml`,
   labels from `namespace.labels`), with `CreateNamespace=true` (`:190-191`) as a fallback. The platform injects
-  `namespace.labels` through the Helm `valuesObject` (`:122-125`) and, for the plugin source, `valuesJson` (`:219`), which
+  `namespace.labels` through the Helm `valuesObject` (`:121-131`) and, for the plugin source, `valuesJson` (`:219`), which
   wins over the tenant's value files.
 - The per-app AppProject is generated from the coarser `tenants/<app>/identity.yaml`
   (`tenant-appprojects/applicationset.yaml:2-8`) and is shared by all of an app's environments.
