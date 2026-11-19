@@ -370,7 +370,7 @@ Nine packages build the estate in section 5. All of them are Terraform in jfillm
 Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` in CI, and have a `terraform test` per module. A subagent writes modules and plans. The managing agent applies to staging, and the user applies to management, witness and prod.
 
 ### INF-1 · Organization, accounts and guardrails
-<!-- pkg status=live wave=K0 strip=C-1 -->
+<!-- pkg status=verified wave=K0 strip=C-1 -->
 
 - **Repos.** clearance-cloud-infra.
 - **Depends on.** The user creating the management account and the two repos.
@@ -378,7 +378,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 - **Done when.** Every account exists with its baseline. An SCP test shows a staging role refused when it disables CloudTrail, leaves the region list, or bypasses Object Lock. A plan from HCP Terraform reaches each account with no static key.
 - **Rollout.** User applies management. The managing agent applies the rest to staging-equivalent OUs.
 - **User steps.** The management account, the payer, MFA on root, the organization's email aliases, and the first apply.
-- **Evidence.** [clearance-cloud-infra#1](https://github.com/jfillman/clearance-cloud-infra/pull/1) (phase 1, applied 2026-11-18 after the account quota was raised to 10) and [#2](https://github.com/jfillman/clearance-cloud-infra/pull/2) (phase 2, applied 2026-11-19). The AWS-side checks (trail logging, delegations, SCP refusal test) are still unverified.
+- **Evidence.** [clearance-cloud-infra#1](https://github.com/jfillman/clearance-cloud-infra/pull/1) (phase 1, applied 2026-11-18 after the account quota was raised to 10) and [#2](https://github.com/jfillman/clearance-cloud-infra/pull/2) (phase 2, applied 2026-11-19). Verified 2026-11-19: organization trail logging with digests, delegated admin for Organizations, GuardDuty, Security Hub and Inspector, and the SCP refusal test (three PASS lines).
 
 ### INF-2 · Network, edge and domains
 <!-- pkg status=in-progress wave=K0 strip=W-1 -->
