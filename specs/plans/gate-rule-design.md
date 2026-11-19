@@ -160,8 +160,11 @@ Application out of the gate until a date". So two records result:
    file's digest. While active it is reposted at most once per 24 hours, the pattern the agent already uses for a
    failing CRD check.
 
-The core needs the new kind before the agent posts it. Until then the agent posts only `protection.report` records.
-Open question 3.
+A `protection.report` exists only when a gated Application is released. An exemption that matches an Application never
+gated produces no release and so no report, which would leave it unrecorded. So the agent **honours no exemption until
+the core accepts the `gate-exemption` kind**. On a core that refuses it, every exemption is ignored, the Applications
+stay gated (fail closed), and the agent posts one exception saying why. Exemptions are enabled only after the core
+change ships. Open question 3.
 
 ### Expiry
 
@@ -199,7 +202,8 @@ The transitions. "Gated" means rule or annotation, non-exempt, not denied.
 | Exemption added for a rule-gated, unannotated Application | Released as above, with the exemption in the reason; a `gate-exemption` active record. |
 | Exemption added for an annotated Application | Stays gated by the annotation. Recorded as active but ineffective. |
 | Exemption expires | Gated again by the rule (add order). |
-| The rule file cannot be read or is invalid | **Keep the last good rule.** On a first start with no good rule the rule is empty, and nothing is released: the removal order only runs for an Application the agent has positively decided to release. One exception is posted, at most once per 24 hours. |
+| The rule file cannot be read or is invalid while running | **Keep the last good rule.** Nothing is released: the removal order only runs for an Application the agent has positively decided to release. One exception is posted, at most once per 24 hours. |
+| The agent restarts and the rule file cannot be read or is invalid | The agent keeps a copy of the last good rule (and its digest) in its state ConfigMap, beside its other state, and uses that copy. With no file and no copy it **does not become ready** and gates nothing new; it never starts with an empty rule when a rule is configured. Releases are not made. One exception is posted. Because the chart renders the file from a value it has already validated, this needs a failed mount or a bad hand edit of the ConfigMap. |
 | A pair is shared by two Applications and one is released | As an opt-out of one of two Applications today: the set does not change, the removal is still recorded, and the other Application is named. |
 
 **Narrowing the rule is the one move that can release many Applications at once.** Two guards. The agent acts on a
@@ -275,7 +279,9 @@ rule decides which Applications the agent works on; it does not change who may l
   stale after 15 minutes and does nothing else with it (existing).
 - **Core down.** No removal is acted on and no new Application is switched, because a pair is added at the core before
   its Application is switched (existing). Nothing is released; new gating waits.
-- **Rule invalid or unreadable.** Last good rule kept; one exception. Never a release.
+- **Rule invalid or unreadable.** Last good rule kept, from the state ConfigMap across a restart; one exception. Never a
+  release. With no good rule anywhere the agent stays not ready, so a new rule-matched Application waits, in the same
+  window as agent down. Admission cannot cover it: it does not select an unlabelled namespace.
 - **Clock wrong.** A clock ahead makes an exemption lapse early, which gates sooner (safe). A clock behind lets an
   exemption run past its date. The agent uses its node clock.
 
@@ -294,8 +300,8 @@ rule decides which Applications the agent works on; it does not change who may l
 1. **Clearance PR (code, behind the flag).** `--gate-rule-file`, the matcher, `ruled` and exemption handling, the
    release-rate guard, the records, the chart value, docs. With no file, nothing changes: a render with no `gateRule` is
    byte-identical to today's (`tools/charttest` pins that).
-2. **Core PR (small).** The `gate-exemption` kind. The agent posts it only on a core that accepts it, and falls back to
-   `protection.report` only, with one log line.
+2. **Core PR (small).** The `gate-exemption` kind. Exemptions are not enabled anywhere until it ships; an agent on a core
+   that refuses the kind ignores every exemption (Applications stay gated) and says so once.
 3. **Release and pin.** New Clearance image digest and chart version; Hangar pins them in apron.
 4. **hangar-dev.** Pin, then enable the pass-through with an **empty** rule and confirm nothing changes. Then one
    project (a test tenant), then a namespace pattern. This is the live rehearsal.
@@ -317,8 +323,9 @@ Unit (agent, `providers/argocd/agent`, table-driven in the style of `optin_test.
   release-rate guard (a fourth rule-caused release in an hour waits).
 - Exemption validation (missing reason, expiry too far, malformed date) and expiry on a fake clock: active, expiring at
   seven days, expired, stale entry.
-- Rule file failures: invalid at start (empty rule, nothing released), invalid after a good rule (last good kept),
-  re-read without a restart.
+- Rule file failures: invalid after a good rule (last good kept), invalid at restart (state copy used), neither
+  available (not ready, nothing released, nothing new gated), re-read without a restart.
+- Exemption against a core that refuses the kind: ignored, Application stays gated, one exception.
 - A pair shared by two Applications; a blocked rule-matched Application still reported as a pair.
 - Chart: byte-identical default render; `gateRule` with `optIn.enabled: false` fails render; checksum annotation.
 - Core: the `gate-exemption` kind is accepted, validated and shown in the coverage statement.
@@ -329,8 +336,10 @@ Live rehearsal on hangar-dev (a script, like the W-40 rehearsal; no prod writes)
 2. Rule for a test project: the unannotated Application is switched, granted and labelled; a deploy needs a clearance.
 3. Remove the annotation from a rule-matched one: still gated.
 4. Narrow the rule: it is released, and the core shows the `protection.report`.
-5. Exempt it with a short expiry: released and a `gate-exemption` active record; let it expire: gated again.
-6. Corrupt the rule file: last good kept, one exception, nothing released.
+5. Restore the matching rule so it is gated again. Exempt it with a short expiry: released and a `gate-exemption`
+   active record; let it expire: gated again.
+6. Corrupt the rule file: last good kept, one exception, nothing released. Restart the agent with the file corrupt:
+   the state copy is used. Restart with neither: not ready, nothing released.
 7. Repeat for an ApplicationSet-made Application, with and without `preservedFields`: the marker survives with it and
    the exception fires without it.
 8. Stop the core mid-release: nothing released.
@@ -348,9 +357,9 @@ Live rehearsal on hangar-dev (a script, like the W-40 rehearsal; no prod writes)
    what a compromised agent reaches; the W-35 note advised against widening.
 2. **Project-only entries.** `projects: [gate-api]` gates gate-api in every environment. Is that wanted, or must every
    entry also carry `namespaces` or `labels` (the matcher can require it)?
-3. **A new core exception kind (`gate-exemption`)** or existing records only (`protection.report` for the release, and
-   nothing for the exemption itself). Recommended: the new kind, because an exemption is a coverage gap the coverage
-   statement should show. It makes this a two-repo change.
+3. **A new core exception kind (`gate-exemption`)** or no exemptions at all. Existing records cannot carry an exemption
+   that releases nothing, so the choice is the new kind or none. Recommended: the new kind, which also puts the gap in
+   the coverage statement. It makes this a two-repo change.
 4. **"Who" on an exemption.** Git history is the source today. Should Hangar stamp the approver into the rendered rule (a
    required `approvedBy`), or is the pull request enough?
 5. **Limits.** Maximum exemption 90 days, warning at 7 days, at most 3 rule-caused releases per hour: right numbers?
