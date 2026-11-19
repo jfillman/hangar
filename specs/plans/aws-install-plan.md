@@ -41,7 +41,8 @@ Each of these is checked against `main` as of today.
   - **No hand-made Secrets.** The runbook had you `kubectl create` two Secrets per cluster: Argo CD's repo
     credential and provider-infisical's identity. Owner rule (2026-11-16): no secret is created by hand in a GitOps
     cluster. Now:
-    - `40-clusters` creates a Secrets Manager secret for each, in the cluster's own account.
+    - A new stack, `35-bootstrap-secrets`, creates a Secrets Manager secret for each, in the cluster's own account.
+      They outlive the clusters, so a teardown between sessions keeps the values.
     - You put the value in once.
     - Listing the cluster in `bootstrap_secrets` writes both Kubernetes Secrets. Terraform reads the values as ephemeral values and
       writes them through write-only arguments, so they never reach state.
@@ -77,7 +78,7 @@ Do not start a phase until the previous gate passes. Each gate is a check from `
 | 0. Ready | What you need | Merge hangar-infra#12 and apron#251. `aws sso login --profile admin`. Tools installed. | `aws sts get-caller-identity` shows the management account |
 | 1. Foundation | 1-5 | State bucket adopted, Organization (five accounts, SCPs, Identity Center), four VPCs, the `aws` zone delegated from Cloudflare (a manual NS step), backup vault | `dig NS aws.hangarplatform.dev` returns Route 53; SSO profiles work for the four new accounts |
 | 2. Infisical | 6-7 | Infisical on Fargate (about 25 minutes), ENCRYPTION_KEY backed up, first-run admin, sign-ups off, three provider identities | two healthy targets; the org and the three identities exist |
-| 3. Clusters | 8 | eks-man, then eks-dev, then eks-prod (about 20 minutes each) | nodes Ready (eks-dev: 3 general plus the gVisor node), `gp3` default, Infisical's `/api/status` reachable from a pod over PrivateLink, `runsc` on the sandbox node |
+| 3. Clusters | 8 | `35-bootstrap-secrets`, then eks-man, eks-dev and eks-prod (about 20 minutes each) | nodes Ready (eks-dev: 3 general plus the gVisor node), `gp3` default, Infisical's `/api/status` reachable from a pod over PrivateLink, `runsc` on the sandbox node |
 | 4. Hub | 9-13 | Bootstrap values into Secrets Manager, then `bootstrap_secrets = ["eks-dev"]`, `apron up` on eks-dev, import the lab's `glidepath-hangar-dev` project, fleet file, gateway DNS, GitHub App URLs (decision 1) | every ExternalSecret Synced; `https://argocd.eks-dev...` answers from your address only; a PaC delivery returns 200 |
 | 5. Prod, platform, Tower | 14-15 | The same for eks-prod and eks-man; Tower registered on the AWS fleet with the lab's XRs paused; Tower's values per the step 15 table | Tower signs you in; eks-dev's API server logs Tower's federated user; with decision 2 built, Tower lists an app's eks-prod workloads and eks-prod's API server logs the same federated user. Without it, record "eks-prod not visible in Tower" as an accepted gap here |
 | 6. Prove it | 16 | A new app end to end; G1 (scale eks-dev to zero, prod keeps serving); a 30-minute Infisical outage; G4 restore from the backup vault; RDS failover | the times written down |
