@@ -156,6 +156,7 @@ No key material is involved: nothing here mints or stores a long-lived credentia
    and does not check the SA (`glidepath/broker/cmd/token-review-interceptor/agentpin.go:10,43,232-239`). Which token a pod
    holds is fixed by its Task's projected volume, and no task account can create pods or TaskRuns or request tokens.
    Follow-up (not in this slice): the broker checks the SA as well, so `agent-pin` is bound to `clearance-gate`.
+   Broker SA binding is in glidepath#278: `agent-pin` accepts only the SAs in `agentPin.serviceAccounts` (env `AGENT_PIN_SERVICE_ACCOUNTS`), default `pipeline-runner,clearance-gate` during the overlap; step 7 drops `pipeline-runner` from that list too.
 3. **`run-testworkflow` moves to its own `test-runner` account in this slice** (R4 and R9 leave `pipeline-runner`, which then
    reads no Secret). Step 3 maps it, step 5's allowlists name it, step 6 removes R4 and R9 from the runner, and the live
    check adds `pipeline-runner get secrets` = `no`.
