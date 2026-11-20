@@ -63,7 +63,7 @@ Four task accounts replace the one (owner decision 3 adds `test-runner`). None m
 |---|---|---|
 | `pipeline-runner` (read-mostly) | R2, R3, R5, R6, R7, R8, and configmaps **get, list** only. No create, patch, delete. No Secret. No `clearance` audience. | Every catalog task not named below. |
 | `test-runner` | R4 (`app-secrets`, `dex-check-ride-credentials` get), R9 (testkube secrets and the `testkube-testworkflow-runner` role), R2 and R3 for its own logs. No ConfigMap write, no `clearance` audience. | `run-testworkflow` only. |
-| `release-record-writer` | configmaps get, list, create, patch (no delete, no update) in the app's `-cicd` namespace; enforced to release records by the admission policy below. Read-only R8 grant for the cluster-registry (`open-release-pr` reads it, `GC/tasks/open-release-pr.yaml:846`; the policy-config is not referenced there, so not granted). No Secret, no `clearance` audience. | `open-release-pr`; `mark-release-merged`; `itsm-change`; `itsm-gate`; and two **new small Tasks** carved out of tasks that must stay runner: `record-gate-verdict` (the ledger write from `comment-pr-check-result:432-447`) and `join-release` (from `clearance-gate:676-690`). |
+| `release-record-writer` | configmaps get, list, create, patch (no delete, no update) in the app's `-cicd` namespace; pipelineruns **get** in that namespace (`open-release-pr` reads its own run's `glidepath.io/origin-*` lineage annotations, `GC/tasks/open-release-pr.yaml:264`; found in step 2); enforced to release records by the admission policy below. Read-only R8 grant for the cluster-registry (`open-release-pr` reads it, `GC/tasks/open-release-pr.yaml:846`; the policy-config is not referenced there, so not granted). No Secret, no `clearance` audience. | `open-release-pr`; `mark-release-merged`; `itsm-change`; `itsm-gate`; and two **new small Tasks** carved out of tasks that must stay runner: `record-gate-verdict` (the ledger write from `comment-pr-check-result:432-447`) and `join-release` (from `clearance-gate:676-690`; it takes a JSON array of `{cluster, env, id, tree, pr}`, because the join runs once per environment). |
 | `clearance-gate` | get pipelineruns; get configmaps; create, patch configmaps (gate reports only, enforced by the policy below); the `clearance` audience. No record write, no Secret. | `clearance-gate`, `agent-gates`, `agent-definitions`, `agent-release` (the four Tasks that present the token). |
 
 ### How the narrow record writer is reached
@@ -169,3 +169,16 @@ No key material is involved: nothing here mints or stores a long-lived credentia
    remains (closed, or past its policy TTL, `internal/gate/change.go:234`), and at most two weeks after prod Deny. The Map
    shows both gate instances until then.
 6. **hangar-dev runs Deny at step 5 first; prod only after the owner's OK.**
+
+### Found while building step 2 (glidepath#277)
+
+- `release-record-writer` needs `pipelineruns get` for the lineage read above; without it the read fails quietly and
+  release records lose their lineage.
+- Task names in the Pipelines differ from the Task names: `itsm-gate` runs as `verify-change` or `verify-change-advisory`,
+  and `itsm-change` as `itsm-implement` (`bypass-merge-check`), plus `itsm-close` and `itsm-close-rolled-back` in
+  platform-started Pipelines. The `cicdRunAdmission` lists use the Pipeline task names.
+- The new admission branches are allow-branches: one policy binding has one action set, so a branch cannot be Warn on its
+  own. They only admit each split account on its listed tasks, so they cannot refuse anything.
+- Result sizes: `record-gate-verdict` returns this commit's `gate.<sha12>.*` entries only (567 bytes for today's 14 gates,
+  1916 bytes for 20 gates with 63-character names), under the 4 KiB limit.
+- The least-privilege test lives at `charts/glidepath-app/tests/pipeline_least_privilege_test.py`.
