@@ -68,8 +68,12 @@ win over its default (`applicationset.yaml:125`). So:
 - autopilot: for kind `SLO`, stamp `namespace: app-<app>-<env>` (the gateway has `app` and `env`), flip
   `sloRequestsOpen` on, update the refusal docs and tests.
 - apron: add `SLO` to the project's `namespaceResourceWhitelist` and add destinations for the environment namespaces
-  (`appproject.yaml`). Because xr.request only does lower environments, the destinations can be narrow:
-  `app-*-dev`, `app-*-pr-*`, `app-*-agent-*`, not `app-*-*`. The ApplicationSet itself does not change.
+  (`appproject.yaml`). The rule to keep: these destinations never reach a staging or production namespace, for any
+  permitted app name. Globs such as `app-*-pr-*` do not keep it on their own, because `*` can span hyphens: an app
+  named `x-pr` with environment `prod` lives in `app-x-pr-prod`, which `app-*-pr-*` matches. So either the
+  destinations are exact names written per app and environment (rendered from the tenant list), or a stated naming
+  rule, enforced at tenant onboarding, stops app names from containing an environment token (`-pr`, `-agent`,
+  `-dev`, `-staging`, `-prod`). Until one of those exists, use exact names. The ApplicationSet itself does not change.
 - airframe: nothing is needed for the composition, which already expects this placement. A small contract note (which
   namespace an SLO request is placed in) would keep the gateway's vendored contract honest. To confirm whether the
   contract has a field for it.
@@ -88,7 +92,13 @@ holds cluster-scoped Namespace rights and the Crossplane kinds, and its cicd des
 app (`appproject.yaml:40-43`). Widening to `app-*-dev` and friends lets an XR file in one app's directory name another
 app's dev namespace. I found nothing in apron that checks that a file's `metadata.namespace` matches its directory; the
 control is review of the tenants-repo pull request. To confirm whether any admission check (Kyverno or Argo) ties them.
-1b closes that gap by deriving the namespace from the path, which is the reason to choose it over 1a.
+The invariant needed is: a file in one tenant's directory can never land in a namespace of another app. 1b alone
+does not establish it. The ApplicationSet lets an XR's own `metadata.namespace` win (`applicationset.yaml:125`), so a
+file under `<app>/xr-requests/dev/` can still name another app's namespace, and the shared AppProject's globs would
+let it through. 1b closes the gap only with an enforcing control: per-app AppProjects whose destinations are that
+app's own namespaces (Argo CD refuses the sync), or an admission or CI check that rejects a file whose namespace does
+not match its path. Neither exists today. Until one does, the gap stays open under 1a and 1b alike, and PR review is
+the only control.
 
 The namespace must exist when the sync runs. `CreateNamespace=true` (`applicationset.yaml:149`) creates only the
 destination namespace, and a missing XR namespace failed a sync before (`applicationset.yaml:51-54`, the skyport-auth
@@ -191,22 +201,25 @@ agent has a tool for that repo is not something I checked. To confirm.
 | | Tenant scope rule | Repos touched | Existing clusters | Effort |
 |---|---|---|---|---|
 | 1a. XR names the environment namespace | unchanged | autopilot, apron | AppProject change per cluster; no SLO moves | 1 to 2 days |
-| 1b. per-environment path | unchanged, destination from path | autopilot, apron | same, plus a second ApplicationSet | 3 to 4 days |
+| 1b. per-environment path | unchanged; path sets the destination only with a namespace check | autopilot, apron | same, plus a second ApplicationSet | 3 to 4 days |
 | 2. scope by environmentRef | weakened; needs a same-app check | airframe, apron, autopilot | every SLO re-rendered | 4 to 6 days |
 | 3. chart-only | unchanged | none | none | hours |
 
 ## Recommendation
 
-Choose option 1a, with the AppProject destinations kept to the lower-environment patterns, and keep option 3 as the
+Choose option 1a, with the AppProject destinations kept to exact lower-environment names (or patterns backed by an
+enforced naming rule), and keep option 3 as the
 behaviour until the dev cluster has the project change. It leaves the tenant-scope rule alone and works with the
 `enforcedNamespaceLabel` hardening that known gap 11 recommends, where option 2 does not. Move to 1b only if the owner wants
-the destination derived from the path instead of from a tenant-written file, which depends on the answer to question 1.
+the destination derived from the path, and then only together with a control that rejects a file whose namespace does
+not match its path (per-app AppProjects, or an admission or CI check); this depends on the answer to question 1.
 Option 2 is the one to avoid: it trades a rule the platform enforces for a string the tenant types.
 
 ## Open questions for the owner
 
 1. **Who may name a namespace in an XR file?** Under 1a an XR file in one app's directory can name another app's
-   `app-*-dev` namespace, and only pull request review stops it. Is that acceptable, or do you want 1b so the path decides?
+   `app-*-dev` namespace, and only pull request review stops it. Is that acceptable, or do you want a control that enforces it (per-app AppProjects, or an admission or CI check that
+   ties the namespace to the path), with or without 1b?
 2. **Which environments?** xr.request is lower-environments-only. Should SLOs be requestable in `dev`, `pr-*` and
    `agent-*`, or in `dev` only? It sets the AppProject destination list.
 3. **Do you want agent-made SLOs to survive their environment?** An `agent-*` or `pr-*` environment is ephemeral. Its
