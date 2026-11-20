@@ -370,7 +370,7 @@ Nine packages build the estate in section 5. All of them are Terraform in jfillm
 Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` in CI, and have a `terraform test` per module. A subagent writes modules and plans. The managing agent applies to staging, and the user applies to management, witness and prod.
 
 ### INF-1 · Organization, accounts and guardrails
-<!-- pkg status=proposal wave=K0 -->
+<!-- pkg status=verified wave=K0 strip=C-1 -->
 
 - **Repos.** clearance-cloud-infra.
 - **Depends on.** The user creating the management account and the two repos.
@@ -378,9 +378,10 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 - **Done when.** Every account exists with its baseline. An SCP test shows a staging role refused when it disables CloudTrail, leaves the region list, or bypasses Object Lock. A plan from HCP Terraform reaches each account with no static key.
 - **Rollout.** User applies management. The managing agent applies the rest to staging-equivalent OUs.
 - **User steps.** The management account, the payer, MFA on root, the organization's email aliases, and the first apply.
+- **Evidence.** [clearance-cloud-infra#1](https://github.com/jfillman/clearance-cloud-infra/pull/1) (phase 1, applied 2026-11-18 after the account quota was raised to 10) and [#2](https://github.com/jfillman/clearance-cloud-infra/pull/2) (phase 2, applied 2026-11-19). Verified 2026-11-19: organization trail logging with digests, delegated admin for Organizations, GuardDuty, Security Hub and Inspector, and the SCP refusal test (three PASS lines).
 
 ### INF-2 · Network, edge and domains
-<!-- pkg status=proposal wave=K0 -->
+<!-- pkg status=in-progress wave=K0 strip=W-1 -->
 
 - **Repos.** clearance-cloud-infra.
 - **Depends on.** INF-1; delegation of clearance.hangarplatform.dev.
@@ -393,9 +394,10 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 - **Done when.** A request to the app ALB that skips CloudFront is refused. A burst over the rate rule gets 429 from WAF. A pod in a data subnet cannot reach the internet. DNS and certificates resolve for every host in staging.
 - **Rollout.** Staging, then prod.
 - **User steps.** Add the NS records that delegate clearance.hangarplatform.dev to the new Route 53 zone, at whoever hosts hangarplatform.dev's DNS.
+- **Evidence.** Lands as three PRs, because the zone must be delegated before ACM can validate certificates: the zone ([clearance-cloud-infra#3](https://github.com/jfillman/clearance-cloud-infra/pull/3), merged), network and edge for cloud-staging ([#4](https://github.com/jfillman/clearance-cloud-infra/pull/4) for the network), then cloud-prod-us.
 
 ### INF-3 · EKS and platform add-ons
-<!-- pkg status=proposal wave=K0 -->
+<!-- pkg status=proposal wave=K0 strip=W-4 -->
 
 - **Repos.** clearance-cloud-infra (cluster), clearance-cloud (add-on charts and values), gitops-clearance-cloud.
 - **Depends on.** INF-2.
@@ -410,7 +412,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 - **Rollout.** Staging, then prod.
 
 ### INF-4 · Data stores and keys
-<!-- pkg status=proposal wave=K0 -->
+<!-- pkg status=proposal wave=K0 strip=W-5 -->
 
 - **Repos.** clearance-cloud-infra.
 - **Depends on.** INF-2.
@@ -425,7 +427,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 - **User steps.** Approve the retention defaults per tier, because they cannot be undone on written objects.
 
 ### INF-5 · Identity
-<!-- pkg status=proposal wave=K0 -->
+<!-- pkg status=proposal wave=K0 strip=W-6 -->
 
 - **Repos.** clearance-cloud-infra.
 - **Depends on.** INF-2.
@@ -441,7 +443,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 - **User steps.** An Okta or Entra test org, and SES production access.
 
 ### INF-6 · Delivery: CI, images, Argo CD and gated deploys
-<!-- pkg status=proposal wave=K0 -->
+<!-- pkg status=proposal wave=K0 strip=W-7 -->
 
 - **Repos.** clearance-cloud (workflows), clearance-cloud-infra, gitops-clearance-cloud.
 - **Depends on.** INF-3; the main spec's G-TF-6 and the Argo CD gate.
@@ -501,7 +503,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 Ten packages build the Go services in jfillman/clearance-cloud: `cmd/cloud-api`, `cmd/cloud-ingest` and `cmd/cloud-worker`, sharing `internal/`. They import jfillman/clearance by tag. A change the core needs, such as hosted-recorder mode, the sync client or the S3 ledger driver, is a Clearance PR first and follows the main spec's release chain. The main spec's security and efficiency principles apply unchanged: distroless images, strict decoding, timeouts, fuzz targets on every parser, fail closed.
 
 ### CS-1 · Tenancy, people, roles and the cloud-api skeleton
-<!-- pkg status=proposal wave=K0 -->
+<!-- pkg status=proposal wave=K0 strip=W-8 -->
 
 - **Repos.** clearance-cloud.
 - **Depends on.** INF-3, INF-4, INF-5.
@@ -660,7 +662,7 @@ Nine packages build the portal in `web/` of jfillman/clearance-cloud. The stack 
 The visual source is the canvas board named on each card, in direction A. Every screen meets WCAG 2.2 AA, works from 1280 px wide down to a 390 px phone for read-only views, and renders from live staging data before it is called done. Pages that are a Proposal in the product carry the proposal chip, as the Backstage plugins do.
 
 ### CW-1 · App shell, design kit and sign-in
-<!-- pkg status=proposal wave=K0 -->
+<!-- pkg status=proposal wave=K0 strip=W-9 -->
 
 - **Repos.** clearance-cloud.
 - **Depends on.** CS-1.
@@ -761,7 +763,7 @@ The visual source is the canvas board named on each card, in direction A. Every 
 Two packages change the Clearance Backstage plugin in jfillman/backstage. The plugin still imports nothing from Tower or Hangar, and it works with no cloud tenant linked.
 
 ### BK-1 · The Coverage page (C4)
-<!-- pkg status=proposal wave=K0 -->
+<!-- pkg status=proposal wave=K0 strip=W-10 -->
 
 - **Repos.** backstage (clearance, clearance-backend, clearance-react).
 - **Depends on.** The main spec's O-1 (Built) and C-6. It does not depend on the cloud.
