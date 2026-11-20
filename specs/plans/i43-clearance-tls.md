@@ -73,6 +73,12 @@ case. Clearance's callers are in other namespaces (the plugin in Argo CD's, the 
   own CA works for in-release callers, and the CA certificate (public, never the key) can be copied to a ConfigMap by the operator.
 - **Why not a CA-bundle value only**: committing the certificate to gitops breaks when cert-manager re-issues the CA (I-28 section 10
   says the same); a Bundle follows it.
+- **CA replacement (overlap).** The Bundle publishes what its source holds, so a replacement is staged, never swapped: (1) make the
+  Bundle publish **both** CA certificates (old and new) and wait until every client namespace's ConfigMap holds both; (2) only then
+  re-issue the leaves (core, API, people-dex) under the new CA and restart the servers that read them at start; (3) once every leaf is signed by
+  the new CA (check each served certificate's issuer), remove the old CA from the Bundle; (4) restart the clients that read `ca.crt` once
+  at start. Set the CA's `privateKey.rotationPolicy: Never` where a re-issue should keep the same key (then no overlap is needed).
+  The CA must never be replaced by one that drops the old certificate while any server still presents an old-CA leaf.
 - **Mismatch to avoid**: do not have two different CAs per namespace pair. If the owner takes I-28 as written (in-namespace CA) first and
   trust-manager later, only the `issuerRef` changes; the file path and env names do not.
 
@@ -99,9 +105,11 @@ The plain listener is never removed until step 6, so a client that has not moved
    (Recreate; the verify page and gate calls see a short outage, as on any core upgrade); the API rolls. Check the Certificates are Ready.
 4. Publish the CA to the namespaces that need it (trust-manager Bundle, or a ConfigMap).
 5. Move clients one at a time, each a separate PR, checking after each: the agent (`tls.caConfigMap`, https URLs); the plugin sidecar
-   (`CLEARANCE_URL`, `CLEARANCE_CA_FILE`); then, together, the admission policy's optional CA volume (apron), the plugin's
-   `CLEARANCE_WAIT_CA_CONFIGMAP`, the agent's `waitJob.caConfigMap` and the wait URL. An in-flight wait Job keeps its old http URL and
-   finishes; its next injection uses https. Last, observe-aws.
+   (`CLEARANCE_URL`, `CLEARANCE_CA_FILE`), **with the wait URL kept on http**: the plugin injects the wait Job with `CLEARANCE_URL`, so
+   this step sets the wait URL explicitly to the http one (or the plugin does not derive it) and no new wait Job gets an https URL
+   before its CA mount exists; then, together and in this order, the admission policy's optional CA volume (apron), the plugin's
+   `CLEARANCE_WAIT_CA_CONFIGMAP`, the agent's `waitJob.caConfigMap`, and only last the wait URL to https. An in-flight wait Job keeps
+   its old http URL and finishes; its next injection uses https. Last, observe-aws.
 6. When the NetworkPolicy flow logs (or the pods' access logs) show nothing on 8080 from clients, set `tls.plainHttp: false`.
    Not supported yet while the web UI, clearance-slack, clearance-grc or an HTTPRoute is on (they call over plain http and have no CA
    setting; the chart refuses it). NetworkPolicy rules for plain 8080 stay until then.
@@ -112,7 +120,9 @@ The plain listener is never removed until step 6, so a client that has not moved
 - After step 6: set `tls.plainHttp: true`; the core restarts, the Service gets its http port back.
 - To remove TLS: `tls.enabled: false` after every client is back on http. The Certificates and the Secrets can stay or be pruned.
 - A wait Job already rendered with the CA mount needs the ConfigMap to exist; if it is removed first the Job pod waits in
-  ContainerCreating and the sync stays held. Unset `CLEARANCE_WAIT_CA_CONFIGMAP` first.
+  ContainerCreating and the sync stays held. Unset `CLEARANCE_WAIT_CA_CONFIGMAP` first, then wait until every existing
+  wait Job that uses the CA mount has finished or been removed (`kubectl get jobs` for the wait Jobs, per destination namespace), and only
+  then delete the ConfigMap or the Bundle that publishes it: unsetting the variable changes only Jobs rendered afterwards.
 
 ## 8. Out of scope, follow-ups, owner decisions
 
