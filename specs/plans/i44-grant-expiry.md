@@ -95,9 +95,9 @@ Add one **ValidatingWebhookConfiguration** `clearance-grant-expiry` served by a 
   owner sets knowingly; without it the render fails.
   **Leaving enforce runs in the reverse order**, and the check enforces it: `clearance.gate.enforce` goes back to Warn first (the VAP
   stops denying), and only in a later change may `clearance.grantExpiry.enforce` go to false (the webhook returns to audit and
-  `Ignore`). The check refuses a render where the webhook is not in enforce while the VAP is, and the Argo waves apply the
-  webhook's change after the VAP binding's on the way down, so no moment has the webhook in audit with expired grants passing
-  under a still-Deny VAP.
+  `Ignore`). The check refuses a render where the webhook is not in enforce while the VAP is. Sync waves are one fixed order and cannot
+  reverse on the way down, so the two changes are two separate gitops PRs, the second made only after the first has synced, so no moment
+  has the webhook in audit while expired grants can pass under a still-Deny VAP.
 - Why this fixes the stall: expiry no longer depends on any process having written anything. A dead agent leaves
   the VAP's stored state stale but the webhook still compares each entry to the clock and refuses. A dead webhook
   closes the gate for protected namespaces (the intended direction), which is also what "no active grant" already
