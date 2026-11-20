@@ -916,7 +916,7 @@ Each question names the package it blocks, the recommendation, and who decides. 
 
 This is the one Clearance Cloud build spec. It replaces the Claude Doc of the same name, retired on 2026-11-20. This section carries what the doc left open: its pending tracked suggestions, and the decisions still open on the Clearance Cloud Strip Board. Nothing here is applied to the sections above.
 
-### Pending suggestions from the retired doc {#pending-suggestions}
+### Pending suggestions from the retired doc
 
 Fifteen suggestions were pending in the doc when it was retired, all laid on 2026-11-14 and all unreviewed. They are proposals only: the body above keeps the accepted text. The doc gave no reason with any of them, so the reason column says so. Ids are CSG-n (Cloud SuGgestion) so they do not collide with the CS-series work packages.
 
@@ -938,7 +938,7 @@ Fifteen suggestions were pending in the doc when it was retired, all laid on 202
 | CSG-14 | 11. Sequencing, Waves and their entry conditions, same gate | After "and with JavaScript off." add "The main spec's W6 gate is the P-series code proven against fakes; this gate is the hosted proof on verify.clearance.hangarplatform.dev, and the external witness, deferred until now (lab statements print "not yet independently witnessed"), is in place before it, so all seven checks green is proven here." | None given | pending owner |
 | CSG-15 | 12. Cross-cutting rules, Tenancy and security guardrails, free verification | After "Free verification: no auth on verify routes" add " (public summary and public ledger only; recipient detail, statement level V2, is never served on the public route and needs sign-in)" | None given | pending owner |
 
-### Open decisions from the Clearance Cloud Strip Board {#open-decisions}
+### Open decisions from the Clearance Cloud Strip Board
 
 Source: the Clearance Cloud Strip Board, https://claude.ai/artifact/N9sDgHyHKjF8aMfAcxjr8f, read on 2026-11-20. These are the ask strips (A- and Y-) that are not done or closed. The board holds the live state; this table is a snapshot.
 
