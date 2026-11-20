@@ -127,8 +127,9 @@ replica and shared storage, which is out of scope.
   (new dependency).
 - CA re-issue (renews year 9). The `people-dex-ca` Certificate sets `privateKey.rotationPolicy: Never`, so a re-issue keeps the
   existing CA key and the new CA certificate verifies the same leaves (cert-manager 1.18+ would otherwise default to a new key).
-  Even so, the gateway and read API read `ca.crt` once at start: after any CA re-issue, restart people-dex (to pick up a leaf
-  chained to it), then restart the gateway and read API so they load the new `ca.crt`, in that order, and run the section 7 check.
+  Even so, the gateway and read API read `ca.crt` once at start: after any CA re-issue, first re-issue the leaf (cert-manager does not re-issue `people-dex-tls` on its own when the CA changes: delete or
+  `cmctl renew` the `people-dex-tls` Certificate) and wait until the `people-dex-tls` Secret holds the new leaf and the new `ca.crt`; then restart
+  people-dex (to serve it), then the gateway and read API so they load the new `ca.crt`, in that order, and run the section 7 check.
 
 ## 9. Rollback
 
