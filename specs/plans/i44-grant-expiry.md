@@ -50,7 +50,7 @@ at request time (a webhook). A purely in-VAP fix cannot be complete.
 | 1b | Same check in the agent's own process | Yes | Yes, and it makes the agent's up-time a deploy dependency, the same agent whose stall is the bug | Same | Low | Rejected: couples the check to the thing that fails, and adds a listener to a credential-holding pod |
 | 1c | Kyverno ValidatingPolicy with `time.now()` (the spike `docs/spikes/g-argo-1/prod/31-kyverno.yaml` already does `time.now() < timestamp(...expiresAt)`) | Yes | Yes: Kyverno | Fine-grained webhook, but dev saw 16 of 30 calls refused when Kyverno's admission controller was down (restarts on dev and prod) | Low | Rejected: `docs/gate.md` already decides "a Kyverno outage must not decide whether a protected sync can land" |
 | 2 | Agent-written `status.validUntil` window, compared in CEL | No: nothing to compare to (section 2) | No | None | Low | Not sound |
-| 2' | CREATE-only clock in the VAP: `timestamp(object.metadata.creationTimestamp) < timestamp(params.spec.expiresAt)` | Partial: CREATE only | No | None | Tiny | Optional defence in depth; **Unverified** live (a dry-run create with a past `expiresAt` would show it) |
+| 2' | CREATE-only clock in the VAP: `timestamp(object.metadata.creationTimestamp) < timestamp(params.spec.expiresAt)` | Partial: CREATE only | No | None | Tiny | Optional defence in depth; **Unverified** live (a dry-run create with a past `expiresAt` would show it). **Intentionally stricter than section 4:** it tests only the grant's own `spec.expiresAt`, so it also refuses a CREATE that a still-unexpired matching `carried[]` entry would allow once the grant itself has expired (the grant is then due for expiry by the agent anyway, and the webhook, not this row, is the exact check) |
 | 3 | Heartbeat or Lease checked by admission | No (same as 2) | No | None | Low | Not sound |
 | 4 | Params, authorizer, token expiry, TTL GC | No (section 2) | n/a | n/a | n/a | Rejected |
 
@@ -69,18 +69,30 @@ Add one **ValidatingWebhookConfiguration** `clearance-grant-expiry` served by a 
   pass.
 - Fail closed on the narrowest scope the API allows. `failurePolicy: Fail`, `timeoutSeconds: 3`,
   `sideEffects: None`, `matchPolicy: Equivalent`, `namespaceSelector: clearance.hangar.io/protected=true`,
-  operations CREATE and UPDATE, `scope: Namespaced`, the same `excludeResourceRules` as the VAP
-  (clearancegrants, events, endpoints, endpointslices, leases) so the agent can bootstrap and the control plane keeps
-  writing. `matchConditions` copy the VAP's, every expression `has()`-guarded:
+  operations CREATE and UPDATE, `scope: Namespaced`. A `ValidatingWebhookConfiguration` has no `excludeResourceRules`
+  (that field belongs to the policy's `matchResources`), so the VAP's exclusions (clearancegrants, events, endpoints,
+  endpointslices, leases) are expressed as `matchConditions` instead, so the agent can bootstrap and the control plane keeps
+  writing: `!(request.resource.group == 'clearance.hangar.io' && request.resource.resource == 'clearancegrants')`,
+  and the same for `events`, `endpoints`, `endpointslices` and `leases` with their own groups, each `has()`-guarded. A test
+  per exclusion proves the webhook is not called for it, and that a normal resource is. The other `matchConditions` copy the VAP's, every expression `has()`-guarded:
   `has(request.userInfo) && has(request.userInfo.username) && request.userInfo.username == '<argocd controller>' &&
   (!has(request.subResource) || request.subResource == '')`. A CEL error in a match condition is a cluster-wide
   refusal under `Fail` (hangar's 2026-10-29 lesson), so each has() guard gets a unit test with objects missing the
   field. Net blast radius: Argo's controller writing to a protected namespace; nobody else, no other namespace.
 - Audit-safe rollout, mirroring `validationActions`: an `--mode=audit|enforce` flag. In audit the webhook always
   allows, returns a warning and an audit annotation (`clearance.hangar.io/expired-grant`), and the configuration is
-  `failurePolicy: Ignore`. Apron renders `mode` and `failurePolicy` from `clearance.gate.enforce`, so the one switch
-  that flips the VAP to Deny flips this to enforce and `Fail`. Default off: the webhook configuration is not
-  rendered unless enabled.
+  `failurePolicy: Ignore`. Apron renders `mode` and `failurePolicy` from one switch, `clearance.grantExpiry.enforce`
+  (default off: the webhook configuration is not rendered unless `clearance.grantExpiry.enabled`).
+  **The VAP's Deny may only follow it.** `failurePolicy: Fail` refuses only an unreachable webhook, not a successful allow,
+  so an audit-mode pod that is still serving would let an expired grant through after the VAP went to Deny. Ordering
+  that closes it: (1) the Deployment rolls to `--mode=enforce` and every replica is Ready, its readiness reporting the
+  mode it runs (a pod still in audit is not Ready in the enforce rollout); (2) only then the configuration becomes `Fail`
+  (the Deployment and the configuration sit in an earlier Argo wave than the VAP binding, and the binding's wave waits for the
+  Deployment's health); (3) only then `clearance.gate.enforce` turns the VAP to Deny. The Clearance chart owns this rule (a template `fail`; it installs on its own), and Apron's `hack/check.py` mirrors it: both refuse
+  `clearance.gate.enforce: true` unless `clearance.grantExpiry.enforce: true` and `enabled: true`, which also stops an enforce flip
+  with the webhook off (otherwise the VAP would deny other invalid writes yet still admit writes covered by an expired
+  grant). The one exception is an explicit, recorded override, `clearance.grantExpiry.acceptResidualRisk: true`, that the
+  owner sets knowingly; without it the render fails.
 - Why this fixes the stall: expiry no longer depends on any process having written anything. A dead agent leaves
   the VAP's stored state stale but the webhook still compares each entry to the clock and refuses. A dead webhook
   closes the gate for protected namespaces (the intended direction), which is also what "no active grant" already
