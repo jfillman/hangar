@@ -74,10 +74,11 @@ case. Clearance's callers are in other namespaces (the plugin in Argo CD's, the 
 - **Why not a CA-bundle value only**: committing the certificate to gitops breaks when cert-manager re-issues the CA (I-28 section 10
   says the same); a Bundle follows it.
 - **CA replacement (overlap).** The Bundle publishes what its source holds, so a replacement is staged, never swapped: (1) make the
-  Bundle publish **both** CA certificates (old and new) and wait until every client namespace's ConfigMap holds both; (2) only then
-  re-issue the leaves (core, API, people-dex) under the new CA and restart the servers that read them at start; (3) once every leaf is signed by
-  the new CA (check each served certificate's issuer), remove the old CA from the Bundle; (4) restart the clients that read `ca.crt` once
-  at start. Set the CA's `privateKey.rotationPolicy: Never` where a re-issue should keep the same key (then no overlap is needed).
+  Bundle publish **both** CA certificates (old and new) and wait until every client namespace's ConfigMap holds both; (2) **restart the clients that
+  read `ca.crt` only at start** (they still trust the old CA alone, and would reject a new-CA leaf), and wait for them to be Ready; (3) only then re-issue
+  the leaves (core, API, people-dex) under the new CA and restart the servers that read them at start; (4) once every leaf is signed by the new CA (check
+  each served certificate's issuer), remove the old CA from the Bundle; (5) restart the clients once more if they must stop trusting the old CA.
+  Set the CA's `privateKey.rotationPolicy: Never` where a re-issue should keep the same key (then no overlap is needed).
   The CA must never be replaced by one that drops the old certificate while any server still presents an old-CA leaf.
 - **Mismatch to avoid**: do not have two different CAs per namespace pair. If the owner takes I-28 as written (in-namespace CA) first and
   trust-manager later, only the `issuerRef` changes; the file path and env names do not.
