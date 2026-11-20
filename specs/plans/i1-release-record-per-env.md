@@ -162,6 +162,10 @@ glidepath-api is the CI/CD interface, so every change is additive and the docume
   No existing call changes its answer. For a chain id on its own against a chain that now has only suffixed records, `Get` returns the
   one record if there is one, and **409 with the record keys listed** if there are several (new response code for a case that returned
   one wrong record before; document it). An optional `?env=` query parameter picks one. Both additive.
+  **Mixed state (a legacy `<chain>` record and `<chain>-<env>` records of the same chain, which the rollout allows since the writer changes
+  last):** a bare-chain request keeps the legacy answer: the exact `<chain>` record is returned, never a 409, because no existing call may change
+  its answer; the suffixed records are reached by their key or `?env=`. The 409 is only for a chain with suffixed records and no exact
+  `<chain>` record. A test case covers the mixed state (exact record wins; `?env=` and the suffixed key still reach the others).
 - `Release` response: add `chainId`, `releaseId`, `env`, `cluster`, `key` (derived from `data`, not from the name). Existing `name` and
   `data` are unchanged; `name` stays the ConfigMap name. Update the `name` description from `release-tracking-<chain-id>` to
   `release-tracking-<chain-id>[-<env>]`. `recordName` on events is the same.
