@@ -87,12 +87,17 @@ Add one **ValidatingWebhookConfiguration** `clearance-grant-expiry` served by a 
   so an audit-mode pod that is still serving would let an expired grant through after the VAP went to Deny. Ordering
   that closes it: (1) the Deployment rolls to `--mode=enforce` and every replica is Ready, its readiness reporting the
   mode it runs (a pod still in audit is not Ready in the enforce rollout); (2) only then the configuration becomes `Fail`
-  (the Deployment and the configuration sit in an earlier Argo wave than the VAP binding, and the binding's wave waits for the
-  Deployment's health); (3) only then `clearance.gate.enforce` turns the VAP to Deny. The Clearance chart owns this rule (a template `fail`; it installs on its own), and Apron's `hack/check.py` mirrors it: both refuse
+  (the Deployment sits in an earlier Argo wave than the configuration, and the configuration in an earlier wave than the VAP binding; a
+  later wave starts only after the earlier wave is healthy, so `Fail` takes effect only once the pods are Ready); (3) only then `clearance.gate.enforce` turns the VAP to Deny. The Clearance chart owns this rule (a template `fail`; it installs on its own), and Apron's `hack/check.py` mirrors it: both refuse
   `clearance.gate.enforce: true` unless `clearance.grantExpiry.enforce: true` and `enabled: true`, which also stops an enforce flip
   with the webhook off (otherwise the VAP would deny other invalid writes yet still admit writes covered by an expired
   grant). The one exception is an explicit, recorded override, `clearance.grantExpiry.acceptResidualRisk: true`, that the
   owner sets knowingly; without it the render fails.
+  **Leaving enforce runs in the reverse order**, and the check enforces it: `clearance.gate.enforce` goes back to Warn first (the VAP
+  stops denying), and only in a later change may `clearance.grantExpiry.enforce` go to false (the webhook returns to audit and
+  `Ignore`). The check refuses a render where the webhook is not in enforce while the VAP is, and the Argo waves apply the
+  webhook's change after the VAP binding's on the way down, so no moment has the webhook in audit with expired grants passing
+  under a still-Deny VAP.
 - Why this fixes the stall: expiry no longer depends on any process having written anything. A dead agent leaves
   the VAP's stored state stale but the webhook still compares each entry to the clock and refuses. A dead webhook
   closes the gate for protected namespaces (the intended direction), which is also what "no active grant" already
