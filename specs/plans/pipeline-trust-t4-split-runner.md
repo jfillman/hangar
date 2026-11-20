@@ -21,12 +21,12 @@ flawed task (T2 found a `yq` injection on main) hands over everything below.
 | R1 | `configmaps`: get, list, create, patch, **delete**, whole namespace | `GA/identity/pipeline-runner.yaml:55-57` | Writes of the release record `release-tracking-<chain>`: `open-release-pr` create/patch/label/supersede (`GC/tasks/open-release-pr.yaml:298-354,384,407,471,583`); `mark-release-merged` (`GC/tasks/mark-release-merged.yaml:58,92`); `itsm-change` (`:91`); `itsm-gate` (`:116`); `comment-pr-check-result` gate ledger, resourceVersion CAS (`:432-445`); `clearance-gate` join of `clearanceId` (`GC/tasks/clearance-gate.yaml:676-690`). Writes of **gate reports** `gate-report-<run>` (not records): `clearance-gate` (`:800-806`), `api-compat-gate` (`:350-355`), `policy-validation-gate` (`:413-418`). Reads: `resolve-release-tracking`, `extract-promoted-image`, `itsm-*`, `release-source.sh`, `clearance-gate:253`. | Writes: split out. Reads: keep. **No catalog step deletes a ConfigMap** (no `kubectl delete` under `GC`); the sweeper does (`GA/identity/release-record-relay.yaml:48-51`). `delete` is unused. |
 | R2 | `tekton.dev` pipelineruns, taskruns: get, list, watch | `pipeline-runner.yaml:29-31` | `stage-debrief`, `comment-pr-check-result`, `clearance-gate:800` (owner uid) | keep |
 | R3 | pods, pods/log, events, pvcs: get, list, watch | `:32-34` | debrief, log collection | keep |
-| R4 | `secrets` get, only `app-secrets`, `dex-check-ride-credentials` | `:41-44` | `run-testworkflow` forwards them (`GC/tasks/run-testworkflow.yaml:339`) | keep, but only that task needs it (see Open questions) |
+| R4 | `secrets` get, only `app-secrets`, `dex-check-ride-credentials` | `:41-44` | `run-testworkflow` forwards them (`GC/tasks/run-testworkflow.yaml:339`) | moves to `test-runner` (owner decision 3) |
 | R5 | virtual `glidepath.hangar.io/refprotection` get | `:62-64` | first task of every privileged Pipeline (T3) | keep |
 | R6 | rollouts get/list/watch in each local env namespace | `GA/env/deploy-rbac.yaml:21-43` | `deploy-manifests:236` | keep |
 | R7 | Argo `applications` get, patch in `argocd-apps` (lower envs) and `argocd` (DORA) | `GA/env/argocd-refresh-rbac.yaml:19-42`, `GA/argocd/release-application.yaml:50-75` | `deploy-manifests:216`, `mark-release-pending:94` | keep |
 | R8 | policy-config get; cluster-registry get | `GA/governance/policy-config.yaml:43-60`, `GA/clusters/read-registry-rbac.yaml:20-37` | gates, `open-release-pr` | keep |
-| R9 | testkube `secrets` get/update/patch for `<app>-app-secrets`, plus the `testkube-testworkflow-runner` role | `GA/testkube/rbac-and-secret.yaml:58-89` | `run-testworkflow:354,394,508` | keep |
+| R9 | testkube `secrets` get/update/patch for `<app>-app-secrets`, plus the `testkube-testworkflow-runner` role | `GA/testkube/rbac-and-secret.yaml:58-89` | `run-testworkflow:354,394,508` | moves to `test-runner` |
 
 ### The token Clearance trusts
 
@@ -57,11 +57,12 @@ Glidepath release plus an Apron pin and Clearance-trust change.
 
 ## 2. Target
 
-Three task accounts replace the one. None may create runs (the same invariant as today).
+Four task accounts replace the one (owner decision 3 adds `test-runner`). None may create runs (the same invariant as today).
 
 | Identity | Holds | Runs |
 |---|---|---|
-| `pipeline-runner` (read-mostly) | R2, R3, R4, R5, R6, R7, R8, R9 (`run-testworkflow` stays on this account), and configmaps **get, list** only. No create, patch, delete. No `clearance` audience. | Every catalog task not named below. |
+| `pipeline-runner` (read-mostly) | R2, R3, R5, R6, R7, R8, and configmaps **get, list** only. No create, patch, delete. No Secret. No `clearance` audience. | Every catalog task not named below. |
+| `test-runner` | R4 (`app-secrets`, `dex-check-ride-credentials` get), R9 (testkube secrets and the `testkube-testworkflow-runner` role), R2 and R3 for its own logs. No ConfigMap write, no `clearance` audience. | `run-testworkflow` only. |
 | `release-record-writer` | configmaps get, list, create, patch (no delete, no update) in the app's `-cicd` namespace; enforced to release records by the admission policy below. Read-only R8 grant for the cluster-registry (`open-release-pr` reads it, `GC/tasks/open-release-pr.yaml:846`; the policy-config is not referenced there, so not granted). No Secret, no `clearance` audience. | `open-release-pr`; `mark-release-merged`; `itsm-change`; `itsm-gate`; and two **new small Tasks** carved out of tasks that must stay runner: `record-gate-verdict` (the ledger write from `comment-pr-check-result:432-447`) and `join-release` (from `clearance-gate:676-690`). |
 | `clearance-gate` | get pipelineruns; get configmaps; create, patch configmaps (gate reports only, enforced by the policy below); the `clearance` audience. No record write, no Secret. | `clearance-gate`, `agent-gates`, `agent-definitions`, `agent-release` (the four Tasks that present the token). |
 
@@ -145,17 +146,26 @@ No key material is involved: nothing here mints or stores a long-lived credentia
 | Missing `taskRunSpecs` on a platform-triggered run (a Trigger template, not PaC; `cicd-run-shape` only covers PaC runs, `:65-68`) | 3 | The chart test renders every Trigger and asserts the writer and gate tasks are mapped; a glidepath-api rerun keeps them (extends the T5 rule). |
 | New `clearance-gate` account widens Clearance trust to any `app-*-cicd/clearance-gate` | 1 | The app binding already limits it to its own app (`service.go:312`); the account has no run creation and the admission lists name its tasks. |
 | Gate Map goes `silent` when the instance changes | 1, 7 | `tests/run.sh` fixture updated; check the live Map after 1 and 7. |
-| Live check | all | Per step, run a real promote, rollback and gate on hangar-dev and read the Role with `kubectl auth can-i --as=system:serviceaccount:app-<app>-cicd:<sa>` for each right in the table: runner `create configmaps` must be `no` after step 6; writer `get secrets` `no`; `clearance-gate` `create pipelineruns` `no`. |
+| Live check | all | Per step, run a real promote, rollback and gate on hangar-dev and read the Role with `kubectl auth can-i --as=system:serviceaccount:app-<app>-cicd:<sa>` for each right in the table: runner `create configmaps` and `get secrets` must be `no` after step 6; writer `get secrets` `no`; `clearance-gate` `create pipelineruns` `no`. |
 
-### Open questions for the owner
+### Owner decisions (2026-11-20)
 
-1. Per-Task accounts now, service later (recommended), or build the glidepath-api record endpoint first?
-2. One `clearance-gate` account for all four Clearance-token Tasks, or `agent-release` (also holds the `agent-pin` token,
-   `GC/tasks/agent-release.yaml:44`) on its own account?
-3. `app-secrets` and `dex-check-ride-credentials` read (R4) serves one task, `run-testworkflow`. Move that task to its own
-   account in this slice, or leave it for a later one? It is the largest power the runner keeps.
-4. `gate-report-*` in a ConfigMap forces `create` on the token pods. Acceptable with the policy, or move reports to a
-   different object kind so `clearance-gate` has no ConfigMap write at all?
-5. Is the overlap of two gate instances in the Map (step 1 to 7) acceptable, and how long should old records keep the
-   `pipeline-runner` registrant (history is not rewritten)?
-6. May hangar-dev run Deny at step 5 before prod, as in T6, with prod only after your OK?
+1. **Per-Task accounts now; the glidepath-api record service is a later follow-up.**
+2. **One `clearance-gate` account for all four Clearance-token Tasks.** A separate account for `agent-release` would not
+   narrow the `agent-pin` token: the broker accepts any caller whose TokenReview namespace is the app's `-cicd` namespace
+   and does not check the SA (`glidepath/broker/cmd/token-review-interceptor/agentpin.go:10,43,232-239`). Which token a pod
+   holds is fixed by its Task's projected volume, and no task account can create pods or TaskRuns or request tokens.
+   Follow-up (not in this slice): the broker checks the SA as well, so `agent-pin` is bound to `clearance-gate`.
+3. **`run-testworkflow` moves to its own `test-runner` account in this slice** (R4 and R9 leave `pipeline-runner`, which then
+   reads no Secret). Step 3 maps it, step 5's allowlists name it, step 6 removes R4 and R9 from the runner, and the live
+   check adds `pipeline-runner get secrets` = `no`.
+4. **Gate reports stay ConfigMaps, limited by `gate-report-writes`.** A gate report is a display and debrief artifact; the
+   Clearance record is the authority, so a forged report cannot change a verdict. A new object kind would add a CRD and
+   a migration for little gain. Reports move with the record service if that is built.
+5. **The overlap is bounded, and old records keep `pipeline-runner`.** `CLEARANCE_VERIFIERS` is checked when a call is made
+   (`internal/core/core.go:13`), so dropping the principal does not invalidate stored records, and history is append-only.
+   The one tie to the registrant is the exact-registrant rule for a later call on the same change
+   (`internal/gate/outcome.go:261`). So step 7 waits until no open change registered by `app-*-cicd/pipeline-runner`
+   remains (closed, or past its policy TTL, `internal/gate/change.go:234`), and at most two weeks after prod Deny. The Map
+   shows both gate instances until then.
+6. **hangar-dev runs Deny at step 5 first; prod only after the owner's OK.**
