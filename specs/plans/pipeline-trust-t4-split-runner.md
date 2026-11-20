@@ -130,9 +130,9 @@ Task (as `GC/tasks/clearance-gate.yaml:112-118` already does). No Secret is crea
 | 4 | Apron: pin the new Glidepath, update `versions.glidepathRunTasks`, mirror the two lists in `tower-identity-writes.yaml:108-142`. | Commits to repos that need a person's gitsign signature: **owner step if signing blocks** |
 | 5 | Turn the admission policies to Audit, then Deny (`release-record-writes`, `gate-report-writes`, the SA allowlists). Watch Audit for one release of every kind: promote, rollback, bypass-merge, itsm, every gate. **Gate for Deny: every app has merged its onboarding-resync and no active run still uses the old `pipeline-runner` mapping** (list TaskRuns by SA per app). | Choosing Deny is the owner's call (T6 rule: prod only with OK) |
 | 6 | Remove R1's `create, patch, delete` from `pipeline-runner` (keep get, list). Remove `app-secrets` read from the runner only if open question 3 is answered yes. | no (after Audit is clean) |
-| 7 | Clearance, subtractive: drop `app-*-cicd/pipeline-runner` from `verifiers` and the old gate instance. | Cluster render sync is the owner's; only after step 5 is clean |
+| 7 | Clearance, subtractive: drop `app-*-cicd/pipeline-runner` from `verifiers` and the old gate instance, and drop `pipeline-runner` from the broker's `agentPin.serviceAccounts` (glidepath#278), so `agent-pin` accepts only `clearance-gate`. | Cluster render sync is the owner's; only after step 5 is clean |
 
-Rollback: steps 6 and 7 remove a right. Reverting step 6 means re-adding the RBAC **and** setting the admission policies (`release-record-writes`, `gate-report-writes`) back to Audit or narrowing them, since RBAC alone would still be refused by the policy. Step 7 reverts by re-adding the verifier line. Steps 1-5 only add.
+Rollback: steps 6 and 7 remove a right. Reverting step 6 means re-adding the RBAC **and** setting the admission policies (`release-record-writes`, `gate-report-writes`) back to Audit or narrowing them, since RBAC alone would still be refused by the policy. Step 7 reverts by re-adding the verifier line **and** restoring `pipeline-runner` to the broker's `agentPin.serviceAccounts`, since the broker refuses an `agent-pin` caller not on that list, **and** re-declaring the `app-*-cicd/pipeline-runner` gate instance that step 7 removes, so the Map does not show that gate as `silent`. Steps 1-5 only add.
 
 No key material is involved: nothing here mints or stores a long-lived credential, so Infisical is not touched.
 
@@ -156,6 +156,7 @@ No key material is involved: nothing here mints or stores a long-lived credentia
    and does not check the SA (`glidepath/broker/cmd/token-review-interceptor/agentpin.go:10,43,232-239`). Which token a pod
    holds is fixed by its Task's projected volume, and no task account can create pods or TaskRuns or request tokens.
    Follow-up (not in this slice): the broker checks the SA as well, so `agent-pin` is bound to `clearance-gate`.
+   Broker SA binding is in glidepath#278: `agent-pin` accepts only the SAs in `agentPin.serviceAccounts` (env `AGENT_PIN_SERVICE_ACCOUNTS`), default `pipeline-runner,clearance-gate` during the overlap; step 7 drops `pipeline-runner` from that list too.
 3. **`run-testworkflow` moves to its own `test-runner` account in this slice** (R4 and R9 leave `pipeline-runner`, which then
    reads no Secret). Step 3 maps it, step 5's allowlists name it, step 6 removes R4 and R9 from the runner, and the live
    check adds `pipeline-runner get secrets` = `no`.
