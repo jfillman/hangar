@@ -80,8 +80,8 @@ win over its default (`applicationset.yaml:125`). So:
 
 **1b. A per-environment path and Application.** Files go under `tenants/<app>/xr-requests/<env>/` and a second
 ApplicationSet (or a matrix of app and env) renders each into `app-<app>-<env>`. The current source only includes
-`xr-requests/*.yaml` (`applicationset.yaml:117-120`), so a subfolder needs a new include and a new generator. It gives
-Argo CD, not the XR file, the say over the destination. The cost is a second ApplicationSet to keep in step with the first, and
+`xr-requests/*.yaml` (`applicationset.yaml:117-120`), so a subfolder needs a new include and a new generator. It sets the
+Application's default destination from the path; an XR's own `metadata.namespace` still overrides it (see below). The cost is a second ApplicationSet to keep in step with the first, and
 an Application per environment.
 
 ### Tenant isolation and security
@@ -96,7 +96,8 @@ The invariant needed is: a file in one tenant's directory can never land in a na
 does not establish it. The ApplicationSet lets an XR's own `metadata.namespace` win (`applicationset.yaml:125`), so a
 file under `<app>/xr-requests/dev/` can still name another app's namespace, and the shared AppProject's globs would
 let it through. 1b closes the gap only with an enforcing control: per-app AppProjects whose destinations are that
-app's own namespaces (Argo CD refuses the sync), or an admission or CI check that rejects a file whose namespace does
+app's own namespaces (Argo CD refuses the sync; this stops cross-app placement but not a file naming
+another environment of the same app), or an admission or CI check that rejects a file whose namespace does
 not match its path. Neither exists today. Until one does, the gap stays open under 1a and 1b alike, and PR review is
 the only control.
 
@@ -212,7 +213,8 @@ enforced naming rule), and keep option 3 as the
 behaviour until the dev cluster has the project change. It leaves the tenant-scope rule alone and works with the
 `enforcedNamespaceLabel` hardening that known gap 11 recommends, where option 2 does not. Move to 1b only if the owner wants
 the destination derived from the path, and then only together with a control that rejects a file whose namespace does
-not match its path (per-app AppProjects, or an admission or CI check); this depends on the answer to question 1.
+not match its path (an admission or CI check). Per-app AppProjects would confine a file to its own app's namespaces
+but not to the environment its path names; this depends on the answer to question 1.
 Option 2 is the one to avoid: it trades a rule the platform enforces for a string the tenant types.
 
 ## Open questions for the owner
