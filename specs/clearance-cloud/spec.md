@@ -1,9 +1,9 @@
 ---
 title: Clearance Cloud Build Specification
 program: Hangar · Clearance Cloud
-board: https://claude.ai/artifact/7bptZqWD7RdUDxyR4TQ8o9
+board: https://claude.ai/artifact/N9sDgHyHKjF8aMfAcxjr8f
 source: https://claude.ai/artifact/XByvsn2wm6xmVcGnA32tJb
-updated: 2026-11-16
+updated: 2026-11-20
 ---
 
 Nov 9, 2026 · @James
@@ -889,10 +889,10 @@ Each question names the package it blocks, the recommendation, and who decides. 
 | 4 | Does Community get a cloud workspace? | CS-9 | **Decided:** no. Community is Backstage and the offline verifier only. The cloud starts at Team | James, 2026-11-09 |
 | 5 | Cell per tenant, or a pooled cell for Team? | CS-1, INF-9 | Cell per tenant at launch. Revisit when INF-9's model shows the marginal cost of a Team cell exceeds a set share of Team revenue | Agent, then user at the threshold |
 | 6 | Tessera AWS driver or single-writer POSIX for hosted ledgers? | CS-3 | AWS driver, after the spike confirms checkpoint latency under 60 s with 50 tenant logs on one Aurora MySQL cluster | Agent |
-| 7 | Who runs the external witness? | CS-3 | \*\*Deferred by James, 2026-11-09.\*\* Recommendation stands: a public witness network first, then a willing audit firm, never only Clearance's own. K0 and K1 run with the Clearance witness alone, and statements print "not yet independently witnessed". An external witness is needed before K2's gate | User |
-| 8 | Billing provider for direct sales | CS-9 | \*\*Decided:\*\* Stripe for card and invoice, plus AWS Marketplace for customers who buy through AWS | User |
+| 7 | Who runs the external witness? | CS-3 | **Deferred by James, 2026-11-09.** Recommendation stands: a public witness network first, then a willing audit firm, never only Clearance's own. K0 and K1 run with the Clearance witness alone, and statements print "not yet independently witnessed". An external witness is needed before K2's gate | User |
+| 8 | Billing provider for direct sales | CS-9 | **Decided:** Stripe for card and invoice, plus AWS Marketplace for customers who buy through AWS | User |
 | 9 | Where does the ops core that gates the cloud run? | INF-6 | shared-services, self-hosted from the open chart, syncing to an ops tenant in cloud-prod. It must not depend on the cloud it gates | Agent |
-| 10 | Retention defaults per tier | INF-4 | \*\*Decided:\*\* 1 year for Team, 7 years for Business, and 7 years plus legal hold for Regulated. These cannot be shortened once written | User |
+| 10 | Retention defaults per tier | INF-4 | **Decided:** 1 year for Team, 7 years for Business, and 7 years plus legal hold for Regulated. These cannot be shortened once written | User |
 
 ### Risks the managing agent watches
 
@@ -909,3 +909,51 @@ Each question names the package it blocks, the recommendation, and who decides. 
 - [ ] Create the AWS management account and payer, and an HCP Terraform organization.
 - [ ] Delegate clearance.hangarplatform.dev (question 1).
 - [ ] Arrange the external witness (question 7) before K2. The setup steps are in Clearance Cloud setup: owner steps.
+
+## 14. Outstanding suggestions and decisions {#outstanding-suggestions-and-decisions}
+
+This is the one Clearance Cloud build spec. It replaces the Claude Doc of the same name, retired on 2026-11-20. This section carries what the doc left open: its pending tracked suggestions, and the decisions still open on the Clearance Cloud Strip Board. Nothing here is applied to the sections above.
+
+### Pending suggestions from the retired doc {#pending-suggestions}
+
+Fifteen suggestions were pending in the doc when it was retired, all laid on 2026-11-14 and all unreviewed. They are proposals only: the body above keeps the accepted text. The doc gave no reason with any of them, so the reason column says so. Ids are CSG-n (Cloud SuGgestion) so they do not collide with the CS-series work packages.
+
+| Id | Section it touches | Proposed change | Reason | State |
+| --- | --- | --- | --- | --- |
+| CSG-1 | 3. Current state, status of "Receipts, sampling, statements and verify page, GRC push (P-1 to P-4)" | Replace "Proposal (main spec W6)" with "Built: main spec W6, merged and released as core 0.48.0 on 2026-11-14; proven against fakes, not deployed" | None given | pending owner |
+| CSG-2 | 4. Target architecture, Components, verify-web row | Replace "V2's recipient detail comes through cloud-api under the recipient's grant" with "V2's recipient detail is never served on the public verify route: the open route carries the public summary only, and recipient detail sits behind sign-in" | None given | pending owner |
+| CSG-3 | 5. AWS deployment infrastructure, Edge and domains table | Add a row: host `slack.<domain>`, "The clearance-slack link page (a record in the INF-2 zone)", note "Owner decision 2026-11-14: slack.clearance.hangarplatform.dev is a record in the INF-2 zone" | None given (the row quotes an owner decision of 2026-11-14) | pending owner |
+| CSG-4 | 5. AWS deployment infrastructure, Identity and access, recipient sign-in paragraph | After "(decided 2026-11-09)" add " (superseded for W6: P-1 builds a registered key only as recipient identity, and OIDC recipient identity is deferred, not built)" | None given | pending owner |
+| CSG-5 | 6. Gap analysis, row "P-1 deliveries and credentials" | Replace "Proposal" with "built: core 0.48.0, 2026-11-14, not deployed" | None given | pending owner |
+| CSG-6 | 6. Gap analysis, row "P-3" | Replace "Proposal" with "built: core 0.48.0, 2026-11-14, not deployed; the public verify route stays off until its security review is accepted" | None given | pending owner |
+| CSG-7 | CS-5 Grants and the access register, Build | After "The S2 access register over P-1's deliveries" add " (the core issues and verifies the recipient credential, scoped and time-boxed, every fetch a record; cloud-api only passes it through and keeps its own grant register)" | None given | pending owner |
+| CSG-8 | CS-5 Grants and the access register, Build, revoke | After "revoke takes effect at once and writes to the public ledger" add " (core 0.48.0 has no credential or key revocation; the core's delivery and recipient-key revoke routes merged on 2026-11-14 and are not yet released, so until a release carries them this revoke acts in cloud-api's register only, and after it cloud-api calls the core's delivery revoke as well)" | None given | pending owner |
+| CSG-9 | CS-6 Hosting statements, the verify page and the ledger explorer, Build | After "verify-web deployed from the open binary at `verify.<domain>/s/{id}` (V1)" add " as its own process, not inside the core; the public listener ships off by default and stays off until the owner accepts the security review" | None given | pending owner |
+| CSG-10 | CS-10 Insurer statements and the intelligence hooks, Build | After "The monthly insurer statement schedule per carrier" add " (P-3 has no built-in scheduler in W6, so cloud-worker calls the issue route on each carrier's schedule)" | None given | pending owner |
+| CSG-11 | CW-1 App shell, design kit and sign-in, Build, the `@clearance/cloud-ui` package | Add a sentence: "This kit belongs to the Cloud portal (business-facing, Cognito) and shares no package with the standalone Clearance UI (clearance web and the jfillman/clearance-ui package; operational: clearances, evidence, exceptions, attestations, map, policy)." | None given | pending owner |
+| CSG-12 | CW-8 The auditor portal (AU1, AU2), Build, engagement view | Delete " or OIDC identity" after "signing with the firm key" | None given (it matches CSG-4, which defers OIDC recipient identity) | pending owner |
+| CSG-13 | 11. Sequencing, Waves and their entry conditions, the "Verifiable by a stranger" gate | After "all seven checks" add " (the page's headline is "VERIFIED, WITNESS INDEPENDENCE DECLARED", never plain VERIFIED, because independence is the issuer's declaration; plain VERIFIED with all seven green is the offline result when the reader names the witness key)" | None given | pending owner |
+| CSG-14 | 11. Sequencing, Waves and their entry conditions, same gate | After "and with JavaScript off." add "The main spec's W6 gate is the P-series code proven against fakes; this gate is the hosted proof on verify.clearance.hangarplatform.dev, and the external witness, deferred until now (lab statements print "not yet independently witnessed"), is in place before it, so all seven checks green is proven here." | None given | pending owner |
+| CSG-15 | 12. Cross-cutting rules, Tenancy and security guardrails, free verification | After "Free verification: no auth on verify routes" add " (public summary and public ledger only; recipient detail, statement level V2, is never served on the public route and needs sign-in)" | None given | pending owner |
+
+### Open decisions from the Clearance Cloud Strip Board {#open-decisions}
+
+Source: the Clearance Cloud Strip Board, https://claude.ai/artifact/N9sDgHyHKjF8aMfAcxjr8f, read on 2026-11-20. These are the ask strips (A- and Y-) that are not done or closed. The board holds the live state; this table is a snapshot.
+
+| Strip | Touches | What is open | Options and recommendation | State |
+| --- | --- | --- | --- | --- |
+| A-5 | INF-4 | Who creates the Object Lock buckets (evidence, ledger, statements). The INF-1 SCP lets only BreakGlass and OrganizationAccountAccessRole change Object Lock settings, so the staging HCP apply role cannot create them; the limit is deliberate because retention is permanent. Blocks W-5 (INF-4); nothing is built until answered | (a) a separate owner-applied workspace per environment that creates only the locked buckets, through OrganizationAccountAccessRole, same pattern as the trail bucket; (b) widen the SCP exemption to the staging apply role. Recommended: (a) | pending owner |
+| A-6 | INF-4 | What retention the staging proof may leave behind. The done test writes an object with 7-year COMPLIANCE retention; that object and its bucket then cannot be deleted for 7 years. Blocks the W-5 (INF-4) done test; irreversible | (a) prove it in staging with 1-day retention and run the 7-year proof once in prod with the first real tier; (b) run the full 7-year proof in staging, as the card says. Recommended: (a) | pending owner |
+| Y-5 | INF-1 | After 2026-11-20 12:00 UTC: delete the SCP test bucket in cloud-staging once the lock on the test object expires (delete the object version, then the bucket) | Owner step | pending owner |
+| Y-6 | INF-2 | Run the staging egress test from a clearance-cloud-infra checkout and check that flow logs arrive; paste both outputs. The board's reply says the egress test passed with a working control and the flow-log listing remains | Owner step | pending owner |
+| Y-7 | INF-2 | Merge PR #6 (staging edge), then the 4-step rollout: agent applies staging with edge off; owner adds the staging delegation in shared-services; owner runs the test-CA script and pastes only the CA certificate (optional, A-4); agent turns the edge on and runs the three done tests. About $70/month on top of the $37 network | Owner step | pending owner |
+| Y-8 | INF-3 | After #6, merge PR #7 (EKS code). It creates nothing: the cluster stays off until the owner decides to run it | Owner step | pending owner |
+
+Four more ask strips are answered, not done or closed, and are listed so none is missed. Their answers are recorded on the board.
+
+| Strip | Touches | Question | Answer (owner, 2026-11-19) |
+| --- | --- | --- | --- |
+| A-1 | INF-2 | Who creates the app and ingest ALBs | (a) Terraform owns the ALBs, listeners and WAF; INF-3 binds pods with TargetGroupBinding |
+| A-2 | INF-2 | Staging hostnames | (a) delegated sub-zone staging.clearance.hangarplatform.dev in cloud-staging |
+| A-3 | INF-2, INF-3, INF-4 | How lean to run until there are paying tenants | (c) lean until first tenant, plus staging on demand: no prod, staging without interface endpoints, Aurora auto-pause, a staging switch that removes the NAT when idle |
+| A-4 | INF-2 | CA for the ingest ALB mTLS trust store | (a) the owner creates a test CA offline and uploads only its certificate |
