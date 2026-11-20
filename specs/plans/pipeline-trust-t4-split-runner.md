@@ -132,7 +132,7 @@ Task (as `GC/tasks/clearance-gate.yaml:112-118` already does). No Secret is crea
 | 6 | Remove R1's `create, patch, delete` from `pipeline-runner` (keep get, list). Remove `app-secrets` read from the runner only if open question 3 is answered yes. | no (after Audit is clean) |
 | 7 | Clearance, subtractive: drop `app-*-cicd/pipeline-runner` from `verifiers` and the old gate instance. | Cluster render sync is the owner's; only after step 5 is clean |
 
-Rollback: steps 6 and 7 remove a right. Reverting step 6 means re-adding the RBAC **and** setting the admission policies (`release-record-writes`, `gate-report-writes`) back to Audit or narrowing them, since RBAC alone would still be refused by the policy. Step 7 reverts by re-adding the verifier line. Steps 1-5 only add.
+Rollback: steps 6 and 7 remove a right. Reverting step 6 means re-adding the RBAC **and** setting the admission policies (`release-record-writes`, `gate-report-writes`) back to Audit or narrowing them, since RBAC alone would still be refused by the policy. Step 7 reverts by re-adding the verifier line **and** restoring `pipeline-runner` to the broker's `agentPin.serviceAccounts`, since the broker refuses an `agent-pin` caller not on that list. Steps 1-5 only add.
 
 No key material is involved: nothing here mints or stores a long-lived credential, so Infisical is not touched.
 
