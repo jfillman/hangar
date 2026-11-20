@@ -78,10 +78,14 @@ https it is `gateway.scheme: https` (already the EKS runtime default), a separat
 | apron | `templates/MANIFEST`, `hack/check.py`, `tests/run.sh`, `README.md` | gating, validation, tests, docs |
 | gitops (later, owner) | the cluster's `cluster.yaml` | `autopilot.peopleTls: true`, a newer `go.tag` and `go.digest`; later `plainHttp.jwks` off |
 
-## 6. Migration order (no sign-in outage)
+## 6. Migration order (one short sign-in interruption, scheduled)
 
-The http listener on 5556 never goes away in this change, so people-dex is reachable the old way throughout, and the Go
-Deployments roll with the default rolling update (the old pod serves until the new one is ready).
+The http listener on 5556 never goes away in this change, and the Go Deployments roll with the default rolling update (the
+old pod serves until the new one is ready). **People-dex itself is not no-downtime:** it runs one replica on a PVC with
+`Recreate`, so each Dex restart (step 4, and later each leaf renewal) stops both listeners for a few seconds. New sign-ins and
+key fetches fail in that window; tokens already issued keep validating, because the gateway and read API serve from their cached key set.
+Schedule step 4 in a quiet window; the interruption is accepted (owner decision 5). A no-downtime Dex would need a second
+replica and shared storage, which is out of scope.
 
 1. Merge and tag the autopilot PR; the manager cuts a `gateway-go-v*` release. The image must contain `AUTOPILOT_JWKS_CA_FILE`.
    **An older image ignores the variable and then fails the TLS verification, and a failed first key fetch is only a warning,
@@ -92,9 +96,12 @@ Deployments roll with the default rolling update (the old pod serves until the n
    sign-in still works.
 4. In gitops, a second PR: `autopilot.peopleTls: true`, with `plainHttp.jwks` still on. Argo syncs people-dex first
    (`autopilot-people-dex`: Issuers and Certificates in wave 0, the Deployment in wave 1 once `people-dex-tls` exists; Dex
-   restarts, a few seconds, `Recreate` on the PVC). The gateway and read API Applications are separate; if one syncs before
-   the Secret exists its new pod waits in ContainerCreating on the mount while the old pod keeps serving. Sync
-   `autopilot-people-dex` first if both are out of sync.
+   restarts, a few seconds, `Recreate` on the PVC). The gateway and read API Applications are separate and must not roll
+   before Dex serves https: the Secret can exist while port 5557 is not yet listening, and a new gateway pod then starts and
+   reports ready on a failed first key fetch (only a warning). So sync `autopilot-people-dex` first, wait until its Deployment is
+   Ready, run the verified-https check from section 7 (`curl --cacert ... https://people-dex...:5557/dex/keys` returns a key
+   set), and only then sync the gateway and read API Applications (leave them out of sync or manual until then). Readiness does
+   not reflect the first key fetch, so this ordering is the guard; making readiness depend on it is a possible later change.
 5. Live check (section 7). Only then, in gitops, a third PR: `plainHttp.jwks` off. The render drops `AUTOPILOT_JWKS_ALLOW_HTTP`; the
    gateway refuses plain http for the key set from then on, so a regression to http would fail loudly at start.
 
@@ -115,14 +122,21 @@ Deployments roll with the default rolling update (the old pod serves until the n
   Clearance core. Until then the 5556 listener stays, so the I-28 exposure is reduced to those consumers, not removed. A
   NetworkPolicy ingress rule limiting 5556 to those namespaces is a cheap next step.
 - Rotation. Dex reads `tlsCert` and `tlsKey` at start (verify against v2.46.0 in the live check). After cert-manager renews the
-  leaf (day ~305 of 365) people-dex must be restarted, and the gateway reads the CA file once at start, which matters only if the CA is
-  ever re-issued (renews year 9). If an operator forgets, the old certificate expires at 365 days and the gateway's key fetches fail. Mitigations:
-  a calendar reminder (cheap), or a reloader (new dependency).
+  leaf (day ~305 of 365) people-dex must be restarted (a few seconds of interruption, section 6). If an operator forgets, the old
+  certificate expires at 365 days and the gateway's key fetches fail. Mitigations: a calendar reminder (cheap), or a reloader
+  (new dependency).
+- CA re-issue (renews year 9). The `people-dex-ca` Certificate sets `privateKey.rotationPolicy: Never`, so a re-issue keeps the
+  existing CA key and the new CA certificate verifies the same leaves (cert-manager 1.18+ would otherwise default to a new key).
+  Even so, the gateway and read API read `ca.crt` once at start: after any CA re-issue, restart people-dex (to pick up a leaf
+  chained to it), then restart the gateway and read API so they load the new `ca.crt`, in that order, and run the section 7 check.
 
 ## 9. Rollback
 
-- Before step 5: set `autopilot.peopleTls: false`. The URLs go back to http 5556, the https listener, certificate and mounts are
-  removed, nothing else changed. Dex restarts once. Tokens, the issuer and sign-in are unaffected throughout.
+- Before step 5: set `autopilot.peopleTls: false`, **staged**. Dex's Application would remove port 5557 while running gateway
+  and read API pods still use the https URL, so their key fetches would fail. Do it in two syncs: first sync the gateway and
+  read API Applications (they go back to http 5556, which Dex still serves until its own Application syncs) and wait for both
+  rollouts to finish; only then sync `autopilot-people-dex`, which removes the https listener, certificate and mounts. Dex
+  restarts once. Tokens and the issuer are unaffected; sign-in is interrupted only for that restart.
 - After step 5: also set `plainHttp.jwks: true` in the same PR (the check refuses one without the other).
 - The new gateway image is compatible with the old config (the setting is opt-in), so the image bump never needs rolling back for this.
 - Cert-manager objects can stay or be pruned; they do nothing without the listener.
@@ -135,8 +149,10 @@ Decisions:
    namespaces: trust-manager (new dependency; a `Bundle` publishes the CA as a ConfigMap to chosen namespaces, and a shared
    cluster CA could serve all in-cluster TLS) or committing the CA certificate (public material, never the key) to gitops as a
    ConfigMap, which cert-manager re-issuing would break. My recommendation: trust-manager, once.
-3. **Rotation.** Accept a manual people-dex restart yearly, or add a reloader?
+3. **Rotation.** Accept a manual people-dex restart yearly (and, at a CA re-issue, a restart of people-dex then the gateway and read API), or add a reloader?
 4. **Python gateway** is left on http. It is the default implementation; is any cluster still on it? If so a Python CA setting is a third PR.
+5. **Dex restart window.** Accept a few seconds of sign-in interruption at step 4 and at each leaf renewal, scheduled in a quiet
+   window? Avoiding it needs a second Dex replica and shared storage.
 
 Owner steps (all in gitops, none done here): tag the autopilot release (manager), then the three gitops PRs in section 6 and
 the live check in section 7. No secrets are created by hand at any step.
