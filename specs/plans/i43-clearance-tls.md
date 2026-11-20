@@ -102,7 +102,7 @@ The plain listener is never removed until step 6, so a client that has not moved
    (`CLEARANCE_URL`, `CLEARANCE_CA_FILE`); then, together, the admission policy's optional CA volume (apron), the plugin's
    `CLEARANCE_WAIT_CA_CONFIGMAP`, the agent's `waitJob.caConfigMap` and the wait URL. An in-flight wait Job keeps its old http URL and
    finishes; its next injection uses https. Last, observe-aws.
-6. When `clearance_http_requests` (or the NetworkPolicy flow logs) show nothing on 8080 from clients, set `tls.plainHttp: false`.
+6. When the NetworkPolicy flow logs (or the pods' access logs) show nothing on 8080 from clients, set `tls.plainHttp: false`.
    Not supported yet while the web UI, clearance-slack, clearance-grc or an HTTPRoute is on (they call over plain http and have no CA
    setting; the chart refuses it). NetworkPolicy rules for plain 8080 stay until then.
 
