@@ -98,8 +98,12 @@ any wait Job of the old shape that is still there is reported as out-of-band, in
 admission). The agent has no setting that accepts both shapes, so the safeguard is an empty scan set.
 
 **No old wait Job before each pin change (5b and 5c, and each rollback).** In every namespace the agent protects (on this
-core's clusters, hangar-prod's `app-gate-api-prod` and `app-backstage-prod` too), run
-`kubectl get jobs -l clearance.hangar.io/injected=wait`. Merge the change only when that is empty:
+core's clusters, hangar-prod's `app-gate-api-prod` and `app-backstage-prod` too), the owner does this first:
+- Drain the held changes. Every change held for people on a gated app is decided in Clearance (cleared, denied or
+  expired), so none is still held. Merge no release to a gated app until the pin change has rolled. A change that is still
+  held makes Argo inject its wait Job again on the next sync, in the old shape, after any scan.
+
+Only after that, run `kubectl get jobs -l clearance.hangar.io/injected=wait`. Merge the change only when that is empty:
 - Wait for a Job that is still active, including one whose pod is still Pending, to finish.
 - Delete a finished Job that is left behind. The hook's delete policy removes a Job that succeeded, but not one that
   failed. For example, hangar-prod had a Failed one 10 days old on 2026-11-21.
