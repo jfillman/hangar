@@ -92,7 +92,18 @@ Each step is its own gitops PR. Merge it, sync it, and check it before you start
 
 ### Step 5. Wait Jobs to https
 
-The policy pins one core URL and one shape, so the order matters.
+The policy pins one core URL and one shape, so the order matters. The agent's pin is exact as well: it accepts only the
+current shape (`agent/waitjob.go`, `waitVolume` wants exactly 2 volumes once `caConfigMap` is set). So at 5b and again at 5c,
+any wait Job of the old shape that is still there is reported as out-of-band, in Warn mode too (the scan does not depend on
+admission). The agent has no setting that accepts both shapes, so the safeguard is an empty scan set.
+
+**No old wait Job before each pin change (5b and 5c, and each rollback).** In every namespace the agent protects (on this
+core's clusters, hangar-prod's `app-gate-api-prod` and `app-backstage-prod` too), run
+`kubectl get jobs -l clearance.hangar.io/injected=wait`. Merge the change only when that is empty:
+- Wait for a Job that is still active, including one whose pod is still Pending, to finish.
+- Delete a finished Job that is left behind. The hook's delete policy removes a Job that succeeded, but not one that
+  failed. For example, hangar-prod had a Failed one 10 days old on 2026-11-21.
+- Hold no new change for people from that check until the agent and the sidecar have both rolled.
 
 - **5a. Policy first.** Set `clearance.gate.waitCAConfigMap: hangar-cluster-ca` (P1). This only widens the policy. A wait
   Job with or without the CA volume is admitted. Check: the live `clearance-protected-writes` contains
@@ -101,8 +112,11 @@ The policy pins one core URL and one shape, so the order matters.
 - **5b. The plugin mounts the CA.** Set the sidecar's `CLEARANCE_WAIT_CA_CONFIGMAP` and the agent's `waitJob.caConfigMap`
   together (P5). The agent's pin then expects the CA volume, and the policy already admits it. Check: render a held change
   (use a scratch protected namespace whose environment is protected, section 7). The injected Job has volume and mount
-  `clearance-ca` at `/etc/clearance-ca`, and the agent does not report it as out-of-band. Rollback: unset both. Wait until
-  no wait Job that uses the CA mount is still running, then go on.
+  `clearance-ca` at `/etc/clearance-ca`, and the agent does not report it as out-of-band. Rollback: unset both, after the
+  check above. Before 5a is rolled back or the Bundle is removed, wait until no Job with the `clearance-ca` volume is left
+  unfinished: `kubectl get jobs -l clearance.hangar.io/injected=wait -o json` in each namespace, with no Job that has the
+  volume and has neither a `Complete` nor a `Failed` condition. That includes a Job whose pod is Pending or not yet created.
+  Delete the finished ones, then go on.
 - **5c. The URL.** Set `clearance.gate.url: https://clearance-core.clearance-system.svc:8443`. One render moves the sidecar,
   the wait Job, the policy's pinned URL and the agent's pin together. Check: a held change clears end to end through an
   https wait Job (section 7). Rollback: set the http URL again.
@@ -148,7 +162,8 @@ The clearance core and API reload a renewed leaf without a restart. people-dex d
 ## 6. Rollback order, overall
 
 Go back down the steps in reverse: 7, then 6, then 5c, 5b and 5a, then 4, 3, 2 and 1. Never delete the Bundle or its
-ConfigMap while a wait Job that mounts it can still be injected or is still running. A pod that mounts a missing ConfigMap
+ConfigMap while a wait Job that mounts it can still be injected, or while one is unfinished (active or pending; step 5b).
+At each pin change, follow the empty-scan-set check in step 5. A pod that mounts a missing ConfigMap
 sits in ContainerCreating, and the sync stays held.
 
 ## 7. Verification gap on hangar-dev
