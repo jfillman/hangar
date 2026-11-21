@@ -103,7 +103,8 @@ core's clusters, hangar-prod's `app-gate-api-prod` and `app-backstage-prod` too)
   expired), so none is still held. Merge no release to a gated app until the pin change has rolled. A change that is still
   held makes Argo inject its wait Job again on the next sync, in the old shape, after any scan.
 
-Only after that, run `kubectl get jobs -l clearance.hangar.io/injected=wait`. Merge the change only when that is empty:
+Only after that, run `kubectl --context <cluster> get jobs -A -l clearance.hangar.io/injected=wait` on every cluster whose
+agent the change reaches (hangar-dev and hangar-prod). Merge the change only when both are empty:
 - Wait for a Job that is still active, including one whose pod is still Pending, to finish.
 - Delete a finished Job that is left behind. The hook's delete policy removes a Job that succeeded, but not one that
   failed. For example, hangar-prod had a Failed one 10 days old on 2026-11-21.
@@ -118,7 +119,7 @@ Only after that, run `kubectl get jobs -l clearance.hangar.io/injected=wait`. Me
   (use a scratch protected namespace whose environment is protected, section 7). The injected Job has volume and mount
   `clearance-ca` at `/etc/clearance-ca`, and the agent does not report it as out-of-band. Rollback: unset both, after the
   check above. Before 5a is rolled back or the Bundle is removed, wait until no Job with the `clearance-ca` volume is left
-  unfinished: `kubectl get jobs -l clearance.hangar.io/injected=wait -o json` in each namespace, with no Job that has the
+  unfinished: `kubectl --context <cluster> get jobs -A -l clearance.hangar.io/injected=wait -o json`, with no Job that has the
   volume and has neither a `Complete` nor a `Failed` condition. That includes a Job whose pod is Pending or not yet created.
   Delete the finished ones, then go on.
 - **5c. The URL.** Set `clearance.gate.url: https://clearance-core.clearance-system.svc:8443`. One render moves the sidecar,
