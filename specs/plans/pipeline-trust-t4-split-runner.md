@@ -229,10 +229,13 @@ No other reader. `git grep` found none in glidepath-api, Tower, Backstage, Clear
     account can create a TaskRun);
   - the named step container (`step-check`, `step-evaluate`).
 
-  It takes the last complete set whose chunks match its digest, and it reads no ConfigMap for those two gates. This adds no right,
-  audience, endpoint or availability dependency, and it is **narrower than today**: before, any runner pod could write any run's
-  `gate-report-<run>`; now only the gate's own pod, in its own step, supplies the report. A forged set printed earlier loses to the
-  real one, and the report's own text sits inside the base64, so it cannot pose as a line.
+  The step also writes the set's digest to a `report-digest` Task result (log mode only). That result is a file only the step's script
+  writes; text the app controls only ever reaches stdout. The reader takes **only the set that result names**, checks that its chunks
+  are all there and add up to it, and reads no ConfigMap for those two gates. So it fails closed: if the gate died before printing its
+  report (no result), or the named set is cut or altered, no report is posted, the comment falls back to the summary, and no other set
+  in the log is ever taken, wherever it sits (CodeRabbit on hangar#145). This adds no right, audience, endpoint or availability
+  dependency, and it is **narrower than today**: before, any runner pod could write any run's `gate-report-<run>`; now only the
+  gate's own pod, in its own step, supplies the report.
 
   The costs:
   - The report lives as long as the pod. Pruning a PipelineRun deletes its pods and its owned ConfigMaps alike, so in practice the
@@ -284,10 +287,12 @@ returns `no`, and `patch` and `delete` do too. A real api-compat and policy-vali
 
 ### What #279 needs before Deny (not flipped)
 
-- **`release-record-writes` (`recordWritesActions`):** conditions 3 to 5 above. Deny also refuses the `direct` ledger write (a
-  `pipeline-runner` write to a release record), so condition 1 is required too.
+- **`release-record-writes` (`recordWritesActions`):** conditions 1 and 3 to 5 above. Deny refuses the `direct` ledger write (a
+  `pipeline-runner` write to a release record), so the ledger switch and its drain both come first.
 - **`gate-report-writes` (`gateReportActions`):** after condition 2, the only gate-report writer is `clearance-gate`. Under Deny, a
-  `pipeline-runner` write to any ConfigMap other than `gate-report-*` is refused, so conditions 1 and 2 are both required. One edge:
+  `pipeline-runner` write to any ConfigMap other than `gate-report-*` is refused, so conditions 1, 2 **and 3** are required: until
+  the drain is over, a run that resolved its Tasks before the switches still writes the ledger directly (and a report ConfigMap),
+  and Deny would refuse that write. One edge:
   `clearance-gate` adds the owner reference only when its `kubectl get pipelinerun` succeeds (`clearance-gate.yaml:810,815`). If
   that lookup fails under Deny, the report write is refused and the comment shows the summary. That is acceptable for a display
   artifact, but the Audit window should show no owner-less write.
