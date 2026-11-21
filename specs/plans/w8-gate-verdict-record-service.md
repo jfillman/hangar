@@ -94,8 +94,8 @@ is no worse than today's direct path, which has no ordering at all, and the ledg
 every gate's check run (PROM-03), so a stale ledger entry can delay or prematurely ask for a promotion, never pass a red gate.
 
 **Mixed writers during the switch.** The direct path writes no `gateRun.` key. While `promotion.gateLedger.writer` changes
-(either way), a run whose Task was resolved before the change can overlap one resolved after it, for at most one finally
-window (`timeouts.finally`, 4 m). In that window an older API run can overwrite a newer direct run's verdict. The direct path
+(either way), a run whose Task was resolved before the change keeps that Task's writer for its whole life, so the overlap
+lasts up to one `timeouts.pipeline` (18 m in the gate Pipelines) after the switch. In that window an older API run can overwrite a newer direct run's verdict. The direct path
 is not changed to write the marker: it is the path being retired, and changing it would make step 1 more than additive. Same
 backstop as above; and the owner can switch when no release PR's gates are running.
 
@@ -148,7 +148,7 @@ Every step is a normal PR; each is safe to merge alone (glidepath main deploys t
 |---|---|---|
 | 1 | **Add the service** (glidepath): the endpoint, the `glidepath-api-gate-ledger` Role, the `gate-ledger-writes` policy, the task's API path behind catalog `promotion.gateLedger.writer` (`direct` default, `api`). | `direct` renders the task exactly as today; the endpoint has no caller. |
 | 2 | **Switch comment-pr-check-result to call it:** `promotion.gateLedger.writer: api` (glidepath default, after the API image with the endpoint is live; the image bump lands after the merge). Watch one release of each gate kind: `gate ledger: recorded` in each `promotion-ready` log, `gateRun.*` keys in the record. | The runner keeps its RBAC; rolling back is the value. |
-| 3 | **W-8 step 6:** remove `create, patch, delete` on configmaps from `pipeline-runner` (keep get, list). | No runner task writes a ConfigMap after step 2 and the step-3 mapping (gate reports moved with `clearance-gate`; check `api-compat-gate` and `policy-validation-gate`, which still write `gate-report-*` as runner: they need the same move or an exception before this step). |
+| 3 | **W-8 step 6:** remove `create, patch, delete` on configmaps from `pipeline-runner` (keep get, list). **Drain first:** not before one `timeouts.pipeline` (18 m) has passed since step 2 synced, and only when no gate PipelineRun created before that sync is still unfinished (`kubectl get pipelineruns -A` filtered on `creationTimestamp` and the `Succeeded` condition `Unknown`), because a run whose Task was resolved before the switch still writes directly. | No runner task writes a ConfigMap after step 2 and the step-3 mapping (gate reports moved with `clearance-gate`; check `api-compat-gate` and `policy-validation-gate`, which still write `gate-report-*` as runner: they need the same move or an exception before this step). |
 | 4 | **#279 to Deny,** its own step: `recordWritesActions` and `gateReportActions` to `[Deny]`, hangar-dev first, prod on the owner's OK. | Audit has shown no runner record write since step 2. |
 
 Rollback: step 2 is the value; step 3 re-adds the verbs; step 4 goes back to Audit.
