@@ -1,5 +1,11 @@
 # I-1: two release steps in one flow overwrite one release record
 
+> **Owner decision, 2026-11-21 (strip Y-41): (a).** "(a) is enough for now." Ship only the interim guard: `validateFlows` refuses
+> any flow with two release steps, naming the flow and both steps (glidepath#287). **(b), per-environment record names
+> (option 1 below), stays deferred**, not rejected: it is what would lift the guard. With the guard live, no new flow can make a second
+> release step hit #279's immutability rule (our reading; confirm before switching #279 to Deny). Fleet check for (a): the 14 onboarded apps' `cicd.yaml` each have at most one release
+> step per flow, so the guard refuses none of them. The rest of this note is the original design, unchanged.
+
 Written 2026-11-20. Design note only: nothing here is built. Owner review first. Related: strip W-8
 ([pipeline-trust-t4-split-runner.md](pipeline-trust-t4-split-runner.md)), glidepath#279 (admission policies) and #281 (task mapping).
 
