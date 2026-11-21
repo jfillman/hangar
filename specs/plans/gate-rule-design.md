@@ -1,7 +1,7 @@
 # A platform rule for Clearance's Argo CD gate
 
-Written 2026-11-19. Strip W-42, owner decision Y-32 (option A). Status: design note, no code, nothing applied. It
-replaces the W-35 note in hangar PR #131 (`gate-switch-design.md`), which proposed a platform list of app and
+Written 2026-11-19. Strip W-42, owner decision Y-32 (option A). Status: design note, no code, nothing applied. The owner answered the open questions on 2026-11-21 (see
+"Decisions"); question 6 is still open as board ask A-16. It replaces the W-35 note in hangar PR #131 (`gate-switch-design.md`), which proposed a platform list of app and
 environment pairs in Hangar's `cluster.yaml`. The owner chose a different shape: a rule that lives in Clearance's own
 configuration.
 
@@ -79,6 +79,8 @@ exempt:
 - Across `select` entries the combination is **OR**: matching any entry is enough.
 - An entry with none of the three keys is invalid and refused (it would match everything). To gate everything in a
   project, write `projects: [x]`; to gate everything the agent can see, write `projects: ["*"]` on purpose.
+- A project-only entry is valid (decision 2). `projects: [gate-api]` gates gate-api in every environment. The matcher
+  does not require `namespaces` or `labels`.
 
 Why AND inside and OR across: one entry can say "this project, but only its prod namespaces", and the next entry can
 add a second project. The rule grows by appending an entry, and no entry can accidentally widen another.
@@ -86,8 +88,8 @@ add a second project. The rule grows by appending an entry, and no entry can acc
 The rule applies only inside the agent's existing limits: `--projects` (the Argo CD projects the agent reads) and
 `--optin-namespaces` (the namespaces it holds RBAC for). A rule-matched Application outside either is `blocked`, with
 the reason in the status ConfigMap, and still reported as a protected pair, exactly as a blocked annotated one is today
-(`docs/gate.md`, "What is never switched"). The rule never widens what the agent may touch. Open question 1 covers what
-that means for growth.
+(`docs/gate.md`, "What is never switched"). The rule never widens what the agent may touch. Decision 1 covers what that
+means for growth: the owner accepted it for step one.
 
 ### Precedence
 
@@ -126,12 +128,12 @@ An exemption is an `exempt` entry in the same rule file. Fields:
 |---|---|---|
 | `application` | yes | glob on `<namespace>/<name>` of the Application. Same matcher as the deny list. |
 | `reason` | yes | free text, 10 to 500 characters. Goes into the record. |
-| `expires` | yes | a date or RFC 3339 time. At most `--gate-exempt-max` (default 90 days) from now; a longer one is refused. |
+| `expires` | yes | a date or RFC 3339 time. At most `--gate-exempt-max` (default 90 days) from now; a longer one is refused. No cooling-off period: a repeat exemption for the same Application is allowed (decision 5). |
 | `ref` | no | a strip, ticket or PR. |
 
 "Who" is the git history of the gitops change that added the entry (author, reviewer, merge), not a field a person types.
 The agent cannot see git, so its record names the rule file's digest and the entry; the evidence of who is the pull
-request. Open question 4 asks whether to stamp an `approvedBy`.
+request. There is no `approvedBy` field (decision 4): the pull request is the record of who.
 
 An invalid entry (no reason, no expiry, expiry too far out, an empty glob) is refused as a whole. The agent ignores it,
 so the Application stays gated, and posts one exception.
@@ -144,6 +146,12 @@ so the Application stays gated, and posts one exception.
 - An exempt Application that is already gated by the rule alone is released by the normal removal order: report the
   removal to the core, label off, put the original source back, remove the merged grant. The reason on the report names
   the exemption. If the core cannot be reached, nothing is released (existing behaviour).
+- **Statically protected environments (decision 6, still open).** The core's `CLEARANCE_PROTECTED_ENVIRONMENTS` keeps a
+  pair protected whatever the agent reports (`static_removed`). The planned behaviour is that the agent does not
+  release an exemption's Application when its pair is static. The core, not the agent, enforces it: the core refuses the
+  removal report when the pair is static and the reason is an exemption. The agent leaves the Application gated and
+  shows `refused: static` in its status. This is the recommendation and the fallback, not an owner decision; see
+  "Decisions", item 6.
 
 ### Records
 
@@ -164,7 +172,7 @@ A `protection.report` exists only when a gated Application is released. An exemp
 gated produces no release and so no report, which would leave it unrecorded. So the agent **honours no exemption until
 the core accepts the `gate-exemption` kind**. On a core that refuses it, every exemption is ignored, the Applications
 stay gated (fail closed), and the agent posts one exception saying why. Exemptions are enabled only after the core
-change ships. Open question 3.
+change ships. The owner chose the new kind (decision 3), so this is a two-repo change.
 
 ### Expiry
 
@@ -246,11 +254,16 @@ nothing else: no apron, no Airframe, no Hangar, no tenant-onboarding Application
 rule behaves exactly as today. This is the standing rule that Clearance installs on its own.
 
 **Hangar (the platform).** Owns only the values. apron's `cluster.yaml` gets a pass-through,
-`clearance.gate.agent.rule`, rendered unchanged into the chart's `gateRule`. apron does not interpret, derive or
-validate the rule's contents; the chart and the agent do (the chart fails render on a bad rule, the agent refuses it at
-start). Hangar also owns two things that concern its own Applications and not the rule: the `preservedFields` and
-`ignoreApplicationDifferences` entries in its ApplicationSet, and the `protectedNamespaces` list that sizes the agent's
-RBAC.
+`clearance.gate.agent.rule`, rendered unchanged into the chart's `gateRule`. apron does not interpret or validate the
+rule's contents; the chart and the agent do (the chart fails render on a bad rule, the agent refuses it at start). The
+one thing apron derives is the `protectedNamespaces` ceiling that sizes the agent's RBAC: it reads the literal
+namespaces in the rule's entries (decision 1) and adds them. A glob namespace gives no literal, so it needs its names
+listed by hand. Hangar also owns the `preservedFields` and `ignoreApplicationDifferences` entries in its
+ApplicationSet, which concern its own Applications and not the rule.
+
+Hangar's old path goes away (decision 7, section 6): `clearance.gate.apps`, `gate.agent.projects`, the ApplicationSet's
+app and environment regexes and its plugin source. The rule replaces them. The two paths are not kept side by side
+after the migration.
 
 The line: if the product needs it to work on a bare cluster, it is Clearance's. If it exists because Hangar generates
 Applications from an ApplicationSet, it is Hangar's.
@@ -310,6 +323,38 @@ rule decides which Applications the agent works on; it does not change who may l
 6. **hangar-prod.** The same ladder, owner-merged: empty rule, then one project (`gate-api`, already gated by the old
    lists), then a namespace pattern. Overlap with the old regexes introduces no gap: an Application both gate is gated
    once.
+7. **Migrate Hangar off the old path (decision 7).** Within W-42. The order is fixed so nothing is ungated at any point:
+   render the rule first, confirm coverage, then remove the old lists. Do dev first, then prod.
+   1. **Render the rule next to the old lists.** In the cluster's `cluster.yaml`, add the rule under
+      `clearance.gate.agent.rule` with one entry for each app the old lists gate. hangar-prod today: `apps:
+      [gate-api, backstage]`, `agent.projects: [gate-api, backstage]`, `agent.protectedNamespaces:
+      [app-gate-api-prod, app-backstage-prod]`, so entries `projects: [gate-api]` and `projects: [backstage]` (or
+      `namespaces` where a project holds more than the old apps). hangar-dev has no `apps` list and runs with
+      `tenantPlugin: false`, with `projects: [w40-optin-test]`; its entry is that project. Render with apron and
+      commit the render. Old lists stay in place. An Application both gate is gated once.
+   2. **Confirm coverage.** For every Application the old lists gate, read the agent's status ConfigMap and check that
+      the rule selects it (reason `rule`) and that the namespace is still labelled `clearance.hangar.io/protected=true`.
+      Compare the set of protected pairs the core holds before and after: they must be equal. Do not go on until they
+      are. A rule-matched Application that shows `blocked` means a namespace is missing from the ceiling; fix that first.
+   3. **Remove the old lists, in this order, one render and one pull request each, confirming after each.**
+      1. `clearance.gate.agent.projects`. The agent now reads its projects from the rule's `projects` keys. An
+         Application in a project the rule does not name is no longer read, so confirm step 2 covered every project.
+      2. `clearance.gate.apps`, then `clearance.gate.canary.apps` if set. `gate.apps` feeds
+         `CLEARANCE_GATE_APP_REGEX`, which the tenant-onboarding ApplicationSet uses to decide which Applications get the
+         plugin source. The Applications are gated by the rule from here on, so the source switch moves to the agent.
+      3. The ApplicationSet regexes and plugin source: the `regexMatch` condition on `CLEARANCE_GATE_ENV_REGEX` and
+         `CLEARANCE_GATE_APP_REGEX` and the `plugin: name: CLEARANCE_PLUGIN_NAME` source in
+         `02-argocd-apps/tenant-onboarding/chart/applicationset.tmpl.yaml`. Remove them last. Until the agent has
+         switched an Application, the ApplicationSet's plugin source is what gates it; removing it earlier would
+         release the Application. Confirm each Application is `switched` first. Add `preservedFields` and
+         `ignoreApplicationDifferences` here, so the ApplicationSet does not wipe the agent's marker (section 3).
+      4. `clearance.gate.tenantPlugin` (a switch for the regex path, so it has no job left) and any of
+         `gate.agent.protectedNamespaces` that the rule's literal namespaces now derive.
+   4. **Confirm again after each removal.** The protected-pair set at the core must not shrink. A shrink means stop and
+      put the removed list back.
+   5. **Update the docs that name the old path:** apron `README.md` (the `clearance.gate.*` rows),
+      `templates/TOKENS.md`, and hangar `docs/policy/business-rules.md` (CLR-20 and the "only gate-api is gated" row).
+   The rollback at any point is to put the old list back and render; nothing in the migration deletes the rule.
 
 ### Tests
 
@@ -329,6 +374,10 @@ Unit (agent, `providers/argocd/agent`, table-driven in the style of `optin_test.
 - A pair shared by two Applications; a blocked rule-matched Application still reported as a pair.
 - Chart: byte-identical default render; `gateRule` with `optIn.enabled: false` fails render; checksum annotation.
 - Core: the `gate-exemption` kind is accepted, validated and shown in the coverage statement.
+- Static pair (fallback for decision 6): the core refuses a removal report whose pair is static and whose reason is an
+  exemption; the agent leaves the Application gated and shows `refused: static`.
+- Migration (apron): with the rule rendered and the old lists still present, the protected pair set is unchanged; with
+  the old lists removed, it is still unchanged; `tools/charttest` and `tests/run.sh` pass with the old keys gone.
 
 Live rehearsal on hangar-dev (a script, like the W-40 rehearsal; no prod writes):
 
@@ -345,37 +394,38 @@ Live rehearsal on hangar-dev (a script, like the W-40 rehearsal; no prod writes)
 8. Stop the core mid-release: nothing released.
 9. As a tenant identity, try to write the ConfigMap and set the exempt annotation: refused or ignored.
 
-## Open questions for the owner
+## Decisions (owner, 2026-11-21)
 
-1. **Namespace growth.** The agent's RBAC to label namespaces (`get, patch` on named Namespace objects) and its
-   per-namespace scan Roles are lists of names rendered from `protectedNamespaces`. RBAC cannot select by pattern. So a
-   rule that matches a new `app-x-prod` namespace still needs that name in `protectedNamespaces` in Hangar's values, or
-   the Application is `blocked` (reported as a pair, not switched) with the exact reason in the status. Do you accept
-   that for the first step? Recommended: yes. The rule decides what is gated, the list is a safety ceiling, and apron
-   derives the ceiling from the rule's literal namespaces. The alternative is a cluster-wide Namespace `patch` for the
-   agent, constrained by a ValidatingAdmissionPolicy to the protected label only. It removes the ceiling but widens
-   what a compromised agent reaches; the W-35 note advised against widening.
-2. **Project-only entries.** `projects: [gate-api]` gates gate-api in every environment. Is that wanted, or must every
-   entry also carry `namespaces` or `labels` (the matcher can require it)?
-3. **A new core exception kind (`gate-exemption`)** or no exemptions at all. Existing records cannot carry an exemption
-   that releases nothing, so the choice is the new kind or none. Recommended: the new kind, which also puts the gap in
-   the coverage statement. It makes this a two-repo change.
-4. **"Who" on an exemption.** Git history is the source today. Should Hangar stamp the approver into the rendered rule (a
-   required `approvedBy`), or is the pull request enough?
-5. **Limits.** Maximum exemption 90 days, warning at 7 days, at most 3 rule-caused releases per hour: right numbers?
-   Should a repeat exemption for the same Application be refused for a cooling-off period?
-6. **Statically protected environments.** The core's `CLEARANCE_PROTECTED_ENVIRONMENTS` still protects a pair whatever
-   the agent reports (`static_removed`). An exemption in such an environment releases the Application, but the core
-   keeps the pair. Should the agent refuse an exemption there instead?
-7. **The old Hangar path.** `clearance.gate.apps`, `gate.agent.projects` and the ApplicationSet regexes gate
-   ApplicationSet-made Applications today through the plugin source in the template. They keep working. When, and
-   whether, does the rule replace them? Until then the two paths can both gate one Application, which is harmless but
-   confusing.
+The owner answered the seven questions on 2026-11-21. Six are decided and one is open.
+
+1. **Namespace growth: accepted for step one.** The `protectedNamespaces` list is a safety ceiling. The rule decides
+   what is gated. apron derives the ceiling from the rule's literal namespaces, so a rule that names a namespace needs
+   no second edit. A rule that matches by glob still needs its names listed, or the Application is `blocked` (reported
+   as a pair, not switched) with the reason in the status. The cluster-wide Namespace `patch` alternative is not taken.
+2. **Project-only entries are allowed.** `projects: [gate-api]` gates gate-api in every environment. The matcher does
+   not require `namespaces` or `labels`.
+3. **New core exception kind: yes.** `gate-exemption` joins the core's `deploy.exception` kinds. This makes W-42 a
+   two-repo change (clearance and the core). Exemptions are not enabled until the core ships it.
+4. **"Who" is the pull request.** There is no `approvedBy` field. The git history of the gitops change is the record.
+5. **Limits: right as written.** 90-day maximum exemption, 7-day warning, at most 3 rule-caused releases per hour. No
+   cooling-off period: a repeat exemption for the same Application is allowed.
+6. **Statically protected environments: OPEN, board ask A-16.** The owner was unsure and asked for more detail. The
+   core's `CLEARANCE_PROTECTED_ENVIRONMENTS` keeps a pair protected whatever the agent reports. An exemption in such an
+   environment would release the Application at the agent while the core still holds the pair, so the pair and the
+   Application disagree. **Recommendation:** refuse exemptions for pairs on the core's static list, and enforce it at
+   the core. The core refuses the removal report when the pair is static and the reason is an exemption. The agent
+   then leaves the Application gated and shows `refused: static` in its status. Enforcing at the core means a
+   misconfigured agent cannot get around it. **Fallback if the owner does not answer:** build the recommendation. It
+   is the safe direction: it only keeps something gated.
+7. **The old Hangar path: migrate now.** Within W-42 the rule replaces `clearance.gate.apps`, `gate.agent.projects`,
+   the ApplicationSet regexes and the plugin source. The two paths are not kept side by side. The order is in
+   section 6, step 7: render the rule, confirm coverage, then remove the old lists.
 
 ## What the owner does by hand
 
+- Answer board ask A-16 (decision 6), or let the fallback stand.
 - Review and merge the clearance, core and apron pull requests, and the gitops changes for dev and prod (prod: owner
-  only).
+  only), including each removal step of the migration (section 6, step 7).
 - Pin the new Clearance image and chart in `cluster.yaml` after release.
 - After the first non-empty rule on prod, check one Application and its namespace by hand.
 - Nothing in the tenants repos or Airframe.
