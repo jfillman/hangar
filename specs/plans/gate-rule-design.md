@@ -87,9 +87,21 @@ add a second project. The rule grows by appending an entry, and no entry can acc
 
 The rule applies only inside the agent's existing limits: `--projects` (the Argo CD projects the agent reads; the chart
 requires it, `["*"]` for all, and the agent lists Applications and keeps those in it, it does not discover projects) and
-`--optin-namespaces` (the namespaces it holds RBAC for). A rule-matched Application outside either is `blocked`, with
-the reason in the status ConfigMap, and still reported as a protected pair, exactly as a blocked annotated one is today
-(`docs/gate.md`, "What is never switched"). The rule never widens what the agent may touch. Decision 1 covers what that
+`--optin-namespaces` (the namespaces it holds RBAC for). The two limits behave differently, and the order is fixed:
+
+1. **Project filter first.** The agent drops an Application outside `--projects` before it classifies it
+   (`classify`: "an Application outside the agent's projects is not seen at all"). The rule is never evaluated for it,
+   and nothing is reported or marked `blocked`. The one exception is an Application the agent already switched that has
+   left the projects: it is put back like an opt-out (existing). So the project ceiling is guarded at **render time**,
+   not at run time: apron fails the render when an entry's literal `projects` value is not in the ceiling. A
+   namespace-only or label-only entry names no project, so apron cannot check it; its projects must be in the explicit
+   list (section 6, step 7.3.1), and the migration's coverage check (step 7.2) is what catches a miss.
+2. **Namespace ceiling second.** An Application that passes the project filter and matches the rule, but whose
+   destination namespace is not in `--optin-namespaces`, is `blocked`, with the reason in the status ConfigMap, and
+   still reported as a protected pair, exactly as a blocked annotated one is today (`docs/gate.md`, "What is never
+   switched").
+
+The rule never widens what the agent may touch. Decision 1 covers what that
 means for growth: the owner accepted it for step one.
 
 ### Precedence
@@ -345,6 +357,8 @@ rule decides which Applications the agent works on; it does not change who may l
       the rule selects it (reason `rule`) and that the namespace is still labelled `clearance.hangar.io/protected=true`.
       Compare the set of protected pairs the core holds before and after: they must be equal. Do not go on until they
       are. A rule-matched Application that shows `blocked` means a namespace is missing from the ceiling; fix that first.
+      An Application the old lists gate that does not appear in the status at all is in no project of the ceiling (the
+      agent does not see it): add its project to the project list first.
    3. **Remove the old lists, in this order, one render and one pull request each, confirming after each.**
       1. `clearance.gate.agent.projects` **stays, as the agent's project ceiling.** The agent does not discover projects:
          the chart requires `argocd.projects` and the agent reads only Applications in it. A namespace-only or
