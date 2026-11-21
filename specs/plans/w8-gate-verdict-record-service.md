@@ -77,7 +77,7 @@ The task's `status`, `pr-number`, `revision` and `gate-name` params are not sent
 
 ## 5. Idempotency: one write per PipelineRun
 
-Beside the verdict, the same patch writes `gateRun.<sha12>.<gate>` = `<creationTimestamp> <pipelinerun name>`
+Beside the verdict, the same patch writes `gateRun.<sha12>.<gate>` = `<creationTimestamp> <pipelinerun name> <uid>` (the uid tells a run from a later one recreated under the same name)
 (a new key; nothing reads `gate.` keys by a prefix it matches). Before writing, glidepath-api reads it:
 
 - same run: `already-recorded`, nothing written (a retried call, a replay);
