@@ -93,8 +93,10 @@ requires it, `["*"]` for all, and the agent lists Applications and keeps those i
    (`classify`: "an Application outside the agent's projects is not seen at all"). The rule is never evaluated for it,
    and nothing is reported or marked `blocked`. The one exception is an Application the agent already switched that has
    left the projects: it is put back like an opt-out (existing). So the project ceiling is guarded at **render time**,
-   not at run time: apron fails the render when an entry's literal `projects` value is not in the ceiling. A
-   namespace-only or label-only entry names no project, so apron cannot check it; its projects must be in the explicit
+   not at run time: apron fails the render when an entry's `projects` value is not in the ceiling. apron cannot expand
+   a glob, so a glob value (for example `team-*`) passes only when the explicit ceiling list holds the same glob or
+   `*`; otherwise the render fails and names the entry. A literal value passes when the ceiling holds it, the same glob
+   that matches it, or `*`. A namespace-only or label-only entry names no project, so apron cannot check it; its projects must be in the explicit
    list (section 6, step 7.3.1), and the migration's coverage check (step 7.2) is what catches a miss.
 2. **Namespace ceiling second.** An Application that passes the project filter and matches the rule, but whose
    destination namespace is not in `--optin-namespaces`, is `blocked`, with the reason in the status ConfigMap, and
@@ -200,15 +202,37 @@ asked, so if the platform adds an actively exempt pair to that list, the next an
 re-asks for every honoured exemption on every rule reload, on any key change, and at least every 5 minutes
 (`--gate-exemption-recheck`, default 5m). A refusal revokes the exemption: the agent re-gates the Application in the
 normal add order and posts the `expired` state with reason `revoked`. The revocation window is therefore at most the
-recheck interval. If the core cannot be reached at a recheck, the last accepted answer stays for one more interval and
-is then dropped (fail closed: the Application is re-gated). Only an accepted
+recheck interval. If the core cannot be reached at a recheck, the acceptance is dropped at once and the Application is
+re-gated (fail closed, no retention). The bound is exactly one recheck interval: the longest an exemption can outlive
+a change at the core, or the core's absence, is the time to the next recheck. Only an accepted
 exemption then produces the `active`, `expiring` and `expired` states below. Exemptions are enabled only after the core
 change ships. The owner chose the new kind (decision 3), so this is a two-repo change.
+
+### Re-gating while the core is down
+
+**What the code does today.** The agent's add order starts with the core: `reportPairs` reports the protected pairs, and
+a new Application is not switched until `pairAccepted` says the core took its pair (`providers/argocd/agent/optin.go`,
+"A pair is added at the core before its Application is switched"; status `waiting for the core to take its pair`). With
+the core down, a new Application therefore waits ungated. For a first gating that is the existing, accepted window
+(section 5, "Core down").
+
+**What this design needs.** A revoked, dropped or expired exemption re-gates an Application that was just released from
+the gate, and the core being down is exactly when a revocation is dropped for lack of an answer. The re-gate must not
+wait for the core, or "fail closed" would mean ungated until the core returns. So for a **re-gate only** (the Application
+was released by an exemption, or an exemption's acceptance is dropped) the agent gates locally first: switch, grant,
+then label, with no `pairAccepted` wait, and queues the pair report in its state ConfigMap, delivering it when the core
+is back (retry each pass). A first gating of a never-gated Application keeps today's order, core first. To confirm
+before build: that the agent can write the merged grant and label the namespace without a core call (the label needs
+the grant active and valid, section 5, "Admission"), and that the queued report survives an agent restart.
+
+**Code change, on the W-42 build list.** This reverses the core-first order for re-gates, so it is a change to
+`optin.go`, not only new code: a re-gate path that skips `pairAccepted`, a persisted report queue, and tests (a re-gate
+with the core down gates locally and delivers the report on return; a first gating still waits for the core).
 
 ### Expiry
 
 When `expires` passes (the agent's clock, no grace), the exemption stops applying on the next pass. The rule gates the
-Application again: switch, grant, then label, in the normal add order, which starts by reporting the pair to the core.
+Application again: switch, grant, then label. See "Re-gating while the core is down" below for the order.
 The agent posts `expired` once. An expired entry left in the file is ignored and reported once per 24 hours as a stale
 `gate-exemption`, so the platform removes it. The agent never edits the file, and never renews an exemption; renewing is
 a pull request that changes the date.
@@ -240,7 +264,7 @@ The transitions. "Gated" means rule or annotation, non-exempt, not denied.
 | Annotation removed, rule does not match | Released, as today. |
 | Exemption added for a rule-gated, unannotated Application | Released as above, with the exemption in the reason; a `gate-exemption` active record. |
 | Exemption added for an annotated Application | Stays gated by the annotation. Recorded as active but ineffective. |
-| Exemption expires | Gated again by the rule (add order). |
+| Exemption expires, or its acceptance is revoked or dropped | Gated again by the rule: switch, grant, label locally, pair report queued if the core is down (section 2). |
 | The rule file cannot be read or is invalid while running | **Keep the last good rule.** Nothing is released: the removal order only runs for an Application the agent has positively decided to release. One exception is posted, at most once per 24 hours. |
 | The agent restarts and the rule file cannot be read or is invalid | The agent keeps a copy of the last good rule (and its digest) in its state ConfigMap, beside its other state, and uses that copy. With no file and no copy it **does not become ready** and gates nothing new; it never starts with an empty rule when a rule is configured. Releases are not made. One exception is posted. Because the chart renders the file from a value it has already validated, this needs a failed mount or a bad hand edit of the ConfigMap. |
 | A pair is shared by two Applications and one is released | As an opt-out of one of two Applications today: the set does not change, the removal is still recorded, and the other Application is named. |
@@ -323,7 +347,9 @@ rule decides which Applications the agent works on; it does not change who may l
   not gated until the agent returns (the same window a new annotated one has today). The core marks the agent's report
   stale after 15 minutes and does nothing else with it (existing).
 - **Core down.** No removal is acted on and no new Application is switched, because a pair is added at the core before
-  its Application is switched (existing). Nothing is released; new gating waits.
+  its Application is switched (existing). Nothing is released; new first gating waits. An exemption whose acceptance
+  cannot be rechecked is dropped at once and its Application is re-gated locally, with the pair report queued (section
+  2, "Re-gating while the core is down").
 - **Rule invalid or unreadable.** Last good rule kept, from the state ConfigMap across a restart; one exception. Never a
   release. With no good rule anywhere the agent stays not ready, so a new rule-matched Application waits, in the same
   window as agent down. Admission cannot cover it: it does not select an unlabelled namespace.
@@ -343,7 +369,8 @@ rule decides which Applications the agent works on; it does not change who may l
 ### Order
 
 1. **Clearance PR (code, behind the flag).** `--gate-rule-file`, the matcher, `ruled` and exemption handling, the
-   release-rate guard, the records, the chart value, docs. With no file, nothing changes: a render with no `gateRule` is
+   release-rate guard, the records, the chart value, docs, and the re-gate path that does not wait for the core with a
+   queued pair report (an `optin.go` order change, see "Re-gating while the core is down"). With no file, nothing changes: a render with no `gateRule` is
    byte-identical to today's (`tools/charttest` pins that).
 2. **Core PR (small).** The `gate-exemption` kind. Exemptions are not enabled anywhere until it ships; an agent on a core
    that refuses the kind ignores every exemption (Applications stay gated) and says so once.
@@ -425,14 +452,18 @@ Unit (agent, `providers/argocd/agent`, table-driven in the style of `optin_test.
 - Exemption keying and revocation: a pair change (namespace relabelled, destination moved) voids an accepted exemption
   and the agent asks again; an edited entry or new rule digest does the same; the core adds an exempt pair to
   `CLEARANCE_PROTECTED_ENVIRONMENTS` after acceptance, the next recheck is refused and the Application is re-gated;
-  the recheck runs on rule reload and at the interval; an unreachable core for more than one interval drops the
-  acceptance.
+  the recheck runs on rule reload and at the interval; an unreachable core at a recheck drops the acceptance at once
+  and the Application is re-gated, with no one-interval retention.
+- Re-gate with the core down: a revoked, dropped or expired exemption's Application is switched, granted and labelled
+  with no core call, the pair report is queued and delivered when the core returns (also across an agent restart); a
+  first gating of a never-gated Application still waits for the core.
 - Exemption decision: no exemption is honoured before the core accepts it; an unanswered request leaves the Application
   gated; a changed entry is asked again.
 - Project ceiling: a namespace-only rule and a label-only rule each gate their Application once the old list is gone,
   when its project is in the derived or listed ceiling; with the project missing the Application is not seen (no
-  status row, nothing reported, no rule evaluation), and apron fails the render when a rule entry's literal `projects`
-  value is not in the ceiling. A matched Application in a project of the ceiling but a namespace outside
+  status row, nothing reported, no rule evaluation), and apron fails the render when a rule entry's `projects` value
+  is not in the ceiling. Glob case: an entry `projects: ["team-*"]` with a ceiling of `[team-a]` fails the render; it
+  passes with `["team-*"]` or `["*"]` in the ceiling. A matched Application in a project of the ceiling but a namespace outside
   `protectedNamespaces` is `blocked` and reported as a pair.
 - Migration (apron): with the rule rendered and the old lists still present, the protected pair set is unchanged; with
   the old lists removed, it is still unchanged; `tools/charttest` and `tests/run.sh` pass with the old keys gone.
