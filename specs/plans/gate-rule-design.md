@@ -1,7 +1,7 @@
 # A platform rule for Clearance's Argo CD gate
 
-Written 2026-11-19. Strip W-42, owner decision Y-32 (option A). Status: design note, no code, nothing applied. The owner answered the open questions on 2026-11-21 (see
-"Decisions"); question 6 is still open as board ask A-16. It replaces the W-35 note in hangar PR #131 (`gate-switch-design.md`), which proposed a platform list of app and
+Written 2026-11-19. Strip W-42, owner decision Y-32 (option A). Status: design note, no code, nothing applied. The owner answered all the open questions on 2026-11-21 (see
+"Decisions"). It replaces the W-35 note in hangar PR #131 (`gate-switch-design.md`), which proposed a platform list of app and
 environment pairs in Hangar's `cluster.yaml`. The owner chose a different shape: a rule that lives in Clearance's own
 configuration.
 
@@ -161,13 +161,12 @@ so the Application stays gated, and posts one exception.
 - An exempt Application that is already gated by the rule alone is released by the normal removal order: report the
   removal to the core, label off, put the original source back, remove the merged grant. The reason on the report names
   the exemption. If the core cannot be reached, nothing is released (existing behaviour).
-- **Statically protected environments (decision 6, still open).** The core's `CLEARANCE_PROTECTED_ENVIRONMENTS` keeps a
-  pair protected whatever the agent reports (`static_removed`). The planned behaviour is that the agent does not
-  honour an exemption whose pair is static. The core, not the agent, enforces it: the core refuses the exemption
+- **Statically protected environments (decision 6, decided 2026-11-21).** The core's `CLEARANCE_PROTECTED_ENVIRONMENTS` keeps a
+  pair protected whatever the agent reports (`static_removed`). The agent does not honour an exemption whose pair is
+  static. The core, not the agent, enforces it: the core refuses the exemption
   request (see "Records") when the pair is static, so it is refused before any release and also for an Application that
   was never gated. The core refuses a removal report whose reason is an exemption on a static pair for the same
-  reason. The agent leaves the Application gated and shows `refused: static` in its status. This is the recommendation and the fallback, not an owner decision; see
-  "Decisions", item 6.
+  reason. The agent leaves the Application gated and shows `refused: static` in its status. This is the owner's decision; see "Decisions", item 6.
 
 ### Records
 
@@ -203,7 +202,8 @@ re-asks for every honoured exemption on every rule reload, on any key change, an
 (`--gate-exemption-recheck`, default 5m). A refusal revokes the exemption: the agent re-gates the Application in the
 normal add order and posts the `expired` state with reason `revoked`. The revocation window is therefore at most the
 recheck interval. If the core cannot be reached at a recheck, the acceptance is dropped at once and the Application is
-re-gated (fail closed, no retention). The bound is exactly one recheck interval: the longest an exemption can outlive
+re-gated (fail closed, no retention). Every recheck request carries a deadline shorter than the recheck interval
+(default 30 seconds, `--gate-exemption-recheck-timeout`); a request that misses its deadline counts as unreachable. The bound is exactly one recheck interval: the longest an exemption can outlive
 a change at the core, or the core's absence, is the time to the next recheck. Only an accepted
 exemption then produces the `active`, `expiring` and `expired` states below. Exemptions are enabled only after the core
 change ships. The owner chose the new kind (decision 3), so this is a two-repo change.
@@ -221,7 +221,10 @@ the gate, and the core being down is exactly when a revocation is dropped for la
 wait for the core, or "fail closed" would mean ungated until the core returns. So for a **re-gate only** (the Application
 was released by an exemption, or an exemption's acceptance is dropped) the agent gates locally first: switch, grant,
 then label, with no `pairAccepted` wait, and queues the pair report in its state ConfigMap, delivering it when the core
-is back (retry each pass). A first gating of a never-gated Application keeps today's order, core first. To confirm
+is back (retry each pass). The report intent is **persisted before the switch**, so a crash after any later step still
+leaves it queued. As a second guard, every pass reports the full set of gated pairs from the live Applications
+(`reportPairs`, to confirm it re-sends the whole set each pass), so a restarted agent rebuilds the report for any gated
+Application that has none recorded. A first gating of a never-gated Application keeps today's order, core first. To confirm
 before build: that the agent can write the merged grant and label the namespace without a core call (the label needs
 the grant active and valid, section 5, "Admission"), and that the queued report survives an agent restart.
 
@@ -445,7 +448,7 @@ Unit (agent, `providers/argocd/agent`, table-driven in the style of `optin_test.
 - A pair shared by two Applications; a blocked rule-matched Application still reported as a pair.
 - Chart: byte-identical default render; `gateRule` with `optIn.enabled: false` fails render; checksum annotation.
 - Core: the `gate-exemption` kind is accepted, validated and shown in the coverage statement.
-- Static pair (fallback for decision 6): the core refuses an exemption request whose pair is static; the agent leaves
+- Static pair (decision 6): the core refuses an exemption request whose pair is static; the agent leaves
   the Application gated and shows `refused: static`. Two cases: an Application already gated (the removal report is
   also refused) and an Application **never gated** that matches both a static pair and an exemption (no removal report
   exists, the request alone is refused, the Application is switched and labelled by the rule).
@@ -454,8 +457,12 @@ Unit (agent, `providers/argocd/agent`, table-driven in the style of `optin_test.
   `CLEARANCE_PROTECTED_ENVIRONMENTS` after acceptance, the next recheck is refused and the Application is re-gated;
   the recheck runs on rule reload and at the interval; an unreachable core at a recheck drops the acceptance at once
   and the Application is re-gated, with no one-interval retention.
+- Recheck deadline: a recheck that stays pending past its deadline counts as unreachable; the acceptance is dropped and
+  the Application re-gated within one recheck interval, even when the connection never fails.
 - Re-gate with the core down: a revoked, dropped or expired exemption's Application is switched, granted and labelled
   with no core call, the pair report is queued and delivered when the core returns (also across an agent restart); a
+  crash between the label and the report (and between the intent write and the switch) still ends with the pair
+  reported; a
   first gating of a never-gated Application still waits for the core.
 - Exemption decision: no exemption is honoured before the core accepts it; an unanswered request leaves the Application
   gated; a changed entry is asked again.
@@ -485,7 +492,7 @@ Live rehearsal on hangar-dev (a script, like the W-40 rehearsal; no prod writes)
 
 ## Decisions (owner, 2026-11-21)
 
-The owner answered the seven questions on 2026-11-21. Six are decided and one is open.
+The owner answered the seven questions on 2026-11-21. All seven are decided.
 
 1. **Namespace growth: accepted for step one.** The `protectedNamespaces` list is a safety ceiling. The rule decides
    what is gated. apron derives the ceiling from the rule's literal namespaces, so a rule that names a namespace needs
@@ -498,14 +505,13 @@ The owner answered the seven questions on 2026-11-21. Six are decided and one is
 4. **"Who" is the pull request.** There is no `approvedBy` field. The git history of the gitops change is the record.
 5. **Limits: right as written.** 90-day maximum exemption, 7-day warning, at most 3 rule-caused releases per hour. No
    cooling-off period: a repeat exemption for the same Application is allowed.
-6. **Statically protected environments: OPEN, board ask A-16.** The owner was unsure and asked for more detail. The
-   core's `CLEARANCE_PROTECTED_ENVIRONMENTS` keeps a pair protected whatever the agent reports. An exemption in such an
-   environment would release the Application at the agent while the core still holds the pair, so the pair and the
-   Application disagree. **Recommendation:** refuse exemptions for pairs on the core's static list, and enforce it at
-   the core. The core refuses the removal report when the pair is static and the reason is an exemption. The agent
-   then leaves the Application gated and shows `refused: static` in its status. Enforcing at the core means a
-   misconfigured agent cannot get around it. **Fallback if the owner does not answer:** build the recommendation. It
-   is the safe direction: it only keeps something gated.
+6. **Statically protected environments: exemptions are refused there, enforced at the core.** The owner chose this
+   on 2026-11-21 (board ask A-16, option a). The core's `CLEARANCE_PROTECTED_ENVIRONMENTS` keeps a pair protected
+   whatever the agent reports. An exemption in such an environment would release the Application at the agent while the
+   core still holds the pair, so the pair and the Application would disagree. So the core refuses every exemption
+   request for a pair on its static list, and refuses a removal report whose reason is an exemption on such a pair. The
+   agent then leaves the Application gated and shows `refused: static` in its status. Enforcing at the core means a
+   misconfigured agent cannot get around it.
 7. **The old Hangar path: migrate now.** Within W-42 the rule replaces `clearance.gate.apps`, the ApplicationSet regexes
    and the plugin source. `gate.agent.projects` is kept as a project ceiling, derived from the rule (the agent reads
    only the projects it is given and does not discover them). The two paths are not kept side by side. The order is in
@@ -513,7 +519,6 @@ The owner answered the seven questions on 2026-11-21. Six are decided and one is
 
 ## What the owner does by hand
 
-- Answer board ask A-16 (decision 6), or let the fallback stand.
 - Review and merge the clearance, core and apron pull requests, and the gitops changes for dev and prod (prod: owner
   only), including each removal step of the migration (section 6, step 7).
 - Pin the new Clearance image and chart in `cluster.yaml` after release.
