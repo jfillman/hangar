@@ -183,3 +183,113 @@ No key material is involved: nothing here mints or stores a long-lived credentia
 - Result sizes: `record-gate-verdict` returns this commit's `gate.<sha12>.*` entries only (567 bytes for today's 14 gates,
   1916 bytes for 20 gates with 63-character names), under the 4 KiB limit.
 - The least-privilege test lives at `charts/glidepath-app/tests/pipeline_least_privilege_test.py`.
+
+## Addendum: the last runner gate reports (2026-11-20)
+
+Before step 6 can drop `pipeline-runner`'s ConfigMap writes, two gate reports still need a new writer. Read at glidepath main
+`5f42e75`. Built in glidepath#286, behind a switch that is off by default.
+
+### Who writes and reads `gate-report-*`
+
+| | Where (`GC` = glidepath `charts/glidepath-catalog/templates`) | Account |
+|---|---|---|
+| Writer | `GC/tasks/api-compat-gate.yaml:348-355` (step `check`; the `compare-api` and `compare-api-advisory` tasks of `api-compat-check`) | `pipeline-runner` (no `taskRunSpecs` entry) |
+| Writer | `GC/tasks/policy-validation-gate.yaml:410-419` (step `evaluate`, decide phase; tasks `evaluate` and `evaluate-advisory`) | `pipeline-runner` |
+| Writer | `GC/tasks/clearance-gate.yaml:809-817` | `clearance-gate` (step 3) |
+| Reader | `GC/tasks/comment-pr-check-result.yaml:300-311` (the `comment` step of every gate's finally `comment-pr`; label selector `glidepath.io/gate-report=<gate>,tekton.dev/pipelineRun=<run>`) | `pipeline-runner` (configmaps `list`, which it keeps) |
+| Policy | `GCP/admission/release-record-writes.yaml:104-151` (`gate-report-writes`, #279, Audit) | matches `pipeline-runner`, `clearance-gate` |
+
+No other reader. `git grep` found none in glidepath-api, Tower, Backstage, Clearance or Apron. Tower reads the
+`<!-- glidepath:api-compat {json} -->` line from the PR comment, not from the ConfigMap. The tests that touch these objects are
+`policy_validation_test.sh:90`, `comment_signature_marker_test.sh:18-65` and `record_policies_test.py:196-232`.
+
+### Options
+
+- **(a) Move the two Tasks to `clearance-gate`.** The RBAC fits exactly, with nothing new:
+  - `clearance-gate` holds pipelineruns `get` and configmaps `get, create, patch` (`GA/identity/task-accounts.yaml:83-97`).
+  - Both Tasks read the trust roots, which every ServiceAccount may read (`GCP/sigstore/fulcio-root-configmap.yaml:26-50`).
+  - The broker's `github-installation-token` and `policy-bundle` checks look at the namespace, not the SA.
+
+  The cost is that it puts the Clearance verifier principal (`app-*-cicd/clearance-gate` in `CLEARANCE_VERIFIERS`) and the
+  broker's `agentPin` principal on two more Tasks. Both parse untrusted input: oasdiff reads the candidate's spec, and Kyverno reads
+  manifests the app's chart renders. Their pods would get no `clearance` token, because the projected volume is per Task. Still, the
+  account stops meaning "the four Tasks that present the token". The step-7 check (TaskRuns listed by SA) also gets more entries, and
+  a later mistake in the token path could be reached from more code. The report gap stays open too: any `clearance-gate` pod may write
+  any run's report.
+- **(b) A glidepath-api gate-report route**, with the same audience, pod binding and derivation as #284. It gives the tightest
+  per-call binding. But glidepath-api would gain configmaps `create` in every `-cicd` namespace, and RBAC cannot narrow that by
+  name. It would also need a second policy for that account, a new audience, an endpoint, and an API call on every gate's report
+  path. Only the name, labels and owner can be worked out server side, because the body is the pod's own report either way. Of the
+  three options it adds the most new trust surface.
+- **(c) No write at all (chosen).** The gate prints its report into its own step log, as
+  `glidepath:gate-report <gate> <sha256> <i> <n> <chunk>` lines (gzip and base64, chunks of 6000 characters, so a line stays well
+  under the runtime's 16 KiB split). It prints them **last**, after everything that echoes text the app controls. `comment-pr` reads
+  them with `pods/log`, which the runner keeps (R3). It reads only from:
+  - the TaskRuns of its own PipelineRun whose `tekton.dev/task` is that gate's Task (the controller sets these labels; no task
+    account can create a TaskRun);
+  - the named step container (`step-check`, `step-evaluate`).
+
+  It takes the last complete set whose chunks match its digest, and it reads no ConfigMap for those two gates. This adds no right,
+  audience, endpoint or availability dependency, and it is **narrower than today**: before, any runner pod could write any run's
+  `gate-report-<run>`; now only the gate's own pod, in its own step, supplies the report. A forged set printed earlier loses to the
+  real one, and the report's own text sits inside the base64, so it cannot pose as a line.
+
+  The costs:
+  - The report lives as long as the pod. Pruning a PipelineRun deletes its pods and its owned ConfigMaps alike, so in practice the
+    lifetime is the same. If a node is lost before the finally task runs, the comment falls back to the summary, as it does today when
+    the ConfigMap write fails.
+  - A few base64 lines appear in the gate's log. The excerpts that `comment-pr` posts filter them out.
+  - It departs from owner decision 4 ("gate reports stay ConfigMaps") for these two gates. `clearance-gate` keeps its ConfigMap. The
+    owner can choose (b) instead; the catalog switch would then gain a third value.
+
+Also ruled out:
+- **Task results.** They are capped at 4 KiB: `max-result-size` is `4096` and `results-from` is `termination-message` on hangar-dev
+  (read 2026-11-20). Also, a finally task that consumes the result of a skipped task is itself skipped, and `api-compat-check` always
+  skips one of `compare-api` and `compare-api-advisory`.
+- **A shared workspace.** `api-compat-check` has none, and adding one means regenerating every app's `.tekton/`.
+
+### The switch
+
+Catalog `gateReports.transport`: `configmap` by default (renders byte for byte as before) or `log`. Turn it on through the catalog
+values (the glidepath default, or per cluster through Apron) after the glidepath#286 catalog is installed. Each run keeps the Tasks
+it resolved when it started, so the writer and reader of one run always agree.
+
+### What step 6 removes, and when
+
+**Removes:** in `GA/identity/pipeline-runner.yaml:55-57`, the `configmaps` verbs go from `get, list, create, patch, delete` to
+`get, list`. The comment above them (`:48-54`) and `charts/glidepath-app/tests/pipeline_least_privilege_test.py` change to match.
+R4 and R9 (Secrets, Testkube) leave in the same step, under owner decision 3, but they are a separate change.
+
+Nothing else in the runner writes a ConfigMap. Every `kubectl` write under `GC`:
+- `comment-pr-check-result:502` (the gate ledger, `direct` mode);
+- `mark-release-merged:92`, `itsm-change:91`, `itsm-gate:116` and `open-release-pr:345-583` (all `release-record-writer`);
+- `join-release:63` (`release-record-writer`);
+- `record-gate-verdict:76` (not in any Pipeline);
+- `clearance-gate:811` (`clearance-gate`);
+- the two gate reports above.
+
+**Before step 6, all of these must hold:**
+1. The glidepath-api image with the gate-verdict route (#284) is live, and `promotion.gateLedger.writer: api` is set. That takes
+   away the ledger write at `comment-pr-check-result:502`.
+2. The glidepath#286 catalog is installed, and `gateReports.transport: log` is set.
+3. **Drain:** at least one `timeouts.pipeline` has passed since both switches synced, and no gate PipelineRun created before then is
+   still unfinished (`kubectl get pipelineruns -A`, filtered on `creationTimestamp` and `Succeeded=Unknown`).
+4. Every app has merged its onboarding-resync. TaskRuns listed by SA show the writer tasks on `release-record-writer` and the
+   Clearance-token tasks on `clearance-gate`.
+5. Audit is clean: after the switches, no `release-record-writes` or `gate-report-writes` audit annotation names `pipeline-runner`,
+   over one release of every kind (promote, rollback, bypass-merge, itsm, every gate).
+
+**After step 6:** on hangar-dev, `kubectl auth can-i create configmaps --as=system:serviceaccount:app-<app>-cicd:pipeline-runner`
+returns `no`, and `patch` and `delete` do too. A real api-compat and policy-validation run still posts its full report.
+
+### What #279 needs before Deny (not flipped)
+
+- **`release-record-writes` (`recordWritesActions`):** conditions 3 to 5 above. Deny also refuses the `direct` ledger write (a
+  `pipeline-runner` write to a release record), so condition 1 is required too.
+- **`gate-report-writes` (`gateReportActions`):** after condition 2, the only gate-report writer is `clearance-gate`. Under Deny, a
+  `pipeline-runner` write to any ConfigMap other than `gate-report-*` is refused, so conditions 1 and 2 are both required. One edge:
+  `clearance-gate` adds the owner reference only when its `kubectl get pipelinerun` succeeds (`clearance-gate.yaml:810,815`). If
+  that lookup fails under Deny, the report write is refused and the comment shows the summary. That is acceptable for a display
+  artifact, but the Audit window should show no owner-less write.
+- Hangar-dev goes first. Prod follows only on the owner's OK (owner decision 6). Optionally, after step 6, `gate-report-writes`
+  could stop matching `pipeline-runner`, since RBAC already refuses the runner. This is not needed.
