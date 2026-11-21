@@ -85,6 +85,20 @@ Beside the verdict, the same patch writes `gateRun.<sha12>.<gate>` = `<creationT
   finished first);
 - absent (or written by the old direct path, which writes no `gateRun.` key) or older: write both keys.
 
+"Created later" is the PipelineRun's `creationTimestamp`, which the API server sets from its own clock when it admits the
+run, at one-second granularity. An **equal** timestamp is not "later": the write proceeds (last writer wins, which is what
+the direct path does today). So the guard is best effort: it stops the clear case (a slow run of the gate finishing after a
+`/retest` that was created at least a second after it) and does not claim a total order. Two runs of one gate on one commit
+created in the same second, or a clock step between API server replicas, can still end with the older verdict standing. That
+is no worse than today's direct path, which has no ordering at all, and the ledger is not the authority: `promote` re-checks
+every gate's check run (PROM-03), so a stale ledger entry can delay or prematurely ask for a promotion, never pass a red gate.
+
+**Mixed writers during the switch.** The direct path writes no `gateRun.` key. While `promotion.gateLedger.writer` changes
+(either way), a run whose Task was resolved before the change can overlap one resolved after it, for at most one finally
+window (`timeouts.finally`, 4 m). In that window an older API run can overwrite a newer direct run's verdict. The direct path
+is not changed to write the marker: it is the path being retired, and changing it would make step 1 more than additive. Same
+backstop as above; and the owner can switch when no release PR's gates are running.
+
 The write is a merge patch carrying the record's `resourceVersion`, retried up to 5 times on 409, as today, so two
 gates finishing together are serialized and each answer's `ledger` holds every verdict that landed before it.
 
@@ -105,9 +119,10 @@ gates finishing together are serialized and each answer's `ledger` holds every v
 
 ## 7. Failure handling
 
-- **API down or slow:** the `promotion-ready` step calls with `curl --retry 4 --retry-all-errors --retry-max-time 60`
-  (5 attempts, backoff 1, 2, 4, 8 s, 15 s per attempt, at most a minute: inside `timeouts.finally`, 4 m). A 4xx is not
-  retried (it will not change). After that it **fails visibly**: it logs `gate ledger: glidepath-api did not record
+- **API down or slow:** the `promotion-ready` step calls with
+  `curl --max-time 15 --retry 4 --retry-connrefused --retry-max-time 60` (5 attempts, backoff 1, 2, 4, 8 s; `--max-time`
+  caps each attempt at 15 s and `--retry-max-time` stops starting new ones after a minute: well inside `timeouts.finally`,
+  4 m). A refused connection, a timeout, 408, 429 and 5xx are retried; any other 4xx is not (it will not change). After that it **fails visibly**: it logs `gate ledger: glidepath-api did not record
   <gate> for <sha7> (HTTP <code>)`, carries on as "no record" (below), and exits 1 at the end. The step is
   `onError: continue`, so the gate's verdict and check run are not changed, and the step shows as failed in the run (Tower,
   debrief).
