@@ -190,7 +190,18 @@ Application's app and environment pair. The core answers `accepted` or `refused`
 `unknown kind` on an old core). The agent **honours an exemption only after the core has accepted it**, and keeps the
 answer with the rule digest and the entry, so a changed entry is asked again. A refused or unanswered exemption is
 ignored: the Application stays gated (fail closed), the status shows the reason, and the agent posts one exception. The
-request is retried each pass until answered, with the 24 hour repost limit on the exception. Only an accepted
+request is retried each pass until answered, with the 24 hour repost limit on the exception.
+
+An acceptance is **keyed to the Application's current (app, environment) pair**, together with the Application's
+`<namespace>/<name>`, the rule entry and the rule file's digest. If any of these changes (a relabelled namespace, a
+moved destination, an edited entry, a new digest), the acceptance is void and the agent asks again before honouring
+anything. The core also re-decides: it checks the pair against `CLEARANCE_PROTECTED_ENVIRONMENTS` each time it is
+asked, so if the platform adds an actively exempt pair to that list, the next answer is `refused: static`. The agent
+re-asks for every honoured exemption on every rule reload, on any key change, and at least every 5 minutes
+(`--gate-exemption-recheck`, default 5m). A refusal revokes the exemption: the agent re-gates the Application in the
+normal add order and posts the `expired` state with reason `revoked`. The revocation window is therefore at most the
+recheck interval. If the core cannot be reached at a recheck, the last accepted answer stays for one more interval and
+is then dropped (fail closed: the Application is re-gated). Only an accepted
 exemption then produces the `active`, `expiring` and `expired` states below. Exemptions are enabled only after the core
 change ships. The owner chose the new kind (decision 3), so this is a two-repo change.
 
@@ -411,11 +422,18 @@ Unit (agent, `providers/argocd/agent`, table-driven in the style of `optin_test.
   the Application gated and shows `refused: static`. Two cases: an Application already gated (the removal report is
   also refused) and an Application **never gated** that matches both a static pair and an exemption (no removal report
   exists, the request alone is refused, the Application is switched and labelled by the rule).
+- Exemption keying and revocation: a pair change (namespace relabelled, destination moved) voids an accepted exemption
+  and the agent asks again; an edited entry or new rule digest does the same; the core adds an exempt pair to
+  `CLEARANCE_PROTECTED_ENVIRONMENTS` after acceptance, the next recheck is refused and the Application is re-gated;
+  the recheck runs on rule reload and at the interval; an unreachable core for more than one interval drops the
+  acceptance.
 - Exemption decision: no exemption is honoured before the core accepts it; an unanswered request leaves the Application
   gated; a changed entry is asked again.
 - Project ceiling: a namespace-only rule and a label-only rule each gate their Application once the old list is gone,
-  when its project is in the derived or listed ceiling; with the project missing the Application is `blocked` in the
-  status and the render of a rule with no reachable project fails.
+  when its project is in the derived or listed ceiling; with the project missing the Application is not seen (no
+  status row, nothing reported, no rule evaluation), and apron fails the render when a rule entry's literal `projects`
+  value is not in the ceiling. A matched Application in a project of the ceiling but a namespace outside
+  `protectedNamespaces` is `blocked` and reported as a pair.
 - Migration (apron): with the rule rendered and the old lists still present, the protected pair set is unchanged; with
   the old lists removed, it is still unchanged; `tools/charttest` and `tests/run.sh` pass with the old keys gone.
 
