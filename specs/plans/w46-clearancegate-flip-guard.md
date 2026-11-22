@@ -228,8 +228,11 @@ What the controller does with the refusal (read in v3.5.0): `deleteInCluster` re
 already ran, so every other tenant Application is still updated. The refresh annotation stays (it is cleared at the end).
 
 So a bare flip becomes a safe stuck state. The old set keeps the Application and cannot delete it. The new set reports
-`already owned`. The workload is untouched. The operator finishes the handover the W-43 way: C.4's move for a flip into
-the gated set; for a flip back, D.3's opt-out, then D.4's move.
+`already owned`. The workload is untouched. The operator finishes the handover the full W-43 way, not just the move: open
+the window (C.1, with its drain wait), then for a flip into the gated set C.3's revision-cache and reconcile waits, C.4's
+move and C.5's second guard and owner check; for a flip back, D.2's waits, D.3's opt-out and D.4. Then close it (C.6). The
+waits still matter: a reconcile that read the old identity can put the old owner and source order back after the move.
+(d) refuses its later delete, but not that update, so skipping them leaves the handover stuck again.
 
 - Lives: apron (the tenant-onboarding chart, next to the two ApplicationSets it names). It is plain Argo CD and Kubernetes:
   nothing in Clearance or Airframe.
