@@ -228,11 +228,27 @@ What the controller does with the refusal (read in v3.5.0): `deleteInCluster` re
 already ran, so every other tenant Application is still updated. The refresh annotation stays (it is cleared at the end).
 
 So a bare flip becomes a safe stuck state. The old set keeps the Application and cannot delete it. The new set reports
-`already owned`. The workload is untouched. The operator finishes the handover the full W-43 way, not just the move: open
-the window (C.1, with its drain wait), then for a flip into the gated set C.3's revision-cache and reconcile waits, C.4's
-move and C.5's second guard and owner check; for a flip back, D.2's waits, D.3's opt-out and D.4. Then close it (C.6). The
-waits still matter: a reconcile that read the old identity can put the old owner and source order back after the move.
-(d) refuses its later delete, but not that update, so skipping them leaves the handover stuck again.
+`already owned`. The workload is untouched. With (d) on, the old set cannot clear its refresh annotation either: its
+reconcile fails at the refused delete. So the W-43 waits do not work as written in this state, and the recovery has its
+own order:
+
+1. Freeze the tenants identities (W-43 section 2). Record `main` of the tenants repo (`git ls-remote`) as `M`.
+2. Check that the identity at `M` says what is intended (the flip is wanted). If not, revert the flip instead: the old set
+   generates the Application again, nothing moves, and the error clears.
+3. Open the target half of the window, and check both sets show `create-update`.
+4. The revision-cache wait. C.3's script does not fit: it waits for `main` to become the flip commit, and later commits may
+   have landed. Instead, check `main` is still `M`, sleep the bound from W-43 C.3 (git timeout + expiry, 180 s on
+   hangar-dev), and check `main` is still `M`. Any change stops the recovery. `M` was pushed before step 1, so a bound
+   timed from now covers it.
+4b. Then C.1's wait for **the old set only** (`bash -s -- tenant-onboarding`, or `tenant-onboarding-gated` for a flip
+   back). Under `create-update` the old set no longer tries the delete, so its reconcile finishes and clears the
+   annotation. The new set keeps failing with `already owned` until the move; that is expected, and why it is left out.
+5. The move: C.4 for a flip into the gated set; for a flip back, D.3's opt-out first, then D.4.
+6. C.5's second guard (the sleep from the move, C.1's wait for both sets, the owner check). A reconcile that read an older
+   identity can put the old owner and source order back after the move; (d) refuses its later delete, not that update.
+7. C.6's check, close the window, lift the freeze.
+
+Rehearse this on the throwaway in section 5, step 2, and write it into the W-43 plan as its own section (slice S6).
 
 - Lives: apron (the tenant-onboarding chart, next to the two ApplicationSets it names). It is plain Argo CD and Kubernetes:
   nothing in Clearance or Airframe.
