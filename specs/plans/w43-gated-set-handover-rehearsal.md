@@ -115,13 +115,15 @@ would delete such an Application (finalizer included) when it starts excluding i
 the string `"true"`, and more spellings than `true` give it: `"true"`, `True`, and, because the git generator parses with
 `sigs.k8s.io/yaml` (YAML 1.1 booleans), `yes` and `on`. Airframe writes the key only when it is true, so before step A no
 identity carries it: the scan stops on any mention of the key, whatever its value, and on any error. It reads exactly the
-files the generator reads (`tenants/*/*/identity.yaml`) and stops when there are none (a wrong directory). grep exits 0 on
+files the generator reads (`tenants/*/*/identity.yaml`, listed with `find`, which fails on a directory it cannot read
+where a shell glob would skip it silently) and stops when there are none (a wrong directory). grep exits 0 on
 a match, 1 on none, and anything else on an error, including an error after a match. In bash, with `T` a fresh checkout of
 the tenants repo (`gitops-hangar-dev-tenants`, `main`):
 ```
 bash -s -- "$T" <<'EOF'
 cd "$1" || exit 2
-shopt -s nullglob; f=(tenants/*/*/identity.yaml)
+l=$(find tenants -mindepth 3 -maxdepth 3 -path 'tenants/*/*/identity.yaml' -type f) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
+f=($l)
 [ ${#f[@]} -gt 0 ] || { echo "STOP: no tenants/*/*/identity.yaml in $1 (wrong checkout?)"; exit 2; }
 grep -l -e clearanceGate -- "${f[@]}"; rc=$?
 case $rc in
@@ -193,7 +195,7 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    while [ "$SECONDS" -lt "$deadline" ]; do
      n=$(k get applicationset "$@" -o json | jq -er '[(.items // [.])[] | select(.spec.syncPolicy.applicationsSync == "create-update" and ((.metadata.annotations // {}) | has("argocd.argoproj.io/application-set-refresh") | not))] | length') \
        || { echo "STOP: the sets could not be read"; exit 2; }
-     [ "$n" = "$#" ] && { echo "ok: $* reconciled under create-update since the annotation was set"; exit 0; }
+     [ "$n" = "$#" ] && [ "$SECONDS" -lt "$deadline" ] && { echo "ok: $* reconciled under create-update since the annotation was set"; exit 0; }
      sleep 10
    done
    echo "STOP: not every set cleared the refresh annotation within 5 minutes: read its conditions"; exit 1
@@ -212,10 +214,14 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    during or after C.4 it would put tenant-onboarding's controller reference and source order back. Two kinds exist: one
    already running, and a later one that resolves `main` from the repo-server's revision cache. So:
    - note the time the gated set's condition first appears (it is a read of the new commit), and wait until the
-     repo-server's revision cache expiry has passed since then: `--revision-cache-expiration`, default
+     repo-server's git request timeout plus its revision cache expiry has passed since then. The timeout bounds a
+     `ls-remote` that read the old refs before the commit and writes them to the cache late (`util/git/client.go`
+     `getRefs` stores whatever it fetched; `ARGOCD_GIT_REQUEST_TIMEOUT`, default 15s, an HTTP client timeout: the tenants
+     repo is https); the expiry then runs out on that late entry too. The expiry is `--revision-cache-expiration`, default
      `ARGOCD_RECONCILIATION_TIMEOUT`, else 3m. Read it: `kubectl --context hangar-dev -n argocd-apps get deploy argocd-apps-repo-server -o json | jq '[.spec.template.spec.containers[0] | (.args // [])[], ((.env // [])[] | select(.name=="ARGOCD_RECONCILIATION_TIMEOUT"))]'`
      and `kubectl --context hangar-dev -n argocd-apps get cm argocd-cm -o jsonpath='{.data.timeout\.reconciliation}'` (apron
-     sets `600s`: 10 minutes; take the largest value either shows, and 3m if neither sets it);
+     sets `600s`: 10 minutes; take the largest value either shows, and 3m if neither sets it). Read the git timeout from the
+     same deployment's `ARGOCD_GIT_REQUEST_TIMEOUT` (15s if unset). On argocd-apps: wait 10 min 15 s, round up to 11 minutes;
    - then C.1's wait for `tenant-onboarding` only (`bash -s -- tenant-onboarding`; the gated set's reconcile now fails at
      that error before it clears the annotation).
    **Do not do C.4 before both.** After them, every tenant-onboarding reconcile still to come resolves the new commit, and
@@ -241,21 +247,23 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    (its identity removed or renamed) is what the closed window would delete. From the identities: each one's Application
    must be controlled by the set its `clearanceGate` puts it in (`MISMATCH`, including no Application at all). Also no
    Application without a controller (`UNOWNED`). An identity whose `clearanceGate` is anything but absent, `false` or `true`
+   (an explicit `null` included)
    (a quoted string, `yes`, `True`: the generator's YAML 1.1 reading and yq's YAML 1.2 one can differ) stops the check.
    Every read that fails stops it. In bash, with `T` a fresh checkout of the tenants repo at `main` (the freeze means it is
    what the sets last read) and `W` the evidence directory:
    ```
    bash -s -- "$T" "$W" <<'EOF'
    cd "$1" || exit 2; W=$2
-   shopt -s nullglob; f=(tenants/*/*/identity.yaml)
+   l=$(find tenants -mindepth 3 -maxdepth 3 -path 'tenants/*/*/identity.yaml' -type f) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
+   f=($l)
    [ ${#f[@]} -gt 0 ] || { echo "STOP: no tenants/*/*/identity.yaml in $1"; exit 2; }
    : > "$W/want.tsv" || exit 2
    for i in "${f[@]}"; do
-     a=$(yq -e '.appName' "$i") && e=$(yq -e '.env' "$i") && g=$(yq '.clearanceGate | (tag + ":" + to_string)' "$i") \
+     a=$(yq -e '.appName' "$i") && e=$(yq -e '.env' "$i") && g=$(yq '(has("clearanceGate") | to_string) + ":" + (.clearanceGate | tag) + ":" + (.clearanceGate | to_string)' "$i") \
        || { echo "STOP: cannot read $i"; exit 2; }
      case "$g" in
-       '!!null:null'|'!!bool:false') s=tenant-onboarding ;;
-       '!!bool:true') s=tenant-onboarding-gated ;;
+       'false::'|'true:!!bool:false') s=tenant-onboarding ;;
+       'true:!!bool:true') s=tenant-onboarding-gated ;;
        *) echo "STOP: $i says clearanceGate $g (Airframe writes true or nothing: read it by hand)"; exit 2 ;;
      esac
      printf '%s\t%s\n' "$a-$e" "$s" >> "$W/want.tsv" || exit 2
@@ -286,7 +294,8 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
 1. Open the window again (as C.1, including the wait for a reconcile after it opened).
 2. Remove `spec.clearanceGate` from the `ApplicationEnvironment`; refresh both sets. Expect: the gated set keeps the Application
    (owner unchanged, same uid, still switched); `tenant-onboarding` reports `already owned by another ApplicationSet controller
-   tenant-onboarding-gated`. Then, as in C.3, the revision cache expiry since that condition first appeared, and C.1's wait
+   tenant-onboarding-gated`. Then, as in C.3, the git request timeout plus the revision cache expiry since that condition
+   first appeared, and C.1's wait
    for `tenant-onboarding-gated` only: a gated-set reconcile that generates from the identities as they were would put the
    `protect` annotation back after D.3. **Do not do D.3 before both.**
 3. Opt out by hand (nothing reconciles the Application now, so it sticks):
