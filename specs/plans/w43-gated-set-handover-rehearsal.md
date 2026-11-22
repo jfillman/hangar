@@ -88,9 +88,17 @@ the agent runs with `--optin` (dev's `clearance.gate.agent.optIn: true`, on main
 policy is set: the window would be ignored and the handover would delete. hangar-dev's `cluster.yaml` has
 `clearance.gate.tenantPlugin: false` (apron refuses `gatedSet` without it: an Application on the static plugin would keep
 that source through the handover and the agent would refuse it), so no tenant-onboarding Application is on the plugin;
-check it:
-`kubectl --context hangar-dev -n argocd-apps get applications.argoproj.io -o json | jq -r '.items[] | select(any(.metadata.ownerReferences[]?; .controller == true and .name == "tenant-onboarding")) | select([(.spec.source // empty), (.spec.sources[]? // empty)] | any(.plugin != null)) | .metadata.name'`
-prints nothing.
+check it (a failed read stops it: `pipefail`, and `jq -e` fails on empty input):
+```
+bash -s <<'EOF'
+set -o pipefail
+out=$(kubectl --context hangar-dev -n argocd-apps get applications.argoproj.io -o json | jq -er '[.items[] | select(any(.metadata.ownerReferences[]?; .controller == true and .name == "tenant-onboarding")) | select([(.spec.source // empty), (.spec.sources[]? // empty)] | any(.plugin != null)) | .metadata.name] | join("\n")') \
+  || { echo "STOP: the Applications could not be read"; exit 2; }
+[ -z "$out" ] || { echo "$out"; echo "STOP: the tenant-onboarding Applications above are on a plugin"; exit 1; }
+echo "ok: no tenant-onboarding Application is on a plugin"
+EOF
+```
+Go on only on `ok` and exit 0.
 
 Baseline of every tenant Application (name, uid, generation, owner, finalizers, annotations, sources):
 ```
@@ -167,12 +175,25 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
 1. gitops-hangar-dev PR: `clearance.gate.agent.gatedSetHandover: true`. After the sync, both sets show `applicationsSync: create-update`
    (the jq above). Then wait for a reconcile of each that started after the window opened (section 1, item 6): a reconcile
    that read the set earlier still holds the deleting policy.
+   The annotation write must succeed on both sets before the wait means anything (a set it did not annotate shows
+   `refreshPending: false` with no new reconcile), and every read must succeed:
    ```
-   kubectl --context hangar-dev -n argocd-apps annotate applicationset tenant-onboarding tenant-onboarding-gated argocd.argoproj.io/application-set-refresh=true --overwrite
-   kubectl --context hangar-dev -n argocd-apps get applicationset tenant-onboarding tenant-onboarding-gated -o json | jq '.items[] | {name:.metadata.name, sync:.spec.syncPolicy.applicationsSync, refreshPending:(.metadata.annotations // {} | has("argocd.argoproj.io/application-set-refresh"))}'
+   bash -s <<'EOF'
+   set -o pipefail
+   k() { kubectl --context hangar-dev -n argocd-apps "$@"; }
+   k annotate applicationset tenant-onboarding tenant-onboarding-gated argocd.argoproj.io/application-set-refresh=true --overwrite \
+     || { echo "STOP: the refresh annotation was not set on both sets"; exit 2; }
+   for i in $(seq 1 30); do
+     n=$(k get applicationset tenant-onboarding tenant-onboarding-gated -o json | jq -er '[.items[] | select(.spec.syncPolicy.applicationsSync == "create-update" and ((.metadata.annotations // {}) | has("argocd.argoproj.io/application-set-refresh") | not))] | length') \
+       || { echo "STOP: the sets could not be read"; exit 2; }
+     [ "$n" = 2 ] && { echo "ok: both sets reconciled under create-update after the window opened"; exit 0; }
+     sleep 10
+   done
+   echo "STOP: a set did not clear the refresh annotation within 5 minutes: read its conditions"; exit 1
+   EOF
    ```
-   Repeat the second command until both show `sync: "create-update"` and `refreshPending: false`. **Do not go on until both
-   do.** An annotation that stays means that set's reconcile fails before its end: stop and read its conditions.
+   **Do not go on without `ok` and exit 0.** An annotation that stays means that set's reconcile fails before its end:
+   stop and read its conditions.
 2. Set `spec.clearanceGate: true` on the `ApplicationEnvironment` `w43-handover-dev`. Check the tenants repo commit:
    `tenants/w43-handover/dev/identity.yaml` gains exactly `clearanceGate: true`. Refresh both sets to skip the 3-minute poll:
    `kubectl --context hangar-dev -n argocd-apps annotate applicationset tenant-onboarding tenant-onboarding-gated argocd.argoproj.io/application-set-refresh=true --overwrite`.
