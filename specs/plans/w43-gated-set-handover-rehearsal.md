@@ -114,15 +114,25 @@ kubectl --context hangar-dev -n argocd-apps get applications.argoproj.io -o json
 would delete such an Application (finalizer included) when it starts excluding it. The selector matches the parameter as
 the string `"true"`, and more spellings than `true` give it: `"true"`, `True`, and, because the git generator parses with
 `sigs.k8s.io/yaml` (YAML 1.1 booleans), `yes` and `on`. Airframe writes the key only when it is true, so before step A no
-identity carries it: the scan stops on any mention of the key, whatever its value, and on any error. It reads exactly the
-files the generator reads (`tenants/*/*/identity.yaml`, listed with `find`, which fails on a directory it cannot read
-where a shell glob would skip it silently) and stops when there are none (a wrong directory). grep exits 0 on
-a match, 1 on none, and anything else on an error, including an error after a match. In bash, with `T` a fresh checkout of
-the tenants repo (`gitops-hangar-dev-tenants`, `main`):
+identity carries it: the scan stops on any mention of the key, whatever its value, and on any error. It reads every file
+the generator can read, and more: `find -path 'tenants/*/*/identity.yaml'` with no depth limit (in `-path`, `*` also
+matches `/`), so a deeper path such as `tenants/a/b/c/identity.yaml` is read too. argocd-apps renders
+`applicationsetcontroller.enable.new.git.file.globbing: "true"`, where the generator's `*` stops at `/` and reads depth 3
+only; the legacy mode (`git ls-files`) also reads deeper paths; the scan covers both, and a stop on a deeper file the
+generator ignores is a safe stop. `find` fails on a directory it cannot read, where a shell glob would skip it silently.
+It does not follow symlinks, and Argo CD does (`util/git/client.go` `LsFiles` resolves them inside the repository and
+reads the target, and its glob descends symlinked directories), so **any symlink under `tenants/` is a stop**: an
+`identity.yaml` symlink, or a symlinked directory, would hide an identity from the scan. Airframe writes plain files;
+neither tenants repo has a symlink today. `set -f` keeps a listed path from being glob-expanded. It stops when there are
+no identities (a wrong directory). grep exits 0 on a match, 1 on none, and anything else on an error, including an error
+after a match. In bash, with `T` a fresh checkout of the tenants repo (`gitops-hangar-dev-tenants`, `main`):
 ```
 bash -s -- "$T" <<'EOF'
 cd "$1" || exit 2
-l=$(find tenants -mindepth 3 -maxdepth 3 -path 'tenants/*/*/identity.yaml' -type f) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
+set -f
+s=$(find tenants -type l) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
+[ -z "$s" ] || { echo "$s"; echo "STOP: the symlinks above are under tenants/ (Argo CD reads through them, find does not): read them by hand"; exit 2; }
+l=$(find tenants -path 'tenants/*/*/identity.yaml' -type f) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
 f=($l)
 [ ${#f[@]} -gt 0 ] || { echo "STOP: no tenants/*/*/identity.yaml in $1 (wrong checkout?)"; exit 2; }
 grep -l -e clearanceGate -- "${f[@]}"; rc=$?
@@ -213,15 +223,49 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    `CreateOrUpdate` writes a merge patch with no resourceVersion precondition (`applicationset/utils/createOrUpdate.go:127`):
    during or after C.4 it would put tenant-onboarding's controller reference and source order back. Two kinds exist: one
    already running, and a later one that resolves `main` from the repo-server's revision cache. So:
-   - note the time the gated set's condition first appears (it is a read of the new commit), and wait until the
-     repo-server's git request timeout plus its revision cache expiry has passed since then. The timeout bounds a
-     `ls-remote` that read the old refs before the commit and writes them to the cache late (`util/git/client.go`
-     `getRefs` stores whatever it fetched; `ARGOCD_GIT_REQUEST_TIMEOUT`, default 15s, an HTTP client timeout: the tenants
-     repo is https); the expiry then runs out on that late entry too. The expiry is `--revision-cache-expiration`, default
-     `ARGOCD_RECONCILIATION_TIMEOUT`, else 3m. Read it: `kubectl --context hangar-dev -n argocd-apps get deploy argocd-apps-repo-server -o json | jq '[.spec.template.spec.containers[0] | (.args // [])[], ((.env // [])[] | select(.name=="ARGOCD_RECONCILIATION_TIMEOUT"))]'`
-     and `kubectl --context hangar-dev -n argocd-apps get cm argocd-cm -o jsonpath='{.data.timeout\.reconciliation}'` (apron
-     sets `600s`: 10 minutes; take the largest value either shows, and 3m if neither sets it). Read the git timeout from the
-     same deployment's `ARGOCD_GIT_REQUEST_TIMEOUT` (15s if unset). On argocd-apps: wait 10 min 15 s, round up to 11 minutes;
+   - wait out the revision cache, timed from the push of C.2's commit, not from any later report of it. `getRefs`
+     (`util/git/client.go`) writes whatever its `ls-remote` returned into the cache, unconditionally and with a fresh
+     expiry (`reposerver/cache/cache.go` `SetGitReferences`: a plain Redis `SET` with a TTL, which no read refreshes), so
+     a lookup that read the refs before the push can write the old revision after the gated set has already reported
+     the new one. Such a lookup started before the push, and its one HTTP request is cut off by the repo-server's git
+     client timeout (`ARGOCD_GIT_REQUEST_TIMEOUT`, default 15s: an `http.Client` timeout, which covers reading the
+     response; the tenants repo is https, and over ssh there is no such bound), so its write lands before push + that
+     timeout, and the entry is gone one revision cache expiry after that (`--revision-cache-expiration`, default
+     `ARGOCD_RECONCILIATION_TIMEOUT`, else 3m). A retry is a new request, bounded the same way. The ApplicationSet
+     controller's own call timeout to the repo-server (`--repo-server-timeout-seconds`, 60s) bounds nothing here: the
+     repo-server finishes the lookup after its caller gives up. So the bound is push + git timeout + expiry. Read the
+     values:
+     ```
+     kubectl --context hangar-dev -n argocd-apps get deploy argocd-apps-repo-server -o json | jq '.spec.template.spec.containers[0] | {args, env: [(.env // [])[] | select(.name == "ARGOCD_RECONCILIATION_TIMEOUT" or .name == "ARGOCD_GIT_REQUEST_TIMEOUT")]}'
+     kubectl --context hangar-dev -n argocd-apps get cm argocd-cm -o jsonpath='{.data.timeout\.reconciliation}{"\n"}'
+     kubectl --context hangar-dev -n argocd-apps get cm argocd-cmd-params-cm -o jsonpath='{.data.reposerver\.git\.request\.timeout}{"\n"}'
+     ```
+     Expect no `--revision-cache-expiration` in the args (it would win), both variables taken from those two keys, and
+     the values apron renders for hangar-dev's argocd-apps: `timeout.reconciliation` `120s` (the chart's default; apron
+     sets `600s` only with `argocd.light`, which is hangar-prod's) and no git timeout (15s). The wait is 15 s + 120 s =
+     2 min 15 s, rounded up to the next whole minute (the round-up covers the Redis write itself): **180 s**. Other values:
+     recompute it the same way, and with none set take 3m. The push time is taken as T0, the moment `ls-remote` first
+     shows C.2's commit as `main` (at or after the push); the script stops unless `main` is that commit within 5 minutes.
+     With `C` the full sha of C.2's tenants commit and `T` the tenants checkout:
+     ```
+     bash -s -- "$T" "$C" 180 <<'EOF'
+     [ $# -eq 3 ] || { echo "STOP: name the tenants checkout, the commit and the wait in seconds"; exit 2; }
+     case "$2" in *[!0-9a-f]*|'') echo "STOP: $2 is not a full commit sha"; exit 2 ;; esac
+     [ ${#2} -eq 40 ] || { echo "STOP: $2 is not a full commit sha"; exit 2; }
+     case "$3" in *[!0-9]*|'') echo "STOP: $3 is not a number of seconds"; exit 2 ;; esac
+     deadline=$((SECONDS + 300))
+     while :; do
+       h=$(git -C "$1" ls-remote origin refs/heads/main) || { echo "STOP: ls-remote failed"; exit 2; }
+       [ "${h%%[[:space:]]*}" = "$2" ] && break
+       [ "$SECONDS" -lt "$deadline" ] || { echo "STOP: main is not $2 after 5 minutes (main is ${h%%[[:space:]]*}): read it by hand"; exit 2; }
+       sleep 5
+     done
+     echo "T0 $(date -u '+%Y-%m-%dT%H:%M:%SZ'): main is $2; waiting $3 s"
+     sleep "$3"
+     echo "ok: $3 s since main was first seen at $2 ($(date -u '+%Y-%m-%dT%H:%M:%SZ'))"
+     EOF
+     ```
+     Go on only on `ok` and exit 0;
    - then C.1's wait for `tenant-onboarding` only (`bash -s -- tenant-onboarding`; the gated set's reconcile now fails at
      that error before it clears the annotation).
    **Do not do C.4 before both.** After them, every tenant-onboarding reconcile still to come resolves the new commit, and
@@ -236,7 +280,31 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    kubectl --context hangar-dev -n argocd-apps patch application w43-handover-dev --type json -p "[{\"op\":\"test\",\"path\":\"/metadata/ownerReferences/0/uid\",\"value\":\"$U\"},{\"op\":\"test\",\"path\":\"/spec/sources/1/ref\",\"value\":\"appsrc\"},{\"op\":\"move\",\"from\":\"/spec/sources/1\",\"path\":\"/spec/sources/0\"},{\"op\":\"remove\",\"path\":\"/metadata/ownerReferences/0\"}]"
    kubectl --context hangar-dev -n argocd-apps annotate applicationset tenant-onboarding-gated argocd.argoproj.io/application-set-refresh=true --overwrite
    ```
-5. Run C.1's wait for both sets, then expect: owner `tenant-onboarding-gated` (controller), same uid, the gitops repository
+5. The second guard: `sleep 180` from C.4's patch (C.3's wait again, now timed from the move), then C.1's wait for both
+   sets, then re-check the owner. If an old-revision entry outlived C.3's wait (a value read wrong), it has expired by
+   the end of the sleep, and every tenant-onboarding reconcile that could have used it has finished by the end of C.1's
+   wait; a controller reference it put back is then visible. The check fails closed, and the window is still open, so a
+   failure deletes nothing. With `W` the evidence directory:
+   ```
+   bash -s -- w43-handover-dev tenant-onboarding-gated "$(jq -r .uid "$W/w43-B.json")" <<'EOF'
+   set -o pipefail
+   [ $# -eq 3 ] || { echo "STOP: name the Application, the ApplicationSet that must control it and the Application's uid"; exit 2; }
+   k() { kubectl --context hangar-dev -n argocd-apps --request-timeout=20s "$@"; }
+   su=$(k get applicationset "$2" -o jsonpath='{.metadata.uid}') && [ -n "$su" ] || { echo "STOP: cannot read ApplicationSet $2"; exit 2; }
+   r=$(k get application "$1" -o json | jq -er --arg su "$su" --arg au "$3" '
+     [.metadata.ownerReferences[]? | select(.controller == true)] as $c
+     | if .metadata.uid != $au then "its uid is \(.metadata.uid), not \($au)"
+       elif .metadata.deletionTimestamp != null then "it is being deleted"
+       elif ($c | length) != 1 then "it has \($c | length) controller references"
+       elif $c[0].uid != $su then "its controller is \($c[0].name) (uid \($c[0].uid))"
+       else "ok" end') || { echo "STOP: cannot read Application $1"; exit 2; }
+   [ "$r" = ok ] || { echo "STOP: $1: $r, not $2 (uid $su): keep the window open"; exit 1; }
+   echo "ok: $1 (uid $3) is controlled by $2 (uid $su)"
+   EOF
+   ```
+   **Do not go on without `ok` and exit 0.** On `STOP`, leave the window open and read the Application and both sets'
+   conditions; a controller reference back on tenant-onboarding means C.3's wait did not hold: find out why, then redo
+   C.3 and C.4. Then expect: owner `tenant-onboarding-gated` (controller), same uid, the gitops repository
    as the carrier (not yet switched: `spec.sources[0]` is the `ref: appsrc` source; already switched: the one plugin
    source's `repoURL` is the gitops repository and its `sources` parameter starts with the `ref: appsrc` source), annotation `clearance.hangar.io/protect: "true"`, no resources finalizer, the gated set's condition cleared. Then the agent (log `kubectl --context hangar-dev -n clearance-system logs deploy/clearance-argocd-agent --since=5m`):
    pair `w43-handover/dev` reported, `Application switched to the plugin ... shape=sources`; the Application now has one plugin
@@ -250,12 +318,16 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    Application without a controller (`UNOWNED`). An identity whose `clearanceGate` is anything but absent, `false` or `true`
    (an explicit `null` included)
    (a quoted string, `yes`, `True`: the generator's YAML 1.1 reading and yq's YAML 1.2 one can differ) stops the check.
-   Every read that fails stops it. In bash, with `T` a fresh checkout of the tenants repo at `main` (the freeze means it is
+   Every read that fails stops it, and so does any symlink under `tenants/`; it lists the identities as step A's scan
+   does (no depth limit). In bash, with `T` a fresh checkout of the tenants repo at `main` (the freeze means it is
    what the sets last read) and `W` the evidence directory:
    ```
    bash -s -- "$T" "$W" <<'EOF'
    cd "$1" || exit 2; W=$2
-   l=$(find tenants -mindepth 3 -maxdepth 3 -path 'tenants/*/*/identity.yaml' -type f) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
+   set -f
+   s=$(find tenants -type l) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
+   [ -z "$s" ] || { echo "$s"; echo "STOP: the symlinks above are under tenants/ (Argo CD reads through them, find does not): read them by hand"; exit 2; }
+   l=$(find tenants -path 'tenants/*/*/identity.yaml' -type f) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
    f=($l)
    [ ${#f[@]} -gt 0 ] || { echo "STOP: no tenants/*/*/identity.yaml in $1"; exit 2; }
    : > "$W/want.tsv" || exit 2
@@ -295,9 +367,8 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
 1. Open the window again (as C.1, including the wait for a reconcile after it opened).
 2. Remove `spec.clearanceGate` from the `ApplicationEnvironment`; refresh both sets. Expect: the gated set keeps the Application
    (owner unchanged, same uid, still switched); `tenant-onboarding` reports `already owned by another ApplicationSet controller
-   tenant-onboarding-gated`. Then, as in C.3, the git request timeout plus the revision cache expiry since that condition
-   first appeared, and C.1's wait
-   for `tenant-onboarding-gated` only: a gated-set reconcile that generates from the identities as they were would put the
+   tenant-onboarding-gated`. Then C.3's wait, timed from the push (its script, with `C` the tenants commit that removed
+   `clearanceGate`), and C.1's wait for `tenant-onboarding-gated` only: a gated-set reconcile that generates from the identities as they were would put the
    `protect` annotation back after D.3. **Do not do D.3 before both.**
 3. Opt out by hand (nothing reconciles the Application now, so it sticks):
    `kubectl --context hangar-dev -n argocd-apps annotate application w43-handover-dev clearance.hangar.io/protect-`.
@@ -307,7 +378,10 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    longer restore or unlabel it (gate.md "The marker has two halves"), leaving a labelled namespace whose Helm render admission
    refuses once enforced.
 4. Move the controller reference to tenant-onboarding (C.4's uid test and remove, with the gated set's uid; no `move`:
-   tenant-onboarding rewrites the sources), refresh `tenant-onboarding`, then C.1's wait for both sets. Expect: owner `tenant-onboarding`, same uid, the
+   tenant-onboarding rewrites the sources), refresh `tenant-onboarding`, then C.5's second guard the other way: `sleep 180`
+   from the patch, C.1's wait for both sets, and C.5's owner check with `tenant-onboarding`
+   (`bash -s -- w43-handover-dev tenant-onboarding "$(jq -r .uid "$W/w43-B.json")"`; a stale gated-set reconcile would
+   have taken it back). Do not go on without `ok` and exit 0. Expect: owner `tenant-onboarding`, same uid, the
    chart source first again, resources finalizer back, no `clearance.hangar.io/*` annotation, Synced.
 5. Close the window (C.6's check first). Then the full baseline diff: every Application identical to `apps-before.json` except
    `w43-handover-dev` (new since the baseline) and the workload uids equal `workload-B.json`.
@@ -333,7 +407,7 @@ apron `tests/appset` (`a bare flip outside the window deletes the Application`),
 | a controller-wide `applicationsetcontroller.policy` set without the override | `applicationsSync` is ignored: the window does nothing, the flip deletes | precondition check in section 2; apron's test fails if argocd-apps-install sets it |
 | the window closed while an Application is still owned by a set that no longer generates it (C.4 or D.4 skipped, or its identity removed or renamed) | that set deletes it on its next reconcile (a tenant-onboarding one with the finalizer: the workload goes) | C.6 / D.5 check: no `ORPHAN`, `MISMATCH` or `UNOWNED`, no `ErrorOccurred` on either set; the identity freeze |
 | `clearanceGate` flipped right after the window's render, before the sets reconciled under it | a reconcile that read the set before the window still holds `sync` and deletes the Application its generator stops returning | C.1's refresh-annotation wait (section 1, item 6) |
-| C.4 while a tenant-onboarding reconcile that read the identities before C.2 is still running | its merge patch (no resourceVersion precondition) puts tenant-onboarding's controller reference back after the move; closing the window would then delete the Application | C.3's wait on tenant-onboarding before C.4, C.5's wait on both before the checks; D.2's wait on the gated set before D.3 |
+| C.4 while a tenant-onboarding reconcile that read the identities before C.2 is still running | its merge patch (no resourceVersion precondition) puts tenant-onboarding's controller reference back after the move; closing the window would then delete the Application | C.3's revision-cache wait timed from the push and its wait on tenant-onboarding before C.4; C.5's second wait from the move and its fail-closed owner check, with the window still open; the same at D.2 and D.4 |
 | C.4 without the `move` | the gated set keeps the chart source first (ignore rule); the agent carries the plugin source on the chart repository at its tag: the plugin refuses the gitops repository (not on `CLEARANCE_CHART_REPOS`), or a release commit does not re-render | the `move` in C.4's patch; C.5 checks the plugin source's repository. To repair: opt out (remove `protect`), wait for the restore, move the source by hand, put `protect` back |
 | a cluster with `tenantPlugin` on | an Application on the static plugin keeps that source through the handover and the agent refuses it | apron refuses `gatedSet` unless `tenantPlugin: false`; section 2 checks no tenant Application is on a plugin |
 | owner reference removed before the flip | tenant-onboarding still generates the Application and re-adopts it (SetControllerReference on an unowned object): nothing moves | do C.4 after C.2, as written |
