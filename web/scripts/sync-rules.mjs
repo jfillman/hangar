@@ -27,6 +27,7 @@ const STRENGTHS = [
   ['display', /^display/i],
   ['convention', /^convention/i],
   ['off-here', /^off here/i],
+  ['building', /^building/i],
 ];
 
 const md = scrubLabNames(readFileSync(join(hangarRoot, REL), 'utf8')).replace(/\r\n/g, '\n');
