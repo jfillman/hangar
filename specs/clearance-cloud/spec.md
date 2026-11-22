@@ -435,7 +435,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
   - A spike on KMS Ed25519 signing support for the log key.
 - **Done when.** An object written with 7-year retention cannot be deleted or shortened by the account's admin role (quoted error). The replica exists in us-west-2 with the same retention. A tenant key refuses decrypt from another tenant's role.
 - **Rollout.** Staging, then prod. Object Lock retention is permanent, so prod's first apply happens only after staging's test passes.
-- **User steps.** Approve the retention defaults per tier, because they cannot be undone on written objects. **Values approved 2026-11-22: 30 days, 1 year, 7 years.** Which plan gets which value is still open on the board (A-7), because question 10 below maps Team to 1 year and Business and Regulated to 7 years, which leaves no plan with 30 days.
+- **User steps.** Approve the retention defaults per tier, because they cannot be undone on written objects. **Approved 2026-11-22: 30 days for a trial or pilot tenant, 1 year for Team, 7 years for Business, 7 years plus legal hold for Regulated** (values, then the plan mapping on board A-7).
 - **Decisions (2026-11-22).**
   - The Object Lock buckets are created by a separate owner-applied root per environment. It runs through the organization access role, the only path the SCP allows besides break-glass.
   - The staging proof uses 1-day COMPLIANCE retention. The 7-year proof runs once in prod with the first real tier.
@@ -464,6 +464,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
   - an IdP template that CS-1 instantiates per tenant (SAML or OIDC).
 - **Done when.** A test tenant signs in through an Okta developer org over SAML, a recipient signs in once with an emailed link and once through their own SSO, and a used link is refused, and a disabled user is refused. No password sign-in path exists for a tenant that has SSO.
 - **User steps.** An Okta or Entra test org, and SES production access.
+- **Decision (2026-11-22, A-8).** Owners always sign in through their organization's SSO, whose identity provider supplies the MFA. A tenant without SSO is not onboarded until it has one, so no non-SSO owner path is built.
 
 ### INF-6 · Delivery: CI, images, Argo CD and gated deploys
 <!-- pkg status=proposal wave=K0 strip=W-7 -->
@@ -917,7 +918,7 @@ Each question names the package it blocks, the recommendation, and who decides. 
 | 7 | Who runs the external witness? | CS-3 | **Deferred by James, 2026-11-09.** Recommendation stands: a public witness network first, then a willing audit firm, never only Clearance's own. K0 and K1 run with the Clearance witness alone, and statements print "not yet independently witnessed". An external witness is needed before K2's gate | User |
 | 8 | Billing provider for direct sales | CS-9 | **Decided:** Stripe for card and invoice, plus AWS Marketplace for customers who buy through AWS | User |
 | 9 | Where does the ops core that gates the cloud run? | INF-6 | shared-services, self-hosted from the open chart, syncing to an ops tenant in cloud-prod. It must not depend on the cloud it gates | Agent |
-| 10 | Retention defaults per tier | INF-4 | **Decided:** 1 year for Team, 7 years for Business, and 7 years plus legal hold for Regulated. These cannot be shortened once written | User |
+| 10 | Retention defaults per tier | INF-4 | **Decided:** 1 year for Team, 7 years for Business, and 7 years plus legal hold for Regulated. These cannot be shortened once written. **Added 2026-11-22 (A-7):** 30 days for a trial or pilot tenant | User |
 
 ### Risks the managing agent watches
 
@@ -967,6 +968,6 @@ Source: the Clearance Cloud Strip Board, https://claude.ai/artifact/N9sDgHyHKjF8
 
 | Strip | Touches | What is open | Options and recommendation | State |
 | --- | --- | --- | --- | --- |
-| A-7 | INF-4, CS-4 | Which plan gets which approved retention value (30 days, 1 year, 7 years). Question 10 maps Team to 1 year and Business and Regulated to 7 years, which leaves the 30-day value unassigned | (a) 30 days for a trial or pilot tenant, 1 year for Team, 7 years for Business and Regulated, plus legal hold for Regulated; (b) 30 days for Team, 1 year for Business, 7 years plus legal hold for Regulated, which changes question 10 and CS-4's done test. Recommended: (a), because it keeps question 10 and CS-4 as written | pending owner |
+| (none) | | No ask strip is open on 2026-11-22 after A-7 and A-8 were answered | | |
 
-Answered on the board since the last snapshot (owner): A-5 (a), a separate owner-applied root creates the Object Lock buckets; A-6 (a), the staging proof uses 1-day retention. The owner steps Y-5 to Y-14 are done.
+Answered on the board since the last snapshot (owner): A-5 (a), a separate owner-applied root creates the Object Lock buckets; A-6 (a), the staging proof uses 1-day retention; A-7 (a), the retention mapping above; A-8 (a), owners sign in through their own SSO. The owner steps Y-5 to Y-14 are done.
