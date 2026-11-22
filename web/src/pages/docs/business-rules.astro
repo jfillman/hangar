@@ -168,16 +168,16 @@ const held = count('enforced') + count('fails-closed');
   .s-enforced, .s-fails-closed { color: var(--good); }
   .s-soft { color: var(--accent); }
   .s-display { color: var(--sky); }
-  .s-convention, .s-off-here { color: var(--soft); }
+  .s-convention, .s-off-here, .s-building { color: var(--soft); }
   .chip.s-fails-closed { background: var(--good); color: var(--paper); border-color: var(--good); }
-  .chip.s-off-here { border-style: dashed; }
+  .chip.s-off-here, .chip.s-building { border-style: dashed; }
 
   .strength { margin: 1rem 0 2.5rem; }
   .strength h2 { margin: 0 0 0.8rem; }
   .bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; gap: 2px; background: var(--rule); }
   .seg { display: block; min-width: 4px; background: currentColor; }
   .seg.s-enforced { opacity: 0.6; }
-  .seg.s-off-here { background: repeating-linear-gradient(135deg, currentColor 0 3px, transparent 3px 6px); }
+  .seg.s-off-here, .seg.s-building { background: repeating-linear-gradient(135deg, currentColor 0 3px, transparent 3px 6px); }
   .legend { display: grid; gap: 0.9rem 2rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); margin: 1.2rem 0 0; }
   .legend dt { display: flex; align-items: center; gap: 0.5rem; }
   .legend .n { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
