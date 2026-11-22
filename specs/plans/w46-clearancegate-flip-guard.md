@@ -234,8 +234,11 @@ own order:
 
 1. Freeze the tenants identities (W-43 section 2).
 2. Decide per stuck Application whether the flip is wanted. For one that is not, revert `spec.clearanceGate` on the
-   ApplicationEnvironment (not `identity.yaml`: the composition writes its own value back). With (b) in Deny that is a
-   gate change too, so open the hub half for it, then close it again. The old set generates the Application again and
+   ApplicationEnvironment's source manifest in `tenants/<app>/xr-requests/` (a PR), and wait for `xr-requests` to sync it.
+   Not the live XR alone (the next sync puts the old value back), and not `identity.yaml` (the composition writes its own
+   value back). With (b) in Deny that is a gate change too, so open the hub half for it, then close it again. Before
+   opening it, check for other refused flips waiting in `xr-requests` (section 4, open step 2): they would land too. Revert
+   or hold them first. The old set generates the Application again and
    its error clears; nothing moves.
    If stuck Applications go both ways (one flipped in, another flipped back), each set fails on the other's Application
    and neither drain below can finish. Revert one direction's flips first, as above, and recover the other. Redo the
@@ -251,7 +254,8 @@ own order:
 4b. Then C.1's wait for **the old set only** (`bash -s -- tenant-onboarding`, or `tenant-onboarding-gated` for a flip
    back). Under `create-update` the old set no longer tries the delete, so its reconcile finishes and clears the
    annotation. The new set keeps failing with `already owned` until the move; that is expected, and why it is left out.
-5. The move: C.4 for a flip into the gated set; for a flip back, D.3's opt-out first, then D.4.
+5. The move, for **every** remaining stuck Application: C.4 for a flip into the gated set; for a flip back, D.3's opt-out
+   first, then D.4. Step 6's wait names both sets, and the new set clears its annotation only when it owns all of them.
 6. C.5's second guard (the sleep from the move, C.1's wait for both sets, the owner check). A reconcile that read an older
    identity can put the old owner and source order back after the move; (d) refuses its later delete, not that update.
 7. C.6's check, close the window, lift the freeze.
