@@ -232,10 +232,18 @@ So a bare flip becomes a safe stuck state. The old set keeps the Application and
 reconcile fails at the refused delete. So the W-43 waits do not work as written in this state, and the recovery has its
 own order:
 
-1. Freeze the tenants identities (W-43 section 2). Record `main` of the tenants repo (`git ls-remote`) as `M`.
-2. Check that the identity at `M` says what is intended (the flip is wanted). If not, revert the flip instead: the old set
-   generates the Application again, nothing moves, and the error clears.
-3. Open the target half of the window, and check both sets show `create-update`.
+1. Freeze the tenants identities (W-43 section 2).
+2. Decide per stuck Application whether the flip is wanted. For one that is not, revert `spec.clearanceGate` on the
+   ApplicationEnvironment (not `identity.yaml`: the composition writes its own value back). With (b) in Deny that is a
+   gate change too, so open the hub half for it, then close it again. The old set generates the Application again and
+   its error clears; nothing moves.
+   If stuck Applications go both ways (one flipped in, another flipped back), each set fails on the other's Application
+   and neither drain below can finish. Revert one direction's flips first, as above, and recover the other. Redo the
+   reverted flips afterwards as a normal handover.
+   When every remaining stuck Application goes the same way, record `main` of the tenants repo (`git ls-remote`) as `M`
+   and check its identities say what is intended.
+3. Open the target half of the window, and check both sets show `create-update`. The move needs no hub half: it changes
+   no ApplicationEnvironment.
 4. The revision-cache wait. C.3's script does not fit: it waits for `main` to become the flip commit, and later commits may
    have landed. Instead, check `main` is still `M`, sleep the bound from W-43 C.3 (git timeout + expiry, 180 s on
    hangar-dev), and check `main` is still `M`. Any change stops the recovery. `M` was pushed before step 1, so a bound
