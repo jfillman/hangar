@@ -44,6 +44,8 @@ section{display:grid;gap:8px;min-width:0}
 h2{font-size:1.05rem;font-weight:600;margin:0}
 .sec-head .sub{font-size:13px;color:var(--muted)}
 .empty{font-size:13.5px;color:var(--muted);padding:10px 0}
+h3.group{font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+h3.group:first-child{margin-top:4px} h3.group .n{color:var(--ink);font-weight:600}
 
 .tabs{display:flex;flex-wrap:wrap;gap:6px}
 .tab{font:inherit;font-family:var(--mono);font-size:12.5px;padding:5px 11px;border:1px solid var(--rule-solid);background:var(--panel);color:var(--muted);cursor:pointer}
@@ -143,7 +145,7 @@ details.how code{font-family:var(--mono);font-size:.88em;background:var(--bg2);p
       <li><strong>Answer here or in chat.</strong> Pick an option and press Answer, or type <code>A-7: b</code> in chat. A chat answer is copied onto the strip word for word.</li>
       <li><strong>Claude reads the board at the start of every turn</strong> and before acting on anything an ask gates. Your notes and new strips are picked up then.</li>
       <li><strong>A change says where it is live and how that was checked.</strong> Anything claimed but not proven gets its own <code>R</code> strip until it is.</li>
-      <li><strong>Strips are closed, never deleted.</strong> Answered asks stay under Decided as the record of what was decided, when, and in whose words.</li>
+      <li><strong>Strips are closed, never deleted.</strong> Answered asks stay under Decided as the record of what was decided, when, and in whose words. Fixed issues and finished work move to Closed, so Issues and In flight show only what is still outstanding.</li>
     </ol>
   </details>
 </div>
@@ -160,16 +162,32 @@ details.how code{font-family:var(--mono);font-size:.88em;background:var(--bg2);p
     risk:  {letter:"R", name:"Unverified", open:["open"]},
     owner: {letter:"O", name:"From you",   open:["open"]}
   };
+  // States that close a strip. Anything else is still outstanding, so a new or misspelled state stays visible.
+  var CLOSED = {
+    issue: ["fixed","accepted","done","closed","resolved","verified","withdrawn","duplicate"],
+    work:  ["done","declined","withdrawn","superseded","cancelled"],
+    yours: null, risk: null  // only "open" is open
+  };
+  function closed(s){ var c=CLOSED[s.kind]; if(c===null) return s.state!=="open"; return !!c && c.indexOf(s.state)>=0; }
+  // The Issues tab in three groups, most urgent first; inside each, high severity first, then priority, then id.
+  var ISSUE_GROUPS = [
+    {id:"todo",  label:"Needs a fix",     states:null},
+    {id:"fix",   label:"Fix in progress", states:["fixing","fix-open","building","verifying"]},
+    {id:"limit", label:"Known limits",    states:["known-limit"]}
+  ];
+  function issueGroup(s){ for(var i=1;i<ISSUE_GROUPS.length;i++){ if(ISSUE_GROUPS[i].states.indexOf(s.state)>=0) return i; } return 0; }
+  var SEV = {high:0, medium:1, low:2};
+  function bySev(a,b){ return ((a.sev in SEV?SEV[a.sev]:1)-(b.sev in SEV?SEV[b.sev]:1)) || byPrio(a,b); }
   var TABS = [
-    {id:"work",   label:"In flight",  test:function(s){return s.kind==="work" && s.state!=="done";}},
-    {id:"issue",  label:"Issues",     test:function(s){return s.kind==="issue" && s.state!=="fixed" && s.state!=="accepted";}},
+    {id:"work",   label:"In flight",  test:function(s){return s.kind==="work" && !closed(s);}},
+    {id:"issue",  label:"Issues",     test:function(s){return s.kind==="issue" && !closed(s);}},
     {id:"change", label:"Shipped",    test:function(s){return s.kind==="change";}},
     {id:"risk",   label:"Unverified", test:function(s){return s.kind==="risk" && s.state==="open";}},
     {id:"owner",  label:"From you",   test:function(s){return s.kind==="owner";}},
     {id:"decided",label:"Decided",    test:function(s){return s.kind==="ask" && s.state!=="open";}},
-    {id:"closed", label:"Closed",     test:function(s){return (s.kind==="yours"&&s.state!=="open")||(s.kind==="work"&&s.state==="done")||(s.kind==="issue"&&(s.state==="fixed"||s.state==="accepted"))||(s.kind==="risk"&&s.state!=="open");}}
+    {id:"closed", label:"Closed",     test:function(s){return (s.kind==="yours"||s.kind==="work"||s.kind==="issue"||s.kind==="risk") && closed(s);}}
   ];
-  var CHIP = {open:"amber", "new":"bad", diagnosing:"amber", "fix-open":"sky", "known-limit":"", fixed:"good", accepted:"",
+  var CHIP = {open:"amber", "new":"bad", diagnosing:"amber", "fix-open":"sky", "known-limit":"", fixed:"good", accepted:"", fixing:"sky", building:"sky", verifying:"sky", diagnosed:"amber",
               queued:"", running:"sky", review:"sky", blocked:"bad", done:"good", merged:"sky", live:"good", verified:"good",
               answered:"good", withdrawn:"", closed:""};
   var state = {strips:{}, meta:null, tab:"work", q:"", db:null, loaded:false, drafts:{}};
@@ -319,7 +337,14 @@ details.how code{font-family:var(--mono);font-size:.88em;background:var(--bg2);p
     rows.sort(tab.id==="change"||tab.id==="decided"||tab.id==="closed" ? newest : byPrio);
     var rack=$("rack"); rack.textContent="";
     if(!rows.length) rack.appendChild(el("div","empty", state.loaded ? (q?"No strip here matches that filter.":"Nothing in "+tab.label.toLowerCase()+".") : "Loading…"));
-    rows.forEach(function(s){ rack.appendChild(strip(s,false)); });
+    if (tab.id==="issue" && rows.length){
+      ISSUE_GROUPS.forEach(function(g,i){
+        var grp = rows.filter(function(s){ return issueGroup(s)===i; }).sort(bySev);
+        if(!grp.length) return;
+        var h = el("h3","group", g.label+" "); h.appendChild(el("span","n",String(grp.length))); rack.appendChild(h);
+        grp.forEach(function(s){ rack.appendChild(strip(s,false)); });
+      });
+    } else rows.forEach(function(s){ rack.appendChild(strip(s,false)); });
   }
 
   $("q").addEventListener("input",function(e){ state.q=e.target.value; render(); });
