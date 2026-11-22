@@ -125,10 +125,15 @@ reads the target, and its glob descends symlinked directories), so **any symlink
 `identity.yaml` symlink, or a symlinked directory, would hide an identity from the scan. Airframe writes plain files;
 neither tenants repo has a symlink today. `set -f` keeps a listed path from being glob-expanded. It stops when there are
 no identities (a wrong directory). grep exits 0 on a match, 1 on none, and anything else on an error, including an error
-after a match. In bash, with `T` a fresh checkout of the tenants repo (`gitops-hangar-dev-tenants`, `main`):
+after a match. **Announce the freeze (below) before taking the checkout**, then take `T` as a fresh checkout of the tenants
+repo (`gitops-hangar-dev-tenants`, `main`): a gated identity committed before the announcement is then in `T`, and one
+committed after it breaks the freeze. The script fetches `origin/main` and stops unless `T`'s HEAD is that commit, so a
+checkout taken before a later push is never scanned. In bash:
 ```
 bash -s -- "$T" <<'EOF'
 cd "$1" || exit 2
+git fetch -q origin main || { echo "STOP: git fetch failed in $1"; exit 2; }
+[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "STOP: $1 is not at origin/main (HEAD $(git rev-parse --short HEAD), origin/main $(git rev-parse --short origin/main)): take a fresh checkout after the freeze is announced"; exit 2; }
 set -f
 s=$(find tenants -type l) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
 [ -z "$s" ] || { echo "$s"; echo "STOP: the symlinks above are under tenants/ (Argo CD reads through them, find does not): read them by hand"; exit 2; }
@@ -143,14 +148,14 @@ case $rc in
 esac
 EOF
 ```
-Go on only on `none gated` and exit 0. From this check on, the freeze below holds.
+Go on only on `none gated` and exit 0. The freeze below has held since before `T` was taken, and still holds.
 
 **Freeze of gate membership and of the tenant identities.** Nothing in the cluster enforces the order yet (section 6). For
 the whole rehearsal, the operator running it is the only one who changes the tenants repo's `tenants/*/*/identity.yaml`
 (no `ApplicationEnvironment` or app is created, deleted, renamed or edited by anyone else), and the operator changes only:
 the throwaway's identity at B (created), C.2 and D.2 (`clearanceGate`) and E (deleted, after the window is closed). The
 C.6 check assumes that no identity changes between it and the close sync; the freeze is what makes that true. Announce
-the freeze before step A and lift it after E. On hangar-dev the only writers are the owner and this session; on a shared
+the freeze before taking the checkout `T` for step A's scan (and so before the scan and step A), and lift it after E. On hangar-dev the only writers are the owner and this session; on a shared
 cluster the freeze needs an Airframe or admission guard before this is run.
 
 Also in place before step B: airframe#151 merged and its composition live on hangar-dev (the throwaway's identity.yaml must
@@ -320,10 +325,13 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    (a quoted string, `yes`, `True`: the generator's YAML 1.1 reading and yq's YAML 1.2 one can differ) stops the check.
    Every read that fails stops it, and so does any symlink under `tenants/`; it lists the identities as step A's scan
    does (no depth limit). In bash, with `T` a fresh checkout of the tenants repo at `main` (the freeze means it is
-   what the sets last read) and `W` the evidence directory:
+   what the sets last read; the script fetches `origin/main` and stops unless `T`'s HEAD is that commit, so a checkout taken before
+   the last push is refused) and `W` the evidence directory:
    ```
    bash -s -- "$T" "$W" <<'EOF'
    cd "$1" || exit 2; W=$2
+   git fetch -q origin main || { echo "STOP: git fetch failed in $1"; exit 2; }
+   [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "STOP: $1 is not at origin/main (HEAD $(git rev-parse --short HEAD), origin/main $(git rev-parse --short origin/main)): take a fresh checkout after the freeze is announced"; exit 2; }
    set -f
    s=$(find tenants -type l) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
    [ -z "$s" ] || { echo "$s"; echo "STOP: the symlinks above are under tenants/ (Argo CD reads through them, find does not): read them by hand"; exit 2; }
