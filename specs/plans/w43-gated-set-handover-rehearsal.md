@@ -1,6 +1,8 @@
 # W-43: the gated tenant ApplicationSet, hangar-dev rehearsal plan
 
 Written 2026-11-21. Strip W-43; the owner chose option (3) on Y-36: a second ApplicationSet only for gated environments.
+The decision was relayed to this build by the managing session on 2026-11-21. The Y-36 row in `specs/clearance-autopilot/spec.md`
+still reads `pending owner`. The Strip Board session that owns that row records it there; check that row before step A.
 A plan only: nothing here was applied to any cluster, and no gitops repo was changed. The build is apron PR
 `feat/w43-clearance-gate` (apron#256, reworked) and airframe#151.
 
@@ -82,6 +84,20 @@ W=<an evidence directory>
 kubectl --context hangar-dev -n argocd-apps get applications.argoproj.io -o json | jq -S '[.items[] | {name:.metadata.name, uid:.metadata.uid, generation:.metadata.generation, owner:([.metadata.ownerReferences[]? | select(.controller) | .name][0]), finalizers:.metadata.finalizers, annotations:(.metadata.annotations // {} | del(.["argocd.argoproj.io/refresh"])), sources:(.spec.source // .spec.sources)}]' > $W/apps-before.json
 ```
 
+**Stop if any tenant identity already says `clearanceGate: true`.** Step A runs with no handover window, so tenant-onboarding
+would delete such an Application (finalizer included) when it starts excluding it. In a fresh checkout of the tenants repo
+(`gitops-hangar-dev-tenants`, `main`):
+```
+if grep -rlE --include=identity.yaml '^clearanceGate:[[:space:]]*true' tenants/; then echo "STOP: a gated identity exists"; else echo "none gated"; fi
+```
+From this check until step A's sync is done and checked, no `ApplicationEnvironment` may change `clearanceGate` (the
+freeze below).
+
+**Gate-membership freeze.** Nothing in the cluster enforces the order yet (section 6). For the whole rehearsal, the operator
+running it is the only one who changes `spec.clearanceGate` on any `ApplicationEnvironment` of hangar-dev, and only at
+steps C.2 and D.2. Announce the freeze before step A and lift it after E. On hangar-dev the only writers are the owner and
+this session; on a shared cluster the freeze needs an Airframe or admission guard before this is run.
+
 Also in place before step B: airframe#151 merged and its composition live on hangar-dev (the throwaway's identity.yaml must
 come from Airframe, as a real one would).
 
@@ -137,9 +153,20 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    pair `w43-handover/dev` reported, `Application switched to the plugin ... shape=sources`; the Application now has one plugin
    source and `clearance.hangar.io/switched: sources`; watch 5 minutes that the gated set does not revert either (W-40's check,
    now on a tenant Application). Clear the change if it holds, and the merged grant and namespace label follow as in W-40 step 3.
-6. Close the window: PR removing `gatedSetHandover`. Before merging it, check that every Application's controller is a set that
-   generates it: `kubectl --context hangar-dev -n argocd-apps get applicationsets tenant-onboarding tenant-onboarding-gated -o json | jq '.items[] | {name:.metadata.name, error:[.status.conditions[]? | select(.type=="ErrorOccurred" and .status=="True") | .message]}'`
-   shows no error on either. After the sync: `w43-handover-dev` unchanged, workload uids equal `workload-B.json`, and the baseline
+6. Close the window: PR removing `gatedSetHandover`. Before merging it, compare each tenant Application's controller with
+   the set its current identity.yaml puts it in (the condition check alone misses a set that has not reconciled yet).
+   In a fresh checkout of the tenants repo at the commit the sets last read (`status.resources` lists what each set owns):
+   ```
+   for f in tenants/*/*/identity.yaml; do a=$(yq .appName "$f"); e=$(yq .env "$f"); g=$(yq '.clearanceGate == true' "$f")
+     want=tenant-onboarding; [ "$g" = true ] && want=tenant-onboarding-gated
+     have=$(kubectl --context hangar-dev -n argocd-apps get application "$a-$e" -o jsonpath='{.metadata.ownerReferences[?(@.controller==true)].name}')
+     [ "$have" = "$want" ] || echo "MISMATCH $a-$e: owned by '$have', identity.yaml puts it in $want"; done
+   kubectl --context hangar-dev -n argocd-apps get applications.argoproj.io -o json | jq -r '.items[] | select([.metadata.ownerReferences[]? | select(.controller)] | length == 0) | "UNOWNED \(.metadata.name)"'
+   kubectl --context hangar-dev -n argocd-apps get applicationsets tenant-onboarding tenant-onboarding-gated -o json | jq '.items[] | {name:.metadata.name, error:[.status.conditions[]? | select(.type=="ErrorOccurred" and .status=="True") | .message]}'
+   ```
+   Merge only when the loop prints no `MISMATCH`, no tenant Application is `UNOWNED`, and neither set has an error. The
+   freeze (section 2) holds until the close sync is done, so no identity can change between this check and the sync.
+   After the sync: `w43-handover-dev` unchanged, workload uids equal `workload-B.json`, and the baseline
    diff of every other Application still identical.
 
 ### D. Hand it back to tenant-onboarding
