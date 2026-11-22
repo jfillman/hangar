@@ -134,6 +134,14 @@ bash -s -- "$T" <<'EOF'
 cd "$1" || exit 2
 git fetch -q origin main || { echo "STOP: git fetch failed in $1"; exit 2; }
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "STOP: $1 is not at origin/main (HEAD $(git rev-parse --short HEAD), origin/main $(git rev-parse --short origin/main)): take a fresh checkout after the freeze is announced"; exit 2; }
+sc=$(git config --get --bool core.sparseCheckout); rc=$?
+case $rc in 0|1) ;; *) echo "STOP: git config failed in $1 (exit $rc)"; exit 2 ;; esac
+[ "$sc" != true ] || { echo "STOP: $1 is a sparse checkout (find cannot see what it leaves out): take a full clone"; exit 2; }
+v=$(git ls-files -v) || { echo "STOP: git ls-files failed in $1"; exit 2; }
+printf '%s\n' "$v" | grep -qv '^H '; rc=$?
+case $rc in 0) echo "STOP: $1 has index entries not tagged H (skip-worktree S, assume-unchanged lowercase: git ls-files -v | grep -v '^H '): take a full clone"; exit 2 ;; 1) ;; *) echo "STOP: the index-flag check failed (grep exit $rc)"; exit 2 ;; esac
+st=$(git status --porcelain) || { echo "STOP: git status failed in $1"; exit 2; }
+[ -z "$st" ] || { echo "$st"; echo "STOP: $1 has local changes (a deleted identity would be missed): take a fresh clone"; exit 2; }
 set -f
 s=$(find tenants -type l) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
 [ -z "$s" ] || { echo "$s"; echo "STOP: the symlinks above are under tenants/ (Argo CD reads through them, find does not): read them by hand"; exit 2; }
@@ -332,6 +340,14 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    cd "$1" || exit 2; W=$2
    git fetch -q origin main || { echo "STOP: git fetch failed in $1"; exit 2; }
    [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "STOP: $1 is not at origin/main (HEAD $(git rev-parse --short HEAD), origin/main $(git rev-parse --short origin/main)): take a fresh checkout after the freeze is announced"; exit 2; }
+   sc=$(git config --get --bool core.sparseCheckout); rc=$?
+   case $rc in 0|1) ;; *) echo "STOP: git config failed in $1 (exit $rc)"; exit 2 ;; esac
+   [ "$sc" != true ] || { echo "STOP: $1 is a sparse checkout (find cannot see what it leaves out): take a full clone"; exit 2; }
+   v=$(git ls-files -v) || { echo "STOP: git ls-files failed in $1"; exit 2; }
+   printf '%s\n' "$v" | grep -qv '^H '; rc=$?
+   case $rc in 0) echo "STOP: $1 has index entries not tagged H (skip-worktree S, assume-unchanged lowercase: git ls-files -v | grep -v '^H '): take a full clone"; exit 2 ;; 1) ;; *) echo "STOP: the index-flag check failed (grep exit $rc)"; exit 2 ;; esac
+   st=$(git status --porcelain) || { echo "STOP: git status failed in $1"; exit 2; }
+   [ -z "$st" ] || { echo "$st"; echo "STOP: $1 has local changes (a deleted identity would be missed): take a fresh clone"; exit 2; }
    set -f
    s=$(find tenants -type l) || { echo "STOP: tenants/ could not be read in full (find failed)"; exit 2; }
    [ -z "$s" ] || { echo "$s"; echo "STOP: the symlinks above are under tenants/ (Argo CD reads through them, find does not): read them by hand"; exit 2; }
