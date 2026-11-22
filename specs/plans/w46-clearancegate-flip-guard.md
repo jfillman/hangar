@@ -128,7 +128,18 @@ spec:
 
 The param is one ConfigMap, `clearance-gate-handover`, with a key per cluster name and alias whose window is open. The
 cluster-registry chart renders it from a new `clusters.yaml` field (`airframe.clearanceGateHandover: true`). A cluster with
-no key is closed. A missing ConfigMap refuses every flip (`parameterNotFoundAction: Deny`) and nothing else.
+no key is closed.
+
+A missing ConfigMap is wider than a closed window. The API server resolves the param before it evaluates the match
+conditions (`policy_dispatcher.go`). With `parameterNotFoundAction: Deny`, a missing param refuses **every**
+ApplicationEnvironment CREATE and UPDATE, Crossplane's own main-resource writes included (finalizers,
+`spec.crossplane.resourceRefs`), not just flips. Status writes go to the subresource and still work. In the audit period
+(`[Audit, Warn]`) the refusal is only recorded and warned. So:
+
+- the chart renders `clearance-gate-handover` always, empty when no window is open, so it is never absent in normal operation;
+- the binding syncs after it (a later sync wave), and a chart test fails a render without it;
+- if it is deleted, ApplicationEnvironment writes stop until `cluster-registry` is synced again. That is loud and quick to
+  fix, and it never deletes anything. `Allow` would instead let every flip through silently. Open question 9.
 
 - Lives: Airframe ships the policy next to the XRD and renders the param from `charts/cluster-registry`. Apron installs both
   on the control-plane cluster. Nothing in Clearance.
@@ -217,7 +228,8 @@ What the controller does with the refusal (read in v3.5.0): `deleteInCluster` re
 already ran, so every other tenant Application is still updated. The refresh annotation stays (it is cleared at the end).
 
 So a bare flip becomes a safe stuck state. The old set keeps the Application and cannot delete it. The new set reports
-`already owned`. The workload is untouched. The operator finishes with W-43's C.4 move.
+`already owned`. The workload is untouched. The operator finishes the handover the W-43 way: C.4's move for a flip into
+the gated set; for a flip back, D.3's opt-out, then D.4's move.
 
 - Lives: apron (the tenant-onboarding chart, next to the two ApplicationSets it names). It is plain Argo CD and Kubernetes:
   nothing in Clearance or Airframe.
@@ -310,7 +322,7 @@ user stands in for the ServiceAccount (the username is a render parameter):
 - a bare flip outside the window: the Application is kept (same uid, no `deletionTimestamp`, finalizer still on); the set has
   `ErrorOccurred` `DeleteApplicationError`; the other environments are still updated;
 - the reverse bare flip: the same, from the gated set;
-- the W-43 handover (window, C.4 move) still passes, and so does the handover back;
+- the W-43 handover (window, C.4 move) still passes, and so does the handover back (D.3, D.4);
 - an identity removed: refused for the controller; a delete by another user succeeds;
 - an Application controlled by another ApplicationSet: its delete is allowed;
 - an Application with no `ownerReferences`, or one with no `controller` field: not matched, no CEL error.
@@ -356,11 +368,12 @@ say `none gated` for what it can see, and step A could delete a hidden gated ide
 Both scripts now stop, right after the HEAD check, when:
 
 - `core.sparseCheckout` is true (a config read that fails, other than "unset", also stops);
-- `git ls-files -v` lists any skip-worktree entry (tag `S`, or `s` with assume-unchanged too);
+- `git ls-files -v` lists any entry not tagged `H`: skip-worktree (`S`), and any lowercase tag (assume-unchanged, where an
+  edited file shows clean to `git status`), among others;
 - `git status --porcelain` is not empty (a tracked identity deleted in the working tree would also be missed).
 
-The W-43 plan carries the exact lines. They were run once against four scratch clones (full, sparse, one skip-worktree
-entry, one identity deleted in the working tree): `ok` and exit 0 on the full clone, `STOP` and exit 2 on each of the others.
+The W-43 plan carries the exact lines. They were run against five scratch clones (full, sparse, one skip-worktree
+entry, one assume-unchanged entry edited in place, one identity deleted in the working tree): `ok` and exit 0 on the full clone, `STOP` and exit 2 on each of the others.
 
 ## 9. Open questions for the owner
 
@@ -383,3 +396,7 @@ entry, one identity deleted in the working tree): `ok` and exit 0 on the full cl
    use the generic handover-peer contract (section 2), with no Hangar names in Clearance.*
 8. **Tower.** Should the `clearanceGate` toggle be disabled while the target's hub half is closed? *Recommendation: yes,
    later (a read of the param ConfigMap). The VAP message is the floor until then.*
+9. **(b) with its param missing: refuse every ApplicationEnvironment write, or allow every flip?** The API server resolves the
+   param before the match conditions, so there is no "refuse flips only". *Recommendation: refuse (`Deny`), with the param
+   always rendered. A missing param is then a visible, quickly fixed write stop that deletes nothing. `Allow` fails open
+   without a sign; with (d) on it would still not delete, but (b) would guard nothing.*

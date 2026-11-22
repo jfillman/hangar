@@ -138,8 +138,8 @@ sc=$(git config --get --bool core.sparseCheckout); rc=$?
 case $rc in 0|1) ;; *) echo "STOP: git config failed in $1 (exit $rc)"; exit 2 ;; esac
 [ "$sc" != true ] || { echo "STOP: $1 is a sparse checkout (find cannot see what it leaves out): take a full clone"; exit 2; }
 v=$(git ls-files -v) || { echo "STOP: git ls-files failed in $1"; exit 2; }
-printf '%s\n' "$v" | grep -q '^[Ss] '; rc=$?
-case $rc in 0) echo "STOP: $1 has skip-worktree entries (git ls-files -v | grep '^[Ss] '): take a full clone"; exit 2 ;; 1) ;; *) echo "STOP: the skip-worktree check failed (grep exit $rc)"; exit 2 ;; esac
+printf '%s\n' "$v" | grep -qv '^H '; rc=$?
+case $rc in 0) echo "STOP: $1 has index entries not tagged H (skip-worktree S, assume-unchanged lowercase: git ls-files -v | grep -v '^H '): take a full clone"; exit 2 ;; 1) ;; *) echo "STOP: the index-flag check failed (grep exit $rc)"; exit 2 ;; esac
 st=$(git status --porcelain) || { echo "STOP: git status failed in $1"; exit 2; }
 [ -z "$st" ] || { echo "$st"; echo "STOP: $1 has local changes (a deleted identity would be missed): take a fresh clone"; exit 2; }
 set -f
@@ -344,8 +344,8 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    case $rc in 0|1) ;; *) echo "STOP: git config failed in $1 (exit $rc)"; exit 2 ;; esac
    [ "$sc" != true ] || { echo "STOP: $1 is a sparse checkout (find cannot see what it leaves out): take a full clone"; exit 2; }
    v=$(git ls-files -v) || { echo "STOP: git ls-files failed in $1"; exit 2; }
-   printf '%s\n' "$v" | grep -q '^[Ss] '; rc=$?
-   case $rc in 0) echo "STOP: $1 has skip-worktree entries (git ls-files -v | grep '^[Ss] '): take a full clone"; exit 2 ;; 1) ;; *) echo "STOP: the skip-worktree check failed (grep exit $rc)"; exit 2 ;; esac
+   printf '%s\n' "$v" | grep -qv '^H '; rc=$?
+   case $rc in 0) echo "STOP: $1 has index entries not tagged H (skip-worktree S, assume-unchanged lowercase: git ls-files -v | grep -v '^H '): take a full clone"; exit 2 ;; 1) ;; *) echo "STOP: the index-flag check failed (grep exit $rc)"; exit 2 ;; esac
    st=$(git status --porcelain) || { echo "STOP: git status failed in $1"; exit 2; }
    [ -z "$st" ] || { echo "$st"; echo "STOP: $1 has local changes (a deleted identity would be missed): take a fresh clone"; exit 2; }
    set -f
