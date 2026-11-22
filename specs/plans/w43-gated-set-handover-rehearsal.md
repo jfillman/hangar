@@ -56,10 +56,14 @@ selectors are In / NotIn on the same value, so every environment is in exactly o
    (apron tests/run.sh checks the template).
 6. **A reconcile acts on the ApplicationSet it read at its start.** `Reconcile` does one `Get` (`:138`) and passes that object
    to `deleteInCluster` under that object's policy (`:351`), so a reconcile that read the set before the window opened can
-   still delete after the stored policy says `create-update`. The refresh annotation is the signal that one has finished:
-   only a reconcile that read the set *with* the annotation removes it (`:378` `RefreshRequired`, an `Update` at the
-   resourceVersion it read, so an older reader gets a conflict), and the workqueue never runs two reconciles of one key at
-   once. ApplicationSet status has no observedGeneration in v3.5.0. Used at C.1 and D.1.
+   still delete after the stored policy says `create-update`. The refresh annotation is the drain signal: it is removed only
+   at the very end of a reconcile, past its create, update and delete steps (`:378` `RefreshRequired`; `updateResourcesStatus`
+   re-reads the set just before (`:1032`, its `Get` and `DeepCopyInto`), so the remover may be a reconcile that started before the annotation was set),
+   and the workqueue never runs two reconciles of one key at once. So once it is gone, no reconcile that read the set
+   earlier can still reach its delete step, and every later one reads the set as it is now. It does **not** prove a fresh
+   git read: only a reconcile that read the annotation skips the repo-server's revision cache (`generators/git.go:70`
+   `noRevisionCache`), and the remover may not be that one. A stale identity read is covered by time instead (C.3, D.2).
+   ApplicationSet status has no observedGeneration in v3.5.0. Used at C.1, C.3, C.5, D.1, D.2 and D.4.
 7. **The unconditional ignore rule normalises the live and the generated Application the same way**
    (`createOrUpdate.go:110` `applyIgnoreDifferences` on both), so there is no first-transition source deletion of the
    kind the annotation-scoped `select()` rule had (CodeRabbit on apron#256). On create, nothing is ignored: a new gated
@@ -187,7 +191,7 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    k annotate applicationset "$@" argocd.argoproj.io/application-set-refresh=true --overwrite \
      || { echo "STOP: the refresh annotation was not set on every set named"; exit 2; }
    while [ "$SECONDS" -lt "$deadline" ]; do
-     n=$(k get applicationset "$@" -o json | jq -er '[.items[] | select(.spec.syncPolicy.applicationsSync == "create-update" and ((.metadata.annotations // {}) | has("argocd.argoproj.io/application-set-refresh") | not))] | length') \
+     n=$(k get applicationset "$@" -o json | jq -er '[(.items // [.])[] | select(.spec.syncPolicy.applicationsSync == "create-update" and ((.metadata.annotations // {}) | has("argocd.argoproj.io/application-set-refresh") | not))] | length') \
        || { echo "STOP: the sets could not be read"; exit 2; }
      [ "$n" = "$#" ] && { echo "ok: $* reconciled under create-update since the annotation was set"; exit 0; }
      sleep 10
@@ -202,12 +206,20 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    `kubectl --context hangar-dev -n argocd-apps annotate applicationset tenant-onboarding tenant-onboarding-gated argocd.argoproj.io/application-set-refresh=true --overwrite`.
 3. Observe for 3 minutes: `w43-handover-dev` is **not** deleted (no `deletionTimestamp`), same uid, owner still
    `tenant-onboarding`; `tenant-onboarding-gated` has `ErrorOccurred`: `Object argocd-apps/w43-handover-dev is already owned by
-   another ApplicationSet controller tenant-onboarding`. The workload's uids equal `workload-B.json`. Once the condition is
-   there, run C.1's wait for `tenant-onboarding` only (`bash -s -- tenant-onboarding`; the gated set's reconcile now fails
-   at that error before it clears the annotation). A tenant-onboarding reconcile that read the identities before C.2 still
-   generates the Application, and `CreateOrUpdate` writes a merge patch with no resourceVersion precondition
-   (`applicationset/utils/createOrUpdate.go:127`): during or after C.4 it would put tenant-onboarding's controller reference
-   and source order back. **Do not do C.4 before this wait prints `ok`.**
+   another ApplicationSet controller tenant-onboarding`. The workload's uids equal `workload-B.json`. A tenant-onboarding
+   reconcile that generates from the identities as they were before C.2 still generates the Application, and
+   `CreateOrUpdate` writes a merge patch with no resourceVersion precondition (`applicationset/utils/createOrUpdate.go:127`):
+   during or after C.4 it would put tenant-onboarding's controller reference and source order back. Two kinds exist: one
+   already running, and a later one that resolves `main` from the repo-server's revision cache. So:
+   - note the time the gated set's condition first appears (it is a read of the new commit), and wait until the
+     repo-server's revision cache expiry has passed since then: `--revision-cache-expiration`, default
+     `ARGOCD_RECONCILIATION_TIMEOUT`, else 3m. Read it: `kubectl --context hangar-dev -n argocd-apps get deploy argocd-apps-repo-server -o json | jq '[.spec.template.spec.containers[0] | (.args // [])[], ((.env // [])[] | select(.name=="ARGOCD_RECONCILIATION_TIMEOUT"))]'`
+     and `kubectl --context hangar-dev -n argocd-apps get cm argocd-cm -o jsonpath='{.data.timeout\.reconciliation}'` (apron
+     sets `600s`: 10 minutes; take the largest value either shows, and 3m if neither sets it);
+   - then C.1's wait for `tenant-onboarding` only (`bash -s -- tenant-onboarding`; the gated set's reconcile now fails at
+     that error before it clears the annotation).
+   **Do not do C.4 before both.** After them, every tenant-onboarding reconcile still to come resolves the new commit, and
+   none that started earlier is still running.
 4. Move the controller reference, guarded by the uid of tenant-onboarding (one owner reference is expected; check first),
    and in the same atomic patch put the `ref: appsrc` source first (the gated set's order). The gated set's ignore rule keeps
    the live sources when it adopts the Application, so without the move the agent would carry its plugin source on the
@@ -274,8 +286,9 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
 1. Open the window again (as C.1, including the wait for a reconcile after it opened).
 2. Remove `spec.clearanceGate` from the `ApplicationEnvironment`; refresh both sets. Expect: the gated set keeps the Application
    (owner unchanged, same uid, still switched); `tenant-onboarding` reports `already owned by another ApplicationSet controller
-   tenant-onboarding-gated`. Then C.1's wait for `tenant-onboarding-gated` only: a gated-set reconcile that read the identities
-   before the change would put the `protect` annotation back after D.3. **Do not do D.3 before it prints `ok`.**
+   tenant-onboarding-gated`. Then, as in C.3, the revision cache expiry since that condition first appeared, and C.1's wait
+   for `tenant-onboarding-gated` only: a gated-set reconcile that generates from the identities as they were would put the
+   `protect` annotation back after D.3. **Do not do D.3 before both.**
 3. Opt out by hand (nothing reconciles the Application now, so it sticks):
    `kubectl --context hangar-dev -n argocd-apps annotate application w43-handover-dev clearance.hangar.io/protect-`.
    Expect in the agent log, in order: removal reported, label off, `Application put back to its original sources`, merged grant
