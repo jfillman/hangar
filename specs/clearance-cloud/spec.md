@@ -3,7 +3,7 @@ title: Clearance Cloud Build Specification
 program: Hangar · Clearance Cloud
 board: https://claude.ai/artifact/N9sDgHyHKjF8aMfAcxjr8f
 source: https://claude.ai/artifact/XByvsn2wm6xmVcGnA32tJb
-updated: 2026-11-20
+updated: 2026-11-22
 ---
 
 Nov 9, 2026 · @James
@@ -32,7 +32,7 @@ This spec is for a managing Claude Code session that builds Clearance Cloud by h
 | Role | Reads | Owns |
 | --- | --- | --- |
 | Managing agent | Sections 1 to 6, 11, 12 and 13 in full; each card before delegating it; the main spec's sections 1 and 12 | Sequencing, release tags, image and chart pins, the gitops render for cloud-staging and cloud-prod, Terraform plans, live verification, memory and roadmap status, every hand-off to the user |
-| Subagent | Its card, section 12 here and in the main spec, and the README, AGENTS.md and docs the card names | LOne PR in one repo unless. the card says otherwise, with tests and docs. It reports a PR link, what it verified and what it left out |
+| Subagent | Its card, section 12 here and in the main spec, and the README, AGENTS.md and docs the card names | One PR in one repo unless the card says otherwise, with tests and docs. It reports a PR link, what it verified and what it left out |
 | User (platform owner) | The spec and PR links | Merges, new repos, AWS account creation and payer settings, every `terraform apply` to a prod account, DNS and domain purchase, the KMS key-policy ceremony, external witness agreements, first real tenants and firms, and any decision a card marks "user" |
 
 ### Package card format
@@ -381,7 +381,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 - **Evidence.** [clearance-cloud-infra#1](https://github.com/jfillman/clearance-cloud-infra/pull/1) (phase 1, applied 2026-11-18 after the account quota was raised to 10) and [#2](https://github.com/jfillman/clearance-cloud-infra/pull/2) (phase 2, applied 2026-11-19). Verified 2026-11-19: organization trail logging with digests, delegated admin for Organizations, GuardDuty, Security Hub and Inspector, and the SCP refusal test (three PASS lines).
 
 ### INF-2 · Network, edge and domains
-<!-- pkg status=in-progress wave=K0 strip=W-1 -->
+<!-- pkg status=verified wave=K0 strip=W-2 -->
 
 - **Repos.** clearance-cloud-infra.
 - **Depends on.** INF-1; delegation of clearance.hangarplatform.dev.
@@ -394,10 +394,20 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 - **Done when.** A request to the app ALB that skips CloudFront is refused. A burst over the rate rule gets 429 from WAF. A pod in a data subnet cannot reach the internet. DNS and certificates resolve for every host in staging.
 - **Rollout.** Staging, then prod.
 - **User steps.** Add the NS records that delegate clearance.hangarplatform.dev to the new Route 53 zone, at whoever hosts hangarplatform.dev's DNS.
-- **Evidence.** Lands as three PRs, because the zone must be delegated before ACM can validate certificates: the zone ([clearance-cloud-infra#3](https://github.com/jfillman/clearance-cloud-infra/pull/3), merged), network and edge for cloud-staging ([#4](https://github.com/jfillman/clearance-cloud-infra/pull/4) for the network), then cloud-prod-us.
+- **Evidence.** Verified in cloud-staging on 2026-11-22. The prod network and edge stay code only until the first tenant (lean-until-first-tenant decision, 2026-11-19).
+  - Code: the zone ([clearance-cloud-infra#3](https://github.com/jfillman/clearance-cloud-infra/pull/3)), the network ([#4](https://github.com/jfillman/clearance-cloud-infra/pull/4)), lean staging with an on-demand switch ([#5](https://github.com/jfillman/clearance-cloud-infra/pull/5)), the edge ([#6](https://github.com/jfillman/clearance-cloud-infra/pull/6)), and an optional reserved concurrency for the rotation Lambda, because a new account's 10-execution quota refuses any reservation ([#9](https://github.com/jfillman/clearance-cloud-infra/pull/9)).
+  - Done tests, all PASS:
+    - The data-subnet egress test found no path out, with a working control path from the app subnet.
+    - A request that skips CloudFront is refused at the network layer, three ways; a request through CloudFront reaches the ALB.
+    - WAF answered 429 on request 96 of a burst at the sign-in path.
+    - DNS and certificates resolve for app, verify, ledger and ingest.
+    - Flow logs arrive in log-archive.
+    - A manually triggered origin-secret rotation completed, and the plan after it was clean.
+  - Not yet proven: mutual TLS at ingest, which needs a test CA.
+  - Applied by the local Terraform CLI against HCP state while HCP Terraform runs were failing for Free-tier organizations (HashiCorp incident, 2026-11-22).
 
 ### INF-3 · EKS and platform add-ons
-<!-- pkg status=proposal wave=K0 strip=W-4 -->
+<!-- pkg status=built wave=K0 strip=W-4 -->
 
 - **Repos.** clearance-cloud-infra (cluster), clearance-cloud (add-on charts and values), gitops-clearance-cloud.
 - **Depends on.** INF-2.
@@ -410,9 +420,10 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
   - The ABAC role for cells.
 - **Done when.** The tenant-isolation test (section 12) passes: a pod in namespace `tenant-a` with the shared cell role is refused on tenant-b's S3 prefix, KMS key and secret path. If ABAC fails, the card falls back to one role per tenant and says so. A pod from a non-ECR image is refused. Argo CD syncs an empty app.
 - **Rollout.** Staging, then prod.
+- **Evidence.** Part 1, the cluster module, is merged but not applied: [clearance-cloud-infra#7](https://github.com/jfillman/clearance-cloud-infra/pull/7). It sits behind `cluster_enabled` (off), so nothing runs until we decide to run the cluster. Part 2 (add-ons and Argo CD) is not started.
 
 ### INF-4 · Data stores and keys
-<!-- pkg status=proposal wave=K0 strip=W-5 -->
+<!-- pkg status=verified wave=K0 strip=W-5 -->
 
 - **Repos.** clearance-cloud-infra.
 - **Depends on.** INF-2.
@@ -424,10 +435,22 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
   - A spike on KMS Ed25519 signing support for the log key.
 - **Done when.** An object written with 7-year retention cannot be deleted or shortened by the account's admin role (quoted error). The replica exists in us-west-2 with the same retention. A tenant key refuses decrypt from another tenant's role.
 - **Rollout.** Staging, then prod. Object Lock retention is permanent, so prod's first apply happens only after staging's test passes.
-- **User steps.** Approve the retention defaults per tier, because they cannot be undone on written objects.
+- **User steps.** Approve the retention defaults per tier, because they cannot be undone on written objects. **Values approved 2026-11-22: 30 days, 1 year, 7 years.** Which plan gets which value is still open on the board (A-7), because question 10 below maps Team to 1 year and Business and Regulated to 7 years, which leaves no plan with 30 days.
+- **Decisions (2026-11-22).**
+  - The Object Lock buckets are created by a separate owner-applied root per environment. It runs through the organization access role, the only path the SCP allows besides break-glass.
+  - The staging proof uses 1-day COMPLIANCE retention. The 7-year proof runs once in prod with the first real tier.
+  - Staging Aurora is lean: a single writer that pauses when idle.
+- **Evidence.** Verified in cloud-staging on 2026-11-22. Prod is code only.
+  - Code: [clearance-cloud-infra#8](https://github.com/jfillman/clearance-cloud-infra/pull/8) (modules, roots, scripts), [#10](https://github.com/jfillman/clearance-cloud-infra/pull/10) (Aurora versions offered in the region), [#11](https://github.com/jfillman/clearance-cloud-infra/pull/11) (tenant key policy allows alias management), [#12](https://github.com/jfillman/clearance-cloud-infra/pull/12) (replication KMS conditions accept the S3 Bucket Keys context) and [#13](https://github.com/jfillman/clearance-cloud-infra/pull/13) (parameter drift).
+  - Done tests, all PASS:
+    - The account's admin role is refused when it deletes a locked object, shortens its retention, bypasses governance (also refused by the SCP) or switches it to GOVERNANCE.
+    - Replication completes, and the us-west-2 replica carries the same COMPLIANCE retention.
+    - A tenant key works for its own role, and refuses decrypt, encrypt and data-key requests from the other tenant's role and from the account's admin role.
+    - Both Aurora clusters were confirmed paused at zero capacity.
+  - Ed25519 spike: AWS KMS supports `ECC_NIST_EDWARDS25519` with `ED25519_SHA_512` over RAW messages, which suits signed-note checkpoints. A live verification against Go's `crypto/ed25519` is still to run.
 
 ### INF-5 · Identity
-<!-- pkg status=proposal wave=K0 strip=W-6 -->
+<!-- pkg status=in-progress wave=K0 strip=W-6 -->
 
 - **Repos.** clearance-cloud-infra.
 - **Depends on.** INF-2.
@@ -940,22 +963,10 @@ Fifteen suggestions were pending in the doc when it was retired, all laid on 202
 
 ### Open decisions from the Clearance Cloud Strip Board
 
-Source: the Clearance Cloud Strip Board, https://claude.ai/artifact/N9sDgHyHKjF8aMfAcxjr8f, read on 2026-11-20. These are the ask strips (A- and Y-) that are not done or closed. The board holds the live state; this table is a snapshot.
+Source: the Clearance Cloud Strip Board, https://claude.ai/artifact/N9sDgHyHKjF8aMfAcxjr8f, read on 2026-11-22. The board holds the live state; this table is a snapshot.
 
 | Strip | Touches | What is open | Options and recommendation | State |
 | --- | --- | --- | --- | --- |
-| A-5 | INF-4 | Who creates the Object Lock buckets (evidence, ledger, statements). The INF-1 SCP lets only BreakGlass and OrganizationAccountAccessRole change Object Lock settings, so the staging HCP apply role cannot create them; the limit is deliberate because retention is permanent. Blocks W-5 (INF-4); nothing is built until answered | (a) a separate owner-applied workspace per environment that creates only the locked buckets, through OrganizationAccountAccessRole, same pattern as the trail bucket; (b) widen the SCP exemption to the staging apply role. Recommended: (a) | pending owner |
-| A-6 | INF-4 | What retention the staging proof may leave behind. The done test writes an object with 7-year COMPLIANCE retention; that object and its bucket then cannot be deleted for 7 years. Blocks the W-5 (INF-4) done test; irreversible | (a) prove it in staging with 1-day retention and run the 7-year proof once in prod with the first real tier; (b) run the full 7-year proof in staging, as the card says. Recommended: (a) | pending owner |
-| Y-5 | INF-1 | After 2026-11-20 12:00 UTC: delete the SCP test bucket in cloud-staging once the lock on the test object expires (delete the object version, then the bucket) | Owner step | pending owner |
-| Y-6 | INF-2 | Run the staging egress test from a clearance-cloud-infra checkout and check that flow logs arrive; paste both outputs. The board's reply says the egress test passed with a working control and the flow-log listing remains | Owner step | pending owner |
-| Y-7 | INF-2 | Merge PR #6 (staging edge), then the 4-step rollout: agent applies staging with edge off; owner adds the staging delegation in shared-services; owner runs the test-CA script and pastes only the CA certificate (optional, A-4); agent turns the edge on and runs the three done tests. About $70/month on top of the $37 network | Owner step | pending owner |
-| Y-8 | INF-3 | After #6, merge PR #7 (EKS code). It creates nothing: the cluster stays off until the owner decides to run it | Owner step | pending owner |
+| A-7 | INF-4, CS-4 | Which plan gets which approved retention value (30 days, 1 year, 7 years). Question 10 maps Team to 1 year and Business and Regulated to 7 years, which leaves the 30-day value unassigned | (a) 30 days for a trial or pilot tenant, 1 year for Team, 7 years for Business and Regulated, plus legal hold for Regulated; (b) 30 days for Team, 1 year for Business, 7 years plus legal hold for Regulated, which changes question 10 and CS-4's done test. Recommended: (a), because it keeps question 10 and CS-4 as written | pending owner |
 
-Four more ask strips are answered, not done or closed, and are listed so none is missed. Their answers are recorded on the board.
-
-| Strip | Touches | Question | Answer (owner, 2026-11-19) |
-| --- | --- | --- | --- |
-| A-1 | INF-2 | Who creates the app and ingest ALBs | (a) Terraform owns the ALBs, listeners and WAF; INF-3 binds pods with TargetGroupBinding |
-| A-2 | INF-2 | Staging hostnames | (a) delegated sub-zone staging.clearance.hangarplatform.dev in cloud-staging |
-| A-3 | INF-2, INF-3, INF-4 | How lean to run until there are paying tenants | (c) lean until first tenant, plus staging on demand: no prod, staging without interface endpoints, Aurora auto-pause, a staging switch that removes the NAT when idle |
-| A-4 | INF-2 | CA for the ingest ALB mTLS trust store | (a) the owner creates a test CA offline and uploads only its certificate |
+Answered on the board since the last snapshot (owner): A-5 (a), a separate owner-applied root creates the Object Lock buckets; A-6 (a), the staging proof uses 1-day retention. The owner steps Y-5 to Y-14 are done.
