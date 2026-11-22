@@ -236,8 +236,9 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    kubectl --context hangar-dev -n argocd-apps patch application w43-handover-dev --type json -p "[{\"op\":\"test\",\"path\":\"/metadata/ownerReferences/0/uid\",\"value\":\"$U\"},{\"op\":\"test\",\"path\":\"/spec/sources/1/ref\",\"value\":\"appsrc\"},{\"op\":\"move\",\"from\":\"/spec/sources/1\",\"path\":\"/spec/sources/0\"},{\"op\":\"remove\",\"path\":\"/metadata/ownerReferences/0\"}]"
    kubectl --context hangar-dev -n argocd-apps annotate applicationset tenant-onboarding-gated argocd.argoproj.io/application-set-refresh=true --overwrite
    ```
-5. Run C.1's wait for both sets, then expect: owner `tenant-onboarding-gated` (controller), same uid, the `ref: appsrc` source
-   first, annotation `clearance.hangar.io/protect: "true"`, no resources finalizer, the gated set's condition cleared. Then the agent (log `kubectl --context hangar-dev -n clearance-system logs deploy/clearance-argocd-agent --since=5m`):
+5. Run C.1's wait for both sets, then expect: owner `tenant-onboarding-gated` (controller), same uid, the gitops repository
+   as the carrier (not yet switched: `spec.sources[0]` is the `ref: appsrc` source; already switched: the one plugin
+   source's `repoURL` is the gitops repository and its `sources` parameter starts with the `ref: appsrc` source), annotation `clearance.hangar.io/protect: "true"`, no resources finalizer, the gated set's condition cleared. Then the agent (log `kubectl --context hangar-dev -n clearance-system logs deploy/clearance-argocd-agent --since=5m`):
    pair `w43-handover/dev` reported, `Application switched to the plugin ... shape=sources`; the Application now has one plugin
    source, on the app's gitops repository at `main` (not the chart repository), and `clearance.hangar.io/switched: sources`; watch 5 minutes that the gated set does not revert either (W-40's check,
    now on a tenant Application). Clear the change if it holds, and the merged grant and namespace label follow as in W-40 step 3.
