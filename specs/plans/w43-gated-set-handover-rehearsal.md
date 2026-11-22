@@ -1,12 +1,12 @@
 # W-43: the gated tenant ApplicationSet, hangar-dev rehearsal plan
 
 Written 2026-11-21. Strip W-43; the owner chose option (3) on Y-36: a second ApplicationSet only for gated environments.
-The decision was relayed to this build by the managing session on 2026-11-21. The Y-36 row in `specs/clearance-autopilot/spec.md`
-still reads `pending owner`. The Strip Board session that owns that row records it there; check that row before step A.
+Recorded on the Strip Board (strip Y-36, owner note "go with option 3", done 2026-11-22T00:10Z) and in the Y-36 row of
+`specs/clearance-autopilot/spec.md` ("owner chose option (3), 2026-11-22").
 A plan only: nothing here was applied to any cluster, and no gitops repo was changed. The build is apron PR
 `feat/w43-clearance-gate` (apron#256, reworked) and airframe#151.
 
-Read at: apron `feat/w43-clearance-gate` `db32ff4` (main `2c54708` merged in), airframe#151 `87882df`, gitops-hangar-dev `origin/main`
+Read at: apron `feat/w43-clearance-gate` `c1b83ce` (main `2c54708` merged in), clearance `v0.54.0` (the agent's `carrier`), airframe#151 `87882df`, gitops-hangar-dev `origin/main`
 `09dcb2a`, gitops-hangar-prod `origin/main` `f01e628`. argocd-apps runs Argo CD **v3.5.0** (apron `versions.argocdChart`
 10.3.2, appVersion v3.5.0) on both clusters; the source was also read at v3.4.5 and the behaviour below is the same there.
 
@@ -20,7 +20,8 @@ Read at: apron `feat/w43-clearance-gate` `db32ff4` (main `2c54708` merged in), a
 | `ignoreApplicationDifferences` | none (it still updates sources) | `jsonPointers: [/spec/source, /spec/sources]`, unconditional |
 | `preservedFields.annotations` | none | `[clearance.hangar.io/switched]` |
 | template annotation | none | `clearance.hangar.io/protect: "true"` |
-| static plugin source (templatePatch) | as before (`tenantPlugin`) | never: the agent switches its Applications |
+| static plugin source (templatePatch) | as before (`tenantPlugin`; `gatedSet` needs it `false`) | never: the agent switches its Applications |
+| source order | chart, then `ref: appsrc` (as today) | `ref: appsrc` first, then the chart: the agent's carrier (first git source) is the gitops repository |
 | resources finalizer | yes (as today) | **no** (`preserveResourcesOnDeletion: true` and none in the template) |
 
 `clearance.gate.agent.gatedSetHandover: true` opens the handover window: both sets render
@@ -53,14 +54,22 @@ selectors are In / NotIn on the same value, so every environment is in exactly o
    `applicationsetcontroller.policy` is set (`applicationset/utils/policy.go` `DefaultPolicy`;
    `cmd/argocd-applicationset-controller/commands/applicationset_controller.go:303` [284]). argocd-apps-install sets none
    (apron tests/run.sh checks the template).
-6. **The unconditional ignore rule normalises the live and the generated Application the same way**
+6. **A reconcile acts on the ApplicationSet it read at its start.** `Reconcile` does one `Get` (`:138`) and passes that object
+   to `deleteInCluster` under that object's policy (`:351`), so a reconcile that read the set before the window opened can
+   still delete after the stored policy says `create-update`. The refresh annotation is the signal that one has finished:
+   only a reconcile that read the set *with* the annotation removes it (`:378` `RefreshRequired`, an `Update` at the
+   resourceVersion it read, so an older reader gets a conflict), and the workqueue never runs two reconciles of one key at
+   once. ApplicationSet status has no observedGeneration in v3.5.0. Used at C.1 and D.1.
+7. **The unconditional ignore rule normalises the live and the generated Application the same way**
    (`createOrUpdate.go:110` `applyIgnoreDifferences` on both), so there is no first-transition source deletion of the
    kind the annotation-scoped `select()` rule had (CodeRabbit on apron#256). On create, nothing is ignored: a new gated
    Application starts on its Helm sources and the agent switches it.
 
 All of this is exercised against the **real** controller in apron `tests/appset` (the Argo CD Go module, its own git
 generator, an in-memory tenants repo, envtest kube-apiserver 1.36.2): one set per environment; the ignore rule and
-`preservedFields` keep an agent switch in the gated set and not in tenant-onboarding; the handover in, then back, keeps the
+`preservedFields` keep an agent switch in the gated set and not in tenant-onboarding; a gated Application's first git source
+(the agent's carrier) is its gitops repository, with and without the configMapGenerator source, and tenant-onboarding's
+order is unchanged; the handover in (after the refresh-annotation wait, with C.4's `move`), then back, keeps the
 Application (same uid); and a bare flip outside the window makes tenant-onboarding delete the Application with its
 finalizer on (the failure the window exists for). Run against v3.5.0 in CI and once by hand against v3.4.5: both pass.
 
@@ -76,7 +85,12 @@ kubectl --context hangar-dev -n clearance-system get deploy clearance-argocd-age
 ```
 Expect: no `tenant-onboarding-gated`; the policy keys print `|` (both empty: override on); image `quay.io/argoproj/argocd:v3.5.0`;
 the agent runs with `--optin` (dev's `clearance.gate.agent.optIn: true`, on main since W-40). **Stop** if a controller-wide
-policy is set: the window would be ignored and the handover would delete.
+policy is set: the window would be ignored and the handover would delete. hangar-dev's `cluster.yaml` has
+`clearance.gate.tenantPlugin: false` (apron refuses `gatedSet` without it: an Application on the static plugin would keep
+that source through the handover and the agent would refuse it), so no tenant-onboarding Application is on the plugin;
+check it:
+`kubectl --context hangar-dev -n argocd-apps get applications.argoproj.io -o json | jq -r '.items[] | select(any(.metadata.ownerReferences[]?; .controller == true and .name == "tenant-onboarding")) | select([(.spec.source // empty), (.spec.sources[]? // empty)] | any(.plugin != null)) | .metadata.name'`
+prints nothing.
 
 Baseline of every tenant Application (name, uid, generation, owner, finalizers, annotations, sources):
 ```
@@ -84,19 +98,36 @@ W=<an evidence directory>
 kubectl --context hangar-dev -n argocd-apps get applications.argoproj.io -o json | jq -S '[.items[] | {name:.metadata.name, uid:.metadata.uid, generation:.metadata.generation, owner:([.metadata.ownerReferences[]? | select(.controller) | .name][0]), finalizers:.metadata.finalizers, annotations:(.metadata.annotations // {} | del(.["argocd.argoproj.io/refresh"])), sources:(.spec.source // .spec.sources)}]' > $W/apps-before.json
 ```
 
-**Stop if any tenant identity already says `clearanceGate: true`.** Step A runs with no handover window, so tenant-onboarding
-would delete such an Application (finalizer included) when it starts excluding it. In a fresh checkout of the tenants repo
-(`gitops-hangar-dev-tenants`, `main`):
+**Stop if any tenant identity names `clearanceGate` at all.** Step A runs with no handover window, so tenant-onboarding
+would delete such an Application (finalizer included) when it starts excluding it. The selector matches the parameter as
+the string `"true"`, and more spellings than `true` give it: `"true"`, `True`, and, because the git generator parses with
+`sigs.k8s.io/yaml` (YAML 1.1 booleans), `yes` and `on`. Airframe writes the key only when it is true, so before step A no
+identity carries it: the scan stops on any mention of the key, whatever its value, and on any error. It reads exactly the
+files the generator reads (`tenants/*/*/identity.yaml`) and stops when there are none (a wrong directory). grep exits 0 on
+a match, 1 on none, and anything else on an error, including an error after a match. In bash, with `T` a fresh checkout of
+the tenants repo (`gitops-hangar-dev-tenants`, `main`):
 ```
-if grep -rlE --include=identity.yaml '^clearanceGate:[[:space:]]*true' tenants/; then echo "STOP: a gated identity exists"; else echo "none gated"; fi
+bash -s -- "$T" <<'EOF'
+cd "$1" || exit 2
+shopt -s nullglob; f=(tenants/*/*/identity.yaml)
+[ ${#f[@]} -gt 0 ] || { echo "STOP: no tenants/*/*/identity.yaml in $1 (wrong checkout?)"; exit 2; }
+grep -l -e clearanceGate -- "${f[@]}"; rc=$?
+case $rc in
+  0) echo "STOP: the identities above name clearanceGate"; exit 1 ;;
+  1) echo "none gated: ${#f[@]} identities read, none names clearanceGate" ;;
+  *) echo "STOP: the scan failed (grep exit $rc)"; exit 2 ;;
+esac
+EOF
 ```
-From this check until step A's sync is done and checked, no `ApplicationEnvironment` may change `clearanceGate` (the
-freeze below).
+Go on only on `none gated` and exit 0. From this check on, the freeze below holds.
 
-**Gate-membership freeze.** Nothing in the cluster enforces the order yet (section 6). For the whole rehearsal, the operator
-running it is the only one who changes `spec.clearanceGate` on any `ApplicationEnvironment` of hangar-dev, and only at
-steps C.2 and D.2. Announce the freeze before step A and lift it after E. On hangar-dev the only writers are the owner and
-this session; on a shared cluster the freeze needs an Airframe or admission guard before this is run.
+**Freeze of gate membership and of the tenant identities.** Nothing in the cluster enforces the order yet (section 6). For
+the whole rehearsal, the operator running it is the only one who changes the tenants repo's `tenants/*/*/identity.yaml`
+(no `ApplicationEnvironment` or app is created, deleted, renamed or edited by anyone else), and the operator changes only:
+the throwaway's identity at B (created), C.2 and D.2 (`clearanceGate`) and E (deleted, after the window is closed). The
+C.6 check assumes that no identity changes between it and the close sync; the freeze is what makes that true. Announce
+the freeze before step A and lift it after E. On hangar-dev the only writers are the owner and this session; on a shared
+cluster the freeze needs an Airframe or admission guard before this is run.
 
 Also in place before step B: airframe#151 merged and its composition live on hangar-dev (the throwaway's identity.yaml must
 come from Airframe, as a real one would).
@@ -134,44 +165,84 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
 ### C. Hand it over into the gated set
 
 1. gitops-hangar-dev PR: `clearance.gate.agent.gatedSetHandover: true`. After the sync, both sets show `applicationsSync: create-update`
-   (the jq above). **Do not go on until both do.**
+   (the jq above). Then wait for a reconcile of each that started after the window opened (section 1, item 6): a reconcile
+   that read the set earlier still holds the deleting policy.
+   ```
+   kubectl --context hangar-dev -n argocd-apps annotate applicationset tenant-onboarding tenant-onboarding-gated argocd.argoproj.io/application-set-refresh=true --overwrite
+   kubectl --context hangar-dev -n argocd-apps get applicationset tenant-onboarding tenant-onboarding-gated -o json | jq '.items[] | {name:.metadata.name, sync:.spec.syncPolicy.applicationsSync, refreshPending:(.metadata.annotations // {} | has("argocd.argoproj.io/application-set-refresh"))}'
+   ```
+   Repeat the second command until both show `sync: "create-update"` and `refreshPending: false`. **Do not go on until both
+   do.** An annotation that stays means that set's reconcile fails before its end: stop and read its conditions.
 2. Set `spec.clearanceGate: true` on the `ApplicationEnvironment` `w43-handover-dev`. Check the tenants repo commit:
    `tenants/w43-handover/dev/identity.yaml` gains exactly `clearanceGate: true`. Refresh both sets to skip the 3-minute poll:
    `kubectl --context hangar-dev -n argocd-apps annotate applicationset tenant-onboarding tenant-onboarding-gated argocd.argoproj.io/application-set-refresh=true --overwrite`.
 3. Observe for 3 minutes: `w43-handover-dev` is **not** deleted (no `deletionTimestamp`), same uid, owner still
    `tenant-onboarding`; `tenant-onboarding-gated` has `ErrorOccurred`: `Object argocd-apps/w43-handover-dev is already owned by
    another ApplicationSet controller tenant-onboarding`. The workload's uids equal `workload-B.json`.
-4. Move the controller reference, guarded by the uid of tenant-onboarding (one owner reference is expected; check first):
+4. Move the controller reference, guarded by the uid of tenant-onboarding (one owner reference is expected; check first),
+   and in the same atomic patch put the `ref: appsrc` source first (the gated set's order). The gated set's ignore rule keeps
+   the live sources when it adopts the Application, so without the move the agent would carry its plugin source on the
+   chart repository at its pinned tag (apron README "Gated environments"):
    ```
-   kubectl --context hangar-dev -n argocd-apps get application w43-handover-dev -o jsonpath='{.metadata.ownerReferences}{"\n"}'
+   kubectl --context hangar-dev -n argocd-apps get application w43-handover-dev -o jsonpath='{.metadata.ownerReferences}{"\n"}{.spec.sources[*].repoURL}{"\n"}'
    U=$(kubectl --context hangar-dev -n argocd-apps get applicationset tenant-onboarding -o jsonpath='{.metadata.uid}')
-   kubectl --context hangar-dev -n argocd-apps patch application w43-handover-dev --type json -p "[{\"op\":\"test\",\"path\":\"/metadata/ownerReferences/0/uid\",\"value\":\"$U\"},{\"op\":\"remove\",\"path\":\"/metadata/ownerReferences/0\"}]"
+   kubectl --context hangar-dev -n argocd-apps patch application w43-handover-dev --type json -p "[{\"op\":\"test\",\"path\":\"/metadata/ownerReferences/0/uid\",\"value\":\"$U\"},{\"op\":\"test\",\"path\":\"/spec/sources/1/ref\",\"value\":\"appsrc\"},{\"op\":\"move\",\"from\":\"/spec/sources/1\",\"path\":\"/spec/sources/0\"},{\"op\":\"remove\",\"path\":\"/metadata/ownerReferences/0\"}]"
    kubectl --context hangar-dev -n argocd-apps annotate applicationset tenant-onboarding-gated argocd.argoproj.io/application-set-refresh=true --overwrite
    ```
 5. Expect within a minute: owner `tenant-onboarding-gated` (controller), same uid, annotation `clearance.hangar.io/protect: "true"`,
    no resources finalizer, the gated set's condition cleared. Then the agent (log `kubectl --context hangar-dev -n clearance-system logs deploy/clearance-argocd-agent --since=5m`):
    pair `w43-handover/dev` reported, `Application switched to the plugin ... shape=sources`; the Application now has one plugin
-   source and `clearance.hangar.io/switched: sources`; watch 5 minutes that the gated set does not revert either (W-40's check,
+   source, on the app's gitops repository at `main` (not the chart repository), and `clearance.hangar.io/switched: sources`; watch 5 minutes that the gated set does not revert either (W-40's check,
    now on a tenant Application). Clear the change if it holds, and the merged grant and namespace label follow as in W-40 step 3.
-6. Close the window: PR removing `gatedSetHandover`. Before merging it, compare each tenant Application's controller with
-   the set its current identity.yaml puts it in (the condition check alone misses a set that has not reconciled yet).
-   In a fresh checkout of the tenants repo at the commit the sets last read (`status.resources` lists what each set owns):
+6. Close the window: PR removing `gatedSetHandover`. Before merging it, check ownership both ways (the condition check alone
+   misses a set that has not reconciled yet). From the Applications: every Application whose controller is
+   `tenant-onboarding` or `tenant-onboarding-gated` must be one that set generates from a current identity; an `ORPHAN`
+   (its identity removed or renamed) is what the closed window would delete. From the identities: each one's Application
+   must be controlled by the set its `clearanceGate` puts it in (`MISMATCH`, including no Application at all). Also no
+   Application without a controller (`UNOWNED`). An identity whose `clearanceGate` is anything but absent, `false` or `true`
+   (a quoted string, `yes`, `True`: the generator's YAML 1.1 reading and yq's YAML 1.2 one can differ) stops the check.
+   Every read that fails stops it. In bash, with `T` a fresh checkout of the tenants repo at `main` (the freeze means it is
+   what the sets last read) and `W` the evidence directory:
    ```
-   for f in tenants/*/*/identity.yaml; do a=$(yq .appName "$f"); e=$(yq .env "$f"); g=$(yq '.clearanceGate == true' "$f")
-     want=tenant-onboarding; [ "$g" = true ] && want=tenant-onboarding-gated
-     have=$(kubectl --context hangar-dev -n argocd-apps get application "$a-$e" -o jsonpath='{.metadata.ownerReferences[?(@.controller==true)].name}')
-     [ "$have" = "$want" ] || echo "MISMATCH $a-$e: owned by '$have', identity.yaml puts it in $want"; done
-   kubectl --context hangar-dev -n argocd-apps get applications.argoproj.io -o json | jq -r '.items[] | select([.metadata.ownerReferences[]? | select(.controller)] | length == 0) | "UNOWNED \(.metadata.name)"'
+   bash -s -- "$T" "$W" <<'EOF'
+   cd "$1" || exit 2; W=$2
+   shopt -s nullglob; f=(tenants/*/*/identity.yaml)
+   [ ${#f[@]} -gt 0 ] || { echo "STOP: no tenants/*/*/identity.yaml in $1"; exit 2; }
+   : > "$W/want.tsv" || exit 2
+   for i in "${f[@]}"; do
+     a=$(yq -e '.appName' "$i") && e=$(yq -e '.env' "$i") && g=$(yq '.clearanceGate | (tag + ":" + to_string)' "$i") \
+       || { echo "STOP: cannot read $i"; exit 2; }
+     case "$g" in
+       '!!null:null'|'!!bool:false') s=tenant-onboarding ;;
+       '!!bool:true') s=tenant-onboarding-gated ;;
+       *) echo "STOP: $i says clearanceGate $g (Airframe writes true or nothing: read it by hand)"; exit 2 ;;
+     esac
+     printf '%s\t%s\n' "$a-$e" "$s" >> "$W/want.tsv" || exit 2
+   done
+   d=$(cut -f1 "$W/want.tsv" | sort | uniq -d); [ -z "$d" ] || { echo "STOP: more than one identity makes $d"; exit 2; }
+   kubectl --context hangar-dev -n argocd-apps get applications.argoproj.io -o json > "$W/apps-C6.json" || { echo "STOP: cannot list the Applications"; exit 2; }
+   r=$(jq -r --rawfile want "$W/want.tsv" '
+     ($want | split("\n") | map(select(length > 0) | split("\t") | {key: .[0], value: .[1]}) | from_entries) as $w
+     | [.items[] | {n: .metadata.name, o: ([.metadata.ownerReferences[]? | select(.controller == true) | .name][0] // "")}] as $a
+     | ($a | map({key: .n, value: .o}) | from_entries) as $by
+     | ($a[] | select(.o == "tenant-onboarding" or .o == "tenant-onboarding-gated") | select($w[.n] == null)
+         | "ORPHAN \(.n): controlled by \(.o), and no identity generates it"),
+       ($w | to_entries[] | select($by[.key] != .value)
+         | "MISMATCH \(.key): controlled by \(if $by[.key] == null then "nothing (no Application)" elif $by[.key] == "" then "nothing" else $by[.key] end), its identity puts it in \(.value)"),
+       ($a[] | select(.o == "") | "UNOWNED \(.n)")' "$W/apps-C6.json") || { echo "STOP: jq failed"; exit 2; }
+   if [ -n "$r" ]; then echo "$r"; echo "STOP: do not merge the close PR"; exit 1; fi
+   echo "ok: $(wc -l < "$W/want.tsv" | tr -d ' ') identities; every Application either set controls is one that set generates"
+   EOF
    kubectl --context hangar-dev -n argocd-apps get applicationsets tenant-onboarding tenant-onboarding-gated -o json | jq '.items[] | {name:.metadata.name, error:[.status.conditions[]? | select(.type=="ErrorOccurred" and .status=="True") | .message]}'
    ```
-   Merge only when the loop prints no `MISMATCH`, no tenant Application is `UNOWNED`, and neither set has an error. The
-   freeze (section 2) holds until the close sync is done, so no identity can change between this check and the sync.
+   Merge only when the script prints `ok` and exits 0, and neither set has an error. The freeze (section 2) holds until the
+   close sync is done, so no identity can change between this check and the sync.
    After the sync: `w43-handover-dev` unchanged, workload uids equal `workload-B.json`, and the baseline
    diff of every other Application still identical.
 
 ### D. Hand it back to tenant-onboarding
 
-1. Open the window again (as C.1).
+1. Open the window again (as C.1, including the wait for a reconcile after it opened).
 2. Remove `spec.clearanceGate` from the `ApplicationEnvironment`; refresh both sets. Expect: the gated set keeps the Application
    (owner unchanged, same uid, still switched); `tenant-onboarding` reports `already owned by another ApplicationSet controller
    tenant-onboarding-gated`.
@@ -182,8 +253,9 @@ Expect: owner `tenant-onboarding` (controller), finalizer `resources-finalizer.a
    **Do not go on while it is still on the plugin**: tenant-onboarding would overwrite the plugin source and the agent could no
    longer restore or unlabel it (gate.md "The marker has two halves"), leaving a labelled namespace whose Helm render admission
    refuses once enforced.
-4. Move the controller reference to tenant-onboarding (C.4 with the gated set's uid), refresh `tenant-onboarding`. Expect: owner
-   `tenant-onboarding`, same uid, resources finalizer back, no `clearance.hangar.io/*` annotation, Synced.
+4. Move the controller reference to tenant-onboarding (C.4's uid test and remove, with the gated set's uid; no `move`:
+   tenant-onboarding rewrites the sources), refresh `tenant-onboarding`. Expect: owner `tenant-onboarding`, same uid, the
+   chart source first again, resources finalizer back, no `clearance.hangar.io/*` annotation, Synced.
 5. Close the window (C.6's check first). Then the full baseline diff: every Application identical to `apps-before.json` except
    `w43-handover-dev` (new since the baseline) and the workload uids equal `workload-B.json`.
 
@@ -206,7 +278,10 @@ apron `tests/appset` (`a bare flip outside the window deletes the Application`),
 |---|---|---|
 | `clearanceGate` flipped with the window closed | the set that stops generating the Application deletes it; from tenant-onboarding the resources finalizer deletes the workload; the gated set then creates a new Application (new uid) that deploys it again. From the gated set (handover back) the Application is deleted but the workload stays (no finalizer) and tenant-onboarding recreates and adopts it | the window first, always; the README and this plan say so. Today nothing in the cluster enforces the order (an Airframe or admission guard is a follow-up: section 6). On hangar-dev recovery is a re-sync of the recreated Application |
 | a controller-wide `applicationsetcontroller.policy` set without the override | `applicationsSync` is ignored: the window does nothing, the flip deletes | precondition check in section 2; apron's test fails if argocd-apps-install sets it |
-| the window closed while an Application is still owned by a set that no longer generates it (C.4 or D.4 skipped) | that set deletes it on its next reconcile (a tenant-onboarding one with the finalizer: the workload goes) | C.6 / D.5 check: no `ErrorOccurred` on either set, every Application's controller generates it |
+| the window closed while an Application is still owned by a set that no longer generates it (C.4 or D.4 skipped, or its identity removed or renamed) | that set deletes it on its next reconcile (a tenant-onboarding one with the finalizer: the workload goes) | C.6 / D.5 check: no `ORPHAN`, `MISMATCH` or `UNOWNED`, no `ErrorOccurred` on either set; the identity freeze |
+| `clearanceGate` flipped right after the window's render, before the sets reconciled under it | a reconcile that read the set before the window still holds `sync` and deletes the Application its generator stops returning | C.1's refresh-annotation wait (section 1, item 6) |
+| C.4 without the `move` | the gated set keeps the chart source first (ignore rule); the agent carries the plugin source on the chart repository at its tag: the plugin refuses the gitops repository (not on `CLEARANCE_CHART_REPOS`), or a release commit does not re-render | the `move` in C.4's patch; C.5 checks the plugin source's repository. To repair: opt out (remove `protect`), wait for the restore, move the source by hand, put `protect` back |
+| a cluster with `tenantPlugin` on | an Application on the static plugin keeps that source through the handover and the agent refuses it | apron refuses `gatedSet` unless `tenantPlugin: false`; section 2 checks no tenant Application is on a plugin |
 | owner reference removed before the flip | tenant-onboarding still generates the Application and re-adopts it (SetControllerReference on an unowned object): nothing moves | do C.4 after C.2, as written |
 | the JSON patch `test` fails | nothing is changed (the patch is atomic) | re-read the owner references; never remove one without the uid test |
 | both sets generate the same name (a selector bug) | each reports `already owned` for the other's Application; nothing is deleted while the error stands (the reconcile returns before its delete step) | tests/appset checks exactly-one; on a cluster, revert the apron render |
