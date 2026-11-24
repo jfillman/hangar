@@ -3,7 +3,7 @@ title: Clearance Cloud Build Specification
 program: Hangar · Clearance Cloud
 board: https://claude.ai/artifact/N9sDgHyHKjF8aMfAcxjr8f
 source: https://claude.ai/artifact/XByvsn2wm6xmVcGnA32tJb
-updated: 2026-11-22
+updated: 2026-11-24
 ---
 
 Nov 9, 2026 · @James
@@ -467,7 +467,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 - **Decision (2026-11-22, A-8).** Owners always sign in through their organization's SSO, whose identity provider supplies the MFA. A tenant without SSO is not onboarded until it has one, so no non-SSO owner path is built.
 
 ### INF-6 · Delivery: CI, images, Argo CD and gated deploys
-<!-- pkg status=proposal wave=K0 strip=W-7 -->
+<!-- pkg status=in-progress wave=K0 strip=W-7 -->
 
 - **Repos.** clearance-cloud (workflows), clearance-cloud-infra, gitops-clearance-cloud.
 - **Depends on.** INF-3; the main spec's G-TF-6 and the Argo CD gate.
@@ -480,6 +480,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
   - The ops Clearance core in shared-services (the existing chart), with the Argo CD gate installed on cloud-prod against it and the HCP run task registered on every prod workspace.
 - **Done when.** A digest bump syncs to staging without a hold. The same bump to prod holds until a person clears it, quoted as the record id. A Terraform plan on a prod workspace shows the run task result. An unsigned image is refused at admission.
 - **User steps.** The HCP Terraform organization, and clearing the first prod deploy.
+- **Progress (2026-11-24).** Built: GitHub OIDC push roles (immutable subject), the image workflow (multi-arch, SBOM, provenance, keyless signing, push by digest; first release cloud-v0.1.0), the shared-services registry, render-and-diff for gitops, and the staging Argo CD Applications (all Synced and Healthy). The admission policy admits only environment-registry images by digest (verified 5/5, Warn mode). Open: signature verification at admission (an unsigned image is not refused yet), the cloud-api digest bump to staging (waits on CS-1's deploy chart), the portal bundle workflow, the ops core with the Argo CD gate on prod, and the HCP run task on prod workspaces.
 
 ### INF-7 · Observability, backups and DR
 <!-- pkg status=proposal wave=K1 -->
@@ -527,7 +528,7 @@ Modules pin provider versions, run `terraform validate`, `tflint` and `checkov` 
 Ten packages build the Go services in jfillman/clearance-cloud: `cmd/cloud-api`, `cmd/cloud-ingest` and `cmd/cloud-worker`, sharing `internal/`. They import jfillman/clearance by tag. A change the core needs, such as hosted-recorder mode, the sync client or the S3 ledger driver, is a Clearance PR first and follows the main spec's release chain. The main spec's security and efficiency principles apply unchanged: distroless images, strict decoding, timeouts, fuzz targets on every parser, fail closed.
 
 ### CS-1 · Tenancy, people, roles and the cloud-api skeleton
-<!-- pkg status=proposal wave=K0 strip=W-8 -->
+<!-- pkg status=in-progress wave=K0 strip=W-8 -->
 
 - **Repos.** clearance-cloud.
 - **Depends on.** INF-3, INF-4, INF-5.
@@ -542,6 +543,7 @@ Ten packages build the Go services in jfillman/clearance-cloud: `cmd/cloud-api`,
 - **Done when.** Provisioning a tenant from nothing to a serving cell takes under 10 minutes and a second run changes nothing. A viewer is refused a share action. A SCIM deprovision ends that person's sessions within 60 seconds. The tenant-isolation suite passes.
 - **Rollout.** Cloud release chain.
 - **User steps.** None.
+- **Progress (2026-11-24).** Code built and merged (CS-1a to CS-1d) with unit tests. Database access uses RDS IAM authentication with a token per connection and verify-full TLS against a pinned CA bundle, so no database password is stored. Staging prerequisites merged in the infra repo behind a flag: Pod Identity roles for cloud-api, cloud-migrate and cloud-worker, an app secret seeded in-VPC (no value in Terraform state), and in-VPC tasks that create the IAM login roles. Next: apply and run those tasks, cut a release with the IAM code, then the gitops chart (Deployment, migrate Job, target group binding, external secret, Postgres egress). The done bar also needs the real cloud-worker adapters (KMS, Secrets Manager, Cognito, Kubernetes, Helm), which are still stubs.
 
 ### CS-2 · Record sync from the customer's core
 <!-- pkg status=proposal wave=K1 -->
