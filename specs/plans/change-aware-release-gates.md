@@ -168,11 +168,14 @@ token the gates use today. There is no clone.
 1. `GET pulls/{n}` gives the base SHA. `GET compare/{base}...{head}` gives the changed files **including removed and
    renamed ones**. Today's resolver drops removed files (`resolve-promoted-image.yaml:109`); the classifier must not,
    because deleting a manifest is a change. The compare is three-dot, so `main` moving on does not change the answer.
-2. Keep only the deployable files: the predicate in section 4, plus any file of an own chart under
-   `<cluster>/<env>/` (a `.tpl` helper, anything under a `templates/` or `charts/` directory, `Chart.yaml`,
-   `Chart.lock`). The predicate matches only YAML and JSON, so without the second half a PR that changes only a chart
-   helper would be `no-op` and skip the render backstop. Own-chart files are not parsed: they make their environment
-   `config` with `renderCheck: required` (step 8). If no file is left, the kind is `no-op`.
+2. Keep only the deployable files: the predicate in section 4, plus the template side of an own chart under
+   `<cluster>/<env>/` (a `.tpl` helper, anything under `templates/`, `Chart.yaml`, `Chart.lock`, a packaged subchart
+   under `charts/`). The predicate matches only YAML and JSON, so without the second half a PR that changes only a
+   chart helper would be `no-op` and skip the render backstop. Template-side files are not parsed: they make their
+   environment `config` with `renderCheck: required` (step 8). An own chart's values files (any other YAML or JSON in
+   it, `values.yaml`, `values-*.yaml`, a subchart's values) are parsed like every values file, so an image change in
+   them is `image-release` (section 5.1) and never reaches the backstop as a surprise. If no file is left, the kind is
+   `no-op`.
 3. Map each file to the environments it feeds. `<cluster>/<env>/…` is one environment. `<cluster>/base.yaml` feeds
    every environment under `<cluster>/`, listed from the head tree. A `kustomization` file feeds the directory it is in.
 4. For each file, read it at base and head (an added file has no base, a removed file has no head) and pull out
