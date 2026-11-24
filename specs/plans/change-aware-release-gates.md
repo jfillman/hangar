@@ -2,13 +2,14 @@
 title: Change-aware release gates
 program: Hangar · Clearance, Autopilot, Glidepath
 board: https://claude.ai/artifact/7bptZqWD7RdUDxyR4TQ8o9
-updated: 2026-11-23
+updated: 2026-11-24
 ---
 
-Every Glidepath release gate runs on every pull request to a gitops repo's `main` that changes deployable files. Each
-gate decides from the PR's own diff what kind of change it is judging, and reports one of three things: it ran, it ran
-as advisory, or it does not apply to this kind of change. This lets a config-only change merge under a required-checks
-ruleset without weakening any gate on an image release. Design only: nothing here is built. The owner reviews it first.
+Every Glidepath release gate runs on every pull request to a gitops repo's `main`. Each gate decides from the PR's own
+diff what kind of change it is judging, and reports one of three things: it ran, it ran as advisory, or it does not
+apply to this kind of change. This lets a config-only change merge under a required-checks ruleset without weakening any
+gate on an image release, and every other PR still reports every required check. The owner approved the design and
+answered every open question on 2026-11-24 (section 13). Building starts with CG-1.
 
 Written 2026-11-23 against glidepath `origin/main` `e5d27d8` (glidepath#299 merged), Tower `origin/main` `d4ad869` and
 backstage `origin/main`. Shorthand: `GC` = glidepath `charts/glidepath-catalog/templates`, `GV` =
@@ -96,7 +97,9 @@ branch fails seven gates. An image change on any other branch runs almost none o
 ## 3. Decisions the owner already made {#approved}
 
 1. One check per gate stays. A single aggregate check may be added, but only alongside the per-gate checks (section 11).
-2. Every gate runs on every PR to `main` that changes deployable files. This is the glidepath#299 trigger, extended to all gates.
+2. Every gate runs on every PR to `main`. The owner first set this as "every PR that changes deployable files" (the
+   glidepath#299 trigger, extended to all gates), then widened it to every PR on 2026-11-24 (Q1). The deployable-files
+   predicate moved into the classifier, where it separates `no-op` from the other kinds.
 3. A shared classifier works out the change kind from the PR's diff (and from the render where needed). It never reads the
    branch name, the PR text or commit trailers.
 4. A class × kind matrix gives each gate one of run / advisory / not applicable for each kind. "Not applicable" is a
@@ -109,30 +112,31 @@ branch fails seven gates. An image change on any other branch runs almost none o
 
 ## 4. The trigger {#trigger}
 
-Every gitops-repo gate template (`OT/gitops-repo/pull-request-<gate>.yaml`) gets the deployable-files predicate from
-glidepath#299 and **drops the branch clause**:
+Every gitops-repo gate template (`OT/gitops-repo/pull-request-<gate>.yaml`) triggers on **every pull request to
+`main`** (Q1, decided 2026-11-24) and drops the branch clause:
 
 ```
-event == "pull_request" && target_branch == "main" &&
-files.all.exists(f, !f.startsWith(".tekton/") && !f.startsWith("releases/") &&
+event == "pull_request" && target_branch == "main"
+```
+
+- `release-*` is no longer a condition, and nothing about the files changed is either. Every required check reports on
+  every PR, so a PR that changes nothing deployable can still merge on an enforced ruleset.
+- The deployable-files predicate from glidepath#299 moves into the classifier (section 5.2, step 2). It is the line
+  between `no-op` and the other kinds:
+
+  ```
+  !f.startsWith(".tekton/") && !f.startsWith("releases/") &&
   (f.matches("(values|release|base|kustomization)[^/]*\\.ya?ml$") || f.endsWith("Kustomization") ||
-   f.matches("^[^/]+/[^/]+/.+\\.(ya?ml|json)$")))
-```
+   f.matches("^[^/]+/[^/]+/.+\\.(ya?ml|json)$"))
+  ```
 
-- `release-*` is no longer a condition. A real release PR always changes a release or values file, so it still matches.
-- `release-record-*` needs no exclusion. Those PRs only add `releases/<app>@<version>.yaml`, which the predicate already excludes.
-- The PaC trigger is only a cheap pre-filter. The classifier (section 5) decides what each gate does, so a trigger that
-  is a little too wide costs a pod, never a wrong verdict.
+- A PR that changes nothing deployable, such as an onboarding-resync PR (`.tekton/` only), a Release Record PR
+  (`releases/` only) or a README edit, classifies as `no-op`, and every gate except `agent-gates` reports `n/a`
+  (`agent-gates` judges who opened the PR, so it runs on every PR, section 6). The cost is about 11 small PipelineRuns
+  per such PR (section 12.2).
+- `release-record-*` PRs need no exclusion: they only add `releases/<app>@<version>.yaml`, so they classify as `no-op`.
+- The classifier (section 5) decides what each gate does, so the trigger needs no judgement of its own.
 - All gate templates must carry the identical expression. A test asserts it (CG-9).
-
-**The gap this leaves (question Q1).** A PR that changes nothing deployable, such as an onboarding-resync PR (`.tekton/`
-only), a Release Record PR (`releases/` only) or a README edit, gets none of the required checks. On an enforced
-ruleset that PR cannot merge. The owner's goal, "ruleset-required checks always report", needs every gate to trigger on
-**every** PR to `main`. Non-deployable PRs then classify as `no-op` and every gate is `n/a`. The cost is about 11 small
-PipelineRuns per such PR. Recommendation: trigger on every PR to `main`. The deployable predicate moves into the
-classifier as the line between `no-op` and the other kinds. That changes direction 2, so it is the owner's call. Until
-the ruleset is enforced (the lab is GitHub Free with private repos, so rulesets are not enforced:
-`github-ruleset.md:37-41`), the narrower trigger is enough.
 
 ## 5. The classifier {#classifier}
 
@@ -164,7 +168,14 @@ token the gates use today. There is no clone.
 1. `GET pulls/{n}` gives the base SHA. `GET compare/{base}...{head}` gives the changed files **including removed and
    renamed ones**. Today's resolver drops removed files (`resolve-promoted-image.yaml:109`); the classifier must not,
    because deleting a manifest is a change. The compare is three-dot, so `main` moving on does not change the answer.
-2. Keep only the deployable files (the predicate above). If none are left, the kind is `no-op`.
+2. Keep only the deployable files: the predicate in section 4, plus the template side of an own chart under
+   `<cluster>/<env>/` (a `.tpl` helper, anything under `templates/`, `Chart.yaml`, `Chart.lock`, a packaged subchart
+   under `charts/`). The predicate matches only YAML and JSON, so without the second half a PR that changes only a
+   chart helper would be `no-op` and skip the render backstop. Template-side files are not parsed: they make their
+   environment `config` with `renderCheck: required` (step 8). An own chart's values files (any other YAML or JSON in
+   it, `values.yaml`, `values-*.yaml`, a subchart's values) are parsed like every values file, so an image change in
+   them is `image-release` (section 5.1) and never reaches the backstop as a surprise. If no file is left, the kind is
+   `no-op`.
 3. Map each file to the environments it feeds. `<cluster>/<env>/…` is one environment. `<cluster>/base.yaml` feeds
    every environment under `<cluster>/`, listed from the head tree. A `kustomization` file feeds the directory it is in.
 4. For each file, read it at base and head (an added file has no base, a removed file has no head) and pull out
@@ -225,11 +236,15 @@ computation and logs that it did. If both fail, the result is `image-release` (f
 
 The file-level classifier can miss an image that only the render shows (step 8, and anything it does not understand).
 clearance-gate already renders base and head. Its decide step gains one comparison: the set of container images
-(containers, initContainers, ephemeralContainers) per environment, base against head. If they differ and the
-classification is `config` or `no-op`, the check fails with "this PR changes images the classifier did not see:
-<list>". This runs as a hard task even where clearance-gate itself is advisory (it sits next to the existing
-`render-check` task), because it is a statement about classification, not about clearance. Question Q4: is this the
-right host? It covers only `targets: [k8s-rollout]` apps, the only ones with environments to render today.
+(containers, initContainers, ephemeralContainers) per environment, base against head. It runs for **every** kind, `image-release` and `rollback` included: every
+rendered image that is new at head must be one the classifier listed for that environment (`envs[].images.head`).
+If one is not, the check fails with "this PR changes images the classifier did not see: <list>". Otherwise a PR that
+changes a listed image in `values.yaml` and an unlisted sidecar image in an own-chart template would pass as an
+image release of one image, and the sidecar would reach the environment without its own gates or Q8's
+one-image limit. This runs as a hard task even where clearance-gate itself is advisory (it sits next to the existing
+`render-check` task), because it is a statement about classification, not about clearance. This is the right host
+(Q4, decided); revisit if clearance-gate ever stops rendering base. It covers only `targets: [k8s-rollout]` apps,
+the only ones with environments to render today.
 
 ## 6. The class × kind matrix {#matrix}
 
@@ -240,7 +255,7 @@ still composes on top: an advisory gate that "runs" runs its advisory copy.
 | Gate | Class | image-release | rollback | config | no-op |
 |---|---|---|---|---|---|
 | sast | content | run (locked) | advisory | n/a: the image is unchanged and its source was gated when it was released | n/a |
-| image-scan | content | run | advisory | n/a (see Q5) | n/a |
+| image-scan | content | run | advisory | n/a (Q5: new CVEs in running images belong to a scheduled re-scan) | n/a |
 | sbom | content | run | advisory | n/a | n/a |
 | api-compat | content | run (advisory by registry) | advisory | n/a | n/a |
 | qa | content | run (advisory by registry) | advisory | n/a | n/a |
@@ -284,15 +299,16 @@ Pipelines were rendered from.
   `Success` or `Failed`, with PaC's own summary. Glidepath posts as the same GitHub App (promote already PATCHes its own
   `image-promotion-` check, `promote.yaml:240`), so it *can* retitle the run to
   `Not applicable: config, <reason>`. But PaC updates the check run again when the PipelineRun finishes, after the
-  `finally` that would do the retitling. Two ways (Q2):
+  `finally` that would do the retitling. Two ways (Q2, decided: (a) for v1, and prototype (b)):
   (a) v1 keeps PaC's title. The n/a run's only DAG task is named `not-applicable`, so PaC's task table in the check
   says it, and the comment and every reader say `n/a`.
   (b) A small post-completion updater retitles the check after PaC's last update (the tekton-results relay already sees
   completions). This needs a prototype: does PaC write the check again after completion?
-- **PR comment.** `comment-pr-check-result` gains `change-kind`, `applicability` and `reason` params. An n/a comment is
-  one line: "**sast: not applicable** (config): this PR changes no image; hangar-prod/staging changes
-  `rollout.replicas`." A config PR gets about seven of these. Q3 asks whether to fold them into one "Change
-  classification" comment.
+- **PR comment.** `comment-pr-check-result` gains `change-kind`, `applicability` and `reason` params. The n/a gates
+  share one "Change classification" comment, upserted by a marker (Q3, decided), instead of one comment each. It
+  names the kind and the reason once, then lists the n/a gates: "**Not applicable** (config): sast, image-scan, sbom,
+  api-compat, qa. This PR changes no image; hangar-prod/staging changes `rollout.replicas`." A gate that runs keeps
+  its own comment.
 - **Ledger.** The verdict `n/a` goes in beside `success` and `failure`. The `gate-verdict` route does **not** take the
   run's word for it. It reads the `classify` TaskRun's results and checks them against its own stored classification
   and the `release-guardrails` matrix. If they agree, the route records `n/a`. If not, it records `failure` with
@@ -338,9 +354,10 @@ the same call clearance-gate's fetch makes, `clearance-gate.md:37-46`). A PR ope
 results, into the `<!-- glidepath:signature {...} -->` line with `path: gitops-pr`, and onto the release record when
 there is one.
 
-**Consequence to accept (Q6).** On a cluster whose policy leaves the GitHub-merge path off, a config PR written in
-GitHub's web editor (web-flow signed, not gitsign) fails provenance. That is the rule as written for image releases
-too, but config PRs are much more often hand-written.
+**Consequence accepted (Q6, decided).** On a cluster whose policy leaves the GitHub-merge path off, a config PR written
+in GitHub's web editor (web-flow signed, not gitsign) fails provenance. That is the rule as written for image releases
+too, but config PRs are much more often hand-written. The path stays off by default; an admin turns it on per app where
+people edit in the web UI.
 
 ## 8. itsm on a config change {#itsm-config}
 
@@ -368,8 +385,16 @@ PR returned if one already exists.
   through the platform's GitHub App, writes a release record (`kind: config`, the environment's current image, a new
   chain id) and a change request when a provider is set, and fills in the gate table for the `config` column. It also
   stamps a new `releaseTracking.releaseId` into the release file, so the relay's outcome facts land on this record and
-  not on the last image release. To check: does the chart put `hangar.io/release-id` on the Rollout's metadata or on
-  its pod template? On the pod template, a replicas-only change would restart pods (Q7).
+  not on the last image release. Q7, checked 2026-11-24: airframe-application puts `hangar.io/release-id` (and the
+  `hangar.io/release-tracked` label) on the Rollout's own metadata, never on its pod template
+  (`charts/airframe-application/templates/workload/rollout.yaml:56-75` on airframe `e1cbd42`; the pod template at
+  `:90-123` carries nothing release-specific but the image tag in `app.kubernetes.io/version`). open-release-pr writes
+  only `release.image.*` and `releaseTracking.{cluster,appNamespace,releaseId}` (`GC/tasks/open-release-pr.yaml:854-865`
+  on glidepath `25ad6ea`). So stamping a new id never restarts pods, and the action **always** stamps one: every config
+  release gets its outcome facts under its own id. Open for CG-7: a change that rolls no pods (replicas only) produces
+  no new revision, so the Rollouts notifications may report nothing for it, and the sweeper's stall alert ("merged,
+  no rollout fact") would fire. CG-7 decides how such a record reaches a terminal state (for example, healthy from the
+  first heartbeat fact under its id).
 - **Tower**: the Values form's "Open config PR" and the flight-base and ConfigMap-files editors
   (`BE/glidepathConfig.ts:487-582`) call this route through the Backstage proxy instead of writing to GitHub
   themselves. That fits the standing rule that glidepath-api is the CI/CD interface.
@@ -399,8 +424,8 @@ Order matters: each step works with what the previous step left in place.
 6. **Ruleset, last**: once every gitops repo's resync has merged, re-run `hack/apply-guardrail-ruleset.sh -f <cluster
    values>`. Before that, a repo with the old files would have required checks that its config PRs never get.
    Implications:
-   - with the deployable-only trigger, non-deployable PRs (resync, Release Record, docs) cannot merge on an enforced
-     ruleset (Q1);
+   - non-deployable PRs (resync, Release Record, docs) report every required check as `n/a`, so they merge on an
+     enforced ruleset (Q1);
    - the Crossplane App's direct commits still need the bypass actor (`github-ruleset.md:58-61`);
    - on GitHub Free the ruleset is still not enforced, so `detect-bypass-merge` (now n/a-aware) stays the only control.
 
@@ -444,9 +469,9 @@ minute for the check:
 
 A builder is already fixing I-85. This design adds a catalog CI test that parses every template with a `finally` and
 fails unless `tasks >= finally + <declared check budget>` and `pipeline >= tasks + finally`. Running every gate on
-every config PR adds `finally` load on hangar-dev, which is exactly when a slow comment step pushes a green run into a
-timeout. The n/a path is light (one step and the comment), but about 11 runs × 2 pods per config PR is real, and the
-gates queue under `pipelinesAsCode.concurrencyLimit` (`docs/admin/pipeline-performance.md`).
+every PR (Q1) adds `finally` load on hangar-dev, which is exactly when a slow comment step pushes a green run into a
+timeout. The n/a path is light (one step and the comment), but about 11 runs × 2 pods per config or no-op PR is real,
+and the gates queue under `pipelinesAsCode.concurrencyLimit` (`docs/admin/pipeline-performance.md`).
 
 ### 12.3 Found while reading (not part of this change) {#found}
 
@@ -455,23 +480,30 @@ gates queue under `pipelinesAsCode.concurrencyLimit` (`docs/admin/pipeline-perfo
   image-release PR could name a well-signed but unrelated app commit. Worth a look under the same "never from PR text"
   rule.
 - **The image gates read only the first changed manifest** (`resolve-promoted-image.yaml:118-120`). A PR that changes
-  the image in two environments gates one of them. The classifier lists every image change, so the content gates should
-  check every distinct new image, or refuse more than one per PR (Q8).
+  the image in two environments gates one of them. The classifier lists every image change. Decided (Q8): in v1 the
+  content gates refuse a PR that changes more than one distinct image, and name the images.
 
-## 13. Open questions {#questions}
+## 13. Decided 2026-11-24 {#questions}
 
-| # | Question | Recommendation |
-|---|---|---|
-| Q1 | Trigger on deployable files only (as directed), or on every PR to `main` so non-deployable PRs also report every required check? | every PR, with no-op meaning all n/a; needed before the ruleset is enforced |
-| Q2 | n/a check title: keep PaC's `Success` with a `not-applicable` task (v1), or build a post-completion retitler? | v1 as is; prototype the retitler |
-| Q3 | One comment per n/a gate, or one shared "Change classification" comment? | one shared comment, upserted by a marker |
-| Q4 | Where the render backstop lives (clearance-gate's render, as a hard task even where that gate is advisory)? | yes; revisit if clearance-gate ever stops rendering base |
-| Q5 | image-scan on a config change: n/a, or advisory (a fresh Trivy scan of the unchanged image on each config PR)? | n/a; a scheduled re-scan of running images is the better home for new CVEs |
-| Q6 | Accept that hand config PRs fail provenance where the GitHub-merge path is off, or enable it for the gitops-PR variant by default? | accept; turn on the path per app where people edit in the web UI |
-| Q7 | The config-change action stamps a new `releaseId`: check where the chart writes `hangar.io/release-id` (metadata or pod template) before building | check first; if pod template, stamp only when the change already rolls pods |
-| Q8 | A PR that changes images in several environments: gate every distinct image, or refuse more than one image per PR? | refuse more than one in v1 |
-| Q9 | Cloud release pins (`glidepath/releases/*.yaml`, app-repo PRs, ADR-0020): in scope? | not in v1; pins keep today's gates, and the classifier learns pins later |
-| Q10 | Agent PRs: an agent's config PR is `config` (agent-scope bounds its paths; provenance needs a person's approval under reviewed merge). An agent's image edit is `image-release` and fails provenance. Intended? | yes |
+The owner accepted every recommendation. The sections above now read as decided.
+
+- **Q1 · Trigger.** Every PR to `main`, not only PRs that change deployable files. A non-deployable PR classifies as
+  `no-op` and every gate but `agent-gates` is `n/a`. This was needed before the ruleset is enforced (section 4).
+- **Q2 · n/a check title.** v1 keeps PaC's `Success` title with a `not-applicable` task. Prototype a
+  post-completion retitler (section 6.2).
+- **Q3 · n/a comments.** One shared "Change classification" comment, upserted by a marker, not one per gate (section 6.2).
+- **Q4 · Render backstop.** It lives in clearance-gate's render, as a hard task even where that gate is advisory.
+  Revisit if clearance-gate ever stops rendering base (section 5.4).
+- **Q5 · image-scan on a config change.** `n/a`. A scheduled re-scan of running images is the home for new CVEs.
+- **Q6 · Hand config PRs where the GitHub-merge path is off.** Accept that they fail provenance. Turn the path on per
+  app where people edit in the web UI (section 7).
+- **Q7 · `releaseId` stamp.** Check where the chart writes `hangar.io/release-id` before building CG-7; if it is on the
+  pod template, stamp only when the change already rolls pods. Checked 2026-11-24: it is on the Rollout's metadata, so
+  the config-change action always stamps a new id (section 9).
+- **Q8 · Several images in one PR.** Refuse more than one distinct image per PR in v1 (section 12.3).
+- **Q9 · Cloud release pins.** Not in v1. Pins keep today's gates, and the classifier learns pins later.
+- **Q10 · Agent PRs.** Intended as written: an agent's config PR is `config` (agent-scope bounds its paths; provenance
+  needs a person's approval under reviewed merge), and an agent's image edit is `image-release` and fails provenance.
 
 ## 14. Risks {#risks}
 
@@ -493,7 +525,8 @@ gates queue under `pipelinesAsCode.concurrencyLimit` (`docs/admin/pipeline-perfo
 
 **Goal.** One classification per PR head: computed from the diff, stored write-once, served to every gate and reader.
 
-**Scope.** `POST`/`GET /v1/apps/{app}/pulls/{n}/classification`, the algorithm in section 5.2, singleflight, the
+**Scope.** `POST`/`GET /v1/apps/{app}/pulls/{n}/classification`, the algorithm in section 5.2 (with the deployable-files
+predicate of section 4 as the `no-op` line), singleflight, the
 `change-kind-pr-<n>` ConfigMap, the copy onto the release record, the sweeper. Rollback eligibility moves here, with
 its logic unchanged. OpenAPI, contract and `docs/admin/api.md`.
 
@@ -514,7 +547,9 @@ a release turns healthy returns the frozen answer.
 **Goal.** Each gate runs, advises or is n/a from the classification.
 
 **Scope.** The `classify-change` StepAction in each gate's first task (and a small first task for provenance), the
-`when`s that replace `rollback-eligible`, comment-pr's n/a params and wording, and the `not-applicable` task name.
+`when`s that replace `rollback-eligible`, comment-pr's n/a params and the shared "Change classification" comment
+(Q3), the `not-applicable` task name, and the content gates' refusal of more than one distinct image per PR (Q8).
+A prototype of the post-completion retitler (Q2) rides along, not wired in.
 
 ### CG-4 · Ledger, fan-in and readers show n/a
 <!-- pkg status=proposal depends=CG-3 -->
@@ -545,7 +580,7 @@ Tower's Values, flight-base and ConfigMap editors moved off `BE/glidepathConfig.
 ### CG-8 · Triggers and rollout
 <!-- pkg status=proposal depends=CG-3,CG-4 strip=I-84 -->
 
-**Scope.** The CEL in every gitops gate template (with the I-85 timeouts), the resync of every gitops repo through
+**Scope.** The every-PR-to-`main` CEL in every gitops gate template (with the I-85 timeouts), the resync of every gitops repo through
 CG-10, then the ruleset re-run. The order in section 10.
 
 ### CG-9 · Tests
@@ -553,8 +588,9 @@ CG-10, then the ruleset re-run. The order in section 10.
 
 **Scope.**
 
-- CEL: `hack/ci/build-exemption-cel` covers every gate template, asserts they share one expression, and runs events for
-  each kind plus `.tekton/`-only, `releases/`-only and docs-only PRs.
+- CEL: `hack/ci/build-exemption-cel` covers every gate template, asserts they share one expression, and asserts that
+  every PR to `main` fires every gate, including `.tekton/`-only, `releases/`-only and docs-only PRs (which the
+  classifier fixtures then show as `no-op`).
 - Classifier fixtures, one per kind and edge:
   - `release.image.tag` bumped (image-release);
   - a hand image edit (image-release);
@@ -564,6 +600,7 @@ CG-10, then the ruleset re-run. The order in section 10.
   - a kustomization `images:` changed (image-release);
   - `base.yaml` image changed (image-release for every environment on that cluster);
   - comment-only and key-reorder changes (no-op);
+  - `.tekton/`-only, `releases/`-only and docs-only PRs (no-op);
   - a removed or renamed manifest (config);
   - unparseable YAML (image-release);
   - more than 300 files (image-release);
