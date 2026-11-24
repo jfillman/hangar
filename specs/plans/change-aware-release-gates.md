@@ -131,8 +131,9 @@ event == "pull_request" && target_branch == "main"
   ```
 
 - A PR that changes nothing deployable, such as an onboarding-resync PR (`.tekton/` only), a Release Record PR
-  (`releases/` only) or a README edit, classifies as `no-op`, and every gate reports `n/a`. The cost is about 11 small
-  PipelineRuns per such PR (section 12.2).
+  (`releases/` only) or a README edit, classifies as `no-op`, and every gate except `agent-gates` reports `n/a`
+  (`agent-gates` judges who opened the PR, so it runs on every PR, section 6). The cost is about 11 small PipelineRuns
+  per such PR (section 12.2).
 - `release-record-*` PRs need no exclusion: they only add `releases/<app>@<version>.yaml`, so they classify as `no-op`.
 - The classifier (section 5) decides what each gate does, so the trigger needs no judgement of its own.
 - All gate templates must carry the identical expression. A test asserts it (CG-9).
@@ -167,7 +168,11 @@ token the gates use today. There is no clone.
 1. `GET pulls/{n}` gives the base SHA. `GET compare/{base}...{head}` gives the changed files **including removed and
    renamed ones**. Today's resolver drops removed files (`resolve-promoted-image.yaml:109`); the classifier must not,
    because deleting a manifest is a change. The compare is three-dot, so `main` moving on does not change the answer.
-2. Keep only the deployable files (the predicate in section 4). If none are left, the kind is `no-op`.
+2. Keep only the deployable files: the predicate in section 4, plus any file of an own chart under
+   `<cluster>/<env>/` (a `.tpl` helper, anything under a `templates/` or `charts/` directory, `Chart.yaml`,
+   `Chart.lock`). The predicate matches only YAML and JSON, so without the second half a PR that changes only a chart
+   helper would be `no-op` and skip the render backstop. Own-chart files are not parsed: they make their environment
+   `config` with `renderCheck: required` (step 8). If no file is left, the kind is `no-op`.
 3. Map each file to the environments it feeds. `<cluster>/<env>/…` is one environment. `<cluster>/base.yaml` feeds
    every environment under `<cluster>/`, listed from the head tree. A `kustomization` file feeds the directory it is in.
 4. For each file, read it at base and head (an added file has no base, a removed file has no head) and pull out
@@ -374,9 +379,16 @@ PR returned if one already exists.
   through the platform's GitHub App, writes a release record (`kind: config`, the environment's current image, a new
   chain id) and a change request when a provider is set, and fills in the gate table for the `config` column. It also
   stamps a new `releaseTracking.releaseId` into the release file, so the relay's outcome facts land on this record and
-  not on the last image release. Decided (Q7): check where the chart writes `hangar.io/release-id` before building
-  CG-7. If it sits on the pod template, a replicas-only change would restart pods, so the action stamps a new id only
-  when the change already rolls pods.
+  not on the last image release. Q7, checked 2026-11-24: airframe-application puts `hangar.io/release-id` (and the
+  `hangar.io/release-tracked` label) on the Rollout's own metadata, never on its pod template
+  (`charts/airframe-application/templates/workload/rollout.yaml:56-75` on airframe `e1cbd42`; the pod template at
+  `:90-123` carries nothing release-specific but the image tag in `app.kubernetes.io/version`). open-release-pr writes
+  only `release.image.*` and `releaseTracking.{cluster,appNamespace,releaseId}` (`GC/tasks/open-release-pr.yaml:854-865`
+  on glidepath `25ad6ea`). So stamping a new id never restarts pods, and the action **always** stamps one: every config
+  release gets its outcome facts under its own id. Open for CG-7: a change that rolls no pods (replicas only) produces
+  no new revision, so the Rollouts notifications may report nothing for it, and the sweeper's stall alert ("merged,
+  no rollout fact") would fire. CG-7 decides how such a record reaches a terminal state (for example, healthy from the
+  first heartbeat fact under its id).
 - **Tower**: the Values form's "Open config PR" and the flight-base and ConfigMap-files editors
   (`BE/glidepathConfig.ts:487-582`) call this route through the Backstage proxy instead of writing to GitHub
   themselves. That fits the standing rule that glidepath-api is the CI/CD interface.
@@ -470,7 +482,7 @@ and the gates queue under `pipelinesAsCode.concurrencyLimit` (`docs/admin/pipeli
 The owner accepted every recommendation. The sections above now read as decided.
 
 - **Q1 · Trigger.** Every PR to `main`, not only PRs that change deployable files. A non-deployable PR classifies as
-  `no-op` and every gate is `n/a`. This was needed before the ruleset is enforced (section 4).
+  `no-op` and every gate but `agent-gates` is `n/a`. This was needed before the ruleset is enforced (section 4).
 - **Q2 · n/a check title.** v1 keeps PaC's `Success` title with a `not-applicable` task. Prototype a
   post-completion retitler (section 6.2).
 - **Q3 · n/a comments.** One shared "Change classification" comment, upserted by a marker, not one per gate (section 6.2).
@@ -479,8 +491,9 @@ The owner accepted every recommendation. The sections above now read as decided.
 - **Q5 · image-scan on a config change.** `n/a`. A scheduled re-scan of running images is the home for new CVEs.
 - **Q6 · Hand config PRs where the GitHub-merge path is off.** Accept that they fail provenance. Turn the path on per
   app where people edit in the web UI (section 7).
-- **Q7 · `releaseId` stamp.** Check where the chart writes `hangar.io/release-id` before building CG-7. If it is on the
-  pod template, stamp only when the change already rolls pods (section 9).
+- **Q7 · `releaseId` stamp.** Check where the chart writes `hangar.io/release-id` before building CG-7; if it is on the
+  pod template, stamp only when the change already rolls pods. Checked 2026-11-24: it is on the Rollout's metadata, so
+  the config-change action always stamps a new id (section 9).
 - **Q8 · Several images in one PR.** Refuse more than one distinct image per PR in v1 (section 12.3).
 - **Q9 · Cloud release pins.** Not in v1. Pins keep today's gates, and the classifier learns pins later.
 - **Q10 · Agent PRs.** Intended as written: an agent's config PR is `config` (agent-scope bounds its paths; provenance
