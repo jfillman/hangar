@@ -305,7 +305,10 @@ Pipelines were rendered from.
 - The `classify` step returns `change-kind`, `applicability` (`run | advisory | n/a`, for this gate) and `reason`, plus
   `gate-table` (every gate's answer, for the shared comment) and `classification-source` (`api` or `fallback`).
 - A `config` change with `renderCheck: required` is judged as an `image-release` until the render backstop (section 5.4)
-  exists: without it, a chart-pin change could change images with every content gate n/a.
+  exists: without it, a chart-pin change could change images with every content gate n/a. The stored classification
+  keeps `kind: config`; every reader that decides by kind (the ledger check, detect-bypass-merge, release-log-emit,
+  promote, Tower: CG-4) must apply the same rule (`glidepath-catalog.applicabilityJq` `judged_kind`), or it would skip a
+  content gate as n/a that ran.
 - A gate whose Pipeline has one path for its check (values, policy-validation, clearance-gate, itsm, provenance) cannot run
   for some kinds and advise for others; the render refuses such a row. The content gates have both copies.
 - The hard tasks get `when: applicability in [run]` and the `-advisory` copies get `when: applicability in [advisory]`.
@@ -336,7 +339,8 @@ Pipelines were rendered from.
   names the kind and the reason once, then lists the n/a gates: "**Not applicable** (config): sast, image-scan, sbom,
   api-compat, qa. This PR changes no image; hangar-prod/staging changes `rollout.replicas`." A gate that runs keeps
   its own comment. As built: every gate of the head writes the shared comment from the same frozen classification and
-  matrix (so concurrent writers write the same text), only for the PR's current head, and only while some gate is n/a or the
+  matrix (so concurrent writers write the same text), only from glidepath-api's answer (a gate that fell back to
+  `image-release` never writes it), only for the PR's current head, and only while some gate is n/a or the
   comment exists; an n/a gate edits an earlier comment of its own to say n/a and posts none otherwise.
 - **Ledger.** The verdict `n/a` goes in beside `success` and `failure`. The `gate-verdict` route does **not** take the
   run's word for it. It reads the `classify` TaskRun's results and checks them against its own stored classification
