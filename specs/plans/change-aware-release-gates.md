@@ -236,9 +236,12 @@ computation and logs that it did. If both fail, the result is `image-release` (f
 
 The file-level classifier can miss an image that only the render shows (step 8, and anything it does not understand).
 clearance-gate already renders base and head. Its decide step gains one comparison: the set of container images
-(containers, initContainers, ephemeralContainers) per environment, base against head. If they differ and the
-classification is `config` or `no-op`, the check fails with "this PR changes images the classifier did not see:
-<list>". This runs as a hard task even where clearance-gate itself is advisory (it sits next to the existing
+(containers, initContainers, ephemeralContainers) per environment, base against head. It runs for **every** kind, `image-release` and `rollback` included: every
+rendered image that is new at head must be one the classifier listed for that environment (`envs[].images.head`).
+If one is not, the check fails with "this PR changes images the classifier did not see: <list>". Otherwise a PR that
+changes a listed image in `values.yaml` and an unlisted sidecar image in an own-chart template would pass as an
+image release of one image, and the sidecar would reach the environment without its own gates or Q8's
+one-image limit. This runs as a hard task even where clearance-gate itself is advisory (it sits next to the existing
 `render-check` task), because it is a statement about classification, not about clearance. This is the right host
 (Q4, decided); revisit if clearance-gate ever stops rendering base. It covers only `targets: [k8s-rollout]` apps,
 the only ones with environments to render today.
