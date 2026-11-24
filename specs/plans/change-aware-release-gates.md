@@ -340,7 +340,8 @@ Pipelines were rendered from.
   api-compat, qa. This PR changes no image; hangar-prod/staging changes `rollout.replicas`." A gate that runs keeps
   its own comment. As built: every gate of the head writes the shared comment from the same frozen classification and
   matrix (so concurrent writers write the same text), only from glidepath-api's answer (a gate that fell back to
-  `image-release` never writes it), only for the PR's current head, and only while some gate is n/a or the
+  `image-release` never writes its table, and marks an existing one "unavailable at <head>" so an earlier head's answer
+  never stands for it), only for the PR's current head, and only while some gate is n/a or the
   comment exists; an n/a gate edits an earlier comment of its own to say n/a and posts none otherwise.
 - **Ledger.** The verdict `n/a` goes in beside `success` and `failure`. The `gate-verdict` route does **not** take the
   run's word for it. It reads the `classify` TaskRun's results and checks them against its own stored classification
