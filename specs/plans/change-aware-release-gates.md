@@ -199,12 +199,18 @@ token the gates use today. There is no clone.
 The output is versioned JSON:
 
 ```json
-{"v": 1, "classifier": "<catalog version>", "pr": 96, "base": "<sha>", "head": "<sha>",
+{"v": 1, "classifier": "glidepath-api/changekind 2", "pr": 96, "base": "<sha>", "head": "<sha>",
  "kind": "config", "reason": "hangar-prod/staging: values changed (rollout.replicas); no image reference changed",
  "renderCheck": "none",
  "envs": [{"cluster": "hangar-prod", "env": "staging", "kind": "config", "protected": true,
-           "images": {"base": [], "head": []}, "files": ["hangar-prod/staging/values.yaml"]}]}
+           "images": {"base": [], "head": []}, "files": ["hangar-prod/staging/values.yaml"],
+           "fileClasses": ["values"]}]}
 ```
+
+`fileClasses` (classifier `changekind 2`, glidepath API 0.16.0, added in CG-3) lists the classes of each environment's
+changed files: `values` (a path ending in `values.yaml` or `release.yaml`, or in `/base.yaml`, the values gate's own trigger
+predicate), `chart` (an own chart's template side), `kustomization` and `manifest`. It is the fact the values gate narrows on
+(section 6, "Narrowing"). An answer stored by `changekind 1` has no `fileClasses`, and nothing narrows on it.
 
 `protected` is filled by `protection.sh` for itsm (section 8). Not knowing counts as protected.
 
@@ -229,8 +235,12 @@ The release-record sweeper removes these ConfigMaps once the PR has been closed 
 In each gate, the call is a step (`classify`, StepAction `classify-change`) **inside the gate's existing first Task**,
 so it adds no pod: `extract-promoted-image` (sast, image-scan, sbom, api-compat, qa), `fetch` (clearance-gate,
 policy-validation), `validate` (values) and `verify-change` (itsm). provenance runs two tasks in parallel, so it gets a
-small first task, which is one extra pod. If the API cannot be reached, the step falls back to option A's local
-computation and logs that it did. If both fail, the result is `image-release` (fail closed).
+small first task, which is one extra pod. If the API cannot be asked or does not answer 200, the step judges the head as
+an `image-release` (fail closed, `classification-source: fallback`) and logs why. As built (CG-3), option A's local
+computation is only extract-promoted-image's own rollback-eligibility rule: when the API did not answer and that rule finds
+an eligible rollback, the content gates get their rollback value (advisory), as before change kinds. A full local
+classifier was not built. A run on a repository that is not the app's gitops repository (a cloud app's release pin PR,
+ADR-0020) is never classified and keeps every gate (Q9).
 
 ### 5.4 The render backstop {#render-backstop}
 
@@ -260,11 +270,11 @@ still composes on top: an advisory gate that "runs" runs its advisory copy.
 | api-compat | content | run (advisory by registry) | advisory | n/a | n/a |
 | qa | content | run (advisory by registry) | advisory | n/a | n/a |
 | provenance | integrity | run (locked): app commit and SLSA | run: block (ADR-0021) | **run, config variant** (section 7) | n/a |
-| values | integrity | run | run | run if a values, release or base file changed, else n/a | n/a |
+| values | integrity | run | run | run if a values, release or base file changed, else n/a (`narrow: no-values-file`) | n/a |
 | policy-validation | integrity | run | run | run | n/a |
 | agent-gates | integrity | run | run | run | run (it is about who opened the PR, and already runs on every PR) |
 | clearance-gate | process | run | run | run | n/a ("nothing to register" today) |
-| itsm | process | run | run | **run for a protected env, n/a otherwise** (section 8) | n/a |
+| itsm | process | run | run | **run for a protected env, n/a otherwise** (section 8; the narrowing lands with CG-6, until then run) | n/a |
 | image-promotion | integrity | run (with `promotion.enabled`) | as today | n/a: nothing to promote | n/a |
 
 `agent-identity` and `agent-scope` are the Clearance App's own checks (`GV:456-471`). They already run on every PR and
@@ -278,13 +288,29 @@ are out of scope here.
 - no gate may be `n/a` for `image-release`;
 - an unknown kind or value fails the render.
 
+**Narrowing** (decided by the manager during CG-2, built in CG-3). A class × kind row cannot say "run only if a values file
+changed" or "run only for a protected environment": the matrix stores both as `run`, an upper bound. The classification
+carries per-environment facts, and the gate narrows `run` to `n/a` from them with a named reason. A registry entry says
+which: `narrow: { <kind>: [<reason>...] }`. The reasons are a fixed list in the chart (`glidepath-catalog.narrowReasons`):
+today only `no-values-file` (no environment's `fileClasses` has `values`); CG-6 adds the protected-environment fact for
+itsm. Narrowing only goes from `run` to `n/a`, never from `advisory`, never for `image-release`, never for sast or provenance,
+and never per cluster; the render fails otherwise. A classification without the fact never narrows.
+
 The rendered matrix is also published as a ConfigMap `release-guardrails` in `platform-catalog`, like
 `release-signing-policy` (`GC/release-signing-policy.yaml`), so glidepath-api and Tower read the same table that the
 Pipelines were rendered from.
 
 ### 6.1 How a gate Pipeline uses it {#pipeline-shape}
 
-- The `classify` step returns `change-kind`, `applicability` (`run | advisory | n/a`, for this gate) and `reason`.
+- The `classify` step returns `change-kind`, `applicability` (`run | advisory | n/a`, for this gate) and `reason`, plus
+  `gate-table` (every gate's answer, for the shared comment) and `classification-source` (`api` or `fallback`).
+- A `config` change with `renderCheck: required` is judged as an `image-release` until the render backstop (section 5.4)
+  exists: without it, a chart-pin change could change images with every content gate n/a. The stored classification
+  keeps `kind: config`; every reader that decides by kind (the ledger check, detect-bypass-merge, release-log-emit,
+  promote, Tower: CG-4) must apply the same rule (`glidepath-catalog.applicabilityJq` `judged_kind`), or it would skip a
+  content gate as n/a that ran.
+- A gate whose Pipeline has one path for its check (values, policy-validation, clearance-gate, itsm, provenance) cannot run
+  for some kinds and advise for others; the render refuses such a row. The content gates have both copies.
 - The hard tasks get `when: applicability in [run]` and the `-advisory` copies get `when: applicability in [advisory]`.
   This replaces today's `rollback-eligible` `when`s (e.g. `GC/pipelines/sast-check.yaml:59,75`), because rollback is now
   a kind. The `rollback-eligible` result stays one release for old readers.
@@ -300,15 +326,23 @@ Pipelines were rendered from.
   `image-promotion-` check, `promote.yaml:240`), so it *can* retitle the run to
   `Not applicable: config, <reason>`. But PaC updates the check run again when the PipelineRun finishes, after the
   `finally` that would do the retitling. Two ways (Q2, decided: (a) for v1, and prototype (b)):
-  (a) v1 keeps PaC's title. The n/a run's only DAG task is named `not-applicable`, so PaC's task table in the check
-  says it, and the comment and every reader say `n/a`.
+  (a) v1 keeps PaC's title. On the n/a path the only DAG task that does anything is named `not-applicable`, so PaC's
+  task table in the check says it, and the comment and every reader say `n/a`. As built, the gate's first task (which hosts
+  the classify step, so it always runs) also appears, with its other steps doing nothing; provenance shows its `classify`
+  task.
   (b) A small post-completion updater retitles the check after PaC's last update (the tekton-results relay already sees
   completions). This needs a prototype: does PaC write the check again after completion?
-- **PR comment.** `comment-pr-check-result` gains `change-kind`, `applicability` and `reason` params. The n/a gates
+- **PR comment.** `comment-pr-check-result` reads `change-kind`, `applicability` and `reason` from the run's classify
+  TaskRun, like `rollback-note`, not as params: a `finally` param on a result its task did not produce (a failed first task)
+  would skip the whole comment task. The n/a gates
   share one "Change classification" comment, upserted by a marker (Q3, decided), instead of one comment each. It
   names the kind and the reason once, then lists the n/a gates: "**Not applicable** (config): sast, image-scan, sbom,
   api-compat, qa. This PR changes no image; hangar-prod/staging changes `rollout.replicas`." A gate that runs keeps
-  its own comment.
+  its own comment. As built: every gate of the head writes the shared comment from the same frozen classification and
+  matrix (so concurrent writers write the same text), only from glidepath-api's answer (a gate that fell back to
+  `image-release` never writes its table, and marks an existing one "unavailable at <head>" so an earlier head's answer
+  never stands for it), only for the PR's current head, and only while some gate is n/a or the
+  comment exists; an n/a gate edits an earlier comment of its own to say n/a and posts none otherwise.
 - **Ledger.** The verdict `n/a` goes in beside `success` and `failure`. The `gate-verdict` route does **not** take the
   run's word for it. It reads the `classify` TaskRun's results and checks them against its own stored classification
   and the `release-guardrails` matrix. If they agree, the route records `n/a`. If not, it records `failure` with
@@ -549,7 +583,9 @@ a release turns healthy returns the frozen answer.
 **Scope.** The `classify-change` StepAction in each gate's first task (and a small first task for provenance), the
 `when`s that replace `rollback-eligible`, comment-pr's n/a params and the shared "Change classification" comment
 (Q3), the `not-applicable` task name, and the content gates' refusal of more than one distinct image per PR (Q8).
-A prototype of the post-completion retitler (Q2) rides along, not wired in.
+A prototype of the post-completion retitler (Q2) rides along, not wired in. Also in CG-3: the `narrow` field and the
+classifier's `fileClasses` (section 6, "Narrowing"). Not in CG-3: the retitler prototype and the render backstop of section
+5.4, which no package owns yet; until it is built a config change that needs a render check is judged as an image release.
 
 ### CG-4 · Ledger, fan-in and readers show n/a
 <!-- pkg status=proposal depends=CG-3 -->
