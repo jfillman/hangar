@@ -19,6 +19,18 @@ names; this file doesn't repeat them.
   - hangar-infra#11: the gVisor node group
   - apron#221: lab-only networking off EKS
 
+## Re-checked 2026-11-25
+
+A week of changes landed before the install started (about 50 apron PRs, mostly the Clearance Argo CD gate, its
+rollout-order hook and Clearance pins; Glidepath's change-aware gates; Backstage dependency bumps). Re-checked against
+`main`:
+
+- The three eks renders still pass `apron check` with no lab names, and eks-dev with the lab's fleet settings renders
+  clean. The bootstrap Secrets are still the two Terraform writes.
+- New lab settings: the tenant delete guard, Glidepath's gate reports and the Clearance coverage cache are copied. The
+  Argo CD gate, Slack, and two lab-tuning keys stay out (install.md step 9 lists them).
+- Tower's values and Backstage's single remote cluster are unchanged; the Backstage CI LAN address is still there.
+
 ## The review
 
 Each of these is checked against `main` as of today.
@@ -55,7 +67,8 @@ Each of these is checked against `main` as of today.
 ## Decisions for the owner
 
 1. **Cut over or run side by side.** The lab and AWS share the GitHub Apps. Pipelines-as-Code and Clearance each have
-   one webhook URL, and people-dex's and Tower's OAuth Apps have one callback each.
+   one webhook URL, and people-dex's and Tower's OAuth Apps have one callback each. Clearance's Slack app (on in the
+   lab since 2026-11-23) has one request URL too; it moves in phase 7.
 
    **Recommendation: cut over.** Point them at AWS in phase 4 and leave the lab running with no CI events. That
    matches "dev and test move to AWS". Running both needs a second PaC App and two new OAuth Apps.
@@ -65,8 +78,9 @@ Each of these is checked against `main` as of today.
 
    **Recommendation:** build the second remote cluster in backstage while phases 1-3 run. Phase 5 then proves it
    instead of listing it as a gap. Without it, the fleet still works; Tower just shows eks-dev and eks-man.
-3. **Clearance's lab features** (ledger and witness, Kubernetes observe, observe-aws, targets, backup) stay off on the
-   first install, because each names lab hosts or principals. Phase 7 brings them back with AWS wiring. Say if any
+3. **Clearance's lab features** (ledger and witness, Kubernetes observe, observe-aws, targets, backup, the Argo CD gate,
+   Slack) stay off on the first install, because each names lab hosts or principals. The Argo CD gate also needs the
+   gated apps' projects and namespaces, so it can only be turned on after the apps are onboarded. Phase 7 brings them back with AWS wiring. Say if any
    must be there from day one.
 
 ## Phases and gates
@@ -82,7 +96,7 @@ Do not start a phase until the previous gate passes. Each gate is a check from `
 | 4. Hub | 9-13 | Bootstrap values into Secrets Manager, then `bootstrap_secrets = ["eks-dev"]`, `apron up` on eks-dev, import the lab's `glidepath-hangar-dev` project, fleet file, gateway DNS, GitHub App URLs (decision 1) | every ExternalSecret Synced; `https://argocd.eks-dev...` answers from your address only; a PaC delivery returns 200 |
 | 5. Prod, platform, Tower | 14-15 | The same for eks-prod and eks-man; Tower registered on the AWS fleet with the lab's XRs paused; Tower's values per the step 15 table | Tower signs you in; eks-dev's API server logs Tower's federated user; with decision 2 built, Tower lists an app's eks-prod workloads and eks-prod's API server logs the same federated user. Without it, record "eks-prod not visible in Tower" as an accepted gap here |
 | 6. Prove it | 16 | A new app end to end; G1 (scale eks-dev to zero, prod keeps serving); a 30-minute Infisical outage; G4 restore from the backup vault; RDS failover | the times written down |
-| 7. Clearance on AWS | (new runbook section, to write) | observe-aws for the hangar-dev/prod accounts (an `observe/<account>` stack per account, using the cluster's EKS issuer); Kubernetes audit from EKS control-plane logs; the ledger witness on eks-man; targets and backup; then the Go gateway | each feature's own verification, as on the lab |
+| 7. Clearance on AWS | (new runbook section, to write) | observe-aws for the hangar-dev/prod accounts (an `observe/<account>` stack per account, using the cluster's EKS issuer); Kubernetes audit from EKS control-plane logs; the ledger witness on eks-man; targets and backup; the Argo CD gate per app on eks-prod; Slack; then the Go gateway (it needs the apps' Agent XR namespaces) | each feature's own verification, as on the lab |
 
 ## What blocks before it hurts
 
