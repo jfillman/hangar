@@ -3,7 +3,7 @@ title: Clearance & Autopilot Build Specification
 program: Hangar · Clearance / Autopilot
 board: https://claude.ai/artifact/7bptZqWD7RdUDxyR4TQ8o9
 source: https://claude.ai/artifact/BCosjaYXnJzghRF6VZsL5D
-updated: 2026-11-20
+updated: 2026-11-26
 ---
 
 Nov 2, 2026 · @James
@@ -11,6 +11,8 @@ Nov 2, 2026 · @James
 **Revised 2026-11-07, after W3.** This revision folds in the day's analysis and the updated Clearance documents: the Architecture's new chapter 09 (Observation) and its renumbered chapters 10 to 18, the coverage states `break-glass` and `attempted-refused`, the observation-health record, the verification statement and its insurer profile, approver independence extended to automation, and the four revenue-line companions ([Clearinghouse](https://claude.ai/artifact/3rPgELsmjQJ5rqsz386D9Q), [Intelligence](https://claude.ai/artifact/M2rDPgy5WJx8aG7dxsr3xf), [Verification](https://claude.ai/artifact/UfE1xys4nK9C7D2gNm25Lp), [Underwriting](https://claude.ai/artifact/PaZMadKYhzJSJgTBHxiw6B)). It adds three series as sections 15 to 17, after the open questions so that every existing section number still holds (O observation, P clearinghouse, I intelligence), two follow-up packages inside the existing series (R-9, C-14), two waves after W4 in section 11 (W5 Observation, W6 Clearinghouse), new rows in the component, gap, deferred-portal and open-question tables, and two guardrails in section 12. Nothing already merged changes; W4's entry is unchanged except that O-1 and C-14 join it so the packet is not frozen without the new states.
 
 **Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 1 difference, the outage rule, decided by the owner on 2026-11-16 and marked "Decided" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
+
+**Revised 2026-11-26, Tower across the fleet.** One new series, [M: Tower across the fleet](#work-packages-m) (M-1 to M-6), appended after the last section so every existing section number holds. It makes Tower read its clusters from the fleet registry instead of two hard-wired ones, found during the AWS install (eks-prod is invisible to Tower). It runs after the 2026-11-26 clearance-gate fix and is independent of the W-gates; one row added to the waves table.
 
 **Revised 2026-11-20, one spec.** This Spec Sheet is now the one Clearance and Autopilot build spec. The earlier Claude Doc was compared with it: its accepted text holds nothing that this spec lacks, and its open suggestions list was empty. The new final section, [Outstanding suggestions and decisions](#outstanding-suggestions-and-decisions), lists the open decisions waiting on the owner.
 
@@ -45,7 +47,7 @@ In practice:
 - The model goes on the card's brief line, `Model: sonnet` or `Model: haiku`, so the choice is visible before launch.
 - If a Haiku research agent finds the task needs code changes, it stops and reports. It does not edit.
 
-* **Id and title.** R-n refactor, A-n Autopilot gateway, C-n Clearance core, G-ARGO-n Argo CD gate, G-TF-n Terraform gate, O-n observation (collectors, pipeline, health), P-n the clearinghouse (receipts, sampling, statements, portal), I-n intelligence (the opt-in dataset).
+* **Id and title.** R-n refactor, A-n Autopilot gateway, C-n Clearance core, G-ARGO-n Argo CD gate, G-TF-n Terraform gate, O-n observation (collectors, pipeline, health), P-n the clearinghouse (receipts, sampling, statements, portal), I-n intelligence (the opt-in dataset), M-n Tower across the fleet (multi-cluster).
 * **Repos.** Where the PRs land. A move between repos is two PRs, add in the target first, remove in the source second.
 * **Depends on.** Packages that must be merged, and where stated live on hangar-dev, before this one starts.
 * **Build.** The concrete deliverable: modules, endpoints, resources, charts, docs.
@@ -880,6 +882,7 @@ Shaded cells hold work; a wave's gate is passed only with the live evidence name
 | W4 Ledger | C-3, C-4, C-5; O-1 and C-14 first, before C-5; I-1; G-ARGO-7, 8, 9; G-TF-6, 7; A-2, A-3, A-6, A-9; R-9 alongside | W3 gate passed (G-ARGO-7's exit tests and the Terraform lab run are the owner steps still open at the 2026-11-07 revision) | **Packet verifies**: a 30-day lab packet verifies offline against witnessed checkpoints, both providers pass conformance, and the packet's coverage statement carries the six coverage states and the health summary (blind where no collector exists yet) **Closed by the owner 2026-11-09**, on an 11-day packet. 30-day re-run due 2026-12-09; see the W4 build report. |
 | W5 Observation | O-2, O-3, O-4, O-5; A-10 alongside (not part of this gate) | W4 gate passed; O-3 also needs G-ARGO-7's gate live on hangar-prod | **Coverage is verified, not assumed**: a `kubectl apply` and a console security-group change appear in the packet's exceptions with actor, diff and resolution; a Secret change appears with no value recorded; a `StopLogging` call appears as a monitoring-protection event and flips the account's health; with a collector stopped the packet reports a blind window, not a clean one; the reconciler and the collector report one exception, not two |
 | W6 Clearinghouse | P-1, P-2, P-3, P-4 | W5 gate passed (P-1 and P-4 may start after W4, since they need only the packet). Status 2026-11-14: all four packages merged to clearance main (clearance#169, #170, #171, #172), proven against fakes, not released or deployed | **Accepted and verifiable by a stranger**: a fake assurance provider pulls a packet under a time-boxed credential and signs a receipt that the next packet carries; a 25-record sample verifies offline; a verification statement verifies on the hosted page (the lab run proves it against fakes: a fake assurance provider, offline sample verify, a fake GRC API; the hosted proof on verify.clearance.hangarplatform.dev is the Cloud K2 gate) with all seven checks (the lab run accepts a statement that prints "not yet independently witnessed"; the external witness is deferred to before the Cloud K2 gate, where all seven checks green is proven), shows revoked when revoked, and prints a blind window when there was one; a change appears as an evidence item in a Vanta sandbox with a link back |
+| M Tower across the fleet | M-1 and M-2 in parallel, then M-3, then M-4 and M-5, then M-6 | The clearance-gate split is live on eks-dev (2026-11-26); independent of the W-gates | **Tower sees the fleet**: M-6's exit test (eks-man, eks-dev and eks-prod workloads in Tower, a test cluster added and removed through the registry alone) |
 | Later | O-6, P-5, I-2, I-3, A-8, C-11, C-12, C-13, section 13 | A paying partner, a second accepting firm, ten opted-in tenants, or the roadmap's phase 4 and 5 triggers |  |
 
 ### Parallel tracks and who runs what
@@ -1804,3 +1807,93 @@ The range always runs from the last commit released to that environment to the c
 | Further direct pushes | **Pull requests only** on these apps' `main`. GitHub's free plan cannot enforce this, so it is kept by practice. The gate catches a slip only inside a release range: an app's first release to an environment has no previous release to start a range from, so a direct push before it goes unchecked. Closing that gap (for example, ranging from the repo's first commit or a recorded baseline) is a follow-up. | Process | A-23 |
 
 **Follow-ups.** [W-49](https://claude.ai/artifact/7bptZqWD7RdUDxyR4TQ8o9): the default-chart check ignores `targetRevision` (it fails closed). The `DG-PROVENANCE` legend in the gate comment named the wrong cause; W-48 fixes it.
+
+## Work packages, M-series: Tower across the fleet {#work-packages-m}
+
+Added 2026-11-26, during the AWS install (`specs/plans/aws-install-plan.md`, decision 2). Tower can reach exactly two clusters: the control plane (eks-dev on AWS, hangar-dev in the lab) and the cluster it runs on (eks-man, hangar-prod). On AWS that leaves eks-prod, where every app's prod environment runs, invisible to Tower: no workloads, no Argo CD status, no break-glass. The AWS side is ready: eks-prod's RBAC for Tower's federated users (`components.towerAccessHub`), its trust of eks-man's issuer and its API allow-list are all in place. The gap is entirely in how Tower finds clusters. In the lab, the cluster Tower ran on was also the prod workloads cluster, so two clusters were enough and nothing showed it.
+
+What is hard-wired to two clusters today:
+
+| Part | Today | Target |
+| --- | --- | --- |
+| `kubernetes.clusterLocatorMethods` (workload views, the kubernetes-ingestor, `clusterAccess.ts`) | One static `config` entry from `TOWER_CONTROL_PLANE_API_URL`, `_CA_DATA` and `_AUDIENCE`, plus the in-cluster one | One entry per cluster in the fleet registry |
+| Tower's credential for a remote cluster | One projected ServiceAccount token file (`/var/run/secrets/hangar/dev-cluster/token`) whose audience is the control plane's | One token, one audience that every remote cluster trusts |
+| `argocd.appLocatorMethods` | Two instances (control plane, home), tokens from `ARGOCD_DEV_APPS_TOKEN` and `ARGOCD_PROD_APPS_TOKEN` (the second is the home cluster's, not a prod cluster's) | One instance per cluster's `argocd-apps`, a token per cluster |
+| The fleet registry (`clusterRegistry.ts` reads the control plane's `cluster-registry` ConfigMaps) | Records carry name, zone, roles, readiness flags; no API server or CA | Records carry the API server URL and CA too |
+| Pipelines, glidepath-api, tenant XR requests (`controlPlaneCluster()`) | One control plane | Unchanged: there is one control plane |
+
+Rules for the series: the registry is the source of truth (a cluster added with `apron fleet add` and synced appears in Tower with no `app-config` edit and no new environment variable); Tower's identity on every cluster stays the federated `hangar:<home>:system:serviceaccount:<ns>:<sa>` user with its existing RBAC; nothing here widens what Tower may do on any cluster; the lab keeps working at every step (hangar-dev plus hangar-prod is a two-cluster fleet, and must still render and run).
+
+Sequencing: the series starts after the clearance-gate split (the Glidepath catalog fix of 2026-11-26) is live on eks-dev, and is independent of the W-gates. M-1 and M-2 can run in parallel; M-3 needs both; M-4 and M-5 need M-3; M-6 closes the series.
+
+### M-1 · Registry records carry each cluster's API endpoint and CA
+<!-- pkg status=planned wave=M depends= -->
+
+Model: sonnet.
+
+- **Repos.** airframe (`charts/cluster-registry`), apron (`apron fleet add`, `hack/fleet.py` or wherever the record is written; the clusters.yaml schema), hangar-infra (docs only: the `apron_init` output already prints the endpoint and CA).
+- **Depends on.** None.
+- **Build.** Two optional record fields, `apiServer` (https URL) and `caData` (base64 PEM), in clusters.yaml and in each rendered `cluster-registry` ConfigMap. `apron fleet add --from DIR` fills them from the cluster's `cluster.yaml` (on eks from `runtime.eks` / the Terraform output; on kiac and kind from the kubeconfig the runtime writes), and `apron check` refuses a record whose `apiServer` is not https or whose `caData` is not valid base64 PEM. A record without them renders exactly as today. A record carries no credential.
+- **Done when.** Unit: a record with both fields renders them; a record without them renders byte for byte as before; a record with `http://` or a non-PEM CA is refused (negative). Live: after `apron fleet add` for eks-prod and a `cluster-registry` sync, `kubectl --context eks-dev -n crossplane-system get cm eks-prod -o jsonpath='{.data.apiServer}'` prints eks-prod's endpoint (quoted in the PR).
+- **Rollout.** airframe release and catalog bump in apron; apron PR; re-render gitops-eks-dev and gitops-hangar-dev (diff-checked: only the registry ConfigMaps change).
+- **User steps.** Re-run `apron fleet add` for each cluster and push the fleet file; sync `cluster-registry` on each cluster (manual by design).
+
+### M-2 · One Tower audience every remote cluster trusts
+<!-- pkg status=planned wave=M depends= -->
+
+Model: sonnet.
+
+- **Repos.** hangar-infra (`stacks/40-clusters`: the EKS OIDC identity provider config's `client_id` for Tower's trust), apron (`tower.trust` and every place that renders the expected audience: `00-bootstrap/backstage-ingestor-rbac`, the lab's public-issuer trust, the gateway and Clearance delegate audiences if they check it), gitops-backstage values (the projected token's `audience`).
+- **Depends on.** None.
+- **Build.** One audience for Tower's remote-cluster token, the same on every cluster Tower reads (`hangar-tower`, owner decision 2026-11-26). On eks each remote cluster's identity provider config uses it as `client_id`; in the lab the same audience is accepted by the clusters' public-issuer trust. Tower mounts one projected token with that audience (`/var/run/secrets/hangar/fleet/token`, 600 s expiry) instead of the per-control-plane one. The federated username prefix, groups and RBAC are unchanged. The old audience stays accepted for one release so Tower's rollout and the clusters' change can happen in either order, then is removed.
+- **Done when.** Live: with Tower's new token, `kubectl auth whoami`-equivalent calls (a TokenReview-backed `SelfSubjectReview` from inside the Tower pod) succeed on eks-dev and eks-prod and return `hangar:eks-man:system:serviceaccount:app-backstage-prod:backstage-ingestor`; the API server audit log on each shows that user. Negative: a token with any other audience (for example eks-dev's old one, after the one-release window) is refused with 401 on eks-prod. The lab still signs Tower in and lists hangar-dev's pipelines.
+- **Rollout.** hangar-infra PR, `terraform apply` in each cluster workspace (the identity provider config update takes 10 to 20 minutes per cluster); apron PR and re-render; gitops-backstage values PR for the token volume.
+- **User steps.** The `terraform apply` runs.
+
+### M-3 · Tower's clusters come from the fleet registry
+<!-- pkg status=planned wave=M depends=M-1,M-2 -->
+
+Model: sonnet.
+
+- **Repos.** backstage (a backend module), tower (only if a shared type moves), gitops-backstage (values: drop the per-cluster environment variables).
+- **Depends on.** M-1, M-2.
+- **Build.** A backend module registering a `KubernetesClustersSupplier` (the Kubernetes backend's extension point) that lists the control plane's registry records (the existing `clusterRegistry.ts` reader, cached as today) and returns one cluster per record that has `apiServer` and `caData`, plus the in-cluster home cluster. Every remote cluster uses the M-2 token file through the existing `clusterAccess.ts` auth (`hangar.io/token-file`, the actor service account and issuer metadata). The kubernetes-ingestor reads the same list. `TOWER_CONTROL_PLANE_API_URL`, `TOWER_CONTROL_PLANE_CA_DATA` and `TOWER_CONTROL_PLANE_AUDIENCE` are removed from `app-config.yaml` and the values; `TOWER_CONTROL_PLANE_CLUSTER` stays (it names the control plane among the registered clusters). A registry read failure keeps the last good list and logs it; Tower never falls back to a hard-coded cluster. A record whose cluster refuses Tower's token shows as "no access" for that cluster, not as an error page.
+- **Done when.** Unit: the supplier maps records to clusters, skips a record without `apiServer`, keeps the last list on a read failure, and never includes a cluster absent from the registry (negative: a ConfigMap without the registry label is ignored). Live: Tower's catalog shows eks-prod workloads for an app with a prod environment; removing eks-prod's record from the fleet file and syncing `cluster-registry` drops it from Tower within the cache window; the in-cluster eks-man entry is unaffected.
+- **Rollout.** backstage PR (clean-cache `yarn tsc` before merge), image build and promotion to eks-man; gitops-backstage values PR.
+- **User steps.** Merge and promote Backstage.
+
+### M-4 · One Argo CD instance and token per cluster
+<!-- pkg status=planned wave=M depends=M-3 -->
+
+Model: sonnet.
+
+- **Repos.** backstage (the same module, for `argocd.appLocatorMethods`), gitops-backstage (the ExternalSecret for the tokens), hangar-infra (`docs/install.md` step 15: mint one token per cluster).
+- **Depends on.** M-3.
+- **Build.** The module also supplies one Argo CD instance per registered cluster (`https://argocd-apps.<cluster domain>` for remote clusters, the in-cluster service for home), named so `argoInstanceNameFor()` keeps resolving a cluster to its instance. Each instance's token comes from Infisical key `backstage-argocd-<cluster>-apps-token` in `backstage-<home>`, read through one ExternalSecret that maps every such key; a cluster with no token key is listed without Argo CD status and logs it once. `ARGOCD_DEV_APPS_TOKEN` and `ARGOCD_PROD_APPS_TOKEN` are removed. The account is `backstage` on every cluster's `argocd-apps`, with the existing `role:tower-sync` and `role:tower-rollout` grants only.
+- **Done when.** Live: Tower shows sync status and history for an app's eks-prod Application and for one on eks-dev, and a Tower sync on eks-dev succeeds while one on a project the role denies (`default`, `airframe-onboarding`) is refused (negative). Rotating one cluster's token in Infisical reaches Tower within the ExternalSecret refresh without a restart, or the PR says why a restart is needed.
+- **Rollout.** As M-3.
+- **User steps.** Mint a `backstage` token on each cluster's `argocd-apps` and store it under the new key names (the runbook gives the commands).
+
+### M-5 · Every workload view resolves an environment's own cluster
+<!-- pkg status=planned wave=M depends=M-3 -->
+
+Model: sonnet.
+
+- **Repos.** tower (`@jfillman/tower`; release with a rebuilt `dist`), backstage (the pin bump), autopilot and clearance plugins only if they assume the home cluster.
+- **Depends on.** M-3.
+- **Build.** An audit, then fixes: every Tower page and backend route that shows or acts on an app's environment takes the cluster from the environment's record (the release record, the identity file or the registry), never from "prod is the home cluster" or "everything else is the control plane". Known to be correct already: `flightChartSync.ts` (`upper.cluster`). The audit's list of call sites, with the fix or "already correct" for each, goes in the PR description. Break-glass on a remote cluster uses the same per-cluster access as reads and keeps its own approval flow.
+- **Done when.** Unit: each fixed call site has a test with an environment on a third cluster. Live: for an app whose prod runs on eks-prod, the Services, Environments, Ops Wall and break-glass views all name eks-prod and show its live state; a view for an environment whose cluster is not registered says so (negative).
+- **Rollout.** tower release, backstage pin bump, promotion to eks-man.
+- **User steps.** Merge and promote.
+
+### M-6 · Fleet rollout and the exit test
+<!-- pkg status=planned wave=M depends=M-1,M-2,M-3,M-4,M-5 -->
+
+Model: sonnet (the managing agent runs the live steps itself).
+
+- **Repos.** hangar-infra (`docs/install.md` steps 14 and 15, Known gaps), hangar (`specs/plans/aws-install-plan.md`: decision 2 closed), backstage docs.
+- **Depends on.** M-1 to M-5 merged.
+- **Build.** The runbook drops the per-cluster Tower variables and gains "add a cluster to Tower" as `apron fleet add` plus one Argo CD token. The install plan's phase 5 gate becomes the exit test below instead of a recorded gap.
+- **Done when.** Exit test, with quoted evidence: Tower on eks-man lists Backstage's own workloads on eks-man, an app's dev workloads on eks-dev and its prod workloads on eks-prod; eks-prod's API server audit log shows Tower's federated user for those reads; a fourth cluster registered in a test (a kind cluster joined to the fleet for the test, then removed) appears in Tower with no Backstage change and disappears when its record is removed (negative and generality in one). The lab, re-rendered, still shows hangar-dev and hangar-prod.
+- **Rollout.** Docs PRs; no new release.
+- **User steps.** None beyond the earlier packages'.
