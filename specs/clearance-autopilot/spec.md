@@ -12,6 +12,8 @@ Nov 2, 2026 · @James
 
 **Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 1 difference, the outage rule, decided by the owner on 2026-11-16 and marked "Decided" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
 
+**Revised 2026-11-28, owner decisions.** N-Q2: a dedicated Clearance domain, with the name still to be chosen. N-Q4: the Warn window is 7 days, every protected app synced, and no unexplained would-deny. SDK-Q1: packs are trusted by default only when first-party or signed by a signer the subscriber lists, by key or by keyless identity. N-Q6: no operator, so N-14 is dropped.
+
 **Revised 2026-11-28, the gate SDK and subject kinds.** The owner's proposal "Clearance gate SDK and subject kinds: spec" (2026-11-25) is folded in as a new series, [SDK: the gate SDK and subject kinds as data](#work-packages-sdk). It keeps the proposal's ids SDK-1 to SDK-8 and adds SDK-9 to SDK-14, including the owner's idea of 2026-11-28 that AI writes the gate files and people approve what they mean (SDK-13, SDK-14). A table maps every piece onto existing work (the provider protocol, conformance, policy bundles, I-1's classes, the CMP's tree root, N-4's enrollment, O-1, G-TF-3, C-16), so nothing is built twice. Twelve refinements are recorded, several of them found by the worked exercise [Terraform on the CLI Gate](https://claude.ai/artifact/6QKHtqeQGsoKafb8USCiRw), which rebuilds today's Terraform gate as one `gate.yaml` and one kind pack. One row is added to the waves table.
 
 **Revised 2026-11-27, install and day-2 operations.** The owner's review "Clearance: install and operations review" (2026-11-27) is folded in as a new series, [N: install and day-2 operations](#work-packages-n) (N-1 to N-14), appended after the last section so every existing section number holds. The series has three profiles, the umbrella chart, `clearance install`, doctor, provider enrollment, upgrades, neutral names, signing modes, getting started, metrics, backup, air-gapped installs, safe uninstall, and the operator decision. It records six places where this spec departs from the review, and the answer to whether Clearance should have a Kubernetes operator. C-16d (the guide) moves into N-9. C-15 becomes a dependency of the production profile. One row is added to the waves table.
@@ -887,7 +889,7 @@ Shaded cells hold work; a wave's gate is passed only with the live evidence name
 | W5 Observation | O-2, O-3, O-4, O-5; A-10 alongside (not part of this gate) | W4 gate passed; O-3 also needs G-ARGO-7's gate live on hangar-prod | **Coverage is verified, not assumed**: a `kubectl apply` and a console security-group change appear in the packet's exceptions with actor, diff and resolution; a Secret change appears with no value recorded; a `StopLogging` call appears as a monitoring-protection event and flips the account's health; with a collector stopped the packet reports a blind window, not a clean one; the reconciler and the collector report one exception, not two |
 | W6 Clearinghouse | P-1, P-2, P-3, P-4 | W5 gate passed (P-1 and P-4 may start after W4, since they need only the packet). Status 2026-11-14: all four packages merged to clearance main (clearance#169, #170, #171, #172), proven against fakes, not released or deployed | **Accepted and verifiable by a stranger**: a fake assurance provider pulls a packet under a time-boxed credential and signs a receipt that the next packet carries; a 25-record sample verifies offline; a verification statement verifies on the hosted page (the lab run proves it against fakes: a fake assurance provider, offline sample verify, a fake GRC API; the hosted proof on verify.clearance.hangarplatform.dev is the Cloud K2 gate) with all seven checks (the lab run accepts a statement that prints "not yet independently witnessed"; the external witness is deferred to before the Cloud K2 gate, where all seven checks green is proven), shows revoked when revoked, and prints a blind window when there was one; a change appears as an evidence item in a Vanta sandbox with a link back |
 | M Tower across the fleet | M-1 and M-2 in parallel, then M-3, then M-4 and M-5, then M-6 | The clearance-gate split is live on eks-dev (2026-11-26); independent of the W-gates | **Tower sees the fleet**: M-6's exit test (eks-man, eks-dev and eks-prod workloads in Tower, a test cluster added and removed through the registry alone) |
-| N Install and day-2 | N-6, N-7, N-11, N-13 now; N-1, then N-2, N-3, N-8; then N-4, N-9, N-10, N-12; then N-5; N-14 last | Now; independent of the W-gates (alongside W-34's CMP track) | **A stranger installs it**: quickstart to a verified packet in under an hour from the guide alone (ten minutes scripted), a standard install on AWS green in doctor, a gated upgrade (N-6e), and a clean uninstall |
+| N Install and day-2 | N-6, N-7, N-11, N-13 now; N-1, then N-2, N-3, N-8; then N-4, N-9, N-10, N-12; then N-5 (N-14 dropped) | Now; independent of the W-gates (alongside W-34's CMP track) | **A stranger installs it**: quickstart to a verified packet in under an hour from the guide alone (ten minutes scripted), a standard install on AWS green in doctor, a gated upgrade (N-6e), and a clean uninstall |
 | SDK Gate SDK and subject kinds | SDK-1; then SDK-2, SDK-3, SDK-9; then SDK-4, SDK-8, SDK-13; then SDK-5, SDK-6 (Terraform), SDK-14; then SDK-10, SDK-11, SDK-7; SDK-12 on a trigger | Now; independent of the W-gates; shares N-3 and N-4 with the N-series | **A kind the core has never seen**: a third-party gate written from the guide passes conformance with no core release; Terraform runs on the generic engine with identical decisions on the live lab; a packet prints three kinds side by side and verifies offline |
 | Later | O-6, P-5, I-2, I-3, A-8, C-11, C-12, C-13, section 13 | A paying partner, a second accepting firm, ten opted-in tenants, or the roadmap's phase 4 and 5 triggers |  |
 
@@ -1945,14 +1947,16 @@ The review's open questions, answered from the code:
 
 1. **Quickstart signing should not deploy Fulcio and Rekor.** A keyless stack is Fulcio, Rekor and Rekor's storage (Trillian and a database, or Rekor v2's tile store): several services, the slowest and most fragile part of an "under an hour" install. The core already has a static key backend. Quickstart generates one key, signs with it, and marks every attestation and packet "quickstart signing, not evidence". A bundled Sigstore from upstream charts stays an option, for air-gapped standard and production installs that want keyless (N-8).
 2. **Standard should not require an independent witness on day one.** It is the right production rule. For a team's first real gate it turns a trial into a negotiation with a second party. Standard runs the ledger with no witness or a self-run one, and the packet and the verification statement say "not independently witnessed", which P-3 already prints. Production requires the external witness, and the installer refuses production without one.
-3. **Production should not start with admission in Deny.** Hangar's own lesson (G-ARGO-7, the 2026-11 Kyverno incidents) is that a fail-closed admission policy turned on cold refuses more than intended. Production installs in Warn. `clearance doctor` reports the Warn period's would-deny count, and the flip to Deny is one value change that the installer accepts only after a clean Warn window (default 7 days), recorded as a config record. Deny-on-install stays possible with an explicit override, which is recorded.
+3. **Production should not start with admission in Deny.** Hangar's own lesson (G-ARGO-7, the 2026-11 Kyverno incidents) is that a fail-closed admission policy turned on cold refuses more than intended. Production installs in Warn. `clearance doctor` reports the Warn period's would-deny count, and the flip to Deny is one value change that the installer accepts only after a clean Warn window, recorded as a config record. **Decided 2026-11-28 (owner):** a window is clean when all three hold: at least 7 days have passed, every protected app has synced at least once, and no would-deny event is left unexplained. An explained would-deny (a real violation someone resolved) does not block. The 7 days are configurable but never below 24 hours without the recorded override. Doctor (N-3) shows what is still missing, for example "3 of 12 protected apps not yet exercised". Deny-on-install stays possible with an explicit override, which is recorded.
 4. **Enrollment tokens alone are too weak to identify a provider.** A one-time bearer token that becomes the provider's identity can be replayed. In N-4 the token is accepted once, only together with the caller's verified workload identity (a projected ServiceAccount token, or an AWS role for a collector outside Kubernetes). The core records that identity as the provider's principal, so later calls authenticate exactly as today. The token proves "an admin meant this"; the workload identity proves "this is that workload".
 5. **The quickstart witness should be allowed, but named.** It proves only that the chain was checkpointed, not that a second party saw it. The review asks whether to allow it at all. Allow it: a trial should exercise the whole checkpoint path. But the witness identifies itself as same-operator, and `clearance verify` reports the independence check as failed, not passed.
 6. **Bundled PostgreSQL in quickstart should not be CloudNativePG.** CNPG is an operator with its own CRDs, a second install inside the first. Quickstart runs one plain PostgreSQL StatefulSet with a volume. CNPG stays the chart's optional database for standard, and production uses the subscriber's own database.
 
 ### Should Clearance have a Kubernetes operator?
 
-Answer to the owner's question. Recommendation: **not first, and not for the core's own state. Decide it in N-14 on evidence, after N-1 to N-6 exist.**
+**Decided 2026-11-28 (owner): no operator.** The idea is abandoned and N-14 is dropped. Day-2 work belongs to the core (its own state) and to Helm or Argo CD (Kubernetes objects), as the table below sets out. The fleet of protected clusters is handled by the umbrella chart, doctor's version-skew check (N-6c) and the compatibility table, not by a controller. The analysis below is kept as the record of why.
+
+The analysis given to the owner:
 
 The day-2 work divides into two kinds, and only one of them is a Kubernetes reconciliation problem.
 
@@ -1973,12 +1977,7 @@ An operator first would cost:
 - CRD version upgrades as a new fragility;
 - no help with the parts that are actually hard, because those are the core's own state.
 
-The criteria N-14 decides on:
-- whether N-1 to N-6 leave real day-2 toil, measured on the lab and the AWS install;
-- the multi-cluster agent fleet with version skew;
-- whether a buyer asks for OperatorHub or OLM.
-
-If yes, the operator is narrow: a namespaced controller for one `ClearanceInstallation` (or a per-cluster `ClearanceAgent`) resource. It renders the same umbrella chart's objects and never holds keys, never writes the chain, and can be removed without touching the core.
+The criteria N-14 would have decided on were whether N-1 to N-6 leave real day-2 toil, the multi-cluster agent fleet with version skew, and a buyer asking for OperatorHub or OLM. The owner chose not to pursue it. If a buyer later asks for OperatorHub, the umbrella chart can be packaged for OLM with no controller logic, as a distribution choice only, and that needs a new decision.
 
 ### Install profiles, as this spec adopts them
 
@@ -2249,7 +2248,9 @@ Model: sonnet.
 - **Done when.** In CI, uninstall from a gated cluster leaves no ValidatingAdmissionPolicy binding, no finalizer and no app stuck in ComparisonError. A later sync of a formerly protected app succeeds. The disable is a record in the chain.
 
 ### N-14 · The operator decision
-<!-- pkg status=proposal wave=N depends=N-1,N-2,N-3,N-6 -->
+<!-- pkg status=dropped wave=N depends=N-1,N-2,N-3,N-6 -->
+
+**Dropped 2026-11-28 (owner): no operator.** See "Should Clearance have a Kubernetes operator?" above. The card is kept so its id is never reused.
 
 Model: opus.
 
@@ -2275,7 +2276,7 @@ Order:
 - N-1, then N-2, N-3 and N-8 in parallel.
 - Then N-4, N-9, N-10 and N-12, then N-5.
 - N-13 any time.
-- N-14 last.
+- N-14 is dropped (owner, 2026-11-28).
 
 C-15 is a dependency of the production profile, not of this gate.
 
@@ -2284,11 +2285,11 @@ C-15 is a dependency of the production profile, not of this gate.
 | # | Question | Blocks | Recommendation | Decides |
 | --- | --- | --- | --- | --- |
 | N-Q1 | Umbrella chart or install command first | N-1, N-2 | The umbrella first. It is what a GitOps install consumes, and the command only wraps it | Proceed |
-| N-Q2 | The product API group and predicate domain | N-7 | A domain the product will own long-term, chosen once | Owner |
+| N-Q2 | The product API group and predicate domain | N-7 | A domain the product will own long-term, chosen once | **Decided 2026-11-28 (owner): a dedicated Clearance domain**, used for the API group, the predicate type and the SDK's reserved kind prefix (SDK-Q5). The owner chooses the actual domain; N-7 waits on that name only |
 | N-Q3 | Allow a same-operator witness in quickstart | N-1 | Allow it, labelled, with the independence check failing in `verify` | Proceed |
-| N-Q4 | Default Warn window before production's Deny | N-1, N-3 | 7 days and no unexplained would-deny, overridable with a recorded reason | Owner confirms |
+| N-Q4 | Default Warn window before production's Deny | N-1, N-3 | At least 7 days, every protected app synced at least once, and no unexplained would-deny; overridable with a recorded reason | **Decided 2026-11-28 (owner): as recommended** |
 | N-Q5 | Enrollment identity binding outside Kubernetes (the AWS collector on Lambda or ECS) | N-4 | The caller's IAM role, verified by the core through STS `GetCallerIdentity` presigned requests, as Vault's AWS auth does | Proceed, confirm in the design step |
-| N-Q6 | An operator, ever | N-14 | Decide on N-14's evidence; not before N-1 to N-6 | Owner |
+| N-Q6 | An operator, ever | N-14 | Not first, and never for the core's own state | **Decided 2026-11-28 (owner): no operator.** N-14 dropped |
 
 ## Work packages, SDK-series: the gate SDK and subject kinds as data {#work-packages-sdk}
 
@@ -2325,7 +2326,7 @@ Not related, despite the words: Glidepath's change-aware release gates (W-55, CG
 ### Refinements to the proposal
 
 1. **Kind packs live inside policy bundles.** The proposal loads a pack "like a policy bundle". Making it part of one keeps one signing key chain, one digest in the record, one `GET /v1/clearance-policy` and one reload path. A bundle may hold only kinds, so a third party can publish a pack on its own.
-2. **Trust in packs.** By default the core trusts first-party packs, which are signed by the Clearance release key. It also trusts packs signed by keys the subscriber lists in configuration. A third-party pack is refused until its signer is listed. Kind names are reverse-DNS (`io.acme.db-migration`), and the `dev.clearance.*` prefix is reserved for first-party kinds. This answers the proposal's first and last open questions; a public registry waits for several publishers.
+2. **Trust in packs.** By default the core trusts first-party packs, which are signed by the Clearance release key. It also trusts packs signed by signers the subscriber lists in configuration, either by public key or by keyless build identity: a Fulcio certificate whose identity is a named workflow of a named repository, checked with the same code `internal/attest` uses for attestations (decided 2026-11-28, SDK-Q1). A third-party pack is refused until its signer is listed. Kind names are reverse-DNS (`io.acme.db-migration`), and the `dev.clearance.*` prefix is reserved for first-party kinds. This answers the proposal's first and last open questions; a public registry waits for several publishers.
 3. **Items not in the pack are refused.** An item whose `type` is not in the pack's `itemTypes`, or whose `op` is not one of create, update, delete or replace, is refused `DG-UNBOUND` rather than given `defaultTier`. That way a mapping bug cannot under-tier a change. `defaultTier` covers known item types that no rule fires on, and it may not be 0. `itemTypes` may list globs for open-ended families. Terraform's resource types are an example. `"*"` is allowed only with a `defaultTier` of at least 2, so an unexpected type is never cleared by policy.
 4. **Change-level rules and modifiers.** Item rules with a maximum cannot say "the whole plan was targeted: one tier up, at least 2", which Terraform needs today. A pack gains `changeRules`, CEL over the whole description, which set a tier or `raise: n` with a `floor`. They run after the item maximum and can only raise it: the change's tier is the maximum of the item tiers and every tier a change rule sets, and `raise` then applies on top of that. A change rule never lowers a tier, so an item set to tier 3 by a failed rule stays at tier 3. The core invariants run last.
 5. **Facts beyond items.** Some of a change's meaning is not per item: Terraform's workspace, its versions, whether `-target` was used, the variable-set digest. The generic description gains `facts{}`, declared in the pack's `subjectSchema`, which change rules can read, and `consistency` CEL that must hold or the request is refused. An example is Terraform's rule that the summary equals the resources.
@@ -2662,9 +2663,9 @@ The series is independent of the W-gates. It shares N-4 (enrollment scopes) and 
 
 | # | Question | Blocks | Recommendation | Decides |
 | --- | --- | --- | --- | --- |
-| SDK-Q1 | Who may sign a kind pack; are third-party packs trusted by default | SDK-2 | First-party and subscriber-listed keys only; third-party refused until listed (refinement 2) | Owner |
+| SDK-Q1 | Who may sign a kind pack; are third-party packs trusted by default | SDK-2 | Deny by default: first-party packs, plus signers the subscriber lists, by key or by keyless build identity (a Fulcio certificate's workflow identity) | **Decided 2026-11-28 (owner): as recommended** |
 | SDK-Q2 | Size limits | SDK-1 | Page items under a Merkle root; at most 10,000 items inline, then paged, with no hard cap on the change | Proceed |
 | SDK-Q3 | Canonicalization across languages | SDK-1, SDK-3 | Go reference plus golden vectors every SDK passes | Proceed |
 | SDK-Q4 | Cap gates without per-item enforcement | SDK-4 | No cap: levels in the record, minimums set by policy per tier | Proceed |
-| SDK-Q5 | Naming and governance of kinds | SDK-2, SDK-7 | Reverse-DNS names, `dev.clearance.*` reserved; a registry when there are several publishers | Owner (the reserved prefix follows N-Q2's domain) |
+| SDK-Q5 | Naming and governance of kinds | SDK-2, SDK-7 | Reverse-DNS names; the reserved first-party prefix is the reverse of the domain decided in N-Q2 (`dev.clearance.*` is a placeholder until then); a registry when there are several publishers | Follows N-Q2: waits on the owner's domain name only |
 | SDK-Q6 | Move Argo CD's tiering into a pack | SDK-6 | Only on a perfect replay; otherwise keep it in Go behind SDK-1's mapping | Proceed on the evidence |
