@@ -2561,7 +2561,7 @@ Model: sonnet.
   - **After the apply.** The engine derives the expected state from the cleared items and a pre-apply inventory (a readback run by `hold`, or the dry run's own current-state section).
     - **What is compared.** Only what an item can carry. Presence and absence follow the cleared op: a `create`, `update` or `replace` must be present, and a `delete` must be absent. Values are compared through `valueDigests`. A pack may declare, per item type, the fields whose resulting values matter. For each item, `describe` then records `valueDigests`, a map from each declared field's JSON pointer to the sha256 of its canonical after-value, and readback computes the same map from its own output. Digests per field, not per item, are what let later changes be composed field by field. A field the pack marks `sensitive` is compared by presence only, because a digest of a low-entropy secret can be brute-forced. The packet says which fields were compared by value and which by presence.
     - **Other changes in between.** The engine asks the core for every change on the same target whose outcome was recorded `applied: true` between this `hold` and this readback. A change that was cleared but not applied, or failed, is not folded. The engine folds their items into the expected state in the order of their outcome records in the chain, which is the order they were applied, at the level of the item and the field. Two consequences:
-      - An object outside this change that a later change touched is expected to match the later change's cleared effect for the fields it changed, and the inventory for every other field.
+      - An object outside this change that a later change touched is expected to match the later change's cleared effect for the fields it changed, and the inventory for every other declared field. Readback can only check fields that have a digest: a field the pack does not declare is not compared by value anywhere, and the packet lists those fields per item type as "not value-checked".
       - An item of this change that a later cleared change also touched is expected to match the composed result. Presence follows the last applied op, and each field the later change declared takes that change's entry in `valueDigests`. Fields the later change did not declare keep this change's expectation.
       A difference that no cleared change explains is reported as `untraced-apply`.
     - **A mismatch.** Any difference in this change's own items, wrong presence or a wrong entry in `valueDigests`, is a `digest-mismatch` exception that names each item and what was expected.
@@ -2570,7 +2570,7 @@ Model: sonnet.
   - On the Flyway example, a migration applied by hand outside the gate shows as `untraced-apply`.
   - A readback in which a cleared item's declared field holds a different value shows as `digest-mismatch`.
   - A change cleared and applied between another change's hold and readback causes no exception in either (negative).
-  - A later cleared change that updates one field of an object leaves that object's other fields checked against the inventory, so a stray edit to another field is still reported (negative).
+  - A later cleared change that updates one field of an object leaves that object's other declared fields checked against the inventory, so a stray edit to another declared field is still reported (negative).
   - A later cleared change that deletes this change's created item is expected as absent, not reported.
 
 ### SDK-12 · A Python SDK, on a trigger
