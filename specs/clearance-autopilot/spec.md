@@ -12,7 +12,7 @@ Nov 2, 2026 · @James
 
 **Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 1 difference, the outage rule, decided by the owner on 2026-11-16 and marked "Decided" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
 
-**Revised 2026-11-28, the gate SDK and subject kinds.** The owner's proposal "Clearance gate SDK and subject kinds: spec" (2026-11-25) is folded in as a new series, [SDK: the gate SDK and subject kinds as data](#work-packages-sdk). It keeps the proposal's ids SDK-1 to SDK-8 and adds SDK-9 to SDK-12. A table maps every piece onto existing work (the provider protocol, conformance, policy bundles, I-1's classes, the CMP's tree root, N-4's enrollment, O-1, G-TF-3, C-16), so nothing is built twice. Eleven refinements are recorded, several of them found by the worked exercise [Terraform on the CLI Gate](https://claude.ai/artifact/6QKHtqeQGsoKafb8USCiRw), which rebuilds today's Terraform gate as one `gate.yaml` and one kind pack. One row is added to the waves table.
+**Revised 2026-11-28, the gate SDK and subject kinds.** The owner's proposal "Clearance gate SDK and subject kinds: spec" (2026-11-25) is folded in as a new series, [SDK: the gate SDK and subject kinds as data](#work-packages-sdk). It keeps the proposal's ids SDK-1 to SDK-8 and adds SDK-9 to SDK-14, including the owner's idea of 2026-11-28 that AI writes the gate files and people approve what they mean (SDK-13, SDK-14). A table maps every piece onto existing work (the provider protocol, conformance, policy bundles, I-1's classes, the CMP's tree root, N-4's enrollment, O-1, G-TF-3, C-16), so nothing is built twice. Eleven refinements are recorded, several of them found by the worked exercise [Terraform on the CLI Gate](https://claude.ai/artifact/6QKHtqeQGsoKafb8USCiRw), which rebuilds today's Terraform gate as one `gate.yaml` and one kind pack. One row is added to the waves table.
 
 **Revised 2026-11-27, install and day-2 operations.** The owner's review "Clearance: install and operations review" (2026-11-27) is folded in as a new series, [N: install and day-2 operations](#work-packages-n) (N-1 to N-14), appended after the last section so every existing section number holds. The series has three profiles, the umbrella chart, `clearance install`, doctor, provider enrollment, upgrades, neutral names, signing modes, getting started, metrics, backup, air-gapped installs, safe uninstall, and the operator decision. It records six places where this spec departs from the review, and the answer to whether Clearance should have a Kubernetes operator. C-16d (the guide) moves into N-9. C-15 becomes a dependency of the production profile. One row is added to the waves table.
 
@@ -888,7 +888,7 @@ Shaded cells hold work; a wave's gate is passed only with the live evidence name
 | W6 Clearinghouse | P-1, P-2, P-3, P-4 | W5 gate passed (P-1 and P-4 may start after W4, since they need only the packet). Status 2026-11-14: all four packages merged to clearance main (clearance#169, #170, #171, #172), proven against fakes, not released or deployed | **Accepted and verifiable by a stranger**: a fake assurance provider pulls a packet under a time-boxed credential and signs a receipt that the next packet carries; a 25-record sample verifies offline; a verification statement verifies on the hosted page (the lab run proves it against fakes: a fake assurance provider, offline sample verify, a fake GRC API; the hosted proof on verify.clearance.hangarplatform.dev is the Cloud K2 gate) with all seven checks (the lab run accepts a statement that prints "not yet independently witnessed"; the external witness is deferred to before the Cloud K2 gate, where all seven checks green is proven), shows revoked when revoked, and prints a blind window when there was one; a change appears as an evidence item in a Vanta sandbox with a link back |
 | M Tower across the fleet | M-1 and M-2 in parallel, then M-3, then M-4 and M-5, then M-6 | The clearance-gate split is live on eks-dev (2026-11-26); independent of the W-gates | **Tower sees the fleet**: M-6's exit test (eks-man, eks-dev and eks-prod workloads in Tower, a test cluster added and removed through the registry alone) |
 | N Install and day-2 | N-6, N-7, N-11, N-13 now; N-1, then N-2, N-3, N-8; then N-4, N-9, N-10, N-12; then N-5; N-14 last | Now; independent of the W-gates (alongside W-34's CMP track) | **A stranger installs it**: quickstart to a verified packet in under an hour from the guide alone (ten minutes scripted), a standard install on AWS green in doctor, a gated upgrade (N-6e), and a clean uninstall |
-| SDK Gate SDK and subject kinds | SDK-1; then SDK-2, SDK-3, SDK-9; then SDK-4, SDK-8; then SDK-5 and SDK-6 (Terraform); then SDK-10, SDK-11, SDK-7; SDK-12 on a trigger | Now; independent of the W-gates; shares N-3 and N-4 with the N-series | **A kind the core has never seen**: a third-party gate written from the guide passes conformance with no core release; Terraform runs on the generic engine with identical decisions on the live lab; a packet prints three kinds side by side and verifies offline |
+| SDK Gate SDK and subject kinds | SDK-1; then SDK-2, SDK-3, SDK-9; then SDK-4, SDK-8, SDK-13; then SDK-5, SDK-6 (Terraform), SDK-14; then SDK-10, SDK-11, SDK-7; SDK-12 on a trigger | Now; independent of the W-gates; shares N-3 and N-4 with the N-series | **A kind the core has never seen**: a third-party gate written from the guide passes conformance with no core release; Terraform runs on the generic engine with identical decisions on the live lab; a packet prints three kinds side by side and verifies offline |
 | Later | O-6, P-5, I-2, I-3, A-8, C-11, C-12, C-13, section 13 | A paying partner, a second accepting firm, ten opted-in tenants, or the roadmap's phase 4 and 5 triggers |  |
 
 ### Parallel tracks and who runs what
@@ -2292,7 +2292,7 @@ C-15 is a dependency of the production profile, not of this gate.
 
 ## Work packages, SDK-series: the gate SDK and subject kinds as data {#work-packages-sdk}
 
-Added 2026-11-28 from the owner's proposal "Clearance gate SDK and subject kinds: spec" (Claude Doc, 2026-11-25). The package ids SDK-1 to SDK-8 are the proposal's own, so the doc and this spec match. SDK-9 to SDK-12 are new here.
+Added 2026-11-28 from the owner's proposal "Clearance gate SDK and subject kinds: spec" (Claude Doc, 2026-11-25). The package ids SDK-1 to SDK-8 are the proposal's own, so the doc and this spec match. SDK-9 to SDK-14 are new here.
 
 Clearance is open source, and its reach depends on third parties putting gates in front of infrastructure Clearance does not cover: database migrations, feature flags, DNS, SaaS configuration, Helm without Argo CD, Pulumi. Today that takes two things a third party cannot do:
 - write a correct gate from a protocol alone (fail-closed waiting, outage policy, token checks and the outbox are left to each author);
@@ -2562,11 +2562,73 @@ Model: sonnet.
 - **Trigger.** A third-party gate author asks, or a first-party gate needs it.
 - **Build.** The same owned behaviours as SDK-3, passing the same golden vectors and the same conformance suite.
 
+### SDK-13 · Rules people can read: rule tables and `gate init`
+<!-- pkg status=proposal wave=SDK depends=SDK-2,SDK-9 -->
+
+Model: sonnet.
+
+Added 2026-11-28 (owner). The exercise showed that most of the effort in a gate is CEL: the mapping in `gate.yaml` and the rules in the pack. Asking a person to write CEL is asking a lot. This package makes the common case declarative, keeps CEL for the rest, and has the tool, not the author, write the first draft.
+
+- **Repos.** clearance (`internal/gate`, `cmd/clearance`, docs).
+- **Depends on.** SDK-2, SDK-9.
+- **Build.**
+  - **Rule tables.** A pack may state rules as a table instead of CEL. Each row has a `when` with `type` globs, `op`, `fieldsUnder` and `fact` conditions, and a `tier` or a `raise` with a `floor`. The loader compiles the table to the same CEL, so there is one evaluator. The table form round-trips: `clearance kinds fmt` prints a compiled pack back as a table where it can. Today's Terraform tier table becomes about a dozen rows with no CEL at all.
+  - **Mapping presets.** Mapping presets cover common dry-run shapes (a list of operations with a type, id and action; a before/after diff), so `map:` is usually one line.
+  - **`clearance gate init --tool <name> --sample <dry-run output>`.** It reads a real dry run, proposes the `items` path and the mapping, and writes a `gate.yaml`, a pack with a starter rule table, and one fixture per sample. The starter pack puts every item type at `defaultTier: 2`: it never guesses a lower tier.
+  - **`clearance kinds explain <pack> --table`.** It prints the pack as a plain table (item type, operation, tier, why), which is what a person reviews.
+- **Done when.**
+  - The Terraform pack written as a rule table compiles to rules that give identical tiers to the CEL version on every fixture (property test).
+  - `gate init` on the Flyway and Helm samples produces configs that pass `kinds lint` and `gate test` with no edit.
+  - `explain --table` output for the Terraform pack matches the tier table in `docs/gate.md`.
+
+### SDK-14 · AI-authored gates: a skill, authoring tools for agents, and evals
+<!-- pkg status=proposal wave=SDK depends=SDK-9,SDK-13 -->
+
+Model: opus for the skill and the evals, sonnet for the tools.
+
+Added 2026-11-28 (owner): let an AI write the gate and the pack, and let people approve what the pack *means*. The deterministic tools do the checking, so the AI is never trusted for correctness. The core invariants mean no pack, however written, can loosen tier 3's two people or let automation approve.
+
+- **Repos.** clearance (`skills/`, `cmd/clearance mcp`, `evals/`, docs).
+- **Depends on.** SDK-9, SDK-13.
+- **Build.**
+  1. **SDK-14a An Agent Skill, `clearance-gate-author`.** It ships in the repo, in the open Agent Skills format (a `SKILL.md` plus references), so it works in Claude Code, on claude.ai and in other agents that read the format. The skill holds:
+     - the `clearance.gate/v1` and `clearance.kind/v1` schemas;
+     - the CEL library (SDK-9), the rule-table form (SDK-13) and I-1's classes;
+     - the first-party packs as worked examples;
+     - a fixed loop:
+       1. run the tool's dry run (or take a sample);
+       2. `gate init`;
+       3. refine the mapping and rules;
+       4. `kinds lint` and `gate test` until they are green;
+       5. turn each real sample into a fixture;
+       6. write a short tier rationale;
+       7. open a pull request.
+     The skill never applies anything. It never lowers a tier below the starter's `defaultTier: 2` without saying why in the rationale, and it never edits a `kinds:` block to loosen it, which the core refuses anyway.
+  2. **SDK-14b Authoring tools for agents.** `clearance mcp` is a local, read-only MCP server over the same commands:
+     - `kinds lint`, `gate test` and `kinds explain`;
+     - policy `explain` against a core;
+     - `conformance --role gate` against `core --memory`.
+     It gives an agent with no shell the same loop. It is a thin wrapper over the CLI, with no logic of its own.
+  3. **SDK-14c The repo file.** `clearance gate init --agents` adds a short section to the repo's `AGENTS.md` (which Claude Code reads through `CLAUDE.md`). The section says where the gate files are, the loop to run, the skill to use, and the two rules: never loosen a tier, always add a fixture.
+  4. **SDK-14d Pack changes are gated by Clearance.** A pack or `gate.yaml` changes policy, so the path rules treat it like `clearance.yaml`: tier 3, one owner and one outside person. An AI-authored pack therefore reaches production only after two people have read its `explain --table` output, which the pull request carries as a comment. The rationale is part of the evidence.
+  5. **SDK-14e Evals.** `evals/gate-author/` holds tasks for tools not in the repo (Flyway, Liquibase, Helm, Pulumi, a DNS CLI, a feature-flag CLI), each with real dry-run samples and expected tiers that a person labelled. A run passes when the skill's output lints, passes `gate test` against the held-out samples, passes conformance at L1, and puts no labelled tier-3 item lower than 3. Under-tiering is scored as a failure, over-tiering as a cost. The evals run on a schedule in CI and on every skill change, and the score is published beside the conformance list.
+  6. **SDK-14f An operations skill, `clearance-ops`.** It is the same format, for running Clearance:
+     - read `doctor --json` and explain each failing check with its fix;
+     - draft values for `clearance install`;
+     - walk an upgrade with `upgrade check`;
+     - approve enrollments only by telling the admin what to approve, never by approving.
+     It ships with the N-series guide (N-9) and uses only read-only calls.
+- **Done when.**
+  - In the evals, the skill writes passing gates for at least five of the six tools with no tier-3 item under-tiered, and the score is in the docs.
+  - A pack pull request opened by the skill on the lab is held at tier 3 with the `explain --table` comment, and is cleared by two people (live).
+  - `clearance mcp` exposes only read-only tools (a test calls each with a principal that can write nothing).
+
 ### Sequencing
 
 - SDK-1 first.
 - Then SDK-2, SDK-3 and SDK-9 in parallel.
 - Then SDK-4, then SDK-8, then SDK-5 and SDK-6 (Terraform), then SDK-10, SDK-11 and SDK-7.
+- SDK-13 follows SDK-9. SDK-14 follows SDK-13 and runs before SDK-7, so the author's guide covers the skill path first.
 - SDK-12 waits for its trigger.
 - Argo CD's move in SDK-6 is optional and last.
 
