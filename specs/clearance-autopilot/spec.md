@@ -2021,7 +2021,7 @@ Model: sonnet.
 - **Build.** `clearance install --profile P` is a thin wrapper over N-1. It never has a second install path.
   1. Preflight checks: Kubernetes ≥ 1.30 for ValidatingAdmissionPolicy, a default storage class, egress to GitHub, and Argo CD's version where the gate is on.
   2. `clearance keys init` makes the token-signing key, the ledger key and the quickstart signing key, as Secrets or as ExternalSecret stubs that point at the subscriber's store. It never prints key material.
-  3. Runs GitHub's App manifest flow from `contract/github-app-manifest.json`: one browser step that returns the App id, key and webhook secret straight into a Secret.
+  3. Runs GitHub's App manifest flow from `contract/github-app-manifest.json`: one browser step that returns the App id, key and webhook secret. Direct installs write them straight into a Secret. With `--gitops`, they are written into the subscriber's secret store (Vault, AWS Secrets Manager, Infisical, or any store with an External Secrets `PushSecret` provider) under the names the generated ExternalSecrets read, so a sync reproduces the direct install. They never go into the directory or into git. Where the command cannot reach the store, it stops and prints the one store command to run, with the values read from stdin, never as arguments.
   4. Writes the values file.
   5. Then either runs `helm upgrade --install`, or, with `--gitops DIR`, writes the values, the Argo CD Application and the ExternalSecrets into a directory for the subscriber's repo and installs nothing.
   6. Ends with `clearance doctor` (N-3).
@@ -2062,8 +2062,8 @@ Model: opus for the identity design, sonnet for the build.
 - **Repos.** clearance (core, providers' charts, CLI, web, docs).
 - **Depends on.** N-3.
 - **Build.**
-  - **Issuing the token.** An admin issues an enrollment token with `clearance providers enroll --name argo-gate --kinds deploy.outcome,deploy.exception --expires 1h` or from the setup view. The token is single-use, time-boxed and scoped to a name and a set of record kinds.
-  - **Enrolling.** The provider's chart takes the token from a Secret. On first start the provider calls `POST /v1/providers/enroll` with the token and its own verified workload identity. The core records the provider with that identity as its principal and the kinds the token allowed.
+  - **Issuing the token.** An admin issues an enrollment token with `clearance providers enroll --name argo-gate --kinds deploy.outcome,deploy.exception --identity 'system:serviceaccount:clearance-system:argocd-agent' --expires 1h`, or from the setup view. The token is single-use, time-boxed and scoped to a name, a set of record kinds and the **expected workload identity**: an exact principal or a narrow glob, such as a ServiceAccount, an issuer plus subject, or an AWS role ARN. The chart fills `--identity` from its own ServiceAccount when `clearance install` issues the token.
+  - **Enrolling.** The provider's chart takes the token from a Secret. On first start the provider calls `POST /v1/providers/enroll` with the token and its own verified workload identity. The core refuses the enrollment, with a named code, unless the verified identity matches the identity bound into the token. On a match, the core records the provider with that identity as its principal and the kinds the token allowed. A leaked unused token is therefore useless to any other workload. A refusal is recorded and spends the token, and the admin issues a new one.
   - **Approval.** An admin approves the enrollment in the UI or the CLI. Approval is a record naming the person. Until it is approved, the provider's writes are refused with a named code, so the provider is never silently dropped.
   - **Declarative registration.** `CLEARANCE_PROVIDERS` and the chart's `providers` values stay supported for GitOps installs. A provider declared there needs no enrollment, and the setup view shows the source of each registration.
   - **Revocation.** Revocation is one call, and it is a record.
@@ -2104,11 +2104,14 @@ Model: sonnet.
   2. **N-6b The version guard.** A core refuses to start on a database whose schema is newer than it knows, with a named code, so a rollback never writes into a schema it does not understand. A migration that is not backwards-compatible is marked, and the release notes, `releasenotes -check-tag` and doctor all name it.
   3. **N-6c Compatibility as data.** A published table, in the release and served at `GET /v1/version`, gives the provider versions each core accepts. Providers send their version, and the core refuses one outside the range with a named code. Doctor reports skew across the fleet.
   4. **N-6d `clearance upgrade check`.** It reads the target release's notes and the compatibility table, runs doctor, and lists what the upgrade changes and what must go first.
-  5. **N-6e The whole-install upgrade test.** CI installs the previous release's umbrella, runs traffic, upgrades to the candidate, verifies the chain, rolls back and verifies again. It is a release gate, like the CMP's F7.
+  5. **N-6e Expand, then contract.** Rollback must stay possible, so a release ships only **expand** migrations: new tables, nullable columns and new indexes, which the previous core can run against. Each migration records the oldest core that can still run on the schema after it (`min_core`), and N-6b's guard compares against that, not against the schema number. A **contract** migration (a drop, a rename, a type change, a new NOT NULL) ships at least one release after the code that stops needing the old shape, once no supported core needs it. Rolling back across a contract migration is not supported. The release notes and `upgrade check` say so, and the only path back is a restore from the pre-upgrade backup (N-11). Records written after that backup are then lost from the database but kept in the witnessed ledger, so the restore's gap is recorded as an exception and not hidden. A migration that is neither expand nor contract fails CI.
+  6. **N-6f The whole-install upgrade test.** CI installs the previous release's umbrella, runs traffic, upgrades to the candidate (with its expand migrations), verifies the chain, rolls back to the previous core on the upgraded schema, writes again, and verifies again. It is a release gate, like the CMP's F7.
 - **Done when.**
   - Upgrading the lab's live database adopts migration 1 with no DDL change (statement log).
   - A core one version older refuses a newer schema (test).
   - An out-of-range provider is refused with the code.
+  - The previous core runs on the expanded schema in N-6f's rollback step.
+  - A contract migration in the same release as the code change fails CI (negative).
   - The upgrade test gates a tag.
 
 ### N-7 · Product-neutral names, the rest
@@ -2119,7 +2122,11 @@ Model: opus for the migration design, sonnet for the build.
 - **Repos.** clearance (CRD, agent, CMP, admission policy, attest), apron (Hangar's explicit values), gitops-hangar-prod and -dev (renders).
 - **Depends on.** None. Must finish before the first non-Hangar subscriber, because renaming after that breaks theirs.
 - **Build.**
-  - **The API group.** `clearance.hangar.io` becomes a product group. The CRD is served under both groups for one release window. The agent writes the new group and reads both, and the admission policy matches both stamps. Hangar's lab migrates during the window, and the old group is then removed.
+  - **The API group.** `clearance.hangar.io` becomes a product group. A CRD has one group, so the window runs two CRDs side by side: the old `clearancegrants.clearance.hangar.io` and the new one under the product group. The steps:
+    1. A release installs the new CRD beside the old one. The agent writes every grant to both. Grants are a projection of the core's signed grant feed, so the agent recreates them from the feed rather than copying objects; no grant is migrated by hand. The admission policy admits an object whose stamp matches a grant in either group.
+    2. Once every protected cluster reports both grant sets in step (a doctor check, N-3), a release switches stamping to the new annotation domain and the policy's parameter to the new CRD. The old group is still read.
+    3. A later release stops writing the old group, deletes its grant objects through the agent, and removes the old CRD.
+    Each step is its own release and can be rolled back to the one before it. Doctor blocks step 3 while any cluster still has an object stamped only with the old domain.
   - **The annotations** move the same way.
   - **The predicate type** moves to a product URI on a domain the product will own. Verifiers accept both, the new one being the default, because packets already signed carry the old one.
   - **The GitHub App manifest** takes a neutral default name.
