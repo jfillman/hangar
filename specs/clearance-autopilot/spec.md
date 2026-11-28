@@ -3,7 +3,7 @@ title: Clearance & Autopilot Build Specification
 program: Hangar · Clearance / Autopilot
 board: https://claude.ai/artifact/7bptZqWD7RdUDxyR4TQ8o9
 source: https://claude.ai/artifact/BCosjaYXnJzghRF6VZsL5D
-updated: 2026-11-27
+updated: 2026-11-28
 ---
 
 Nov 2, 2026 · @James
@@ -11,6 +11,8 @@ Nov 2, 2026 · @James
 **Revised 2026-11-07, after W3.** This revision folds in the day's analysis and the updated Clearance documents: the Architecture's new chapter 09 (Observation) and its renumbered chapters 10 to 18, the coverage states `break-glass` and `attempted-refused`, the observation-health record, the verification statement and its insurer profile, approver independence extended to automation, and the four revenue-line companions ([Clearinghouse](https://claude.ai/artifact/3rPgELsmjQJ5rqsz386D9Q), [Intelligence](https://claude.ai/artifact/M2rDPgy5WJx8aG7dxsr3xf), [Verification](https://claude.ai/artifact/UfE1xys4nK9C7D2gNm25Lp), [Underwriting](https://claude.ai/artifact/PaZMadKYhzJSJgTBHxiw6B)). It adds three series as sections 15 to 17, after the open questions so that every existing section number still holds (O observation, P clearinghouse, I intelligence), two follow-up packages inside the existing series (R-9, C-14), two waves after W4 in section 11 (W5 Observation, W6 Clearinghouse), new rows in the component, gap, deferred-portal and open-question tables, and two guardrails in section 12. Nothing already merged changes; W4's entry is unchanged except that O-1 and C-14 join it so the packet is not frozen without the new states.
 
 **Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 1 difference, the outage rule, decided by the owner on 2026-11-16 and marked "Decided" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
+
+**Revised 2026-11-28, the gate SDK and subject kinds.** The owner's proposal "Clearance gate SDK and subject kinds: spec" (2026-11-25) is folded in as a new series, [SDK: the gate SDK and subject kinds as data](#work-packages-sdk). It keeps the proposal's ids SDK-1 to SDK-8 and adds SDK-9 to SDK-14, including the owner's idea of 2026-11-28 that AI writes the gate files and people approve what they mean (SDK-13, SDK-14). A table maps every piece onto existing work (the provider protocol, conformance, policy bundles, I-1's classes, the CMP's tree root, N-4's enrollment, O-1, G-TF-3, C-16), so nothing is built twice. Twelve refinements are recorded, several of them found by the worked exercise [Terraform on the CLI Gate](https://claude.ai/artifact/6QKHtqeQGsoKafb8USCiRw), which rebuilds today's Terraform gate as one `gate.yaml` and one kind pack. One row is added to the waves table.
 
 **Revised 2026-11-27, install and day-2 operations.** The owner's review "Clearance: install and operations review" (2026-11-27) is folded in as a new series, [N: install and day-2 operations](#work-packages-n) (N-1 to N-14), appended after the last section so every existing section number holds. The series has three profiles, the umbrella chart, `clearance install`, doctor, provider enrollment, upgrades, neutral names, signing modes, getting started, metrics, backup, air-gapped installs, safe uninstall, and the operator decision. It records six places where this spec departs from the review, and the answer to whether Clearance should have a Kubernetes operator. C-16d (the guide) moves into N-9. C-15 becomes a dependency of the production profile. One row is added to the waves table.
 
@@ -886,6 +888,7 @@ Shaded cells hold work; a wave's gate is passed only with the live evidence name
 | W6 Clearinghouse | P-1, P-2, P-3, P-4 | W5 gate passed (P-1 and P-4 may start after W4, since they need only the packet). Status 2026-11-14: all four packages merged to clearance main (clearance#169, #170, #171, #172), proven against fakes, not released or deployed | **Accepted and verifiable by a stranger**: a fake assurance provider pulls a packet under a time-boxed credential and signs a receipt that the next packet carries; a 25-record sample verifies offline; a verification statement verifies on the hosted page (the lab run proves it against fakes: a fake assurance provider, offline sample verify, a fake GRC API; the hosted proof on verify.clearance.hangarplatform.dev is the Cloud K2 gate) with all seven checks (the lab run accepts a statement that prints "not yet independently witnessed"; the external witness is deferred to before the Cloud K2 gate, where all seven checks green is proven), shows revoked when revoked, and prints a blind window when there was one; a change appears as an evidence item in a Vanta sandbox with a link back |
 | M Tower across the fleet | M-1 and M-2 in parallel, then M-3, then M-4 and M-5, then M-6 | The clearance-gate split is live on eks-dev (2026-11-26); independent of the W-gates | **Tower sees the fleet**: M-6's exit test (eks-man, eks-dev and eks-prod workloads in Tower, a test cluster added and removed through the registry alone) |
 | N Install and day-2 | N-6, N-7, N-11, N-13 now; N-1, then N-2, N-3, N-8; then N-4, N-9, N-10, N-12; then N-5; N-14 last | Now; independent of the W-gates (alongside W-34's CMP track) | **A stranger installs it**: quickstart to a verified packet in under an hour from the guide alone (ten minutes scripted), a standard install on AWS green in doctor, a gated upgrade (N-6e), and a clean uninstall |
+| SDK Gate SDK and subject kinds | SDK-1; then SDK-2, SDK-3, SDK-9; then SDK-4, SDK-8, SDK-13; then SDK-5, SDK-6 (Terraform), SDK-14; then SDK-10, SDK-11, SDK-7; SDK-12 on a trigger | Now; independent of the W-gates; shares N-3 and N-4 with the N-series | **A kind the core has never seen**: a third-party gate written from the guide passes conformance with no core release; Terraform runs on the generic engine with identical decisions on the live lab; a packet prints three kinds side by side and verifies offline |
 | Later | O-6, P-5, I-2, I-3, A-8, C-11, C-12, C-13, section 13 | A paying partner, a second accepting firm, ten opted-in tenants, or the roadmap's phase 4 and 5 triggers |  |
 
 ### Parallel tracks and who runs what
@@ -2286,3 +2289,382 @@ C-15 is a dependency of the production profile, not of this gate.
 | N-Q4 | Default Warn window before production's Deny | N-1, N-3 | 7 days and no unexplained would-deny, overridable with a recorded reason | Owner confirms |
 | N-Q5 | Enrollment identity binding outside Kubernetes (the AWS collector on Lambda or ECS) | N-4 | The caller's IAM role, verified by the core through STS `GetCallerIdentity` presigned requests, as Vault's AWS auth does | Proceed, confirm in the design step |
 | N-Q6 | An operator, ever | N-14 | Decide on N-14's evidence; not before N-1 to N-6 | Owner |
+
+## Work packages, SDK-series: the gate SDK and subject kinds as data {#work-packages-sdk}
+
+Added 2026-11-28 from the owner's proposal "Clearance gate SDK and subject kinds: spec" (Claude Doc, 2026-11-25). The package ids SDK-1 to SDK-8 are the proposal's own, so the doc and this spec match. SDK-9 to SDK-14 are new here.
+
+Clearance is open source, and its reach depends on third parties putting gates in front of infrastructure Clearance does not cover: database migrations, feature flags, DNS, SaaS configuration, Helm without Argo CD, Pulumi. Today that takes two things a third party cannot do:
+- write a correct gate from a protocol alone (fail-closed waiting, outage policy, token checks and the outbox are left to each author);
+- add a subject kind, which is a closed list in core code (`evidence.SubjectKinds`: `tool-call`, `manifest-tree`, `terraform-plan`, `definition`, `model-call`, each tiered by Go in `internal/gate`).
+
+This series adds a gate SDK and makes subject kinds data. The non-goals hold:
+- gates never decide;
+- no plugin code runs in the core: a kind is a schema and CEL, never an executable.
+
+### How it fits what already exists
+
+The proposal mostly packages work that is already built. The table says what each piece extends, so nothing is built twice or in two directions.
+
+| Proposal piece | Builds on | Rule for this series |
+| --- | --- | --- |
+| The SDK's protocol calls (hold, wait, outcome, records) | The provider protocol and the core contract (R-1, C-10), the Go client module | The SDK wraps the published protocol. It adds no route the protocol lacks, and a gate written against the raw protocol stays valid |
+| Conformance `--role gate --kind` | `clearance conformance` (R-1), the Terraform suite (G-TF-7), the Argo CD suite (G-ARGO-9) | One harness. The per-kind suite generalizes `TestTerraformConformance`'s ten assertions; it is not a second framework |
+| Kind packs, signed and versioned | Policy bundles (R-5): signed, versioned, digest recorded, served at `GET /v1/clearance-policy` | **A kind pack is a section of a policy bundle**, loaded, signed and recorded by the same code, not a second loader (refinement below) |
+| Operational classes on rules (`class: [data-integrity]`) | I-1, the operational change class as versioned data | A rule's `class` must name a class in I-1's versioned list. Loading fails on an unknown class |
+| `CLEARANCE_PROTECTED_TARGETS` | `CLEARANCE_PROTECTED_ENVIRONMENTS` and `clearance.yaml`'s tighten-only `workspaces:` block | The new setting is a superset that parses today's list unchanged. Empty still protects everything |
+| Per-item token binding | The CMP's tree root, which already hashes every object (G-ARGO-4); W-34 X3, admission checks content | The subject root becomes a Merkle root over item hashes (refinement below), so per-item enforcement verifies an inclusion proof. X3 is built on it |
+| Provider registration names kinds and target scopes | `CLEARANCE_PROVIDERS` (`kinds`, clusters, targets); N-4 enrollment | The enrollment token (N-4) carries subject kinds and target scopes as well as record kinds. One registration model. The gate's identity enrolls itself; its kind pack always arrives through a reviewed bundle (refinement 12) |
+| The SDK's observer half | The observation schema and health record (O-1), the CEL pipeline (O-2) | Observers post O-1 records through O-2's stages. Nothing new in the schema |
+| The generic CLI gate's `hold`, `release`, `report` | `clearance hold`, `release`, `report` for Terraform (G-TF-3), and the Terraform action | **One engine.** The Terraform commands become the generic engine running a built-in Terraform config. Today's flags and exit codes are kept as aliases (SDK-6) |
+| The reference database gate (SDK-5) | C-16c's reference gateway and deploy | C-16 covers the runtime side (an agent gateway). SDK-5 covers the change-gate side. They share `examples/` and the guide, not code |
+| The gate author's guide (SDK-7) | N-9's getting-started guide, C-16d | The author's guide is a separate chapter of the same docs index |
+
+Not related, despite the words: Glidepath's change-aware release gates (W-55, CG-1 to CG-10) classify a pull request as an image release, a rollback, a config change or a no-op. Those are Glidepath's own **change kinds**, which pick the CI gates to run. Clearance's **subject kinds** describe what a change binds to. The docs use the two terms consistently and never shorten either to "kind" where both appear.
+
+### Refinements to the proposal
+
+1. **Kind packs live inside policy bundles.** The proposal loads a pack "like a policy bundle". Making it part of one keeps one signing key chain, one digest in the record, one `GET /v1/clearance-policy` and one reload path. A bundle may hold only kinds, so a third party can publish a pack on its own.
+2. **Trust in packs.** By default the core trusts first-party packs, which are signed by the Clearance release key. It also trusts packs signed by keys the subscriber lists in configuration. A third-party pack is refused until its signer is listed. Kind names are reverse-DNS (`io.acme.db-migration`), and the `dev.clearance.*` prefix is reserved for first-party kinds. This answers the proposal's first and last open questions; a public registry waits for several publishers.
+3. **Items not in the pack are refused.** An item whose `type` is not in the pack's `itemTypes`, or whose `op` is not one of create, update, delete or replace, is refused `DG-UNBOUND` rather than given `defaultTier`. That way a mapping bug cannot under-tier a change. `defaultTier` covers known item types that no rule fires on, and it may not be 0. `itemTypes` may list globs for open-ended families. Terraform's resource types are an example. `"*"` is allowed only with a `defaultTier` of at least 2, so an unexpected type is never cleared by policy.
+4. **Change-level rules and modifiers.** Item rules with a maximum cannot say "the whole plan was targeted: one tier up, at least 2", which Terraform needs today. A pack gains `changeRules`, CEL over the whole description, which set a tier or `raise: n` with a `floor`. They run after the item maximum and can only raise it: the change's tier is the maximum of the item tiers and every tier a change rule sets, and `raise` then applies on top of that. A change rule never lowers a tier, so an item set to tier 3 by a failed rule stays at tier 3. The core invariants run last.
+5. **Facts beyond items.** Some of a change's meaning is not per item: Terraform's workspace, its versions, whether `-target` was used, the variable-set digest. The generic description gains `facts{}`, declared in the pack's `subjectSchema`, which change rules can read, and `consistency` CEL that must hold or the request is refused. An example is Terraform's rule that the summary equals the resources.
+6. **A Merkle root over items, with each kind's root function versioned.** A subject's root is computed by its kind's declared root function, and the record names that function and its version.
+   - **New kinds** use `merkle/1`: `root = sha256("clearance.subject/v1" ‖ M ‖ F)`. Here `M` is the RFC 6962 Merkle tree hash over the item hashes, sorted. `F` is `sha256` of the canonical facts object, or of `{}` when there are no facts. A large change then pages its items, which answers the proposal's size question, and a platform that enforces per item (admission) verifies an item's inclusion proof against the cleared root.
+   - **Built-in kinds** keep their current roots exactly. `manifest-tree` declares `tree/1`, which is today's construction unchanged: each object canonicalized and hashed, and the sorted list of those hashes hashed. Its facts are empty and do not enter the root. Per-object enforcement checks that an object's hash is in the cleared sorted list, which admission already does through the stamp. `terraform-plan` declares `plan/1`, whose root is `planDigest` as today.
+   - **A built-in kind moves to `merkle/1` only through a new kind version.** It is never re-rooted in place, so every recorded digest keeps its meaning. SDK-1 proves that today's roots come out unchanged over the golden corpus and the live chain.
+7. **One canonicalization, vectors for everyone.** The Go implementation (`internal/canon`, which the chain hash already uses) is the reference. The repo publishes golden vectors that every SDK, in any language, must reproduce byte for byte. This answers the proposal's canonicalization question.
+8. **Conformance levels, which policy can require.** The proposal asks whether gates without per-item enforcement should be capped. This spec answers no: the record names a level, and policy decides what each level may do.
+   - **L1, claimed description:** the gate describes the change, and the description is recorded `claimed`.
+   - **L2, independent description:** a verifier re-derives the description from its own source.
+   - **L3, per-item enforcement:** at apply or admission.
+   The record names the level and the packet prints it. A protected target's `clearance.yaml` may require a minimum level per tier, for example tier 2 and above in prod needs L2.
+9. **Values never leave the gate.** The generic CLI gate sends only the mapped fields (`type`, `id`, `op`, `fields` as JSON pointers, and `attrs` the pack's schema allows). Raw dry-run output is never sent. It is hashed only through a `redact` step, which keeps the structure and replaces every other scalar, as the Terraform gate does today. An `attrs` value the schema does not declare is refused.
+10. **`run` is lower assurance, and the record says so.** `clearance gate run` does release, apply and report in one process, so one identity both holds and applies. That collapses the separation the Terraform lab relies on, where the hold job has a read-only role and the apply job runs in a GitHub environment. The record carries `mode: run`, and a protected target may refuse `run` for tier 2 and above. The split commands remain the documented path for production.
+11. **`Apply` is optional in the SDK interface.** Most pipeline gates never apply: the Terraform gate's rule is "the CLI never applies". The interface is `Describe` and `Provenance`. `Applier` is a separate optional interface, used only by `run` and by gates that are the platform's own apply path.
+12. **Who registers what: a gate enrolls itself, but it never brings its own rules.** The proposal says the core loads kind packs "from configuration", and N-4 says providers enroll themselves at runtime. These are two different registrations, and this spec keeps them apart:
+    - **The gate's identity** is runtime and self-service. The gate enrolls with N-4's identity-bound token, which names its record kinds, the subject kinds it may register and its target scopes. An admin approves the enrollment. Declarative `CLEARANCE_PROVIDERS` stays as the GitOps alternative.
+    - **The subject kind's rules** are policy. A kind pack reaches the core only inside a signed policy bundle (refinement 1), which an admin controls. A gate that could install its own pack at enrollment would grade its own homework: it could describe a destroy as an `update` and tier it at 1.
+    - **How they meet.** At enrollment a gate declares the subject kinds it needs, and may *offer* a pack: the pack's content, digest and signer. An offered pack is not loaded. The setup view (N-5) shows the enrollment as pending, together with the offered pack's `explain --table` (SDK-13). Approving it opens a pull request that adds the pack to the bundle, which is held at tier 3 like every pack change (SDK-14d). Until a trusted pack for the kind is loaded, the gate's registrations are refused with a named code, so it never falls back to a default tier.
+    - **Built-in kinds** (`manifest-tree`, `terraform-plan`) are embedded first-party packs and need no offer.
+    So there is one rule for each: identity enrolls itself, and policy always goes through review.
+
+### SDK-1 · The generic change description and `clearance.kind/v1`
+<!-- pkg status=proposal wave=SDK -->
+
+Model: opus for the schema, sonnet for the mapping.
+
+- **Repos.** clearance (`schemas/`, `internal/gate`, `internal/evidence`, contract).
+- **Depends on.** None.
+- **Build.**
+  - **The description.** `subject{kind, version, root, facts}`, `target{scope, environment}`, `items[]{type, id, op, fields[], attrs{}, hash}`, `source`, `describedBy`, as JSON Schema in `schemas/` and in the OpenAPI contract.
+  - **The kind schema.** `clearance.kind/v1` (item types, the subject schema, item rules, change rules, consistency, defaultTier).
+  - **The Merkle root** over the items (refinement 6).
+  - **Derived summaries.** The core derives every summary (counts, destroyed addresses) from the items and never accepts one from the caller. Today's "summary must equal resources" refusal then cannot be bypassed, because there is nothing to compare.
+  - **Built-in kinds.** `manifest-tree` and `terraform-plan` map onto the description inside the core, with no behaviour change.
+- **Done when.**
+  - The R-1 golden corpus and a replay of every recorded hangar-dev and hangar-prod change give identical tiers, reasons and digests through the new mapping.
+  - `chain verify` passes over the live chain.
+  - The schema is in the contract and drift-tested.
+
+### SDK-2 · Kind packs: loading, CEL rules, protected targets
+<!-- pkg status=proposal wave=SDK depends=SDK-1 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (`internal/bundles`, `internal/gate`, core config, docs).
+- **Depends on.** SDK-1; I-1 (the class list).
+- **Build.**
+  - **Loading.** Kind packs load as a section of a policy bundle (refinement 1), with the trust rules of refinement 2. A rule that fails to compile fails the load. An item rule that fails to evaluate sets its item to tier 3. A change rule that fails to evaluate sets the whole change to tier 3, so it is never cleared by policy, and the reason names the rule and the error. Item and change rules run with the CEL library of SDK-9.
+  - **Repo overrides.** `clearance.yaml` gains a tighten-only `kinds:` block, which can raise item types or fields to higher tiers.
+  - **Protected targets.** `CLEARANCE_PROTECTED_TARGETS` takes `<kind glob>:<scope glob>/<environment glob>`, a superset of today's list.
+  - **Records.** A record carries the kind and its pack version and digest.
+- **Done when.**
+  - A test pack tiers a fixture by rule, and the decision lists every firing rule and its class.
+  - An unknown item type is refused (negative).
+  - An unsigned or untrusted pack is refused (negative).
+  - A `kinds:` block that tries to lower a tier is refused (negative).
+  - Today's `CLEARANCE_PROTECTED_ENVIRONMENTS` values parse to the same protection (table test).
+
+### SDK-3 · The Go gate SDK
+<!-- pkg status=proposal wave=SDK depends=SDK-1 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (`sdk/gate`, Apache 2.0, versioned with the protocol).
+- **Depends on.** SDK-1.
+- **Build.** The interfaces `Gate` (`Describe`, `Provenance`) and optional `Applier` (refinement 11). The SDK owns:
+  - **canonical hashing** (refinement 7);
+  - **tokens and the grant feed:** verification against the core's JWKS (cached, refetched on an unknown key); expiry, nonce, target and digest checks; the signed grant feed's epoch, sequence and freshness;
+  - **workload sign-in:** a projected ServiceAccount token, GitHub Actions OIDC, or a cloud workload identity;
+  - **waiting:** a resumable long-poll on `/wait` that never reads a timeout as a decision;
+  - **the outage policy** from the change's own `outage` action, with an unknown tier holding;
+  - **a durable outbox** that posts `deploy.degraded` on recovery and cannot be turned off;
+  - **exception helpers:** `out-of-band`, `drift`, `untraced-apply` and `digest-mismatch`;
+  - **an optional observer half** on O-1.
+  The SDK reuses the existing Go client module rather than generating a second client.
+- **Done when.**
+  - The SDK's own tests cover each owned behaviour against `clearance core --memory`, including a core outage, a slow core and a JWKS rotation.
+  - A gate built only from the SDK passes SDK-4's suite with no protocol code of its own.
+
+### SDK-4 · The test kit and `conformance --role gate --kind`
+<!-- pkg status=proposal wave=SDK depends=SDK-2,SDK-3 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (`internal/conformance`, `sdk/gate/gatetest`).
+- **Depends on.** SDK-2, SDK-3.
+- **Build.**
+  - **`clearance conformance --role gate --kind <name>`.** It runs:
+    - describe determinism against the pack's golden vectors;
+    - hold through clear, deny, expire and supersede;
+    - outage with tiers 0 to 3;
+    - replayed and changed-digest token refusal;
+    - outcome match and mismatch;
+    - the degraded report after recovery;
+    - the pack's own fixture tests (SDK-9).
+  - **Levels.** The result names the level reached (refinement 8). Records carry the provider, its version and its level.
+  - **The test kit.** `gatetest` wraps all of this as a Go test helper, with fakes for an outage and a slow core.
+  - **One harness.** The Terraform and Argo CD suites move onto the same harness.
+- **Done when.**
+  - The Terraform suite's ten assertions pass through the generic harness.
+  - A deliberately broken gate (one that reads a timeout as cleared) fails with a named assertion (negative).
+
+### SDK-5 · Reference gate: database migrations on PostgreSQL
+<!-- pkg status=proposal wave=SDK depends=SDK-4 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (`examples/gates/db-migration`, a first-party pack `dev.clearance.db-migration`).
+- **Depends on.** SDK-4.
+- **Build.** A Flyway gate on the generic CLI gate (SDK-8) for the common case. The same gate is also written in Go on the SDK, to show where a team graduates when the CLI gate is not enough. The pack's tiers:
+  - a dropped or rewritten table or data is tier 3;
+  - a role or grant change is tier 3;
+  - an index is tier 2;
+  - anything else is tier 1.
+  A CI job runs the example end to end against PostgreSQL.
+- **Done when.** In CI on kind:
+  - a pending migration that drops a column is held at tier 3 and needs two people;
+  - an index migration clears for one owner;
+  - a migration file edited after the hold is refused at release;
+  - a packet with the migration verifies offline.
+
+### SDK-6 · Terraform, then Argo CD, as first-party packs on one engine
+<!-- pkg status=proposal wave=SDK depends=SDK-4,SDK-8 -->
+
+Model: opus for the parity plan, sonnet for the build.
+
+- **Repos.** clearance (`internal/gate`, `cmd/clearance`, `terraform/action.yml`), the lab's hangar-infra workflow (no change expected).
+- **Depends on.** SDK-4, SDK-8.
+- **Build.**
+  - **Terraform first.** The Terraform tier table moves from Go (`TFTier3Types`, `TFTagFields`) into the embedded first-party pack `dev.clearance.terraform-plan`. `clearance hold`, `release` and `report` become the generic engine with a built-in Terraform config. Today's flags, outputs and exit codes are kept, so the lab workflow and the action do not change. The worked exercise ([Terraform on the CLI Gate](https://claude.ai/artifact/6QKHtqeQGsoKafb8USCiRw), 2026-11-28) is the starting draft of the pack and the config, and its gaps list is this package's checklist.
+  - **Argo CD only on proven parity.** Its tiering has path rules and render checks woven through the CMP, so it moves only if a replay of every recorded manifest-tree change gives identical decisions. Otherwise it stays in Go, mapped through SDK-1, and the package records why.
+- **Done when.**
+  - A replay of every recorded terraform-plan change, the lab's and the fixtures', gives identical tiers and reasons through the pack.
+  - `TestTerraformConformance` passes unchanged.
+  - The lab's next `network/lab` apply is held, cleared and matched through the new engine with no workflow edit (live).
+
+### SDK-7 · The gate author's guide and the conformance list
+<!-- pkg status=proposal wave=SDK depends=SDK-5 -->
+
+Model: sonnet, then a fresh-eyes subagent that writes a gate from the guide alone.
+
+- **Repos.** clearance (`docs/gates/`), the docs index beside N-9.
+- **Depends on.** SDK-5.
+- **Build.** `docs/gates/authoring.md` covers:
+  - choosing between the CLI gate and the SDK;
+  - writing a kind pack and its fixture tests;
+  - the mapping;
+  - redaction;
+  - the enforcement stanza (SDK-10);
+  - levels;
+  - running conformance;
+  - publishing a signed pack.
+  A public list of conforming gates and their levels, kept as data in the repo, with the entries checked by CI.
+- **Done when.** A subagent with only the guide writes a working gate for a tool not in the repo (for example a DNS CLI). Each place it got stuck is fixed, and the transcript is in the PR.
+
+### SDK-8 · The generic CLI gate
+<!-- pkg status=proposal wave=SDK depends=SDK-2,SDK-3 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (`cmd/clearance/gate*.go`, `gate/action.yml`, docs, examples).
+- **Depends on.** SDK-2, SDK-3.
+- **Build.** The three commands share the same exit codes as the Terraform gate:
+  - `clearance gate hold --config gate.yaml` describes, hashes, registers and waits;
+  - `clearance gate release --config gate.yaml` re-binds and refuses unless cleared;
+  - `clearance gate report --config gate.yaml` posts the outcome with the applied digest.
+  - `clearance gate run --config gate.yaml -- <apply>` runs all three in order and records `mode: run` (refinement 10).
+  `clearance.gate/v1` YAML sets:
+  - `kind` and `target`;
+  - `describe` (a command, or `input` from a file; `items` and `map` in CEL; `facts`);
+  - `redact`;
+  - `bind` (files and the redacted output);
+  - `apply.check: rebind`;
+  - `readback`;
+  - `report` (the apply exit status and an optional CEL over an apply log);
+  - `enforcement` (SDK-10).
+  The GitHub Action `jfillman/clearance/gate@<ref>` wraps the CLI like the Terraform action. The repo ships Flyway and Helm (without Argo CD) examples.
+- **Done when.**
+  - The Flyway and Helm examples pass conformance at L1 in CI.
+  - A file edited between hold and release is refused.
+  - A raw output scalar never appears in the request (a test greps for a seeded secret).
+  - `run` with a failing apply still reports `applied: false`.
+
+### SDK-9 · Authoring tools: the CEL library, lint, local test and explain
+<!-- pkg status=proposal wave=SDK depends=SDK-1 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (`internal/gate/cel`, `cmd/clearance`).
+- **Depends on.** SDK-1. Added here: the Terraform exercise showed CEL alone cannot express today's rules.
+- **Build.**
+  - **The CEL library** gates and packs share:
+    - `glob(s, patterns)` (fnmatch, for type families such as `aws_iam_*`);
+    - `diffPointers(before, after)` (the JSON pointers an update changes);
+    - `allUnder(pointers, prefixes)`;
+    - `sha256()`;
+    - `redact(value, keep)`.
+  - **Pack fixture tests.** A pack carries `tests:`: an input description and the expected tier and reasons. Conformance runs them.
+  - **`clearance kinds lint <pack>`** checks the schema, compiles the CEL, checks the classes against I-1 and runs the fixture tests.
+  - **`clearance gate test --config gate.yaml --input out.json`** runs describe, map and tier locally against the pack with no core, and prints each item's tier and the firing rules.
+  - **`POST /v1/clearance-policy/explain`** takes a description and returns the tier and every firing rule without registering anything.
+- **Done when.**
+  - The Terraform exercise's draft pack and config lint clean and reproduce the fixture tiers in `gate test`.
+  - `explain` and a registration give the same tier for the same description (property test).
+
+### SDK-10 · The enforcement stanza and its health
+<!-- pkg status=proposal wave=SDK depends=SDK-8 -->
+
+Model: opus for the design, sonnet for the build.
+
+- **Repos.** clearance (gate config, N-3 doctor checks, packet).
+- **Depends on.** SDK-8; N-3.
+- **Build.** A gate is only as strong as whatever forces applies through it. The proposal says so; this package makes it visible. `enforcement:` in the gate config declares how applies are forced:
+  - a GitHub environment with Clearance's deployment protection rule;
+  - an apply role whose trust names that environment;
+  - admission;
+  - none.
+  The hold records the declaration. Doctor checks what it can reach: the environment's protection rule through the App, the role's trust policy where a read-only role is given. The packet prints each gate's enforcement, verified or claimed. A target may require verified enforcement for tier 2 and above.
+- **Done when.**
+  - The lab's Terraform gate shows verified enforcement (environment and role trust).
+  - A gate declaring `none` prints "no enforcement" in the packet, and is refused where the target requires enforcement (negative).
+
+### SDK-11 · Readback and drift for CLI kinds
+<!-- pkg status=proposal wave=SDK depends=SDK-8 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (gate engine, observe, docs).
+- **Depends on.** SDK-8; G-TF-5's detectors as the model.
+- **Build.**
+  - **After the apply.** The engine derives the expected state from the cleared items and a pre-apply inventory (a readback run by `hold`, or the dry run's own current-state section).
+    - **What is compared.** Only what an item can carry. Presence and absence follow the cleared op: a `create`, `update` or `replace` must be present, and a `delete` must be absent. Values are compared through `valueDigests`. A pack may declare, per item type, the fields whose resulting values matter. For each item, `describe` then records `valueDigests`, a map from each declared field's JSON pointer to the sha256 of its canonical after-value, and readback computes the same map from its own output. Digests per field, not per item, are what let later changes be composed field by field. A field the pack marks `sensitive` is compared by presence only, because a digest of a low-entropy secret can be brute-forced. The packet says which fields were compared by value and which by presence.
+    - **Other changes in between.** The engine asks the core for every change on the same target whose outcome was recorded `applied: true` between this `hold` and this readback. A change that was cleared but not applied, or failed, is not folded. The engine folds their items into the expected state in the order of their outcome records in the chain, which is the order they were applied, at the level of the item and the field. Two consequences:
+      - An object outside this change that a later change touched is expected to match the later change's cleared effect for the fields it changed, and the inventory for every other declared field. Readback can only check fields that have a digest: a field the pack does not declare is not compared by value anywhere, and the packet lists those fields per item type as "not value-checked".
+      - An item of this change that a later cleared change also touched is expected to match the composed result. Presence follows the last applied op, and each field the later change declared takes that change's entry in `valueDigests`. Fields the later change did not declare keep this change's expectation.
+      A difference that no cleared change explains is reported as `untraced-apply`.
+    - **A mismatch.** Any difference in this change's own items, wrong presence or a wrong entry in `valueDigests`, is a `digest-mismatch` exception that names each item and what was expected.
+  - **Drift.** `clearance gate drift --config gate.yaml`, run on a schedule, compares the current readback with the last cleared state. Drift and untraced changes are recorded as exceptions in the same change transaction model as the collectors (section 14 #23), so one change is never counted twice.
+- **Done when.**
+  - On the Flyway example, a migration applied by hand outside the gate shows as `untraced-apply`.
+  - A readback in which a cleared item's declared field holds a different value shows as `digest-mismatch`.
+  - A change cleared and applied between another change's hold and readback causes no exception in either (negative).
+  - A later cleared change that updates one field of an object leaves that object's other declared fields checked against the inventory, so a stray edit to another declared field is still reported (negative).
+  - A later cleared change that deletes this change's created item is expected as absent, not reported.
+
+### SDK-12 · A Python SDK, on a trigger
+<!-- pkg status=later wave=SDK depends=SDK-3,SDK-4 -->
+
+- **Repos.** clearance (`sdk/python`), on the existing generated Python client.
+- **Trigger.** A third-party gate author asks, or a first-party gate needs it.
+- **Build.** The same owned behaviours as SDK-3, passing the same golden vectors and the same conformance suite.
+
+### SDK-13 · Rules people can read: rule tables and `gate init`
+<!-- pkg status=proposal wave=SDK depends=SDK-2,SDK-9 -->
+
+Model: sonnet.
+
+Added 2026-11-28 (owner). The exercise showed that most of the effort in a gate is CEL: the mapping in `gate.yaml` and the rules in the pack. Asking a person to write CEL is asking a lot. This package makes the common case declarative, keeps CEL for the rest, and has the tool, not the author, write the first draft.
+
+- **Repos.** clearance (`internal/gate`, `cmd/clearance`, docs).
+- **Depends on.** SDK-2, SDK-9.
+- **Build.**
+  - **Rule tables.** A pack may state rules as a table instead of CEL. Each row has a `when` with `type` globs, `op`, `fieldsUnder` and `fact` conditions, and a `tier` or a `raise` with a `floor`. The loader compiles the table to the same CEL, so there is one evaluator. The table form round-trips: `clearance kinds fmt` prints a compiled pack back as a table where it can. Today's Terraform tier table becomes about a dozen rows with no CEL at all.
+  - **Mapping presets.** Mapping presets cover common dry-run shapes (a list of operations with a type, id and action; a before/after diff), so `map:` is usually one line.
+  - **`clearance gate init --tool <name> --sample <dry-run output>`.** It reads a real dry run, proposes the `items` path and the mapping, and writes a `gate.yaml`, a pack with a starter rule table, and one fixture per sample. The starter pack puts every item type at `defaultTier: 2`: it never guesses a lower tier.
+  - **`clearance kinds explain <pack> --table`.** It prints the pack as a plain table (item type, operation, tier, why), which is what a person reviews.
+- **Done when.**
+  - The Terraform pack written as a rule table compiles to rules that give identical tiers to the CEL version on every fixture (property test).
+  - `gate init` on the Flyway and Helm samples produces configs that pass `kinds lint` and `gate test` with no edit.
+  - `explain --table` output for the Terraform pack matches the tier table in `docs/gate.md`.
+
+### SDK-14 · AI-authored gates: a skill, authoring tools for agents, and evals
+<!-- pkg status=proposal wave=SDK depends=SDK-9,SDK-13 -->
+
+Model: opus for the skill and the evals, sonnet for the tools.
+
+Added 2026-11-28 (owner): let an AI write the gate and the pack, and let people approve what the pack *means*. The deterministic tools do the checking, so the AI is never trusted for correctness. The core invariants mean no pack, however written, can loosen tier 3's two people or let automation approve.
+
+- **Repos.** clearance (`skills/`, `cmd/clearance mcp`, `evals/`, docs).
+- **Depends on.** SDK-9, SDK-13.
+- **Build.**
+  1. **SDK-14a An Agent Skill, `clearance-gate-author`.** It ships in the repo, in the open Agent Skills format (a `SKILL.md` plus references), so it works in Claude Code, on claude.ai and in other agents that read the format. The skill holds:
+     - the `clearance.gate/v1` and `clearance.kind/v1` schemas;
+     - the CEL library (SDK-9), the rule-table form (SDK-13) and I-1's classes;
+     - the first-party packs as worked examples;
+     - a fixed loop:
+       1. run the tool's dry run (or take a sample);
+       2. `gate init`;
+       3. refine the mapping and rules;
+       4. `kinds lint` and `gate test` until they are green;
+       5. turn each real sample into a fixture;
+       6. write a short tier rationale;
+       7. open a pull request.
+     The skill never applies anything. It never lowers a tier below the starter's `defaultTier: 2` without saying why in the rationale, and it never edits a `kinds:` block to loosen it, which the core refuses anyway.
+  2. **SDK-14b Authoring tools for agents.** `clearance mcp` is a local, read-only MCP server over the same commands:
+     - `gate init`, which returns the proposed `gate.yaml`, pack and fixtures as file contents and writes nothing (the agent's own client writes them, into a branch);
+     - `kinds lint`, `gate test` and `kinds explain`;
+     - policy `explain` against a core;
+     - `conformance --role gate` against `core --memory`.
+     It gives an agent with no shell the same loop. It is a thin wrapper over the CLI, with no logic of its own.
+  3. **SDK-14c The repo file.** `clearance gate init --agents` adds a short section to the repo's `AGENTS.md` (which Claude Code reads through `CLAUDE.md`). The section says where the gate files are, the loop to run, the skill to use, and the two rules: never loosen a tier, always add a fixture.
+  4. **SDK-14d Pack changes are gated by Clearance.** A pack or `gate.yaml` changes policy, so the path rules treat it like `clearance.yaml`: tier 3, one owner and one outside person. An AI-authored pack therefore reaches production only after two people have read its `explain --table` output, which the pull request carries as a comment. The rationale is part of the evidence.
+  5. **SDK-14e Evals.** `evals/gate-author/` holds tasks for tools not in the repo (Flyway, Liquibase, Helm, Pulumi, a DNS CLI, a feature-flag CLI), each with real dry-run samples and expected tiers that a person labelled. A run passes when the skill's output lints, passes `gate test` against the held-out samples, passes conformance at L1, and puts no labelled tier-3 item lower than 3. Under-tiering is scored as a failure, over-tiering as a cost. The evals run on a schedule in CI and on every skill change, and the score is published beside the conformance list.
+  6. **SDK-14f An operations skill, `clearance-ops`.** It is the same format, for running Clearance:
+     - read `doctor --json` and explain each failing check with its fix;
+     - draft values for `clearance install`;
+     - walk an upgrade with `upgrade check`;
+     - approve enrollments only by telling the admin what to approve, never by approving.
+     It ships with the N-series guide (N-9) and uses only read-only calls.
+- **Done when.**
+  - In the evals, the skill writes passing gates for at least five of the six tools with no tier-3 item under-tiered, and the score is in the docs.
+  - A pack pull request opened by the skill on the lab is held at tier 3 with the `explain --table` comment, and is cleared by two people (live).
+  - `clearance mcp` exposes only read-only tools (a test calls each with a principal that can write nothing).
+
+### Sequencing
+
+- SDK-1 first.
+- Then SDK-2, SDK-3 and SDK-9 in parallel.
+- Then SDK-4, then SDK-8, then SDK-5 and SDK-6 (Terraform), then SDK-10, SDK-11 and SDK-7.
+- SDK-13 follows SDK-9. SDK-14 follows SDK-13 and runs before SDK-7, so the author's guide covers the skill path first.
+- SDK-12 waits for its trigger.
+- Argo CD's move in SDK-6 is optional and last.
+
+The series is independent of the W-gates. It shares N-4 (enrollment scopes) and N-3 (doctor) with the N-series.
+
+**The gate.** A gate for a kind the core has never seen passes conformance with no core release:
+- a third-party database-migration gate written from the guide alone;
+- Terraform running on the generic engine with identical decisions on the live lab;
+- a packet that prints all three kinds beside each other and verifies offline.
+
+### Open questions for this series
+
+| # | Question | Blocks | Recommendation | Decides |
+| --- | --- | --- | --- | --- |
+| SDK-Q1 | Who may sign a kind pack; are third-party packs trusted by default | SDK-2 | First-party and subscriber-listed keys only; third-party refused until listed (refinement 2) | Owner |
+| SDK-Q2 | Size limits | SDK-1 | Page items under a Merkle root; at most 10,000 items inline, then paged, with no hard cap on the change | Proceed |
+| SDK-Q3 | Canonicalization across languages | SDK-1, SDK-3 | Go reference plus golden vectors every SDK passes | Proceed |
+| SDK-Q4 | Cap gates without per-item enforcement | SDK-4 | No cap: levels in the record, minimums set by policy per tier | Proceed |
+| SDK-Q5 | Naming and governance of kinds | SDK-2, SDK-7 | Reverse-DNS names, `dev.clearance.*` reserved; a registry when there are several publishers | Owner (the reserved prefix follows N-Q2's domain) |
+| SDK-Q6 | Move Argo CD's tiering into a pack | SDK-6 | Only on a perfect replay; otherwise keep it in Go behind SDK-1's mapping | Proceed on the evidence |
