@@ -2329,7 +2329,10 @@ Not related, despite the words: Glidepath's change-aware release gates (W-55, CG
 3. **Items not in the pack are refused.** An item whose `type` is not in the pack's `itemTypes`, or whose `op` is not one of create, update, delete or replace, is refused `DG-UNBOUND` rather than given `defaultTier`. That way a mapping bug cannot under-tier a change. `defaultTier` covers known item types that no rule fires on, and it may not be 0. `itemTypes` may list globs for open-ended families. Terraform's resource types are an example. `"*"` is allowed only with a `defaultTier` of at least 2, so an unexpected type is never cleared by policy.
 4. **Change-level rules and modifiers.** Item rules with a maximum cannot say "the whole plan was targeted: one tier up, at least 2", which Terraform needs today. A pack gains `changeRules`, CEL over the whole description, which set a tier or `raise: n` with a `floor`. They run after the item maximum, and then the core invariants run last.
 5. **Facts beyond items.** Some of a change's meaning is not per item: Terraform's workspace, its versions, whether `-target` was used, the variable-set digest. The generic description gains `facts{}`, declared in the pack's `subjectSchema`, which change rules can read, and `consistency` CEL that must hold or the request is refused. An example is Terraform's rule that the summary equals the resources.
-6. **A Merkle root over items.** The subject's root digest is a Merkle root over the sorted item hashes plus the facts' digest. A large change then pages its items, and the proposal's size question is answered by paging. A platform that enforces per item (admission) verifies an item's inclusion proof against the cleared root. Manifest trees keep today's tree root as their item-hash layer, so existing digests do not change (SDK-1 proves this with the golden corpus).
+6. **A Merkle root over items, with each kind's root function versioned.** A subject's root is computed by its kind's declared root function, and the record names that function and its version.
+   - **New kinds** use `merkle/1`: `root = sha256("clearance.subject/v1" ‖ M ‖ F)`. Here `M` is the RFC 6962 Merkle tree hash over the item hashes, sorted. `F` is `sha256` of the canonical facts object, or of `{}` when there are no facts. A large change then pages its items, which answers the proposal's size question, and a platform that enforces per item (admission) verifies an item's inclusion proof against the cleared root.
+   - **Built-in kinds** keep their current roots exactly. `manifest-tree` declares `tree/1`, which is today's construction unchanged: each object canonicalized and hashed, and the sorted list of those hashes hashed. Its facts are empty and do not enter the root. Per-object enforcement checks that an object's hash is in the cleared sorted list, which admission already does through the stamp. `terraform-plan` declares `plan/1`, whose root is `planDigest` as today.
+   - **A built-in kind moves to `merkle/1` only through a new kind version.** It is never re-rooted in place, so every recorded digest keeps its meaning. SDK-1 proves that today's roots come out unchanged over the golden corpus and the live chain.
 7. **One canonicalization, vectors for everyone.** The Go implementation (`internal/canon`, which the chain hash already uses) is the reference. The repo publishes golden vectors that every SDK, in any language, must reproduce byte for byte. This answers the proposal's canonicalization question.
 8. **Conformance levels, which policy can require.** The proposal asks whether gates without per-item enforcement should be capped. This spec answers no: the record names a level, and policy decides what each level may do.
    - **L1, claimed description:** the gate describes the change, and the description is recorded `claimed`.
@@ -2366,7 +2369,7 @@ Model: sonnet.
 - **Repos.** clearance (`internal/bundles`, `internal/gate`, core config, docs).
 - **Depends on.** SDK-1; I-1 (the class list).
 - **Build.**
-  - **Loading.** Kind packs load as a section of a policy bundle (refinement 1), with the trust rules of refinement 2. A rule that fails to compile fails the load; a rule that fails to evaluate sets its item to tier 3. Item and change rules run with the CEL library of SDK-9.
+  - **Loading.** Kind packs load as a section of a policy bundle (refinement 1), with the trust rules of refinement 2. A rule that fails to compile fails the load. An item rule that fails to evaluate sets its item to tier 3. A change rule that fails to evaluate sets the whole change to tier 3, so it is never cleared by policy, and the reason names the rule and the error. Item and change rules run with the CEL library of SDK-9.
   - **Repo overrides.** `clearance.yaml` gains a tighten-only `kinds:` block, which can raise item types or fields to higher tiers.
   - **Protected targets.** `CLEARANCE_PROTECTED_TARGETS` takes `<kind glob>:<scope glob>/<environment glob>`, a superset of today's list.
   - **Records.** A record carries the kind and its pack version and digest.
@@ -2549,7 +2552,11 @@ Model: sonnet.
 - **Repos.** clearance (gate engine, observe, docs).
 - **Depends on.** SDK-8; G-TF-5's detectors as the model.
 - **Build.**
-  - **After the apply.** A `readback` command's output is mapped like `describe` and compared with the cleared items. A difference is a `digest-mismatch` exception with the items named.
+  - **After the apply.** The engine derives the expected state from two inputs: the pre-apply inventory (a readback run by `hold`, or the dry run's own current-state section) and the cleared items. The derivation:
+    - an item cleared as `create`, `update` or `replace` must be present, with its cleared fields;
+    - an item cleared as `delete` must be absent;
+    - every object not in the change must be unchanged from the pre-apply inventory.
+    A `readback` after the apply is mapped like `describe` and compared with that expected state, not with the cleared items directly. Any difference is a `digest-mismatch` exception that names each item and what was expected (present, absent, or unchanged).
   - **Drift.** `clearance gate drift --config gate.yaml`, run on a schedule, compares the current readback with the last cleared state. Drift and untraced changes are recorded as exceptions in the same change transaction model as the collectors (section 14 #23), so one change is never counted twice.
 - **Done when.**
   - On the Flyway example, a migration applied by hand outside the gate shows as `untraced-apply`.
@@ -2605,6 +2612,7 @@ Added 2026-11-28 (owner): let an AI write the gate and the pack, and let people 
        7. open a pull request.
      The skill never applies anything. It never lowers a tier below the starter's `defaultTier: 2` without saying why in the rationale, and it never edits a `kinds:` block to loosen it, which the core refuses anyway.
   2. **SDK-14b Authoring tools for agents.** `clearance mcp` is a local, read-only MCP server over the same commands:
+     - `gate init`, which returns the proposed `gate.yaml`, pack and fixtures as file contents and writes nothing (the agent's own client writes them, into a branch);
      - `kinds lint`, `gate test` and `kinds explain`;
      - policy `explain` against a core;
      - `conformance --role gate` against `core --memory`.
