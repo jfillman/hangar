@@ -3,7 +3,7 @@ title: Clearance & Autopilot Build Specification
 program: Hangar · Clearance / Autopilot
 board: https://claude.ai/artifact/7bptZqWD7RdUDxyR4TQ8o9
 source: https://claude.ai/artifact/BCosjaYXnJzghRF6VZsL5D
-updated: 2026-11-26
+updated: 2026-11-27
 ---
 
 Nov 2, 2026 · @James
@@ -11,6 +11,8 @@ Nov 2, 2026 · @James
 **Revised 2026-11-07, after W3.** This revision folds in the day's analysis and the updated Clearance documents: the Architecture's new chapter 09 (Observation) and its renumbered chapters 10 to 18, the coverage states `break-glass` and `attempted-refused`, the observation-health record, the verification statement and its insurer profile, approver independence extended to automation, and the four revenue-line companions ([Clearinghouse](https://claude.ai/artifact/3rPgELsmjQJ5rqsz386D9Q), [Intelligence](https://claude.ai/artifact/M2rDPgy5WJx8aG7dxsr3xf), [Verification](https://claude.ai/artifact/UfE1xys4nK9C7D2gNm25Lp), [Underwriting](https://claude.ai/artifact/PaZMadKYhzJSJgTBHxiw6B)). It adds three series as sections 15 to 17, after the open questions so that every existing section number still holds (O observation, P clearinghouse, I intelligence), two follow-up packages inside the existing series (R-9, C-14), two waves after W4 in section 11 (W5 Observation, W6 Clearinghouse), new rows in the component, gap, deferred-portal and open-question tables, and two guardrails in section 12. Nothing already merged changes; W4's entry is unchanged except that O-1 and C-14 join it so the packet is not frozen without the new states.
 
 **Revised 2026-11-16, hybrid mode folded in.** The owner's document "Clearance hosted App with a subscriber-hosted core" (2026-11-12) was folded in: a new section [Hybrid mode](#hybrid-mode) and one new package, C-17 (24 new items, 12 already covered and left unchanged, 1 difference, the outage rule, decided by the owner on 2026-11-16 and marked "Decided" in the section and under C-6). The original artifact was retired on 2026-11-16; a copy of the source is kept privately.
+
+**Revised 2026-11-27, install and day-2 operations.** The owner's review "Clearance: install and operations review" (2026-11-27) is folded in as a new series, [N: install and day-2 operations](#work-packages-n) (N-1 to N-14), appended after the last section so every existing section number holds. The series has three profiles, the umbrella chart, `clearance install`, doctor, provider enrollment, upgrades, neutral names, signing modes, getting started, metrics, backup, air-gapped installs, safe uninstall, and the operator decision. It records six places where this spec departs from the review, and the answer to whether Clearance should have a Kubernetes operator. C-16d (the guide) moves into N-9. C-15 becomes a dependency of the production profile. One row is added to the waves table.
 
 **Revised 2026-11-26, Tower across the fleet.** One new series, [M: Tower across the fleet](#work-packages-m) (M-1 to M-6), appended after the last section so every existing section number holds. It makes Tower read its clusters from the fleet registry instead of two hard-wired ones, found during the AWS install (eks-prod is invisible to Tower). It runs after the 2026-11-26 clearance-gate fix and is independent of the W-gates; one row added to the waves table.
 
@@ -618,7 +620,7 @@ Tenancy by installation, a KMS for the key, per-installation rate limits, the pu
 
 ### C-15 · Warm-standby core
 
-Added 2026-11-12 (owner). A subscriber has one Clearance core: one chain, one ledger, one packet. Every gate, gateway and collector depends on it, and it runs as one replica, so a node loss or a bad rollout stalls gated deploys and agent calls everywhere until it is back. The core already takes a PostgreSQL advisory lock as the chain's only writer. This package runs a second replica that waits on that lock and takes over when the leader goes, and proves it with a failover test.
+Added 2026-11-12 (owner). Since 2026-11-27, the production install profile depends on it (N-series). A subscriber has one Clearance core: one chain, one ledger, one packet. Every gate, gateway and collector depends on it, and it runs as one replica, so a node loss or a bad rollout stalls gated deploys and agent calls everywhere until it is back. The core already takes a PostgreSQL advisory lock as the chain's only writer. This package runs a second replica that waits on that lock and takes over when the leader goes, and proves it with a failover test.
 
 - **Repos.** clearance (core, chart), apron, gitops-hangar-dev.
 - **Model.** One Sonnet subagent per lettered step; the managing agent runs the failover test.
@@ -644,7 +646,7 @@ Added 2026-11-12 (owner). Clearance is meant to install alone, for a team that h
   1. **C-16a A neutral default vocabulary.** The receipt and trailer vocabulary is configuration, but its defaults still say Hangar: the `Hangar-*` commit trailers (`CLEARANCE_TRAILER_PREFIX`) and the `X-Hangar-On-Behalf-Of` header (`CLEARANCE_ON_BEHALF_OF_HEADER`). Make the product defaults `Clearance-*` and `X-Clearance-On-Behalf-Of`, and have Hangar set its own values explicitly in apron, so nothing on Hangar changes. Check every other default for a Hangar name (the vocabulary package, `internal/vocab`) and move it the same way.
   2. **C-16b Runtime conformance on record.** `clearance conformance --role runtime` is shown passing only for the Argo CD and Terraform paths in Clearance's docs. Run it against Autopilot's gateway and against a minimal reference gateway (C-16c), record both passes in `docs/provider-protocol.md`, and run the reference one in Clearance's CI.
   3. **C-16c A reference gateway and a reference deploy, in the repo.** `examples/byo/`: a small agent gateway (a few hundred lines) that asks `POST /access/v1/evaluation` before each tool call, applies the spend, opens a pull request, posts the outcome with its receipt (`repo`, `pr`, `commit`, `branch`, `paths`) and writes the trailers; a policy bundle for its two or three tools; and a GitHub Actions workflow that registers its deploy with `clearance register` and deploys to a GitHub environment behind Clearance's deployment protection rule. It runs against `clearance core --memory` in CI.
-  4. **C-16d The guide.** `docs/byo.md`: install Clearance alone (the chart, PostgreSQL, the GitHub App), wire your gateway (the four calls and the trailers), wire your CI (register, Terraform, Argo CD, or the raw protocol for any other tool), turn on observation, and read a packet, using the C-16c example throughout. It states the limits: GitHub only for the App, provenance and register (GitLab and Bitbucket would need adapters), and what a team gives up without the Argo CD gate.
+  4. **C-16d The guide.** Moved to N-9 on 2026-11-27, where it becomes part of the getting-started path. `docs/byo.md`: install Clearance alone (the chart, PostgreSQL, the GitHub App), wire your gateway (the four calls and the trailers), wire your CI (register, Terraform, Argo CD, or the raw protocol for any other tool), turn on observation, and read a packet, using the C-16c example throughout. It states the limits: GitHub only for the App, provenance and register (GitLab and Bitbucket would need adapters), and what a team gives up without the Argo CD gate.
 - **Done when.** On a fresh kind cluster with only Clearance installed, the reference gateway's agent opens a pull request that Clearance's App vouches for (`Clearance / agent-identity` and `agent-scope` confirmed), the reference workflow's deploy is held and cleared through the deployment protection rule, and a packet built from that chain verifies offline. Hangar's own trailers and headers are unchanged.
 - **Owner steps.** A GitHub org or account for the example's App installation, if the lab's cannot be used.
 
@@ -883,6 +885,7 @@ Shaded cells hold work; a wave's gate is passed only with the live evidence name
 | W5 Observation | O-2, O-3, O-4, O-5; A-10 alongside (not part of this gate) | W4 gate passed; O-3 also needs G-ARGO-7's gate live on hangar-prod | **Coverage is verified, not assumed**: a `kubectl apply` and a console security-group change appear in the packet's exceptions with actor, diff and resolution; a Secret change appears with no value recorded; a `StopLogging` call appears as a monitoring-protection event and flips the account's health; with a collector stopped the packet reports a blind window, not a clean one; the reconciler and the collector report one exception, not two |
 | W6 Clearinghouse | P-1, P-2, P-3, P-4 | W5 gate passed (P-1 and P-4 may start after W4, since they need only the packet). Status 2026-11-14: all four packages merged to clearance main (clearance#169, #170, #171, #172), proven against fakes, not released or deployed | **Accepted and verifiable by a stranger**: a fake assurance provider pulls a packet under a time-boxed credential and signs a receipt that the next packet carries; a 25-record sample verifies offline; a verification statement verifies on the hosted page (the lab run proves it against fakes: a fake assurance provider, offline sample verify, a fake GRC API; the hosted proof on verify.clearance.hangarplatform.dev is the Cloud K2 gate) with all seven checks (the lab run accepts a statement that prints "not yet independently witnessed"; the external witness is deferred to before the Cloud K2 gate, where all seven checks green is proven), shows revoked when revoked, and prints a blind window when there was one; a change appears as an evidence item in a Vanta sandbox with a link back |
 | M Tower across the fleet | M-1 and M-2 in parallel, then M-3, then M-4 and M-5, then M-6 | The clearance-gate split is live on eks-dev (2026-11-26); independent of the W-gates | **Tower sees the fleet**: M-6's exit test (eks-man, eks-dev and eks-prod workloads in Tower, a test cluster added and removed through the registry alone) |
+| N Install and day-2 | N-6, N-7, N-11, N-13 now; N-1, then N-2, N-3, N-8; then N-4, N-9, N-10, N-12; then N-5; N-14 last | Now; independent of the W-gates (alongside W-34's CMP track) | **A stranger installs it**: quickstart to a verified packet in under an hour from the guide alone (ten minutes scripted), a standard install on AWS green in doctor, a gated upgrade (N-6e), and a clean uninstall |
 | Later | O-6, P-5, I-2, I-3, A-8, C-11, C-12, C-13, section 13 | A paying partner, a second accepting firm, ten opted-in tenants, or the roadmap's phase 4 and 5 triggers |  |
 
 ### Parallel tracks and who runs what
@@ -1897,3 +1900,389 @@ Model: sonnet (the managing agent runs the live steps itself).
 - **Done when.** Exit test, with quoted evidence: Tower on eks-man lists Backstage's own workloads on eks-man, an app's dev workloads on eks-dev and its prod workloads on eks-prod; eks-prod's API server audit log shows Tower's federated user for those reads; a fourth cluster registered in a test (a kind cluster joined to the fleet for the test, then removed) appears in Tower with no Backstage change and disappears when its record is removed (negative and generality in one). The lab, re-rendered, still shows hangar-dev and hangar-prod.
 - **Rollout.** Docs PRs; no new release.
 - **User steps.** None beyond the earlier packages'.
+
+## Work packages, N-series: install and day-2 operations {#work-packages-n}
+
+Added 2026-11-27 from the owner's review "Clearance: install and operations review" (2026-11-27, Claude Doc). The owner's aim: **Clearance as easy to install and run as possible, with every safety default kept.** The review's finding holds against the code at clearance 0.57.3: the gap is the first hour and the wiring, not capability. A new team assembles five charts (`clearance`, `clearance-argocd-agent`, `clearance-observe-k8s`, `clearance-observe-aws`, `clearance-witness`), the CMP sidecar values for Argo CD's repo-server, a GitHub App, OIDC, PostgreSQL, keys, a signing setup and a witness by hand, and registers every provider in a hand-written `CLEARANCE_PROVIDERS` JSON of principal globs, where one wrong string means a provider silently cannot write.
+
+This series makes install one command with three profiles, makes the system check and explain its own setup, and makes upgrades and day-2 work routine. It runs alongside the CMP hardening track ([W-34](https://claude.ai/artifact/7bptZqWD7RdUDxyR4TQ8o9), which owns the Argo CD plugin's own install and usability items) and takes over C-16d, the guide.
+
+### What the code says today (checked 2026-11-27, clearance 713f576)
+
+The review's open questions, answered from the code:
+
+| Question in the review | Answer | Consequence |
+| --- | --- | --- |
+| Does the attestation signer support a plain key backend? | Yes. `internal/attest` has two backends: `keyless` (Fulcio and Rekor) and `static` (a key file), documented as "for tests and labs" | Quickstart needs no Sigstore stack (N-8) |
+| How are database migrations run? | Automatically at core start, as idempotent DDL (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`) under the writer lock. There is no schema version, no ordered migration list and no downgrade guard | N-6 adds versioned migrations and a version guard |
+| Which defaults still carry Hangar names? | C-16a is done for the vocabulary: the defaults are `Clearance-*` trailers and `X-Clearance-On-Behalf-Of`. Still Hangar-named: the CRD and annotation group `clearance.hangar.io` (`ClearanceGrant`, `clearance.hangar.io/grant`, `/rendered`, `/protected`), the attestation predicate type `https://clearance.hangarplatform.dev/change-attestation/v1`, and the GitHub App manifest's name `Hangar Clearance` | N-7; the API group is a breaking change and needs a migration window |
+| Does public Sigstore's Fulcio accept a private cluster's service-account issuer? | Not in general: public Fulcio trusts a configured list of OIDC issuers, and adding one is a change to Sigstore's own configuration. To confirm in N-8's design step | Public Sigstore fits only callers whose issuer it already trusts (GitHub Actions, for example), not the core's in-cluster identity |
+| Is there a `doctor`? | Only the CMP's (`clearance-cmp doctor`, W-34 I3). The core, the providers and the install have none | N-3 |
+| Are there core metrics? | The CMP has opt-in metrics (W-34 F6). The core serves none | N-10 |
+| Managed-cluster audit logs | `observe-k8s` reads EKS, GKE and AKS audit exports from a file (`--reader eks|gke|aks`); the live path is the API server's audit webhook, which managed control planes do not expose | N-12 adds a streaming reader for managed clusters |
+
+### Where each recommendation lands
+
+| # | Review recommendation | Lands in | Overlap | Change from the review |
+| --- | --- | --- | --- | --- |
+| 1 | `clearance install` or an umbrella chart, three profiles | N-1 (umbrella chart), N-2 (install command) | None | Both, umbrella first; the command never has its own install path (below) |
+| 2 | `clearance doctor` for the whole install | N-3 | Generalizes the CMP's doctor (W-34 I3) | The same checks also run inside the core continuously and publish health, so the setup view and alerts read one source |
+| 3 | Providers enroll themselves | N-4 | Replaces hand-editing `CLEARANCE_PROVIDERS` | The token only bootstraps; the registration binds to the workload's real identity, and declarative values stay supported for GitOps |
+| 4 | A setup view in the web UI | N-5 | The coverage Map; the web UI spec | None |
+| 5 | Automated GitHub App setup | N-2 (manifest flow), N-5 | `contract/github-app-manifest.json` exists; hybrid mode (C-17) needs no App at all | None |
+| 6 | Boring upgrades | N-6 | W-34 F7/I8 (the CMP's upgrade and rollback test) | Adds a schema-version guard and a whole-install upgrade test |
+| 7 | Product-neutral defaults | N-7 | C-16a (done for trailers and the header) | Remaining: the API group, annotations, predicate type, App name |
+| 8 | Warm-standby core | C-15 (unchanged) | Already a full card | Promoted: the production profile depends on it |
+| 9 | Getting-started guide | N-9 | Absorbs C-16d (`docs/byo.md`) and W-34 I9 (ten-minute quickstart) | Adds `clearance demo` so the first cleared change needs no app of the reader's own |
+| 10 | Health and metrics out of the box | N-10 | Generalizes W-34 F6 to the core and every provider | Adds SLOs and alerts with runbook links |
+| - | Signing modes | N-8 | C-2a (the lab's PKI design) | Quickstart uses the static key backend, not a bundled Fulcio and Rekor (below) |
+| - | Install profiles | N-1 | None | Three cells changed (below) |
+
+### Where this spec disagrees with the review
+
+1. **Quickstart signing should not deploy Fulcio and Rekor.** A keyless stack is Fulcio, Rekor and Rekor's storage (Trillian and a database, or Rekor v2's tile store): several services, the slowest and most fragile part of an "under an hour" install. The core already has a static key backend. Quickstart generates one key, signs with it, and marks every attestation and packet "quickstart signing, not evidence". A bundled Sigstore from upstream charts stays an option, for air-gapped standard and production installs that want keyless (N-8).
+2. **Standard should not require an independent witness on day one.** It is the right production rule. For a team's first real gate it turns a trial into a negotiation with a second party. Standard runs the ledger with no witness or a self-run one, and the packet and the verification statement say "not independently witnessed", which P-3 already prints. Production requires the external witness, and the installer refuses production without one.
+3. **Production should not start with admission in Deny.** Hangar's own lesson (G-ARGO-7, the 2026-11 Kyverno incidents) is that a fail-closed admission policy turned on cold refuses more than intended. Production installs in Warn. `clearance doctor` reports the Warn period's would-deny count, and the flip to Deny is one value change that the installer accepts only after a clean Warn window (default 7 days), recorded as a config record. Deny-on-install stays possible with an explicit override, which is recorded.
+4. **Enrollment tokens alone are too weak to identify a provider.** A one-time bearer token that becomes the provider's identity can be replayed. In N-4 the token is accepted once, only together with the caller's verified workload identity (a projected ServiceAccount token, or an AWS role for a collector outside Kubernetes). The core records that identity as the provider's principal, so later calls authenticate exactly as today. The token proves "an admin meant this"; the workload identity proves "this is that workload".
+5. **The quickstart witness should be allowed, but named.** It proves only that the chain was checkpointed, not that a second party saw it. The review asks whether to allow it at all. Allow it: a trial should exercise the whole checkpoint path. But the witness identifies itself as same-operator, and `clearance verify` reports the independence check as failed, not passed.
+6. **Bundled PostgreSQL in quickstart should not be CloudNativePG.** CNPG is an operator with its own CRDs, a second install inside the first. Quickstart runs one plain PostgreSQL StatefulSet with a volume. CNPG stays the chart's optional database for standard, and production uses the subscriber's own database.
+
+### Should Clearance have a Kubernetes operator?
+
+Answer to the owner's question. Recommendation: **not first, and not for the core's own state. Decide it in N-14 on evidence, after N-1 to N-6 exist.**
+
+The day-2 work divides into two kinds, and only one of them is a Kubernetes reconciliation problem.
+
+| Day-2 task | Best owner | Why |
+| --- | --- | --- |
+| Schema migrations, the version guard | The core, at start (N-6) | Postgres state, not Kubernetes objects; the core already holds the writer lock that makes it safe |
+| Leader and standby, failover | The core (C-15) | The advisory lock is the truth; a controller deciding who leads would be a second source |
+| Key rotation (token, ledger, attestation keys) | The core's scheduled loops plus `clearance keys rotate` | The rotation must be a record in the chain, and only the core writes the chain |
+| Provider enrollment and approval | The core's API (N-4) | Approval is an evidence record naming the person |
+| Health and drift of the install | The core's self-check (N-3) | It already sees every provider's calls |
+| Installing and upgrading the Deployments, CRDs and policies | Helm or Argo CD (N-1) | What every subscriber already runs; GitOps installs need objects in git |
+| The CMP sidecar inside a subscriber's Argo CD repo-server | Today: values on the subscriber's own Argo CD chart (W-34 I2 packages them) | Patching another product's Deployment from a controller fights that product's own GitOps |
+| The agent, policy and grant feed on every protected cluster | Today: one chart per cluster | **The one real candidate for an operator**: a fleet of clusters, versions that must stay compatible with the core, certificates and feeds to keep in step |
+
+An operator first would cost:
+- cluster-scoped RBAC and CRDs that regulated buyers review hardest;
+- a second owner for every object, which fights Argo CD (both reconcile the same Deployment);
+- CRD version upgrades as a new fragility;
+- no help with the parts that are actually hard, because those are the core's own state.
+
+The criteria N-14 decides on:
+- whether N-1 to N-6 leave real day-2 toil, measured on the lab and the AWS install;
+- the multi-cluster agent fleet with version skew;
+- whether a buyer asks for OperatorHub or OLM.
+
+If yes, the operator is narrow: a namespaced controller for one `ClearanceInstallation` (or a per-cluster `ClearanceAgent`) resource. It renders the same umbrella chart's objects and never holds keys, never writes the chain, and can be removed without touching the core.
+
+### Install profiles, as this spec adopts them
+
+| | Quickstart | Standard | Production |
+| --- | --- | --- | --- |
+| Purpose | Trial and demo, under an hour (target ten minutes scripted on kind) | A team's first real gate | Audited production use |
+| PostgreSQL | Bundled: one plain StatefulSet | Subscriber's, or the chart's optional CNPG | Subscriber's, with backups and a restore drill (N-11) |
+| Identity | Bundled Dex with a test user; approvals recorded as from a test identity | Subscriber's OIDC provider | Subscriber's OIDC provider, fresh sign-in for tier 2 and 3 |
+| Signing | Static key, generated; marked "quickstart signing, not evidence" | Subscriber's Sigstore, public Sigstore where it trusts the caller, or a bundled upstream Sigstore (air-gapped) | Subscriber's Fulcio and Rekor from a key ceremony, root offline |
+| Ledger and witness | On, with a same-operator witness that says so | On; a witness is optional, and packets say "not independently witnessed" until one is added | On, with a witness quorum that includes an external operator; refused without one |
+| Gates | Argo CD gate on one sample app (`clearance demo`) | Argo CD and Terraform | All needed; admission Warn, then Deny after a clean Warn window |
+| Core | One replica | One replica | Warm standby (C-15) |
+| Packets | Marked "quickstart, not evidence" | Normal | Normal |
+| Moving up | `clearance install --profile standard` over the same release; the chain carries on | Values changes; doctor lists what production still needs | |
+
+Rules for every profile:
+- No profile weakens a safety default: an empty protected-environments list still protects everything, an unreadable policy still denies, tier 2 and 3 still hold when the core is unreachable.
+- A profile is only a values preset of the umbrella chart, never a separate code path.
+- A quickstart chain cannot be passed off as evidence: every record carries the profile, and `clearance verify` prints it.
+
+### N-1 · The umbrella chart and its three profiles
+<!-- pkg status=proposal wave=N -->
+
+Model: sonnet.
+
+- **Repos.** clearance (`charts/clearance-stack`, docs).
+- **Depends on.** None.
+- **Build.** An umbrella chart, `clearance-stack`, with the existing charts as dependencies at the same release version. Shared values are set once and passed down: the core's address, the OIDC issuer, the audience, the key references, the environment list and the profile. Each sub-chart turns on by a component flag. `profile: quickstart|standard|production` is a values preset that sets component flags and safe values. A `values.schema.json` makes Helm refuse an unknown key, a wrong type or a missing required value, and names it. Quickstart includes the bundled PostgreSQL and Dex as optional sub-charts, off in every other profile. Install order runs in hooks (database, then core, then providers), so a fresh install converges without a second apply. The production profile refuses to render without an external witness, subscriber keys and two core replicas.
+- **Done when.**
+  - CI: `helm install` of each profile on a fresh kind cluster passes a test (healthz, a registered change cleared, `chain verify` ok).
+  - CI: production with a missing key or witness fails at render, with the value named.
+  - CI: an unknown value is refused.
+  - The rendered objects for standard equal today's per-chart install (diff in the PR).
+- **Not in this package.** The CMP sidecar inside the subscriber's Argo CD stays on that Argo CD's own chart (W-34 I2), because Clearance cannot own another product's Deployment. The umbrella prints the values snippet to add.
+
+### N-2 · `clearance install`, keys and the GitHub App, as one path
+<!-- pkg status=proposal wave=N depends=N-1 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (`cmd/clearance/install.go`, docs).
+- **Depends on.** N-1.
+- **Build.** `clearance install --profile P` is a thin wrapper over N-1. It never has a second install path.
+  1. Preflight checks: Kubernetes ≥ 1.30 for ValidatingAdmissionPolicy, a default storage class, egress to GitHub, and Argo CD's version where the gate is on.
+  2. `clearance keys init` makes the token-signing key, the ledger key and the quickstart signing key. Direct installs get them as Secrets. With `--gitops`, each generated key is written into the subscriber's secret store, under the name its generated ExternalSecret reads, before the ExternalSecrets are written, so a sync never references a store entry that does not exist. A key the subscriber already holds is referenced and never regenerated. If the store is unreachable, the command stops before writing anything, as for the App credentials in step 3. It never prints key material.
+  3. Runs GitHub's App manifest flow from `contract/github-app-manifest.json`: one browser step that returns the App id, key and webhook secret. Direct installs write them straight into a Secret. With `--gitops`, they are written into the subscriber's secret store (Vault, AWS Secrets Manager, Infisical, or any store with an External Secrets `PushSecret` provider) under the names the generated ExternalSecrets read, so a sync reproduces the direct install. They never go into the directory or into git. Where the command cannot reach the store, it stops and prints the one store command to run, with the values read from stdin, never as arguments.
+  4. Writes the values file.
+  5. Then either runs `helm upgrade --install`, or, with `--gitops DIR`, writes the values, the Argo CD Application and the ExternalSecrets into a directory for the subscriber's repo and installs nothing.
+  6. Ends with `clearance doctor` (N-3).
+  `clearance install --dry-run` prints the plan.
+- **Done when.** On a fresh kind cluster, `clearance install --profile quickstart` reaches a green doctor with no hand-edited file, in under ten minutes in CI. `--gitops` output, committed and synced by Argo CD, gives the same objects as the direct install (diff). No key appears in stdout, the values file or a log (a test greps for every key's bytes).
+- **Owner steps.** A GitHub account to run the manifest flow against once, live.
+
+### N-3 · `clearance doctor`, and the same checks running inside the core
+<!-- pkg status=proposal wave=N depends=N-1 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (core, every provider, CLI, docs).
+- **Depends on.** N-1.
+- **Build.** One check registry, run in two places: `clearance doctor` (a CLI against a running install, read-only) and a loop inside the core, which publishes the result as an install-health record and on `GET /v1/health/install`. Each check has a stable code, a pass/warn/fail state, the observed value and the fix, and links to the doc section. Checks:
+  - core reachable; database writable; schema current (N-6);
+  - every key present and not expired, plus each key's age;
+  - OIDC issuers resolve, and their JWKS fetch;
+  - the GitHub App installed, its webhook delivering (last delivery time from GitHub's API), its permissions as the manifest asks;
+  - witness answering, with the last countersigned checkpoint's age;
+  - each registered provider seen within its expected interval;
+  - each protected environment with a gate that has reported;
+  - observation scopes healthy (O-1);
+  - admission mode and the Warn period's would-deny count;
+  - version compatibility of every provider with the core (N-6);
+  - the CMP doctor's results, read from the plugin where it is installed.
+  `doctor --json` for CI.
+- **Done when.**
+  - Each check has a failing test: break the thing, see the code and the fix.
+  - On hangar-dev, doctor is green, and stopping the witness turns its check red within one interval, both in the CLI and in the core's health record.
+  - Doctor makes no write calls (a test against a read-only principal).
+
+### N-4 · Providers enroll themselves
+<!-- pkg status=proposal wave=N depends=N-3 -->
+
+Model: opus for the identity design, sonnet for the build.
+
+- **Repos.** clearance (core, providers' charts, CLI, web, docs).
+- **Depends on.** N-3.
+- **Build.**
+  - **Issuing the token.** An admin issues an enrollment token with `clearance providers enroll --name argo-gate --kinds deploy.outcome,deploy.exception --identity 'system:serviceaccount:clearance-system:argocd-agent' --expires 1h`, or from the setup view. The token is single-use, time-boxed and scoped to a name, a set of record kinds and the **expected workload identity**: one exact principal, never a glob, such as a ServiceAccount, an issuer plus subject, or an AWS role ARN. A provider with several replicas shares that one identity. A provider that needs several identities gets one token per identity, and each enrollment is approved on its own. The chart fills `--identity` from its own ServiceAccount when `clearance install` issues the token.
+  - **Enrolling.** The provider's chart takes the token from a Secret. On first start the provider calls `POST /v1/providers/enroll` with the token and its own verified workload identity. The core refuses the enrollment, with a named code, unless the verified identity matches the identity bound into the token. On a match, the core records the provider with that identity as its principal and the kinds the token allowed. A leaked unused token is therefore useless to any other workload. A refusal is recorded and spends the token, and the admin issues a new one.
+  - **Approval.** An admin approves the enrollment in the UI or the CLI. Approval is a record naming the person. Until it is approved, the provider's writes are refused with a named code, so the provider is never silently dropped.
+  - **Declarative registration.** `CLEARANCE_PROVIDERS` and the chart's `providers` values stay supported for GitOps installs. A provider declared there needs no enrollment, and the setup view shows the source of each registration.
+  - **Revocation.** Revocation is one call, and it is a record.
+- **Done when.**
+  - A fresh observe-k8s install enrolls, shows as pending, is approved, and its records are accepted.
+  - A replayed token is refused (negative).
+  - A token used from a different workload identity is refused (negative).
+  - An unapproved provider's write gets the named code, not a timeout.
+  - The lab's existing declarative registrations are unchanged (diff).
+- **Owner steps.** Approve the design step's identity rules (one Strip Board ask).
+
+### N-5 · The setup view
+<!-- pkg status=proposal wave=N depends=N-3,N-4 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (web), clearance-ui if the component lives there; the Tower tab reads the same API.
+- **Depends on.** N-3, N-4.
+- **Build.** A Setup page in Clearance's web UI, built on the coverage Map:
+  - a checklist per component, from N-3's install-health record, with the fix for every failing check;
+  - pending enrollments to approve (N-4);
+  - the GitHub App's manifest-flow button where no App is configured (N-2);
+  - each protected environment's gate state;
+  - the Map's lanes showing where coverage has gaps;
+  - the profile, and what moving up to the next profile still needs.
+  Admin only. Every action on the page is a record.
+- **Done when.** On a fresh quickstart install, the page shows every component green. With the witness stopped, the page shows it red with the fix. An enrollment approved from the page is accepted. Screens follow the Tower design standards (`docs/design-system.md` in tower).
+
+### N-6 · Boring upgrades
+<!-- pkg status=proposal wave=N -->
+
+Model: sonnet.
+
+- **Repos.** clearance (store, core, release workflow, docs).
+- **Depends on.** None.
+- **Build.**
+  1. **N-6a Versioned migrations.** An ordered, forward-only migration list with a `clearance_schema` version table. The present idempotent DDL becomes migration 1, so an existing database adopts it with no change. Each migration runs in one transaction under the writer lock.
+  2. **N-6b The version guard.** Each applied migration records `min_core`, the oldest core that can run on the schema after it (N-6e). A core refuses to start, with a named code, only when it is older than the schema's current `min_core`. It accepts a newer schema whose `min_core` it meets, which is what makes rollback across expand migrations work. A migration that is not backwards-compatible is marked, and the release notes, `releasenotes -check-tag` and doctor all name it.
+  3. **N-6c Compatibility as data.** A published table, in the release and served at `GET /v1/version`, gives the provider versions each core accepts. Providers send their version, and the core refuses one outside the range with a named code. Doctor reports skew across the fleet.
+  4. **N-6d `clearance upgrade check`.** It reads the target release's notes and the compatibility table, runs doctor, and lists what the upgrade changes and what must go first.
+  5. **N-6e Expand, then contract.** One rule: a release may ship any number of **expand** migrations (new tables, nullable columns, new indexes) and **contract** migrations (a drop, a rename, a type change, a new NOT NULL) only for shapes that a release at least one version earlier already stopped using. An expand migration leaves `min_core` unchanged, so the previous core runs on the expanded schema. A contract migration raises `min_core` to its own release, so a core older than that refuses to start (N-6b). A release that carries a contract migration is marked **no-rollback** in its notes, in `upgrade check` and in the compatibility table. Its only way back is a restore from the pre-upgrade backup (N-11). Records written after that backup are then lost from the database but kept in the witnessed ledger, so the restore's gap is recorded as an exception and not hidden. A migration that is neither expand nor contract, or a contract migration for a shape still used by the previous release, fails CI.
+  6. **N-6f The whole-install upgrade test.** A release gate, like the CMP's F7. CI installs the previous release's umbrella, runs traffic, upgrades to the candidate and verifies the chain. Then, for a release with expand migrations only: roll back to the previous core on the upgraded schema, write again, verify again. For a no-rollback release: check that the previous core refuses the schema with N-6b's code, then run the restore path (restore the pre-upgrade backup, start the previous core, `clearance restore verify`) and check that the gap is recorded as an exception.
+- **Done when.**
+  - Upgrading the lab's live database adopts migration 1 with no DDL change (statement log).
+  - A core one version older refuses a newer schema (test).
+  - An out-of-range provider is refused with the code.
+  - The previous core runs on an expand-only schema in N-6f's rollback step, and refuses a no-rollback release's schema with the code (negative).
+  - A contract migration for a shape the previous release still uses fails CI (negative).
+  - A no-rollback release passes N-6f through the restore path.
+  - The upgrade test gates a tag.
+
+### N-7 · Product-neutral names, the rest
+<!-- pkg status=proposal wave=N -->
+
+Model: opus for the migration design, sonnet for the build.
+
+- **Repos.** clearance (CRD, agent, CMP, admission policy, attest), apron (Hangar's explicit values), gitops-hangar-prod and -dev (renders).
+- **Depends on.** None. Must finish before the first non-Hangar subscriber, because renaming after that breaks theirs.
+- **Build.**
+  - **The API group.** `clearance.hangar.io` becomes a product group. A CRD has one group, so the window runs two CRDs side by side: the old `clearancegrants.clearance.hangar.io` and the new one under the product group. The steps:
+    1. A release installs the new CRD beside the old one. The agent writes every grant to both. Grants are a projection of the core's signed grant feed, so the agent recreates them from the feed rather than copying objects; no grant is migrated by hand. The admission policy admits an object whose stamp matches a grant in either group.
+    2. Once every protected cluster reports both grant sets in step (a doctor check, N-3), a release switches stamping to the new annotation domain and the policy's parameter to the new CRD. The old group is still read.
+    3. A later release stops writing the old group. Removal is not tied to the rollout: the agent removes the old grants and then the old CRD only when it finds, at that moment on its own cluster, no object stamped only with the old domain. It re-checks just before each delete and leaves everything in place while any such object exists. A rollback from step 2 to step 1 after doctor passed restores old-domain stamping, so the agent's own check, not the earlier doctor run, is what guards the removal.
+    Each step is its own release and can be rolled back to the one before it. Through step 2 the old CRD is part of the chart. Rolling back from step 3 to step 2 therefore reinstalls it, and the agent re-creates the old-group grants from the core's signed feed before admission is evaluated against them, as in step 1. Nothing is restored by hand. Doctor reports, per cluster, the count of objects stamped only with the old domain and whether the old CRD is still present.
+  - **The annotations** move the same way.
+  - **The predicate type** moves to a product URI on a domain the product will own. Verifiers accept both, the new one being the default, because packets already signed carry the old one.
+  - **The GitHub App manifest** takes a neutral default name.
+  - **A CI check** fails any new Hangar name in the code outside test fixtures.
+- **Done when.**
+  - The lab runs on the new group with the gate holding and admitting through the switch (no unstamped admission, live).
+  - A packet signed before the change still verifies.
+  - The grep check is in CI.
+- **Owner steps.** Choose the product API group and the predicate domain (one Strip Board ask). The decision is permanent.
+
+### N-8 · Signing: quickstart, bring your own, production
+<!-- pkg status=proposal wave=N depends=N-1 -->
+
+Model: opus for the design step, sonnet for the build.
+
+- **Repos.** clearance (attest, charts, CLI, docs).
+- **Depends on.** N-1; C-2a's design (decided) for the production mode.
+- **Build.**
+  - **Quickstart mode.** The static backend with a generated key. Every attestation, record and packet carries `signing: quickstart`, the core's readiness says so, and `clearance verify` prints "quickstart signing, not evidence".
+  - **Bring-your-own mode.** Point at the subscriber's Fulcio and Rekor, or at public Sigstore. The design step confirms which issuers public Fulcio accepts and records the answer in `docs/`.
+  - **Air-gapped keyless mode.** An option of standard and production that deploys Fulcio and Rekor from Sigstore's own Helm charts, not a fork. Fulcio is configured to trust the cluster's service-account issuer.
+  - **Production mode.** Refuses to start without a subscriber-provided intermediate and Rekor key. Clearance ships the key-ceremony runbook (from C-2a) and `clearance trust-root build`, which exists.
+  - **Moving between modes.** A change of values: the trusted root in the packet lets an auditor verify offline in every mode.
+  - **No root CA from the installer.** The installer never generates a root CA for production.
+- **Done when.**
+  - CI: each mode signs a change, and the packet verifies offline. A quickstart packet verifies and prints the quickstart warning.
+  - CI: production with no subscriber intermediate refuses at start.
+  - The public-Fulcio answer is in the docs with its source.
+
+### N-9 · Getting started, and `clearance demo`
+<!-- pkg status=proposal wave=N depends=N-2 -->
+
+Model: sonnet, then a fresh-eyes subagent that follows the guide with no other context.
+
+- **Repos.** clearance (docs, `cmd/clearance/demo.go`, `examples/`).
+- **Depends on.** N-2. It absorbs C-16d (`docs/byo.md`) and W-34 I9 (the ten-minute quickstart).
+- **Build.**
+  - **`clearance demo`.** On a quickstart install it deploys a sample app behind the Argo CD gate, pushes a change, shows the hold, clears it as the test user, syncs, builds a packet and runs `clearance verify` on it. Each step prints what happened and where to see it in the UI.
+  - **The guide.** `docs/getting-started.md` is that path for a reader: quickstart install, the demo, then the same steps on their own app. It ends at standard, with links out to BYO gateway and CI (C-16), observation, and production.
+  - **Docs index.** The reference docs stay as they are, and the index leads with the guide.
+- **Done when.**
+  - `clearance demo` passes in CI on kind.
+  - A subagent with no repo context follows the guide on a fresh kind cluster to a verified packet. Every place it got stuck is fixed, and the transcript is in the PR.
+
+### N-10 · Health, metrics and alerts out of the box
+<!-- pkg status=proposal wave=N depends=N-3 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (core, providers, charts, docs).
+- **Depends on.** N-3.
+- **Build.**
+  - **Metrics.** Prometheus metrics on the core (off by default, like the CMP's): decision latency, clearances by state and age, held changes, registration latency, chain-write latency, ledger checkpoint age, last witnessed checkpoint age, provider last-seen, observation lag per scope, standby role (C-15), and install-health check states (N-3).
+  - **Providers and charts.** The same for each provider. The charts carry an optional ServiceMonitor and PodMonitor, a PrometheusRule with alerts, and a Grafana dashboard JSON.
+  - **Alerts.** Every alert links to the runbook section for it.
+  - **SLOs.** Stated and measured on the lab: decision p99, takeover time, checkpoint freshness.
+- **Done when.**
+  - On hangar-dev the dashboard shows live data.
+  - Stopping the witness fires its alert within its window.
+  - Each alert's runbook link resolves.
+  - Metrics off adds no listener (test).
+
+### N-11 · Backup, restore and the support bundle
+<!-- pkg status=proposal wave=N -->
+
+Model: sonnet.
+
+- **Repos.** clearance (CLI, docs).
+- **Depends on.** None.
+- **Build.**
+  - **Backup scope.** `docs/backup.md` states what must be backed up:
+    - the PostgreSQL chain, which is the evidence;
+    - the keys, without which nothing new can be signed and old signatures cannot be re-checked against a missing root;
+    - the witness's state.
+    The ledger volume is a rebuildable cache.
+  - **Restore check.** `clearance restore verify` runs against a restored database: `chain verify`, the last witnessed root against the witness, and a check that the restore did not fork the chain (the next record continues from the witnessed head, or the gap is recorded as an exception).
+  - **Restore drill.** A runbook with timings measured on the lab.
+  - **Support bundle.** `clearance support-bundle` collects doctor output, versions, settings with every value redacted except names, and recent error lines, into one archive for a support case. A test greps the bundle for every secret value.
+- **Done when.**
+  - A lab restore drill from a PostgreSQL backup verifies and continues the chain, with its timing recorded.
+  - A restore to an older point is detected against the witness and reported (negative).
+  - The support bundle carries no secret value.
+
+### N-12 · Air-gapped and managed-cluster installs
+<!-- pkg status=proposal wave=N depends=N-1 -->
+
+Model: sonnet.
+
+- **Repos.** clearance (release workflow, CLI, observe-k8s, docs).
+- **Depends on.** N-1. Shares the registry and mirror work of W-34 S6 and I5.
+- **Build.**
+  - **Image and chart manifest.** Each release publishes a manifest of every image and chart by digest.
+  - **`clearance mirror`.** Copies them into a private registry and writes the values that point at it.
+  - **Managed control planes.** observe-k8s gains a streaming reader for each managed audit source (EKS through CloudWatch Logs, then GKE and AKS on a trigger), beside the existing file readers. It is the same engine, with `sourceVerified` stated honestly per source.
+  - **Docs.** A managed-cluster table: which observation each cloud allows, and what the packet will say is not covered.
+- **Done when.**
+  - A quickstart install from a mirror with no egress to GHCR passes in CI.
+  - On the AWS install, an EKS cluster's `kubectl apply` reaches the packet through the streaming reader.
+
+### N-13 · Safe uninstall and safe disable
+<!-- pkg status=proposal wave=N -->
+
+Model: sonnet.
+
+- **Repos.** clearance (charts, CLI, docs).
+- **Depends on.** None.
+- **Build.** The gate fails closed, so removing it in the wrong order can refuse every change on a cluster. Hangar learned this on its own clusters.
+  - **`clearance uninstall` and the umbrella's pre-delete hooks.** They unwind in a safe order:
+    1. the admission binding;
+    2. the plugin source on protected apps (the W-43 handover in reverse);
+    3. the agent;
+    4. the core last.
+    Every step is recorded while the core still runs.
+  - **`clearance disable --gate`** turns enforcement off for a recorded reason, as break-glass at install level.
+  - **Data and keys.** A leftover database and keys are kept unless `--purge` is given, with a warning that the chain is the evidence.
+- **Done when.** In CI, uninstall from a gated cluster leaves no ValidatingAdmissionPolicy binding, no finalizer and no app stuck in ComparisonError. A later sync of a formerly protected app succeeds. The disable is a record in the chain.
+
+### N-14 · The operator decision
+<!-- pkg status=proposal wave=N depends=N-1,N-2,N-3,N-6 -->
+
+Model: opus.
+
+- **Repos.** hangar (decision record), clearance (spike branch only).
+- **Depends on.** N-1, N-2, N-3, N-6.
+- **Build.**
+  - **The evidence.** Measure the day-2 toil left after N-1 to N-6 on the lab and the AWS install: what an operator still does by hand per upgrade, key rotation, new cluster and failover.
+  - **The spike.** A namespaced `ClearanceAgent` controller for the per-cluster fleet, the strongest candidate (see "Should Clearance have a Kubernetes operator?" above).
+  - **The decision.** Write it up with the criteria above, recommend yes or no, and say what the operator would and would never own.
+- **Done when.** The decision is recorded in hangar decisions and in this spec, and the owner has answered it.
+- **Owner steps.** The decision.
+
+### The N gate: a stranger installs it
+
+The wave closes when all of the following hold:
+- **Quickstart.** On a fresh kind cluster, a subagent with only the getting-started guide runs `clearance install --profile quickstart` and `clearance demo`, and reaches a verified packet in under an hour. A scripted run takes under ten minutes. No step edits JSON by hand, and doctor is green throughout.
+- **Standard.** On the AWS install, a standard-profile install with enrolled providers passes doctor.
+- **Upgrade.** An upgrade from the previous release passes N-6e.
+- **Uninstall.** An uninstall leaves the cluster syncing normally.
+
+Order:
+- N-6, N-7 and N-11 can start now, since they are independent.
+- N-1, then N-2, N-3 and N-8 in parallel.
+- Then N-4, N-9, N-10 and N-12, then N-5.
+- N-13 any time.
+- N-14 last.
+
+C-15 is a dependency of the production profile, not of this gate.
+
+### Open questions for this series
+
+| # | Question | Blocks | Recommendation | Decides |
+| --- | --- | --- | --- | --- |
+| N-Q1 | Umbrella chart or install command first | N-1, N-2 | The umbrella first. It is what a GitOps install consumes, and the command only wraps it | Proceed |
+| N-Q2 | The product API group and predicate domain | N-7 | A domain the product will own long-term, chosen once | Owner |
+| N-Q3 | Allow a same-operator witness in quickstart | N-1 | Allow it, labelled, with the independence check failing in `verify` | Proceed |
+| N-Q4 | Default Warn window before production's Deny | N-1, N-3 | 7 days and no unexplained would-deny, overridable with a recorded reason | Owner confirms |
+| N-Q5 | Enrollment identity binding outside Kubernetes (the AWS collector on Lambda or ECS) | N-4 | The caller's IAM role, verified by the core through STS `GetCallerIdentity` presigned requests, as Vault's AWS auth does | Proceed, confirm in the design step |
+| N-Q6 | An operator, ever | N-14 | Decide on N-14's evidence; not before N-1 to N-6 | Owner |
